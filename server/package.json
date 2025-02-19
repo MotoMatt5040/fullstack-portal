@@ -19,6 +19,9 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.0",
+    "mssql": "^11.0.1",
+    "nodemailer": "^6.10.0",
+    "odbc": "^2.4.9",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
