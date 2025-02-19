@@ -1,43 +1,48 @@
-name: production-mern-app
+name: mern-app
 
 services:
   api:
     build:
       context: ./server
-      target: production
+      target: development
     restart: unless-stopped
     env_file: ./server/.env
+    volumes:
+      - ./server:/app
+      - /app/node_modules
     networks:
       - mern-app
+    ports:
+      - "5000:5000"
 
   client:
     build: 
       context: ./client
-      target: production
-      args:
-        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-        VITE_DOCKER_API_URL: ${VITE_DOCKER_API_URL}
-        VITE_ENV: ${VITE_ENV}
+      target: development
     restart: unless-stopped
+    env_file: ./client/.env
     environment:
-      VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-      VITE_DOCKER_API_URL: ${VITE_DOCKER_API_URL}
-      VITE_ENV: ${VITE_ENV}
+      - VITE_DEV_API_URL=${VITE_DEV_API_URL}
+      - VITE_DOCKER_API_URL=${DOMAIN_NAME}
+      - VITE_ENV=${VITE_ENV}
+    volumes:
+      - ./client:/app
+      - /app/node_modules
     networks:
       - mern-app
+    ports:
+      - "5173:5173"
+    command: npm start -- --host
     depends_on:
       - api
 
   caddy:
-    build:
-      context: ./caddy
-      dockerfile: Dockerfile
+    image: caddy:2-alpine
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      DOMAIN_NAME: ${DOMAIN_NAME}
     volumes:
+      - ./caddy/Caddyfile.dev:/etc/caddy/Caddyfile
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
     networks:

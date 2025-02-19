@@ -8,11 +8,14 @@ if (import.meta.env.VITE_ENV === 'dev') {
 } else if (import.meta.env.VITE_ENV === 'docker') {
     BASE_URL = import.meta.env.VITE_DOCKER_API_URL;
 }
+console.log('BASE_URL:', BASE_URL);
+console.log(import.meta.env.VITE_ENV)
 
 const baseQuery = fetchBaseQuery({
     baseUrl: BASE_URL,
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
+        console.log(BASE_URL)
         const token = getState().auth.token
         if (token) {
             headers.set("authorization", `Bearer ${token}`)

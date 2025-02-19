@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 5000;
 
 // const hashPasswordsForAllRows = require("./controllers/hashPasswords");
 // hashPasswordsForAllRows();
+console.log('Updated')
 
 // connectDB();
 // useDB("SELECT DISTINCT projectid , recdate FROM tblGPCPHDaily WHERE RecDate >= '2025-02-17'");
@@ -25,7 +26,7 @@ app.use(logger);
 
 // TO FIX SAME SITE ISSUES NAVIGATE TO controllers/authControllers.js and look at where the cookie is set
 
-app.use(credentials); //THIS MST BE BEFORE CORS
+app.use(credentials); //THIS MUST BE BEFORE CORS
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
