@@ -4,7 +4,7 @@
 
 auth.localhost {
     encode gzip
-    reverse_proxy client:3000
+    reverse_proxy client:5173
 }
 
 api.auth.localhost {
