@@ -15,17 +15,11 @@ const handleLogin = async (req, res) => {
             return res.status(401).json({ 'message': 'Invalid username or password' });
         }
 
-        console.log(foundUser);
-
         const match = await bcrypt.compare(pwd, foundUser.Password);
 
-        console.log(match);
         if (match) {
             const roles = await getUserRoles(foundUser.Email);
             // Create JWTs here
-            console.log();
-            console.log(roles);
-            console.log();
             const accessToken = jwt.sign(
                 { 
                     "UserInfo": {

@@ -166,7 +166,6 @@ const getAllUsers = async () => {
         pool = await sql.connect(config);
         const result = await pool.request()
             .query('SELECT Email FROM tblAuthentication');
-        console.log(result.recordset)
         return result.recordset;
     } catch (err) {
         console.error('Database query failed:', err);
