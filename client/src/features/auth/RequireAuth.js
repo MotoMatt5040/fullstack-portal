@@ -1,15 +1,21 @@
-import { useLocation, Navigate, Outlet } from "react-router-dom"
-import { useSelector } from "react-redux"
-import { selectCurrentToken } from "./authSlice"
+import { useLocation, Navigate, Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectCurrentToken } from "./authSlice";
+import { jwtDecode } from "jwt-decode";
 
-const RequireAuth = () => {
+const RequireAuth = ({ allowedRoles }) => {
     const token = useSelector(selectCurrentToken)
     const location = useLocation()
 
+    const decoded = token ? jwtDecode(token) : {}
+    const roles = decoded?.UserInfo?.roles || [];
+
     return (
-        token
+        roles.find(role => allowedRoles?.includes(role))
             ? <Outlet />
-            : <Navigate to="/login" state={{ from: location }} replace />
-    )
+            : token?.user
+                ? <Navigate to="/unauthorized" state={{ from: location }} replace />
+                : <Navigate to="/login" state={{ from: location }} replace />
+    );
 }
 export default RequireAuth
