@@ -1,10 +1,14 @@
 {$DOMAIN_NAME:invalid} {
     encode gzip
     reverse_proxy client:80
+
+    handle_path /.well-known/acme-challenge/* {
+        file_server
+    }
 }
 
 www.{$DOMAIN_NAME:invalid} {
-    redir https://auth.localhost{uri} permanent
+    redir https://dashboard.promarkresearch.com{uri} permanent
 }
 
 api.{$DOMAIN_NAME:invalid} {
@@ -37,7 +41,7 @@ api.{$DOMAIN_NAME:invalid} {
             window 1m
         }
 
-        zone burt_limit {
+        zone burst_limit {
             key {remote_host}
             # if using Cloudflare proxy, use the following key:
             # key {http.request.header.CF-Connecting-IP}

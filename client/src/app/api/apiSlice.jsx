@@ -6,7 +6,7 @@ let BASE_URL;
 if (import.meta.env.VITE_ENV === 'dev') {
     BASE_URL = import.meta.env.VITE_DEV_API_URL;
 } else if (import.meta.env.VITE_ENV === 'docker') {
-    BASE_URL = import.meta.env.VITE_DOCKER_API_URL;
+    BASE_URL = `api.${import.meta.env.DOMAIN_NAME}`;
 }
 console.log('BASE_URL:', BASE_URL);
 console.log(import.meta.env.VITE_ENV)

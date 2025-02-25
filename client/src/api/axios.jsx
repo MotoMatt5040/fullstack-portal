@@ -4,9 +4,9 @@ let BASE_URL;
 
 if (import.meta.env.VITE_ENV === 'dev') {
     BASE_URL = import.meta.env.VITE_DEV_API_URL;
-} else if (import.meta.env.VITE_ENV === 'docker') {
-    BASE_URL = import.meta.env.VITE_DOCKER_API_URL;
-}
+} else {
+    BASE_URL = `api.${import.meta.env.DOMAIN_NAME}`;
+} 
 
 export default axios.create({
     baseURL: BASE_URL

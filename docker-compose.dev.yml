@@ -23,7 +23,7 @@ services:
     env_file: ./client/.env
     environment:
       - VITE_DEV_API_URL=${VITE_DEV_API_URL}
-      - VITE_DOCKER_API_URL=${DOMAIN_NAME}
+      - DOMAIN_NAME=${DOMAIN_NAME}
       - VITE_ENV=${VITE_ENV}
     volumes:
       - ./client:/app
