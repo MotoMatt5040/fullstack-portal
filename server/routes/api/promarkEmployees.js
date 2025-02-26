@@ -7,5 +7,4 @@ const ROLES_LIST = require('../../config/rolesList');
 router.route('/')
     .get(verifyRoles(ROLES_LIST.Admin), promarkUsersController.handleGetAllUsers)
 
-
 module.exports = router;
