@@ -8,8 +8,9 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
+console.log("index.jsx")
 console.log('VITE_DEV_API_URL:', import.meta.env.VITE_DEV_API_URL);
-console.log('VITE_DOCKER_API_URL:', import.meta.env.VITE_DOCKER_API_URL);
+console.log('VITE_DOMAIN_NAME:', import.meta.env.VITE_DOMAIN_NAME);
 console.log('VITE_ENV:', import.meta.env.VITE_ENV);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
