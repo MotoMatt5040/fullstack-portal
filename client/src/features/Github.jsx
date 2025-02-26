@@ -1,73 +1,98 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState } from "react";
 import { useCreateIssueMutation } from "./slices/githubSlice";
 
+const labelOptions = ["bug", "enhancement", "question", "documentation"];
+
 const IssueForm = () => {
-    const [title, setTitle] = useState("");
-    const [body, setBody] = useState("");
-    const [labels, setLabels] = useState("");
-    const [createIssue, { isLoading, error }] = useCreateIssueMutation();
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [selectedLabels, setSelectedLabels] = useState([]);
+  const [createIssue, { isLoading, error }] = useCreateIssueMutation();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleLabelChange = (label) => {
+    const updatedLabels = selectedLabels.includes(label)
+      ? selectedLabels.filter((l) => l !== label)
+      : [...selectedLabels, label];
 
-        const issueData = {
-            title,
-            body,
-            labels: labels.split(",").map(label => label.trim()), // Convert comma-separated labels to an array
-        };
+    setSelectedLabels(updatedLabels);
+  };
 
-        try {
-            const response = await createIssue(issueData).unwrap();
-            console.log("Issue Created:", response);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-            // Reset form fields after submission
-            setTitle("");
-            setBody("");
-            setLabels("");
-        } catch (err) {
-            console.error("Failed to create issue:", err);
-        }
+    const issueData = {
+      title,
+      body,
+      labels: selectedLabels, 
     };
 
-    return (
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "400px" }}>
-            <h2>Create GitHub Issue</h2>
+    try {
+      const response = await createIssue(issueData).unwrap();
+      console.log("Issue Created:", response);
 
-            <label>
-                Title:
-                <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                />
-            </label>
+      setTitle("");
+      setBody("");
+      setSelectedLabels([]);
+    } catch (err) {
+      console.error("Failed to create issue:", err);
+    }
+  };
 
-            <label>
-                Body:
-                <textarea
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                />
-            </label>
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        maxWidth: "400px",
+      }}
+    >
+      <h2>Create GitHub Issue</h2>
 
-            <label>
-                Labels (comma-separated):
-                <input
-                    type="text"
-                    value={labels}
-                    onChange={(e) => setLabels(e.target.value)}
-                />
-            </label>
+      <label>
+        Title:
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
+      </label>
 
-            <button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Issue"}
-            </button>
+      <label>
+        Body:
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+      </label>
 
-            {error && <p style={{ color: "red" }}>Error: {error.data?.msg || "Something went wrong"}</p>}
-        </form>
-    );
+      <fieldset>
+        <legend>Labels:</legend>
+        {labelOptions.map((label) => (
+          <label key={label} style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={selectedLabels.includes(label)}
+              onChange={() => handleLabelChange(label)}
+            />
+            &nbsp;{label}
+          </label>
+        ))}
+      </fieldset>
+
+      <button type="submit" disabled={isLoading}>
+        {isLoading ? "Creating..." : "Create Issue"}
+      </button>
+
+      {error && (
+        <p style={{ color: "red" }}>
+          Error: {error.data?.msg || "Something went wrong"}
+        </p>
+      )}
+    </form>
+  );
 };
 
 export default IssueForm;
