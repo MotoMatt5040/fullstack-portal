@@ -1,4 +1,4 @@
-{$DOMAIN_NAME:invalid} {
+{$VITE_DOMAIN_NAME:invalid} {
     encode gzip
     reverse_proxy client:80
 
@@ -7,11 +7,11 @@
     }
 }
 
-www.{$DOMAIN_NAME:invalid} {
+www.{$VITE_DOMAIN_NAME:invalid} {
     redir https://dashboard.promarkresearch.com{uri} permanent
 }
 
-api.{$DOMAIN_NAME:invalid} {
+api.{$VITE_DOMAIN_NAME:invalid} {
     reverse_proxy api:5000
 
     header {
