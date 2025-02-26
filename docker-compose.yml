@@ -1,4 +1,4 @@
-name: production-mern-app
+version: '3.1'
 
 services:
   api:
@@ -16,13 +16,9 @@ services:
       target: production
       args:
         VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-        DOMAIN_NAME: ${DOMAIN_NAME}
+        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
         VITE_ENV: ${VITE_ENV}
     restart: unless-stopped
-    environment:
-      VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-      DOMAIN_NAME: ${DOMAIN_NAME}
-      VITE_ENV: ${VITE_ENV}
     networks:
       - mern-app
     depends_on:
@@ -36,7 +32,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      DOMAIN_NAME: ${DOMAIN_NAME}
+      VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
     volumes:
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config

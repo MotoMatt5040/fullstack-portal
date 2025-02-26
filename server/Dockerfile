@@ -1,5 +1,5 @@
 # Development stage
-FROM node:20-bookworm-slim as development
+FROM node:20-bookworm-slim AS development
 
 # Create app directory
 WORKDIR /app
@@ -9,11 +9,11 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 5001
+EXPOSE 5000
 CMD ["npm", "run", "dev"]
 
 # Production stage
-FROM node:20-bookworm-slim as production
+FROM node:20-bookworm-slim AS production
 
 WORKDIR /app
 

@@ -19,11 +19,15 @@ services:
     build: 
       context: ./client
       target: development
+      args:
+        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
+        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+        VITE_ENV: ${VITE_ENV}
     restart: unless-stopped
     env_file: ./client/.env
     environment:
       - VITE_DEV_API_URL=${VITE_DEV_API_URL}
-      - DOMAIN_NAME=${DOMAIN_NAME}
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
       - VITE_ENV=${VITE_ENV}
     volumes:
       - ./client:/app
