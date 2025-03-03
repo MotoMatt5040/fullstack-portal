@@ -2,7 +2,6 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux"
 import { selectCurrentUser, selectCurrentToken, logOut } from "./authSlice"
 import { Link } from "react-router-dom"
-import IssueForm from "../Github";
 
 const Welcome = () => {
     const dispatch = useDispatch()
@@ -16,10 +15,6 @@ const Welcome = () => {
         dispatch(logOut())
     }
 
-    const handleReportOrRequest = () => {
-
-    }
-
     const content = (
         <section className="welcome">
             <h1>{welcome}</h1>
@@ -27,9 +22,8 @@ const Welcome = () => {
             <h2>This page is currently under development.</h2>
             <p><Link to="/userslist">Go to the Users List</Link></p>
             <button onClick={handleLogout}>Log Out</button>
-            <p>Need to report an issue or request a new feature?</p>
-            <button onClick={handleReportOrRequest}>Report/Request</button>
-            <IssueForm/>
+            <p><Link to="/github">Need to report an issue or request a new feature?</Link></p>
+            
         </section>
     )
 

@@ -8,6 +8,7 @@ import RequireAuth from "./features/auth/RequireAuth";
 import UsersList from "./features/users/UsersList";
 import ResetPassword from "./features/auth/ResetPassword";
 import Missing from "./components/Missing";
+import IssueForm from "./features/Github";
 
 const ROLES = {
   'Admin': 1,
@@ -26,8 +27,9 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
 
                 {/* protected routes */}
-                <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
+                <Route element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Manager]} />}>
                     <Route path="welcome" element={<Welcome />} />
+                    <Route path="github" element={<IssueForm />} />
                 </Route>
 
                 <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
