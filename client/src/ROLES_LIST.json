@@ -1,0 +1,6 @@
+{
+    "Admin": 1,
+    "Manager": 2,
+    "External": 3,
+    "User": 4
+}
