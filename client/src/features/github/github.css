@@ -1,0 +1,51 @@
+form.issue-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%; 
+  }
+  
+  .issue-form h2 {
+    margin-bottom: 10px;
+  }
+  
+  .issue-form label {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .issue-form input[type="text"],
+  .issue-form textarea {
+    width: 100%; 
+  }
+
+  .issue-form input.title {
+    width: 50%; /* Adjust the width of the title input field */
+  }
+  
+  .issue-form textarea {
+    resize: none;
+    min-height: 200px;
+    overflow: hidden; /* Disable scrollbars */
+  }
+  
+  .issue-form fieldset {
+    display: inline-block;
+  }
+  
+  .issue-form fieldset legend {
+    margin-left: 5px;
+  }
+  
+  .issue-form fieldset label {
+    display: block;
+  }
+  
+  .issue-form button {
+    margin-top: 10px;
+    width: 200px;
+  }
+  
+  .issue-form p.error {
+    color: red;
+  }

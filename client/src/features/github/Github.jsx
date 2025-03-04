@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-import { useCreateIssueMutation } from "./slices/githubSlice";
+import { useCreateIssueMutation } from "./githubSlice";
+import "./github.css"; 
 
 const labelOptions = ["bug", "enhancement", "question", "documentation"];
 
@@ -8,40 +9,36 @@ const IssueForm = () => {
   const [body, setBody] = useState("");
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [createIssue, { isLoading, error }] = useCreateIssueMutation();
-  const textAreaRef = useRef(null); // Create a ref for the textarea
+  const textAreaRef = useRef(null); 
 
-  // Handle label change
   const handleLabelChange = (label) => {
     const updatedLabels = selectedLabels.includes(label)
       ? selectedLabels.filter((l) => l !== label)
       : [...selectedLabels, label];
 
-    setSelectedLabels(updatedLabels); // Update selected labels
+    setSelectedLabels(updatedLabels); 
   };
 
-  // Adjust textarea height dynamically based on content
   const handleTextAreaInput = () => {
     if (textAreaRef.current) {
-      textAreaRef.current.style.height = "auto"; // Reset the height to auto
-      textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Set the height to scrollHeight
+      textAreaRef.current.style.height = "auto"; 
+      textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; 
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const issueData = {
       title,
       body,
-      labels: selectedLabels, // Pass selected labels directly
+      labels: selectedLabels,
     };
 
     try {
       const response = await createIssue(issueData).unwrap();
       console.log("Issue Created:", response);
 
-      // Reset form fields after submission
       setTitle("");
       setBody("");
       setSelectedLabels([]);
@@ -51,21 +48,15 @@ const IssueForm = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        maxWidth: "400px",
-      }}
-    >
+    <form onSubmit={handleSubmit} className="issue-form">
       <h2>Create GitHub Issue</h2>
 
-      <label>
+      <label htmlFor="title">
         Title:
         <input
           type="text"
+          id="title"
+          className="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
@@ -75,18 +66,17 @@ const IssueForm = () => {
       <label>
         Body:
         <textarea
-          ref={textAreaRef} // Attach the ref to the textarea
+          ref={textAreaRef} 
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          onInput={handleTextAreaInput} // Call the function to resize
-          style={{ resize: "none", height: 200, width: 500 }} // Disable manual resizing
+          onInput={handleTextAreaInput} 
         />
       </label>
 
       <fieldset>
         <legend>Labels:</legend>
         {labelOptions.map((label) => (
-          <label key={label} style={{ display: "block" }}>
+          <label key={label}>
             <input
               type="checkbox"
               checked={selectedLabels.includes(label)}
@@ -102,7 +92,7 @@ const IssueForm = () => {
       </button>
 
       {error && (
-        <p style={{ color: "red" }}>
+        <p className="error">
           Error: {error.data?.msg || "Something went wrong"}
         </p>
       )}
