@@ -1,25 +1,27 @@
 const { getUserByRefreshToken } = require('../models/PromarkUsers');
+const { getUserRoles } = require('../models/UserRoles');
 const jwt = require('jsonwebtoken');
 
 const handleRefreshToken = async (req, res) => {
     const cookies = req.cookies;
+    if (cookies?.persist !== 'true') return res.sendStatus(401);
     if (!cookies?.jwt) return res.sendStatus(401);
     const refreshToken = cookies.jwt;
 
     try {
         const foundUser = await getUserByRefreshToken(refreshToken);
         if (!foundUser) return res.sendStatus(403);
+        const roles = await getUserRoles(foundUser.Email);
 
         jwt.verify(
             refreshToken,
             process.env.REFRESH_TOKEN_SECRET,
             (err, decoded) => {
                 if (err || foundUser.Email !== decoded.username) return res.sendStatus(403);
-                const roles = Object.values(foundUser.roles);
                 const accessToken = jwt.sign(
                     { 
                         "UserInfo": {
-                            "username": decoded.username,
+                            "username": foundUser.Email,
                             "roles": roles
                         }
                     },

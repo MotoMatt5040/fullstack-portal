@@ -37,6 +37,7 @@ const Login = () => {
         try {
             const userData = await login({ user, pwd }).unwrap();
             dispatch(setCredentials({ ...userData, user }));
+            document.cookie = `persist=${check}; path=/`;
             setUser("");
             setPwd("");
             navigate("/welcome");
@@ -107,7 +108,7 @@ const Login = () => {
                         onChange={toggleCheck}
                         checked={check}
                     />
-                    <label htmlFor="persist">Trust this device</label>
+                    <label htmlFor="persist">&nbsp;Keep me logged in.</label>
                 </div>
             </form>
             <p>
