@@ -1,111 +1,105 @@
-const { getAllUsers, getUserByEmail, updateUserPassword, saveResetToken, getUserByResetToken, createUser } = require('../models/PromarkUsers');
+const promarkUsers = require('../models/PromarkUsers');
 const bcrypt = require('bcrypt');
 
-const handleGetAllUsers = async (req, res) => {
+const handleAsync = (fn) => async (req, res) => {
     try {
-        const users = await getAllUsers();
-        res.status(200).json(users);
+        await fn(req, res);
     } catch (err) {
         console.error('Database query failed:', err);
         res.status(500).json({ message: 'Database query failed' });
     }
 };
 
-const handleGetUserById = async (req, res) => {
-    try {
-        const user = await getUserById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.status(200).json(user);
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
-    }
-};
+const handleGetAllUsers = handleAsync(async (req, res) => {
+    const users = await promarkUsers.getAllUsers();
+    res.status(200).json(users);
+});
 
-const handleGetUserByEmail = async (req, res) => {
+const handleGetUserById = handleAsync(async (req, res) => {
+    const user = await promarkUsers.getUserById(req.params.id);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(user);
+});
+
+const handleGetUserByEmail = handleAsync(async (req, res) => {
     const { email } = req.params;
     if (!email) {
         return res.status(400).json({ message: 'Please include an email' });
     }
 
-    try {
-        const user = await getUserByEmail(email);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.status(200).json(user);
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
+    const user = await promarkUsers.getUserByEmail(email);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
     }
-};
+    res.status(200).json(user);
+});
 
-const handleCreateUser = async (req, res) => {
+const handleCreateUser = handleAsync(async (req, res) => {
     const { email, password, firstName, lastName } = req.body;
     if (!email || !password || !firstName || !lastName) {
         return res.status(400).json({ message: 'Please include all required fields' });
     }
 
-    try {
-        const hashedPwd = await bcrypt.hash(password, 10);
-        const result = await createUser(email, hashedPwd, firstName, lastName);
-        res.status(201).json({ success: `User ${email} created successfully` });
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
-    }
-};
+    const hashedPwd = await bcrypt.hash(password, 10);
+    await promarkUsers.createUser(email, hashedPwd, firstName, lastName);
+    res.status(201).json({ success: `User ${email} created successfully` });
+});
 
-const handleUpdateUserPassword = async (req, res) => {
+const handleUpdateUserPassword = handleAsync(async (req, res) => {
     const { email, newPassword } = req.body;
     if (!email || !newPassword) {
         return res.status(400).json({ message: 'Please include email and new password' });
     }
 
-    try {
-        const hashedPwd = await bcrypt.hash(newPassword, 10);
-        const result = await updateUserPassword(email, hashedPwd);
-        res.status(200).json({ success: `Password for user ${email} updated successfully` });
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
-    }
-};
+    const hashedPwd = await bcrypt.hash(newPassword, 10);
+    await promarkUsers.updateUserPassword(email, hashedPwd);
+    res.status(200).json({ success: `Password for user ${email} updated successfully` });
+});
 
-const handleSaveResetToken = async (req, res) => {
+const handleSaveResetToken = handleAsync(async (req, res) => {
     const { email, token, expires } = req.body;
     if (!email || !token || !expires) {
         return res.status(400).json({ message: 'Please include email, token, and expiration time' });
     }
 
-    try {
-        const result = await saveResetToken(email, token, expires);
-        res.status(200).json({ success: `Reset token for user ${email} saved successfully` });
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
-    }
-};
+    await promarkUsers.saveResetToken(email, token, expires);
+    res.status(200).json({ success: `Reset token for user ${email} saved successfully` });
+});
 
-const handleGetUserByResetToken = async (req, res) => {
+const handleGetUserByResetToken = handleAsync(async (req, res) => {
     const { token } = req.params;
     if (!token) {
         return res.status(400).json({ message: 'Please include a token' });
     }
 
-    try {
-        const user = await getUserByResetToken(token);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.status(200).json(user);
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
+    const user = await promarkUsers.getUserByResetToken(token);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
     }
-};
+    res.status(200).json(user);
+});
+
+const handleAddUserRoles = handleAsync(async (req, res) => {
+    const { email, roles } = req.body;
+    if (!email || !roles) {
+        return res.status(400).json({ message: 'Please include email and roles' });
+    }
+
+    await promarkUsers.addUserRoles(email, roles);
+    res.status(200).json({ success: `Roles added to user ${email} successfully` });
+});
+
+const handleRemoveUserRoles = handleAsync(async (req, res) => {
+    const { email, roles } = req.body;
+    if (!email || !roles) {
+        return res.status(400).json({ message: 'Please include email and roles' });
+    }
+
+    await promarkUsers.removeUserRoles(email, roles);
+    res.status(200).json({ success: `Roles added to user ${email} successfully` });
+});
 
 module.exports = {
     handleGetAllUsers,
@@ -114,5 +108,7 @@ module.exports = {
     handleCreateUser,
     handleUpdateUserPassword,
     handleSaveResetToken,
-    handleGetUserByResetToken
+    handleGetUserByResetToken,
+    handleAddUserRoles,
+    handleRemoveUserRoles
 };
