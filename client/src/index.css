@@ -20,6 +20,10 @@
   --link-hover-color: rgba(245, 245, 245, 0.9);
   --button-background: #fff;
   --button-text: #000;
+  --table-header-background: #444;
+  --table-header-color: #fff;
+  --table-row-hover-background: #555;
+  --table-border-color: #666;
 }
 
 [data-theme="light"] {
@@ -29,6 +33,10 @@
   --link-hover-color: #551A8B;
   --button-background: #000;
   --button-text: #fff;
+  --table-header-background: #ddd;
+  --table-header-color: #000;
+  --table-row-hover-background: #ddd;
+  --table-border-color: #ddd;
 }
 
 body {

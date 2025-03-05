@@ -1,4 +1,3 @@
-import React from "react";
 import { apiSlice } from "../../app/api/apiSlice";
 
 export const authApiSlice = apiSlice.injectEndpoints({

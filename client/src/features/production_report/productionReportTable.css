@@ -1,0 +1,30 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 1rem;
+    text-align: left;
+  }
+  
+  thead {
+    background-color: var(--table-header-background, #444);
+    color: var(--table-header-color, #fff);
+  }
+  
+  thead th {
+    padding: 0.75rem;
+  }
+  
+  tbody tr:hover {
+    background-color: var(--table-row-hover-background, #999);
+  }
+  
+  tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--table-border-color, #666);
+  }
+  
+  tbody td:last-child {
+    border-right: none;
+  }
+  
