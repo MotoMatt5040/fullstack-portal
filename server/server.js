@@ -10,7 +10,7 @@ const verifyJWT = require("./middleware/verifyJWT");
 const cookieParser = require("cookie-parser");
 const credentials = require("./middleware/credentials");
 // const mongoose = require("mongoose");
-const connectDB = require("./config/dbConn");
+// const connectDB = require("./config/dbConn");
 // const useDB = require("./config/dbConnPromark");
 const PORT = process.env.PORT || 5000;
 
@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 
 // connectDB();
 // useDB("SELECT DISTINCT projectid , recdate FROM tblGPCPHDaily WHERE RecDate >= '2025-02-17'");
-connectDB();
+// connectDB();
 
 app.use(logger);
 
@@ -36,16 +36,17 @@ app.use(express.static(path.join(__dirname, "public")));
 
 //routes
 app.use("/", require("./routes/root"));
-app.use("/register", require("./routes/register"));
+// app.use("/register", require("./routes/register"));
 app.use("/auth", require("./routes/auth"));
 app.use("/refresh", require("./routes/refresh"));
 app.use("/logout", require("./routes/logout"));
 app.use("/reset" , require("./routes/resetPassword"));
 
 app.use(verifyJWT); //everything after this line requires a jwt
-app.use("/employees", require("./routes/api/employees"));
+// app.use("/employees", require("./routes/api/employees"));
 app.use("/users", require("./routes/api/promarkEmployees"));
 app.use("/github", require("./routes/api/github"));
+app.use("/tables", require("./routes/api/tableBuilderPlaceholderApi"))
 
 app.all("*", (req, res) => {
     res.status(404);
