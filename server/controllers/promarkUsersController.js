@@ -1,14 +1,6 @@
 const promarkUsers = require('../models/PromarkUsers');
 const bcrypt = require('bcrypt');
-
-const handleAsync = (fn) => async (req, res) => {
-    try {
-        await fn(req, res);
-    } catch (err) {
-        console.error('Database query failed:', err);
-        res.status(500).json({ message: 'Database query failed' });
-    }
-};
+const handleAsync = require('./asyncController.js');
 
 const handleGetAllUsers = handleAsync(async (req, res) => {
     const users = await promarkUsers.getAllUsers();
