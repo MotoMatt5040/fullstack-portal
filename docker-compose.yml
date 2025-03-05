@@ -36,6 +36,7 @@ services:
     volumes:
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
+      - ./caddy_logs:/var/log/caddy
     networks:
       - mern-app
     depends_on:
