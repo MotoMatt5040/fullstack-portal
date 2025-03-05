@@ -12,6 +12,7 @@ console.log("index.jsx")
 console.log('VITE_DEV_API_URL:', import.meta.env.VITE_DEV_API_URL);
 console.log('VITE_DOMAIN_NAME:', import.meta.env.VITE_DOMAIN_NAME);
 console.log('VITE_ENV:', import.meta.env.VITE_ENV);
+console.log('');
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
