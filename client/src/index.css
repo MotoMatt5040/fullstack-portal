@@ -13,11 +13,29 @@
 
 /* || GENERAL STYLES */
 
+:root {
+  --background-color: #000;
+  --text-color: #fff;
+  --link-color: whitesmoke;
+  --link-hover-color: rgba(245, 245, 245, 0.9);
+  --button-background: #fff;
+  --button-text: #000;
+}
+
+[data-theme="light"] {
+  --background-color: #fff;
+  --text-color: #000;
+  --link-color: #0000EE;
+  --link-hover-color: #551A8B;
+  --button-background: #000;
+  --button-text: #fff;
+}
+
 body {
-  font: 1.5rem 'Nunito', sans-serif;;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font: 1.5rem 'Nunito', sans-serif;
   min-height: 100vh;
-  background-color: #0F172A;
-  color: #fff;
 }
 
 input, button {
@@ -35,11 +53,20 @@ section {
 }
 
 a, a:visited {
-  color: whitesmoke;
+  color: var(--link-color);
 }
 
 a:hover, a:focus {
-  color: rgba(245, 245, 245, 0.9);
+  color: var(--link-hover-color);
+}
+
+button.theme-toggle {
+  background-color: var(--button-background);
+  color: var(--button-text);
+  border: none;
+  padding: 0.5em 1em;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 /* || LOGIN */
