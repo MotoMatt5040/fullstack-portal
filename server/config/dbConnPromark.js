@@ -13,21 +13,17 @@ const config = {
 
 let pool;
 
-const useDB = async (qry) => {
+const withDbConnection = async (queryFn) => {
     try {
         pool = await sql.connect(config);
-        console.log('Connected to the database successfully');
-        const result = await pool.request().query(qry);
-        console.log(result);
-        console.log('Connection to the database closed');
+        return await queryFn(pool);
     } catch (err) {
-        console.error('Database connection failed:', err);
+        console.error('Database query failed: ', err);
+        throw err;
     } finally {
-        if (pool) {
-            pool.close();
-        }
+        await pool?.close();
     }
 };
 
 
-module.exports = useDB;
+module.exports = withDbConnection;
