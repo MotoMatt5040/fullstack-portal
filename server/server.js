@@ -46,7 +46,7 @@ app.use(verifyJWT); //everything after this line requires a jwt
 // app.use("/employees", require("./routes/api/employees"));
 app.use("/users", require("./routes/api/promarkEmployees"));
 app.use("/github", require("./routes/api/github"));
-app.use("/tables", require("./routes/api/tableBuilderPlaceholderApi"))
+app.use("/tables", require("./routes/api/productionReports"))
 
 app.all("*", (req, res) => {
     res.status(404);
