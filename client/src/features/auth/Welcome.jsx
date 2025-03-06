@@ -11,7 +11,6 @@ const Welcome = () => {
     const token = useSelector(selectCurrentToken);
 
     const welcome = user ? `Welcome ${user}!` : 'Welcome!';
-    const tokenAbbr = `${token.slice(0, 9)}...`;
 
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 

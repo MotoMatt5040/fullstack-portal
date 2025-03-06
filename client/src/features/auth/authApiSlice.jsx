@@ -16,7 +16,13 @@ export const authApiSlice = apiSlice.injectEndpoints({
                 body: { ...email },
             }),
         }),
+        protectLink: builder.query({
+            query: () => ({
+                url: "/refresh",
+                method: "GET",
+            }),
+        })
     }),
 });
 
-export const { useLoginMutation, useResetPasswordMutation } = authApiSlice;
+export const { useLoginMutation, useResetPasswordMutation, useProtectLinkQuery } = authApiSlice;

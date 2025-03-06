@@ -1,15 +1,13 @@
-console.log('Inside tableBuilderPlaceholderApi.js');
 const express = require('express');
 const router = express.Router();
-const TableBuilderPlaceholderController = require('../../controllers/tableBuilderPlaceholderController');
+const ProductionReportController = require('../../controllers/productionReportController');
 const ROLES_LIST = require('../../config/rolesList');
 const verifyRoles = require('../../middleware/verifyRoles');
 
 // Get all tableBuilderPlaceholders
 router.route('/')
     .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
-        const { projectid, recdate } = req.query;
-        TableBuilderPlaceholderController.handleGetProductionReportData(req, res, projectid, recdate);
+        ProductionReportController.handleGetProductionReportData(req, res);
     });
 
 module.exports = router;

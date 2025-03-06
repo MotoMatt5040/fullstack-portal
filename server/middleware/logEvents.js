@@ -20,7 +20,7 @@ const logEvents = async (message, logName) => {
 }
 
 const logger = (req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress || 'Unknown IP';
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown IP';
     logEvents(`${req.method}\t${req.headers.origin || 'Unknown Origin'}\t${req.url}\t${ip}`, 'reqLog.txt');
     console.log(`${req.method} ${req.path} from ${ip}`);
     next();

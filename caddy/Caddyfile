@@ -1,3 +1,8 @@
+{
+    email matt.w@promarkresearch.com
+    storage /caddy_data
+}
+
 {$VITE_DOMAIN_NAME:invalid} {
     encode gzip
     reverse_proxy client:80
