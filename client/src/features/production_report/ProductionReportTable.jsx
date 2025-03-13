@@ -2,6 +2,15 @@ import React from 'react';
 import './productionReportTable.css';
 
 const ProductionReportTable = ({ data }) => {
+
+  const handleCellClick = (eid) => {
+    console.log('cell: ', eid);
+  };
+
+  const handleRowClick = (eid) => {
+    console.log('row: ', eid);
+  };
+
   return (
     <section>
       <table>
@@ -21,9 +30,12 @@ const ProductionReportTable = ({ data }) => {
           </tr>
         </thead>
         <tbody>
-          {data.map((project) => (
-            <tr key={project.eid}>
-              <td>{project.eid}</td>
+          {data.map((project) => ( // determine if making the whole row, or individual columns clickable is a better idea
+            <tr className="clickable-row" onClick = {() => handleRowClick(project.eid)} key={project.eid}>
+              <td onClick={() => handleCellClick(project.eid)} style={{ cursor: 'pointer', color: 'blue' }}>
+                {project.eid}
+              </td>
+              {/* <td>{project.eid}</td> */}
               <td>{project.refname}</td>
               <td>{project.recloc}</td>
               <td>{project.tenure}</td>

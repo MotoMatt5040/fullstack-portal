@@ -2,45 +2,77 @@ import React, { useState, useEffect } from 'react';
 import ProductionReportTable from './ProductionReportTable';
 import { setProjectData } from './productionReportSlice';
 import { useLazyGetProductionReportQuery } from './productionReportApiSlice';
-import { Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from "react-redux";
+import { isValidDate, isValidProjectID } from '../../utils/validators';
 
 const ProductionReport = () => {
-  const [projectid, setProjectid] = useState('12886C');
-  const [recdate, setRecdate] = useState('2024-07-31');
-  const [isSuccess, setIsSuccess] = useState(false);
+  const navigate = useNavigate(); 
+  const [searchParams] = useSearchParams();
+
+  const projectidFromUrl = searchParams.get('projectid');
+  const recdateFromUrl = searchParams.get('recdate');
 
   const dispatch = useDispatch();
+
+  const [projectid, setProjectid] = useState(projectidFromUrl || '12886C');
+  const [recdate, setRecdate] = useState(recdateFromUrl || '2024-07-31');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const projectIDRegex = /^\d{5}C?$/;
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-
   const [getProductionReport, { data, isLoading, isError, error }] = useLazyGetProductionReportQuery();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!isValidDate(recdate)) {
+        alert('Invalid Date');
+        return;
+      }
+      if (projectIDRegex.test(projectid) && dateRegex.test(recdate)) {
+        try {
+          const result = await getProductionReport({ projectid, recdate });
+  
+          if (result?.data) {
+            dispatch(setProjectData({ projectid, recdate }));
+            setIsSuccess(true);
+            navigate(`/productionreport/tables?projectid=${projectid}&recdate=${recdate}`);
+          } else {
+            setIsSuccess(false);
+          }
+        } catch (err) {
+          console.error(err);
+          setIsSuccess(false);
+        }
+      }
+    };
+  
+    fetchData(); 
+  
+  }, [projectidFromUrl, recdateFromUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try{
-      if (!projectIDRegex.test(projectid)) {
+      if (!isValidProjectID(projectid)) {
         alert('Invalid Project ID');
         return;
       } 
-      if (!dateRegex.test(recdate)) {
+      if (!isValidDate(recdate)) {
         alert('Invalid Date');
         return;
       }
-
       const result = await getProductionReport({ projectid, recdate });
+      console.log(result)
    
       dispatch(setProjectData({ projectid, recdate }));
-      if (result?.isSuccess) {
+      if (result?.data) {
+        console.log(result.data)
         setIsSuccess(true); 
-        // console.log(data);
-        // console.log("Is array: ", Array.isArray(result.data));
-        // console.log(typeof(result.data))
-        // console.log(result)
-        // console.log(data)
+        navigate(`/productionreport/tables?projectid=${projectid}&recdate=${recdate}`);
       } else {
+        console.log('failed')
         setIsSuccess(false); 
       }
     }

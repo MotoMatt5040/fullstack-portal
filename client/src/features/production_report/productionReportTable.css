@@ -28,3 +28,20 @@ table {
     border-right: none;
   }
   
+  .clickable-cell {
+    cursor: pointer;
+    color: blue;
+    text-decoration: underline;
+  }
+  
+  .clickable-cell:hover {
+    color: darkblue;
+  }
+
+  .clickable-row {
+    cursor: pointer;
+  }
+
+  .clickable-row:hover {
+    cursor: pointer;
+  }

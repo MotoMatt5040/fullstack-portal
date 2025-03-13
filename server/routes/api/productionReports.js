@@ -4,9 +4,9 @@ const ProductionReportController = require('../../controllers/productionReportCo
 const ROLES_LIST = require('../../config/rolesList');
 const verifyRoles = require('../../middleware/verifyRoles');
 
-// Get all tableBuilderPlaceholders
-router.route('/')
+router.route('/tables')
     .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+        console.log("Request received at /tables with query params:", req.query);
         ProductionReportController.handleGetProductionReportData(req, res);
     });
 
