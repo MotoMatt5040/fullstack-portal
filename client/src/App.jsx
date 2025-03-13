@@ -9,15 +9,16 @@ import Missing from './components/Missing';
 import Login from './features/auth/Login';
 import RequireAuth from './features/auth/RequireAuth';
 import RedirectIfAuthenticated from './features/auth/RedirectIfAuthenticated';
-import ResetPassword from './features/auth/ResetPassword';
-import IssueForm from './features/github/Github';
-import LiveProjectsTable from './features/live_projects/LiveProjects';
-import ProductionReport from './features/production_report/ProductionReport';
 
 // Views
 import Welcome from './views/Welcome';
 import UsersList from './views/users/UsersList';
+import ResetPassword from './features/auth/ResetPassword';
+import Missing from './components/Missing';
+import IssueForm from './views/github/Github';
 import UpdateUserRoles from './views/users/UpdateUserRoles';
+import LiveProjectsTable from './views/live_projects/LiveProjects';
+import ProductionReport from './views/production_report/ProductionReport';
 
 import ROLES from './ROLES_LIST.json';
 
