@@ -10,20 +10,20 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 250px;  /* Adjust width of the navbar */
+  width: 250px;  
   height: 100%;
   z-index: 10;
-  transform: translateX(-100%); /* Hide by default */
+  transform: translateX(-100%); 
 }
 
 .navbar.visible {
-  transform: translateX(0); /* Show when class "visible" is added */
+  transform: translateX(0); 
 }
 
 .navbar ul {
   list-style-type: none;
   padding-left: 0;
-  margin-top: 50px; /* Optional: Give some space from the top */
+  margin-top: 50px;
 }
 
 .navbar li {
@@ -50,8 +50,8 @@
   padding: 0.5rem;
   position: absolute;
   top: 1rem;
-  left: 1rem;  /* Position hamburger at top-left */
-  z-index: 11; /* Ensure the hamburger button is above the navbar */
+  left: 1rem; 
+  z-index: 11;
 }
 
 .hamburger:focus {
@@ -59,18 +59,17 @@
 }
 
 main {
-  margin-left: 0; /* Default to no space on the left */
+  margin-left: 0; 
   transition: margin-left 0.3s ease;
-  min-width: 0; /* Prevent shrinking too much */
+  min-width: 0; 
 }
 
 main.navbar-visible {
-  margin-left: 250px; /* Add left margin when the navbar is visible */
+  margin-left: 250px;
 }
 
-/* Prevent content from touching hamburger menu when collapsed */
 main:not(.navbar-visible) {
-  margin-left: 50px; /* Add a small margin to keep space between hamburger and content */
+  margin-left: 50px; 
 }
 
 
