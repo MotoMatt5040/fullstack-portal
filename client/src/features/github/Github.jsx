@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useCreateIssueMutation } from "./githubSlice";
+import { Link } from "react-router-dom";
 import "./github.css"; 
 
 const labelOptions = ["bug", "enhancement", "question", "documentation"];
@@ -90,6 +91,7 @@ const IssueForm = () => {
       <button type="submit" disabled={isLoading}>
         {isLoading ? "Creating..." : "Create Issue"}
       </button>
+      <Link to='/welcome'>Back to Welcome</Link>
 
       {error && (
         <p className="error">
