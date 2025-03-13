@@ -2,41 +2,22 @@ const sql = require('mssql');
 const withDbConnection = require('../config/dbConnPromark');
 
 const getHourlyProduction = async (projectid, location) => {
-	// for testing
-	// projid = undefined location = undefined
-	// projid = undefined location = 3
-	// projid = 1         location = undefined
-	// projid = 1         location = 3
-
 	let conditions = [];
 	let parameters = {};
 
-	// let projectidCondition = '';
-	// let locationCondition = "recloc = '99'";
-
 	if (projectid) {
-		// projectidCondition = `projectid = '${projectid}'`;
-		// locationCondition = "recloc != '99'";
 
 		conditions.push('projectid = @projectid');
 		parameters.projectid = projectid;
 	}
 
 	if (location) {
-		// locationCondition = `recloc = '${location}'`;
 		conditions.push('recloc = @location');
 		parameters.location = location;
 	} else {
 		conditions.push("recloc = '99'");
 	}
 
-	// const andClause = projectidCondition && locationCondition ? 'AND' : '';
-
-	// const activeProjectSummaryQuery = `
-	//     SELECT recloc, projectid, projname, cms, hrs, cph, al, mph
-	//     FROM tblHourlyProduction
-	//     WHERE ${projectidCondition} ${andClause} ${locationCondition}
-	// `;
 	const whereClause = `WHERE ${conditions.join(' AND ')}`;
 
 	const activeProjectSummaryQuery = `
@@ -44,7 +25,6 @@ const getHourlyProduction = async (projectid, location) => {
     FROM tblHourlyProduction
     ${whereClause}
   `;
-	// console.log(activeProjectSummaryQuery, "Projectid: ", projectid, "Location: ", location);
 
 	return withDbConnection(async (pool) => {
 		const queryRequest = pool.request();

@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logOut } from '../../features/auth/authSlice';
+const isDev = import.meta.env.VITE_ENV === 'dev';
 
 let BASE_URL;
 
@@ -21,6 +22,13 @@ const baseQuery = fetchBaseQuery({
     const token = getState().auth.token;
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
+    }
+    if (isDev) {
+      // Disable caching in development
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else {
+      // Enable caching in production
+      headers.set('Cache-Control', 'public, max-age=31536000');
     }
     return headers;
   },
