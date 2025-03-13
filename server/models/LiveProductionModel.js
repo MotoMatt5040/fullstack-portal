@@ -14,7 +14,7 @@ const getHourlyProduction = async (projectid, location) => {
 	if (location) {
 		conditions.push('recloc = @location');
 		parameters.location = location;
-	} else {
+	} else if (!projectid){
 		conditions.push("recloc = '99'");
 	}
 
@@ -50,12 +50,23 @@ const getInterviewerIDList = async () => {
 	});
 };
 
-const getLiveProjects = async (projectid, location) => {
+const getAllLiveProjects = async () => {
+	const liveProjectsQuery = `
+  SELECT DISTINCT hp.recloc, l.locationname, hp.projectid 
+  FROM tblHourlyProduction hp 
+  JOIN tblLocation l ON hp.recloc = l.locationid`;
+
+	return withDbConnection(async (pool) => {
+		const result = await pool.query(liveProjectsQuery);
+		return result.recordset;
+	});
+};
+
+const getFilteredLiveProjects = async (projectid, location) => {
 	let conditions = [];
 	let parameters = {};
 
 	if (projectid) {
-
 		conditions.push('projectid = @projectid');
 		parameters.projectid = projectid;
 	}
@@ -65,16 +76,13 @@ const getLiveProjects = async (projectid, location) => {
 		parameters.location = location;
 	}
 
-	const whereClause = `WHERE ${conditions.join(' AND ')}`;
+	const whereClause = projectid || location ? `WHERE ${conditions.join(' AND ')}` : '';
 
 	const liveProjectsQuery = `
   SELECT DISTINCT hp.recloc, l.locationname, hp.projectid 
   FROM tblHourlyProduction hp 
   JOIN tblLocation l ON hp.recloc = l.locationid 
-  ${projectid || location ? whereClause : ''}`;
-
-	console.log(liveProjectsQuery);
-	console.log('projectid: ', projectid, 'location: ', location);
+  ${whereClause}`;
 
 	return withDbConnection(async (pool) => {
 		const queryRequest = pool.request();
@@ -87,7 +95,6 @@ const getLiveProjects = async (projectid, location) => {
 		}
 
 		const result = await queryRequest.query(liveProjectsQuery);
-    console.log(result)
 		return result.recordset;
 	});
 };
@@ -102,4 +109,4 @@ const getLiveProjects = async (projectid, location) => {
 //   });
 // };
 
-module.exports = { getHourlyProduction, getInterviewerIDList, getLiveProjects };
+module.exports = { getHourlyProduction, getInterviewerIDList, getAllLiveProjects, getFilteredLiveProjects };

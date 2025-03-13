@@ -1,56 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import LiveProjectsTable from './LiveProjectsTable';
-import { setProjectData } from './liveProjectsSlice';
+import LiveProjectsTable from './components/LiveProjectsTable';
 import {
 	useGetLiveProjectDataQuery,
-	useGetLiveProjectsQuery,
+	useGetAllLiveProjectsQuery,
+	useGetFilteredLiveProjectsQuery,
 } from './liveProjectsApiSlice';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { isValidProjectID } from '../../utils/validators';
+import LiveProjectsFilters from './components/LiveProjectsFilters';
 
 const LiveProjects = () => {
+	// This helper is used to mitigate having to repeat the same logic for each query
+	// Update the helper if you need to add more queries
+	const queryHelper = (queryHook, params) => {
+		const { data, refetch } = queryHook(params);
+		return { data, refetch };
+	};
 	const [searchParams] = useSearchParams();
 
 	const projectidFromUrl = searchParams.get('projectid');
 	const locationFromUrl = searchParams.get('location');
 
-	const dispatch = useDispatch();
-
 	const [projectid, setProjectid] = useState(projectidFromUrl || '');
 	const [location, setLocation] = useState(locationFromUrl || '');
-	const [isSuccess, setIsSuccess] = useState(false);
 
 	const [locations, setLocations] = useState([]);
 	const [projectids, setProjectids] = useState([]);
 
-	const projectIDRegex = /^\d{5}C?$/;
-
-	const {
-		data: liveProjectData,
-		isLoading: isProjectDataLoading,
-		isError: isProjectDataError,
-		error: projectDataError,
-		refetch: refetchProjectData,
-	} = useGetLiveProjectDataQuery({ projectid, location });
-
-	const {
-		data: liveProjects,
-		isLoading: isProjectsLoading,
-		isError: isProjectsError,
-		error: projectssError,
-		refetch: refetchProjects,
-	} = useGetLiveProjectsQuery({ projectid, location });
+	// These queries use the helper function to reduce the amount of code needed
+	// to be written for each query
+	const liveProjectData = queryHelper(useGetLiveProjectDataQuery, {
+		projectid,
+		location,
+	});
+	const filteredLiveProjects = queryHelper(useGetFilteredLiveProjectsQuery, {
+		projectid,
+		location,
+	});
+	const allLiveProjects = queryHelper(useGetAllLiveProjectsQuery);
 
 	useEffect(() => {
-		if (liveProjects) {
-			const locationMap = liveProjects.reduce((acc, project) => {
+		if (filteredLiveProjects.data) {
+			const locationMap = allLiveProjects.data.reduce((acc, project) => {
 				acc[project.recloc] = project.locationname;
 				return acc;
 			}, {});
 
 			setLocations(locationMap);
-			const distinctProjectIds = liveProjects.reduce((acc, project) => {
+			const distinctProjectIds = allLiveProjects.data.reduce((acc, project) => {
 				if (!acc.includes(project.projectid)) {
 					acc.push(project.projectid);
 				}
@@ -58,46 +54,31 @@ const LiveProjects = () => {
 			}, []);
 			setProjectids(distinctProjectIds);
 		}
-	}, [liveProjects]);
+	}, [filteredLiveProjects.data]);
 
 	useEffect(() => {
-		refetchProjects({ projectid, location });
-    refetchProjectData({ projectid, location });
+		allLiveProjects.refetch();
+		filteredLiveProjects.refetch();
+		liveProjectData.refetch();
 	}, [projectid, location]);
 
 	let content = (
 		<section>
-			{/* <form onSubmit={handleSubmit}> */}
-			<select value={projectid} onChange={(e) => setProjectid(e.target.value)}>
-				<option value=''>Select a Project ID</option>
-				{projectids.map((id) => (
-					<option key={id} value={id}>
-						{id}
-					</option>
-				))}
-			</select>
-			<select value={location} onChange={(e) => setLocation(e.target.value)}>
-				<option value=''>Select a location</option>
-				{Object.entries(locations).map(([recloc, locationname]) => (
-					<option key={recloc} value={recloc}>
-						{locationname}
-					</option>
-				))}
-			</select>
-			{/* <button type='submit'>Fetch Data</button> */}
-			{/* </form> */}
-			<button
-				type='button'
-				onClick={() => {
-					setLocation('');
-					setProjectid('');
-				}}
-			>
-				Clear Filters
-			</button>
+			<LiveProjectsFilters
+				projectid={projectid}
+				setProjectid={setProjectid}
+				location={location}
+				setLocation={setLocation}
+				projectids={projectids}
+				locations={locations}
+				allLiveProjects={allLiveProjects}
+				filteredLiveProjects={filteredLiveProjects}
+			/>
 			<br />
 			<Link to='/welcome'>Back to Welcome</Link>
-			{liveProjectData && <LiveProjectsTable data={liveProjectData} />}
+			{liveProjectData.data && (
+				<LiveProjectsTable data={liveProjectData.data} />
+			)}
 		</section>
 	);
 	return content;

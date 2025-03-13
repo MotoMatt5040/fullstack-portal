@@ -1,5 +1,5 @@
 import React from 'react';
-import './liveProjectsTable.css';
+import '../liveProjectsTable.css';
 
 const LiveProjectsDataTable = ({ data }) => {
 	const handleCellClick = (eid) => {
@@ -26,8 +26,8 @@ const LiveProjectsDataTable = ({ data }) => {
 					</tr>
 				</thead>
 				<tbody>
-					{data.map((project) => (
-							<tr key={project.projectid}>
+					{data.map((project, index) => (
+							<tr key={index}>
 								<td>{project.recloc === 99 ? "All" : project.recloc}</td>
 								<td>{project.projectid}</td>
 								<td>{project.projname}</td>
