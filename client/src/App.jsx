@@ -1,11 +1,17 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+// Compnents
 import Layout from './components/Layout';
 import Public from './components/Public';
+import Missing from './components/Missing';
+
+// Features
 import Login from './features/auth/Login';
-import Welcome from './features/auth/Welcome';
 import RequireAuth from './features/auth/RequireAuth';
 import RedirectIfAuthenticated from './features/auth/RedirectIfAuthenticated';
+
+// Views
+import Welcome from './views/Welcome';
 import UsersList from './views/users/UsersList';
 import ResetPassword from './features/auth/ResetPassword';
 import Missing from './components/Missing';
@@ -13,6 +19,7 @@ import IssueForm from './views/github/Github';
 import UpdateUserRoles from './views/users/UpdateUserRoles';
 import LiveProjectsTable from './views/live_projects/LiveProjects';
 import ProductionReport from './views/production_report/ProductionReport';
+
 import ROLES from './ROLES_LIST.json';
 
 function App() {
