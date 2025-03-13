@@ -1,11 +1,17 @@
-const express = require('epress')
+const express = require('express')
 const router = express.Router()
 const LiveProductionController = require('../../controllers/liveProductionController')
 const ROLES_LIST = require('../../config/rolesList')
 const verifyRoles = require('../../middleware/verifyRoles')
 
-router.route('/')
+router.route('/get_live_project_data')
     .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
-        const { projectid, location } = req.query
-        LiveProductionController.handleGetHourlyProduction(req, res, projectid, location)
+        LiveProductionController.handleGetHourlyProduction(req, res)
     })
+
+router.route('/get_live_projects')
+    .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+        LiveProductionController.handleGetLiveProjects(req, res)
+    })
+
+module.exports = router

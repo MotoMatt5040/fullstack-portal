@@ -2,44 +2,124 @@ const sql = require('mssql');
 const withDbConnection = require('../config/dbConnPromark');
 
 const getHourlyProduction = async (projectid, location) => {
-    // for testing
-    // location = undefined projid = undefined PASSED
-    // location = 3         projid = undefined PASSED
-    // location = undefined projid = 1         PASSED
-    // location = 3         projid = 1         PASSED
+	// for testing
+	// projid = undefined location = undefined
+	// projid = undefined location = 3
+	// projid = 1         location = undefined
+	// projid = 1         location = 3
 
-    let projectidCondition = "";
-    let locationCondition = "recloc = '99'";
+	let conditions = [];
+	let parameters = {};
 
-    if (projectid) {
-      projectidCondition = `projectid = '${projectid}'`;
-      locationCondition = "recloc != '99'";
-    }
-    
-    if (location) {
-      locationCondition = `recloc = '${location}'`;
-    }
+	// let projectidCondition = '';
+	// let locationCondition = "recloc = '99'";
 
-    const andClause = projectidCondition && locationCondition ? 'AND' : '';
+	if (projectid) {
+		// projectidCondition = `projectid = '${projectid}'`;
+		// locationCondition = "recloc != '99'";
 
-    let activeProjectSummaryQuery = `
-        SELECT recloc, projectid, projname, cms, hrs, cph, al, mph
-        FROM tblHourlyProduction
-        WHERE ${projectidCondition} ${andClause} ${locationCondition}
-    `;
+		conditions.push('projectid = @projectid');
+		parameters.projectid = projectid;
+	}
 
-  return withDbConnection(async (pool) => {
-    const result = await pool.request().query(activeProjectSummaryQuery);
-    return result.recordset;
-  });
+	if (location) {
+		// locationCondition = `recloc = '${location}'`;
+		conditions.push('recloc = @location');
+		parameters.location = location;
+	} else {
+		conditions.push("recloc = '99'");
+	}
+
+	// const andClause = projectidCondition && locationCondition ? 'AND' : '';
+
+	// const activeProjectSummaryQuery = `
+	//     SELECT recloc, projectid, projname, cms, hrs, cph, al, mph
+	//     FROM tblHourlyProduction
+	//     WHERE ${projectidCondition} ${andClause} ${locationCondition}
+	// `;
+	const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+	const activeProjectSummaryQuery = `
+    SELECT recloc, projectid, projname, cms, hrs, cph, al, mph
+    FROM tblHourlyProduction
+    ${whereClause}
+  `;
+	// console.log(activeProjectSummaryQuery, "Projectid: ", projectid, "Location: ", location);
+
+	return withDbConnection(async (pool) => {
+		const queryRequest = pool.request();
+
+		if (parameters.projectid) {
+			queryRequest.input('projectid', parameters.projectid);
+		}
+		if (parameters.location) {
+			queryRequest.input('location', parameters.location);
+		}
+
+		const result = await queryRequest.query(activeProjectSummaryQuery);
+		return result.recordset;
+	});
 };
 
-const getHourlyProductionDetail = async (projectid, recdate) => {
-  return withDbConnection(async (pool) => {
-    const result = await pool
-      .request()
-      .query('SELECT * FROM tblHourlyProductionDetail');
-
-    return result.recordset;
-  });
+const getInterviewerIDList = async () => {
+	const interviewerListQuery =
+		'SELECT CONCAT(fname + lname) as fullname, empid, voxcoid from tblEmployees';
+	return withDBConnection(async (pool) => {
+		const result = await pool.request().query(interviewerListQuery);
+		return result.recordset;
+	});
 };
+
+const getLiveProjects = async (projectid, location) => {
+	let conditions = [];
+	let parameters = {};
+
+	if (projectid) {
+
+		conditions.push('projectid = @projectid');
+		parameters.projectid = projectid;
+	}
+
+	if (location) {
+		conditions.push('recloc = @location');
+		parameters.location = location;
+	}
+
+	const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+	const liveProjectsQuery = `
+  SELECT DISTINCT hp.recloc, l.locationname, hp.projectid 
+  FROM tblHourlyProduction hp 
+  JOIN tblLocation l ON hp.recloc = l.locationid 
+  ${projectid || location ? whereClause : ''}`;
+
+	console.log(liveProjectsQuery);
+	console.log('projectid: ', projectid, 'location: ', location);
+
+	return withDbConnection(async (pool) => {
+		const queryRequest = pool.request();
+
+		if (parameters.projectid) {
+			queryRequest.input('projectid', parameters.projectid);
+		}
+		if (parameters.location) {
+			queryRequest.input('location', parameters.location);
+		}
+
+		const result = await queryRequest.query(liveProjectsQuery);
+    console.log(result)
+		return result.recordset;
+	});
+};
+
+// const getHourlyProductionDetail = async (projectid, recdate) => {
+//   return withDbConnection(async (pool) => {
+//     const result = await pool
+//       .request()
+//       .query('SELECT * FROM tblHourlyProductionDetail');
+
+//     return result.recordset;
+//   });
+// };
+
+module.exports = { getHourlyProduction, getInterviewerIDList, getLiveProjects };

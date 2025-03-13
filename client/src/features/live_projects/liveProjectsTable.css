@@ -1,29 +1,27 @@
-table {
+select {
   width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
+  padding: 0.75rem;
   font-size: 1rem;
+  border: 1px solid var(--table-border-color, #666);
+  border-radius: 4px;
+  background-color: var(--select-background, #fff);
+  color: var(--select-text-color, #333);
   text-align: left;
+  appearance: none;
+  cursor: pointer;
 }
 
-thead {
-  background-color: var(--table-header-background, #444);
-  color: var(--table-header-color, #fff);
+select:focus {
+  border-color: var(--table-header-background, #444);
+  outline: none;
 }
 
-thead th {
+option {
   padding: 0.75rem;
+  background-color: var(--select-option-background, #fff);
+  color: var(--select-option-text-color, #333);
 }
 
-tbody tr:hover {
-  background-color: var(--table-row-hover-background, #999);
-}
-
-tbody td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--table-border-color, #666);
-}
-
-tbody td:last-child {
-  border-right: none;
+option:hover {
+  background-color: var(--select-option-hover-background, #f0f0f0);
 }

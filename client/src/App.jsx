@@ -37,8 +37,10 @@ function App() {
         >
           <Route path='welcome' element={<Welcome />} />
           <Route path='github' element={<IssueForm />} />
-          <Route path='tables' element={<LiveProjectsTable />} />
-          <Route path='productionreport' element={<ProductionReport />} />
+          <Route path='liveprojects' element={<LiveProjectsTable />} />
+          <Route path='productionreport' element={<ProductionReport />}>
+            <Route path='tables' element={<ProductionReport />} />
+          </Route>
         </Route>
 
         <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
