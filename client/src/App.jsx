@@ -6,13 +6,13 @@ import Login from './features/auth/Login';
 import Welcome from './features/auth/Welcome';
 import RequireAuth from './features/auth/RequireAuth';
 import RedirectIfAuthenticated from './features/auth/RedirectIfAuthenticated';
-import UsersList from './features/users/UsersList';
+import UsersList from './views/users/UsersList';
 import ResetPassword from './features/auth/ResetPassword';
 import Missing from './components/Missing';
-import IssueForm from './features/github/Github';
-import UpdateUserRoles from './features/users/UpdateUserRoles';
-import LiveProjectsTable from './features/live_projects/LiveProjects';
-import ProductionReport from './features/production_report/ProductionReport';
+import IssueForm from './views/github/Github';
+import UpdateUserRoles from './views/users/UpdateUserRoles';
+import LiveProjectsTable from './views/live_projects/LiveProjects';
+import ProductionReport from './views/production_report/ProductionReport';
 import ROLES from './ROLES_LIST.json';
 
 function App() {
