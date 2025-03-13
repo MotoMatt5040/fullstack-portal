@@ -9,9 +9,14 @@ router.route('/get_live_project_data')
         LiveProductionController.handleGetHourlyProduction(req, res)
     })
 
-router.route('/get_live_projects')
+router.route('/get_all_live_projects')
     .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
-        LiveProductionController.handleGetLiveProjects(req, res)
+        LiveProductionController.handleGetAllLiveProjects(req, res)
+    })
+
+router.route('/get_filtered_live_projects')
+    .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+        LiveProductionController.handleGetFilteredLiveProjects(req, res)
     })
 
 module.exports = router

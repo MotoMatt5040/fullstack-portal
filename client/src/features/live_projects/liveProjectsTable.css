@@ -25,3 +25,130 @@ option {
 option:hover {
   background-color: var(--select-option-hover-background, #f0f0f0);
 }
+
+button.disabled {
+  background-color: #d3d3d3;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button.disabled:hover {
+  cursor: not-allowed; /
+}
+
+.projectid-button-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.projectid-button-container button {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--table-border-color, #666);
+  border-radius: 20px; /* Makes the button rounded */
+  background-color: var(--select-background, #fff);
+  color: var(--select-text-color, #333);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.projectid-button-container button:hover {
+  background-color: var(--select-option-hover-background, #f0f0f0);
+}
+
+.projectid-button-container button:focus {
+  border-color: var(--table-header-background, #444);
+  outline: none;
+}
+
+.projectid-button-container button.selected {
+  background-color: var(--table-header-background, #444);
+  color: white;
+}
+
+.location-button-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.location-button-container button {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--table-border-color, #666);
+  border-radius: 20px; /* Rounded corners */
+  background-color: var(--select-background, #fff);
+  color: var(--select-text-color, #333);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.location-button-container button:hover {
+  background-color: var(--select-option-hover-background, #f0f0f0);
+}
+
+.location-button-container button:focus {
+  border-color: var(--table-header-background, #444);
+  outline: none;
+}
+
+.location-button-container button.selected {
+  background-color: var(--table-header-background, #444);
+  color: white;
+}
+
+button.clear-filters {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--table-border-color, #666);
+  border-radius: 20px; /* Rounded corners */
+  background-color: var(--select-background, #fff);
+  color: var(--select-text-color, #333);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button.clear-filters:hover {
+  background-color: var(--select-option-hover-background, #f0f0f0);
+}
+
+button.clear-filters:focus {
+  border-color: var(--table-header-background, #444);
+  outline: none;
+}
+
+button.clear-filters.selected {
+  background-color: var(--table-header-background, #444);
+  color: white;
+}
+
+button.clear-filters.disabled {
+  background-color: #d3d3d3;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button.clear-filters.disabled:hover {
+  cursor: not-allowed;
+}
+
+.projectid-button-container,
+.location-button-container {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+  flex-wrap: wrap;
+}
+
+.projectid-button-container,
+.location-button-container,
+.clear-filters-container {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+  flex-wrap: wrap;
+}
+
+.projectid-button-container + .location-button-container,
+.location-button-container + .clear-filters-container {
+  margin-top: 10px; /* Adds space between button containers */
+}
