@@ -39,7 +39,7 @@ const LiveProjects = () => {
 	const allLiveProjects = queryHelper(useGetAllLiveProjectsQuery);
 
 	useEffect(() => {
-		if (filteredLiveProjects.data) {
+		if (filteredLiveProjects.data && allLiveProjects.data) {
 			const locationMap = allLiveProjects.data.reduce((acc, project) => {
 				acc[project.recloc] = project.locationname;
 				return acc;
