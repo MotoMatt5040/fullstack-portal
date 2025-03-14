@@ -11,10 +11,6 @@ const Welcome = () => {
 
     const welcome = user ? `Welcome ${user}!` : 'Welcome!';
 
-   
-
-    
-
     let roles = [];
     if (token) {
         const decodedToken = jwtDecode(token);
