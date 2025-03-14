@@ -1,5 +1,5 @@
 import React from "react";
-import { apiSlice } from "../../app/api/apiSlice"
+import { apiSlice } from "../app/api/apiSlice"
 
 export const usersApiSlice = apiSlice.injectEndpoints({
     endpoints: builder => ({
