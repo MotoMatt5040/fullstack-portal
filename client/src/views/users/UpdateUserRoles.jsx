@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { useAddUserRolesMutation, useRemoveUserRolesMutation } from '../../features/users/usersApiSlice'; // assuming you have both mutation hooks
+import { useAddUserRolesMutation, useRemoveUserRolesMutation } from '../../features/usersApiSlice';
 
 const UpdateUserRoles = () => {
   const [email, setEmail] = useState('');
