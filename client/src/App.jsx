@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 // Compnents
 import Layout from './components/Layout';
 import Public from './components/Public';
-import Missing from './components/Missing';
 
 // Features
 import Login from './features/auth/Login';
@@ -14,7 +13,7 @@ import RedirectIfAuthenticated from './features/auth/RedirectIfAuthenticated';
 import Welcome from './views/Welcome';
 import UsersList from './views/users/UsersList';
 import ResetPassword from './features/auth/ResetPassword';
-import Missing from './components/Missing';
+import Missing from './views/Missing';
 import IssueForm from './views/github/Github';
 import UpdateUserRoles from './views/users/UpdateUserRoles';
 import LiveProjectsTable from './views/live_projects/LiveProjects';
