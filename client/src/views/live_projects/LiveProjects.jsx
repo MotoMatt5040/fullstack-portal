@@ -15,6 +15,7 @@ const LiveProjects = () => {
 		const { data, refetch } = queryHook(params);
 		return { data, refetch };
 	};
+	
 	const [searchParams] = useSearchParams();
 
 	const projectidFromUrl = searchParams.get('projectid');
@@ -32,10 +33,12 @@ const LiveProjects = () => {
 		projectid,
 		location,
 	});
+
 	const filteredLiveProjects = queryHelper(useGetFilteredLiveProjectsQuery, {
 		projectid,
 		location,
 	});
+
 	const allLiveProjects = queryHelper(useGetAllLiveProjectsQuery);
 
 	useEffect(() => {
