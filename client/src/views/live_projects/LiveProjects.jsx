@@ -7,6 +7,8 @@ import {
 } from './liveProjectsApiSlice';
 import { useSearchParams, Link } from 'react-router-dom';
 import LiveProjectsFilters from './components/LiveProjectsFilters';
+import LiveProjectsSummaryTable from './components/LiveProjectsSummaryTable';
+import PieChart from '../../components/PieChart';
 
 const LiveProjects = () => {
 	// This helper is used to mitigate having to repeat the same logic for each query
@@ -15,6 +17,7 @@ const LiveProjects = () => {
 		const { data, refetch } = queryHook(params);
 		return { data, refetch };
 	};
+
 	const [searchParams] = useSearchParams();
 
 	const projectidFromUrl = searchParams.get('projectid');
@@ -26,16 +29,21 @@ const LiveProjects = () => {
 	const [locations, setLocations] = useState([]);
 	const [projectids, setProjectids] = useState([]);
 
+	const [summaryData, setSummaryData] = useState([]);
+	const [detailData, setDetailData] = useState([]);
+
 	// These queries use the helper function to reduce the amount of code needed
 	// to be written for each query
 	const liveProjectData = queryHelper(useGetLiveProjectDataQuery, {
 		projectid,
 		location,
 	});
+
 	const filteredLiveProjects = queryHelper(useGetFilteredLiveProjectsQuery, {
 		projectid,
 		location,
 	});
+
 	const allLiveProjects = queryHelper(useGetAllLiveProjectsQuery);
 
 	useEffect(() => {
@@ -60,7 +68,26 @@ const LiveProjects = () => {
 		allLiveProjects.refetch();
 		filteredLiveProjects.refetch();
 		liveProjectData.refetch();
+		if (liveProjectData.data) {
+			const filteredSummaryData = liveProjectData.data.filter(
+				(project) => project.recloc === 99
+			);
+			// console.log(filteredSummaryData)
+			setSummaryData(filteredSummaryData);
+
+			const filteredDetailData = liveProjectData.data.filter(
+				(project) => project.recloc !== 99
+			);
+			setDetailData(filteredDetailData);
+		}
 	}, [projectid, location]);
+
+	useEffect(() => {
+		summaryData.map((d) => {
+			console.log(d);
+			
+		});
+	}, [summaryData])
 
 	let content = (
 		<section>
@@ -76,8 +103,11 @@ const LiveProjects = () => {
 			/>
 			<br />
 			<Link to='/welcome'>Back to Welcome</Link>
-			{liveProjectData.data && (
-				<LiveProjectsTable data={liveProjectData.data} />
+			{summaryData && (
+				<LiveProjectsSummaryTable data={summaryData} />
+			)}
+			{detailData && (
+				<LiveProjectsTable data={detailData} />
 			)}
 		</section>
 	);

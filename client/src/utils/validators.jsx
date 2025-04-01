@@ -8,7 +8,7 @@ export const isValidDate = (dateString) => {
   return !isNaN(date.getTime());  
 };
 
-export const isValidProjectID = (projectID) => {
+export const isValidProjectId = (projectId) => {
   const regex = /^\d{5}C?$/;
-  return regex.test(projectID);
+  return regex.test(projectId);
 }
