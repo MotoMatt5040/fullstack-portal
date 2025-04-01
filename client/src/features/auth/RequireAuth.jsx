@@ -21,7 +21,6 @@ const RequireAuth = ({ allowedRoles }) => {
           setRoles(decoded?.UserInfo?.roles || []);
           const expTimestamp = decoded.exp;
           const currentTimestamp = Math.floor(Date.now() / 1000);
-          console.log(currentTimestamp - expTimestamp);
           if (currentTimestamp > expTimestamp) {
             // Attempt to refresh the token
             const response = await refetch();

@@ -9,16 +9,11 @@ if (import.meta.env.VITE_ENV === 'dev') {
 } else {
   BASE_URL = `https://api.${import.meta.env.VITE_DOMAIN_NAME}`;
 }
-console.log('apiSlice.jsx');
-console.log('BASE_URL:', BASE_URL);
-console.log(import.meta.env.VITE_ENV);
-console.log('');
 
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
-    console.log(BASE_URL);
     const token = getState().auth.token;
     if (token) {
       headers.set('authorization', `Bearer ${token}`);

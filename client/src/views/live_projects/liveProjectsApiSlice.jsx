@@ -25,7 +25,6 @@ export const liveProjectsApiSlice = apiSlice.injectEndpoints({
 
 export const {
 	useGetLiveProjectDataQuery,
-	useGetLiveProjectsQuery,
 	useGetAllLiveProjectsQuery,
 	useGetFilteredLiveProjectsQuery,
 } = liveProjectsApiSlice;

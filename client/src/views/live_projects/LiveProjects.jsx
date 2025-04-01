@@ -8,6 +8,7 @@ import {
 import { useSearchParams, Link } from 'react-router-dom';
 import LiveProjectsFilters from './components/LiveProjectsFilters';
 import LiveProjectsSummaryTable from './components/LiveProjectsSummaryTable';
+import PieChart from '../../components/PieChart';
 
 const LiveProjects = () => {
 	// This helper is used to mitigate having to repeat the same logic for each query
@@ -63,36 +64,30 @@ const LiveProjects = () => {
 		}
 	}, [filteredLiveProjects.data]);
 
-	// useEffect(() => {
-	// 	// console.log(allLiveProjects.data)
-
-	// 	const filteredSummaryData = liveProjectData.data.filter(
-	// 		(project) => project.recloc === 99
-	// 	);
-	// 	// console.log(filteredSummaryData)
-	// 	setSummaryData(filteredSummaryData);
-
-	// 	const filteredDetailData = liveProjectData.data.filter(
-	// 		(project) => project.recloc !== 99
-	// 	);
-	// 	setDetailData(filteredDetailData);
-	// }, [liveProjectData]);
-
 	useEffect(() => {
 		allLiveProjects.refetch();
 		filteredLiveProjects.refetch();
 		liveProjectData.refetch();
-		const filteredSummaryData = liveProjectData.data.filter(
-			(project) => project.recloc === 99
-		);
-		// console.log(filteredSummaryData)
-		setSummaryData(filteredSummaryData);
+		if (liveProjectData.data) {
+			const filteredSummaryData = liveProjectData.data.filter(
+				(project) => project.recloc === 99
+			);
+			// console.log(filteredSummaryData)
+			setSummaryData(filteredSummaryData);
 
-		const filteredDetailData = liveProjectData.data.filter(
-			(project) => project.recloc !== 99
-		);
-		setDetailData(filteredDetailData);
+			const filteredDetailData = liveProjectData.data.filter(
+				(project) => project.recloc !== 99
+			);
+			setDetailData(filteredDetailData);
+		}
 	}, [projectid, location]);
+
+	useEffect(() => {
+		summaryData.map((d) => {
+			console.log(d);
+			
+		});
+	}, [summaryData])
 
 	let content = (
 		<section>
