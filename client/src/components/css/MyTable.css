@@ -1,0 +1,96 @@
+.MyTable {
+  width: auto; 
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.MyTable thead {
+  background-color: var(--table-header-background, #444);
+  color: var(--table-header-color, #fff);
+}
+
+.MyTable thead th {
+  padding: 0.75rem;
+  white-space: nowrap; 
+}
+
+  
+  .MyTable tbody tr:hover {
+    background-color: var(--table-row-hover-background, #999);
+  }
+  
+  .MyTable tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--table-border-color, #666);
+    white-space: nowrap; 
+  }
+  
+  .MyTable tbody td:last-child {
+    border-right: none;
+  }
+  
+  .clickable-cell {
+    cursor: pointer;
+    color: blue;
+    text-decoration: underline;
+  }
+  
+  .clickable-cell:hover {
+    color: darkblue;
+  }
+
+  .clickable-row {
+    cursor: pointer;
+  }
+
+  .clickable-row:hover {
+    cursor: pointer;
+  }
+
+  /* Input container */
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Label styling */
+.input-group label {
+  width: 120px;
+}
+
+/* Input styling */
+.cph-group input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  max-width: 150px;
+}
+
+.all-projects-toggle-button {
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  background-color: var(--button-background);
+  color: var(--button-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.all-projects-toggle-button.active {
+  background-color: var(--active-button-background);
+  color: var(--text-color);
+}
+
+.multi-select-container .production-multi-select {
+  max-width: 25vw;
+}
+
+.multi-select-container .production-multi-select .css-1nmdiq5-menu {
+  background-color: var(--background-multi-select);
+}
+

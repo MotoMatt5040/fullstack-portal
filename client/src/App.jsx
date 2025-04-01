@@ -26,7 +26,14 @@ function App() {
     <Routes>
       <Route path='/' element={<Layout />}>
         {/* public routes */}
-        <Route index element={<Public />} />
+        <Route 
+          index 
+          element={
+            <RedirectIfAuthenticated>
+              <Public />
+            </RedirectIfAuthenticated>
+          } 
+        />
         <Route
           path='login'
           element={

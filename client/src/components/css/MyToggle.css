@@ -1,0 +1,14 @@
+.toggle-button {
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  background-color: var(--button-background);
+  color: var(--button-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.toggle-button.active {
+  background-color: var(--active-button-background);
+  color: var(--text-color);
+}

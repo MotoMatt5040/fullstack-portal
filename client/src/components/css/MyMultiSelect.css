@@ -1,0 +1,11 @@
+.multi-select-container .multi-select {
+  max-width: 25vw;
+}
+
+.multi-select-container .multi-select .css-1nmdiq5-menu {
+  background-color: var(--background-multi-select);
+}
+
+.multi-select-container .multi-select .css-d7l1ni-option {
+  background-color: var(--background-multi-select-hover);
+}

@@ -26,10 +26,20 @@
   --table-border-color: #666;
   --label-text-color: #e0e0e0;
   
-  --input-background: #333; /* Dark background for inputs in dark mode */
-  --input-focus-background: #555; /* Slightly lighter on focus */
+  --input-background: #333; 
+  --input-focus-background: #555; 
+  --field-background: var(--input-background);
+  --highlight-background: #f0f0f0; 
+  --highlight-foreground: #000; 
+  --focus-ring-color: #007bff;
+  --background-popover: #333;
+  --background-popover-header: #222;
+  --active-button-background: #007bff;
+  --background-multi-select: #333;
+  --background-multi-select-hover: #444;
 }
 
+/* Light Theme Variables */
 [data-theme="light"] {
   --background-color: #fff;
   --text-color: #000;
@@ -43,8 +53,17 @@
   --table-border-color: #ddd;
   --label-text-color: #000;
   
-  --input-background: #fff; /* Light background for inputs in light mode */
-  --input-focus-background: #f5f5f5; /* Light background on focus */
+  --input-background: #fff;
+  --input-focus-background: #f5f5f5;
+  --field-background: var(--input-background); 
+  --highlight-background: #f0f0f0;
+  --highlight-foreground: #000; 
+  --focus-ring-color: #007bff; 
+  --background-popover: #fff;
+  --background-popover-header: #f0f0f0;
+  --active-button-background: #007bff;
+  --background-multi-select: #fff;
+  --background-multi-select-hover: #f0f0f0;
 }
 
 body {
