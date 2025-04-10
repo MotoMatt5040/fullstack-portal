@@ -14,8 +14,6 @@ const useProjectReportLogic = () => {
 	const [timestamp, setTimestamp] = useState(Date.now());
 	const [projectCount, setProjectCount] = useState(0);
 	const [isRefetching, setIsRefetching] = useState(false);
-	const [landLineThresholds, setLandLineThresholds] = useState({ MPH: 22, CPH: 1 });
-	const [cellThresholds, setCellThresholds] = useState({ MPH: 18, CPH: 1 });
 	const [chartData, setChartData] = useState([
 		{ field: 'ON-CPH', value: 0 },
 		{ field: 'ON-VAR', value: 0 },
@@ -163,7 +161,11 @@ const useProjectReportLogic = () => {
 	const fetchData = async (refetch, props) => {
 		try {
 			const result = await refetch(props);
-			if (result?.error?.status === 204) {
+			if (result?.error?.status === 499) {
+				return;
+			}
+			
+			if (!result?.data) {
 				setIsSuccess(false);
 				resetVariables();
 			}
@@ -174,7 +176,7 @@ const useProjectReportLogic = () => {
 				setIsSuccess(false);
 			}
 		} catch (err) {
-			console.error(err);
+			// console.error(err);
 			setIsSuccess(false);
 		}
 	};

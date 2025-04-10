@@ -53,6 +53,15 @@ const handleGetSummaryReportData = handleAsync(async (req, res, isLive) => {
 		? await SummaryReports.getLiveInterviewerData()
 		: await SummaryReports.getHistoricSummaryReportInterviewerData(startDate, endDate);
 
+	if (
+		data === 499 
+		|| interviewerData === 499
+		|| !data 
+		|| !interviewerData
+	) return res.status(499).json({ msg: 'Server canceled request' });
+
+	// if (!data || !interviewerData) return res.status(499).json({ msg: 'Request canceled by server' });
+
 	if (data.length === 0 || interviewerData.length === 0) {
 		return res.status(204).json({ msg: 'No data found' });
 	}

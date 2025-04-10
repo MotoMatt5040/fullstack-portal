@@ -44,7 +44,7 @@ const getLiveInterviewerData = async () => {
 		ON naam.eid = empList.eid
 	ORDER BY hpd.cms DESC;`;
 
-	return withDbConnection(
+	const res = withDbConnection(
 		async (pool) => {
 			const result = await pool.query(qry);
 			return result.recordset;
@@ -52,6 +52,7 @@ const getLiveInterviewerData = async () => {
 		(attempts = 5),
 		(fnName = 'getLiveInterviewerData')
 	);
+	return res
 };
 
 const getHistoricSummaryReportInterviewerData = async (startDate, endDate) => {

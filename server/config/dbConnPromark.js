@@ -27,25 +27,56 @@ const poolPromise = new sql.ConnectionPool(config)
 		process.exit(1);
 	});
 
-const withDbConnection = async (queryFn, attempts = 5, fnName = 'anonyumous') => {
-    const pool = await poolPromise;
-	try {
-		const res = await queryFn(pool);
-        // console.log(res)
-
-		if (Array.isArray(res) && res.length === 0 && attempts > 0) { // Retry if no results and attempts left, the default is 5
-			console.warn(
-				`Query returned no results. Retrying... (${6 - attempts} of 5) - ${fnName}`
-			);
-			await new Promise((resolve) => setTimeout(resolve, 100));  // Wait 100ms before retrying
-			return withDbConnection(queryFn, attempts - 1, fnName);
+	let currentRequest = null;
+	let currentRequestVersion = 0;
+	
+	const withDbConnection = async (
+		queryFn,
+		attempts = 5,
+		fnName = 'anonymous'
+	) => {
+		const pool = await poolPromise;
+	
+		const controller = new AbortController();
+		const signal = controller.signal;
+		const requestVersion = ++currentRequestVersion;
+	
+		if (currentRequest) {
+			// console.log(`Cancelling previous request for ${fnName}...`);
+			currentRequest.abort();
 		}
+	
+		currentRequest = controller;
+	
+		try {
+			const res = await queryFn(pool, signal);
+	
+			if (requestVersion !== currentRequestVersion) {
+				// console.log(`Response for ${fnName} is outdated, ignoring...`);
+				return; 
+			}
+	
+			if (!res || (Array.isArray(res) && res.length === 0 && attempts > 0)) {
+				// console.warn(`Query returned no results. Retrying... (${6 - attempts} of 5) - ${fnName}`);
+				
+				await new Promise((resolve) => setTimeout(resolve, 100));  
+	
+				if (signal.aborted) {
+					// console.log(`Request for ${fnName} was canceled, not retrying.`);
+					return 499; 
+				}
+				return withDbConnection(queryFn, attempts - 1, fnName);
+			}
+	
+			return res;
+		} catch (err) {
+			console.error('Database query failed:', err);
+			throw err;
+		} finally {
+			if (currentRequest === controller) {
+				currentRequest = null;
+			}
+		}
+	};
 
-		return res;
-	} catch (err) {
-		console.error('Database query failed:', err);
-		throw err;
-	}
-};
-
-module.exports = withDbConnection;
+	module.exports = withDbConnection;
