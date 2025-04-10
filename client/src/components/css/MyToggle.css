@@ -1,8 +1,8 @@
 .toggle-button {
-  padding: 10px 20px;
+  padding: .3rem .6rem;
   border: none;
   cursor: pointer;
-  font-size: 16px;
+  font-size: .75rem;
   background-color: var(--button-background);
   color: var(--button-text);
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -24,4 +24,11 @@
   background-color: var(--active-button-background);
   color: white;
   animation: blink 3s infinite;
+}
+
+@media (min-width: 768px) {
+  .toggle-button {
+    padding: 10px 20px;
+    font-size: 16px;
+  }
 }

@@ -69,7 +69,7 @@ const ProjectReport = () => {
 			</div>
 			<div className='table-data'>
 				<div className={`table-data-header`}>
-					{!liveToggle && <MyDateRangePicker date={date} onChange={handleDateChange} />}
+					<MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />
 					<MyToggle label='Live' active={liveToggle} onClick={handleLiveToggle} />
 				</div>
 				{isSuccess && (

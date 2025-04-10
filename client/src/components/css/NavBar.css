@@ -1,4 +1,4 @@
-/* Navbar Styles */
+/* Mobile Styles (for phone screens first) */
 .navbar {
   background-color: var(--background-color);
   color: var(--text-color);
@@ -10,14 +10,14 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 250px;  
+  width: 100%; /* Full width on mobile */
   height: 100%;
   z-index: 10;
-  transform: translateX(-100%); 
+  transform: translateX(-100%); /* Hidden by default */
 }
 
 .navbar.visible {
-  transform: translateX(0); 
+  transform: translateX(0); /* Show navbar when it's visible */
 }
 
 .navbar ul {
@@ -50,7 +50,7 @@
   padding: 0.5rem;
   position: absolute;
   top: 1rem;
-  left: 1rem; 
+  left: 1rem;
   z-index: 11;
 }
 
@@ -59,9 +59,9 @@
 }
 
 main {
-  margin-left: 50px;  
+  margin-left: 0; /* No margin on mobile */
   transition: margin-left 0.3s ease;
-  min-width: 0; 
+  min-width: 0;
   z-index: 1;
   position: relative;
 }
@@ -70,13 +70,22 @@ main.navbar-visible {
   z-index: 0;
 }
 
-.navbar {
-  transition: transform 0.3s ease-in-out;
-}
-.navbar.visible {
-  transform: translateX(0);
-  border-right: 1px solid var(--border-color);
-}
-.navbar.hidden {
-  transform: translateX(-100%);
+/* Desktop Styles (for larger screens) */
+@media screen and (min-width: 769px) {
+  .navbar {
+    width: 250px; /* Sidebar width for larger screens */
+    /*transform: translateX(0);  Always show the navbar */
+  }
+
+  .navbar ul {
+    margin-top: 50px;
+  }
+
+  .navbar a {
+    font-size: 1.2rem;
+  }
+
+  main {
+    margin-left: 0px; /* Adjust margin to account for sidebar width */
+  }
 }
