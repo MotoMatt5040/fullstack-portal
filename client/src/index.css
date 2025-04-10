@@ -4,6 +4,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  
+  /* border: 1px solid var(--border-color); */
 }
 
 /* || UTILITY CLASSES */
@@ -37,6 +39,7 @@
   --active-button-background: #007bff;
   --background-multi-select: #333;
   --background-multi-select-hover: #444;
+  --border-color: #fff;
 }
 
 /* Light Theme Variables */
@@ -64,6 +67,7 @@
   --active-button-background: #007bff;
   --background-multi-select: #fff;
   --background-multi-select-hover: #f0f0f0;
+  --border-color: #000;
 }
 
 body {
@@ -85,6 +89,7 @@ input, button {
 
 section {
   width: 100%; 
+  
 }
 
 a, a:visited {
