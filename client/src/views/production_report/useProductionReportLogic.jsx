@@ -1,22 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { parseDate } from '@internationalized/date';
+import { parseDate, today } from '@internationalized/date';
 
-import { setProjectData } from '../../features/production_report/productionReportSlice';
 import {
   useLazyGetProductionReportQuery,
   useGetProjectsInDateRangeQuery,
-} from '../../features/production_report/productionReportApiSlice';
+} from '../../features/productionReportApiSlice';
 
 const useProductionReportLogic = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [projectIds, setprojectIds] = useState([]);
+  const [projectIds, setProjectIds] = useState([]);
   const [projectIdOptions, setprojectIdOptions] = useState([]);
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(today('America/Chicago'));
+  const [endDate, setEndDate] = useState(today('America/Chicago'));
   const [isSuccess, setIsSuccess] = useState(false);
   const [chartData, setChartData] = useState([
     { field: 'ON-CPH', value: 0 },
@@ -27,8 +25,8 @@ const useProductionReportLogic = () => {
   const [avgCPH, setAvgCPH] = useState(0);
   const [allProjectsToggle, setAllProjectsToggle] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const [value, setValue] = useState({ start: parseDate(today), end: parseDate(today) });
+  // const today = new Date().toISOString().slice(0, 10);
+  const [value, setValue] = useState({ start: startDate, end: endDate });
 
   const [getProductionReport, { data }] = useLazyGetProductionReportQuery();
   const { data: projectsData, refetch: refetchProjects } = useGetProjectsInDateRangeQuery({
@@ -67,7 +65,10 @@ const useProductionReportLogic = () => {
   }, [avgCPH]);
 
   useEffect(() => {
-    refetchProjects();
+    
+    // setprojectIdOptions([]);
+    // setProjectIds([]);
+    fetchProjects();
 
     if (projectsData) {
       const options = projectsData.map((project) => ({
@@ -75,12 +76,12 @@ const useProductionReportLogic = () => {
         label: project.projectId,
       }));
       if (allProjectsToggle) {
-        setprojectIds(options.map((option) => option.value));
+        setProjectIds(options.map((option) => option.value));
       } else {
         const filteredprojectIds = projectIds.filter((id) =>
           options.some((option) => option.value === id)
         );
-        setprojectIds(filteredprojectIds);
+        setProjectIds(filteredprojectIds);
       }
       setprojectIdOptions(options);
     }
@@ -88,14 +89,27 @@ const useProductionReportLogic = () => {
 
   useEffect(() => {
     if (allProjectsToggle) {
-      setprojectIds(projectIdOptions.map((option) => option.value));
+      setProjectIds(projectIdOptions.map((option) => option.value));
     }
   }, [allProjectsToggle]);
+
+  const fetchProjects = async () => {
+    try {
+      const result = await refetchProjects({ startDate, endDate });
+      if (result?.error?.status === 404) {
+        setProjectIds([]);
+        setprojectIdOptions([]);
+      }
+    }
+    catch (err) {
+      console.error(err);
+    }
+  };
+
 
   const fetchData = async () => {
     try {
       const result = await getProductionReport({ projectIds, startDate, endDate });
-      dispatch(setProjectData({ projectIds, startDate, endDate }));
 
       if (result?.data) {
         setIsSuccess(true);
@@ -113,9 +127,12 @@ const useProductionReportLogic = () => {
 
   const handleChangeDate = (e) => {
     setValue(e);
-    setStartDate(e.start.toString());
-    setEndDate(e.end.toString());
-    refetchProjects();
+    setStartDate(e.start);
+    setEndDate(e.end);
+    console.log(e)
+    console.log(e.start.toString())
+    console.log(e.end.toString())
+    // refetchProjects();
   };
 
   const handleSelectProjects = (selectedOptions) => {
@@ -127,13 +144,13 @@ const useProductionReportLogic = () => {
         { field: 'ZERO-CMS', value: 0 },
       ]);
     }
-    setprojectIds(selectedOptions.map((option) => option.value
+    setProjectIds(selectedOptions.map((option) => option.value
     ));
   }
 
   return {
     projectIds,
-    setprojectIds,
+    setProjectIds,
     projectIdOptions,
     setprojectIdOptions,
     startDate,
