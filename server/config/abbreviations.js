@@ -57,7 +57,17 @@ const STATE_ABBREVIATIONS = {
 }
 
 const OTHER_ABBREVIATIONS = {
-  'Statewide': 'Stwd'
+  'Statewide': 'Stwd',
+  'Voter': 'Vtr',
+  'Survey': 'Svy',
+  'Lake': 'Lk',
+  'County': 'Cnty',
+  'Cells': 'C',
+  'State of the Rockies': 'StRkys',
+  'State': 'St',
+  'Rockies': 'Rkys',
+  'Oversample': 'OS',
+  'District': 'Dist',
 }
 
 module.exports = {
