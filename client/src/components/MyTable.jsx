@@ -1,7 +1,7 @@
 import React from 'react';
 import './css/MyTable.css';
 
-const MyTable = ({ className = 'MyTable', data, columnKeyMap, reverseThresholds = ['offCph'] }) => {
+const MyTable = ({ className = 'MyTable', data, columnKeyMap, reverseThresholds = ['offCph'], isLive = false }) => {
 
   const columnHeaders = Object.keys(columnKeyMap);
 
@@ -47,8 +47,9 @@ const MyTable = ({ className = 'MyTable', data, columnKeyMap, reverseThresholds 
                 const thresholdKey = `${columnKeyMap[header]}Threshold`;  
                 const threshold = row?.[thresholdKey]; 
                 const cellClass = threshold ? highlightCellColor(cellValue, threshold, columnKeyMap[header]) : '';
+                const blinkingClass = isLive ? 'blinking' : '';
                 return (
-                  <td className={`${header} ${cellClass}`} key={header}>
+                  <td className={`${header} ${cellClass} ${blinkingClass}`} key={header}>
                     {cellValue}
                   </td>
                 );

@@ -3,7 +3,7 @@ table {
   width: 100%; /* full width on small screens */
   border-collapse: collapse;
   margin: 1rem 0;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   text-align: left;
 }
 
@@ -18,7 +18,7 @@ table thead th {
 }
 
 table tbody td {
-  padding: 0.5rem;
+  padding: 0.15rem;
   border-bottom: 1px solid var(--table-border-color, #666);
   white-space: nowrap;
 }
@@ -49,6 +49,25 @@ table tbody tr:hover {
   cursor: pointer;
 }
 
+/* @keyframes blink-animation {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+You can modify this to suit the look you're going for
+.highlight-red.blinking {
+  background-color: rgba(255, 0, 0, 0.3);
+}
+
+.highlight-yellow.blinking {
+  background-color: rgba(255, 255, 0, 0.3);
+}
+
+.highlight-green.blinking {
+  background-color: rgba(0, 255, 0, 0.3);
+} */
+
 /* Animations */
 @keyframes flash-red {
   0% { background-color: #b30000; }
@@ -65,18 +84,24 @@ table tbody tr:hover {
 .highlight-red {
   background-color: #b30000;
   color: white;
-  animation: flash-red 1s infinite;
 }
 
 .highlight-yellow {
   background-color: #ffcc00;
   color: black;
-  animation: flashYellow 3s infinite;
 }
 
 .highlight-green {
   background-color: rgba(0, 255, 0, 0.5);
   /* color: white; */
+}
+
+.highlight-red.blinking {
+  animation: flash-red 1s infinite;
+}
+
+.highlight-yellow.blinking {
+  animation: flashYellow 3s infinite;
 }
 
 /* Tablet and up */
