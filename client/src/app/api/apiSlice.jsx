@@ -18,13 +18,9 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
     }
-    if (isDev) {
-      // Disable caching in development
-      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    } else {
-      // Enable caching in production
-      headers.set('Cache-Control', 'public, max-age=31536000');
-    }
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    headers.set('Expires', '0');
+    
     return headers;
   },
 });
@@ -32,7 +28,7 @@ const baseQuery = fetchBaseQuery({
 export const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
   if (result?.error?.status === 403) {
-    //check if the trust this device box was checked. We want to log out if the device is not trusted.
+    // Check if the trust this device box was checked. We want to log out if the device is not trusted.
     const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
       const [name, value] = cookie.split('=');
       acc[name] = value;
