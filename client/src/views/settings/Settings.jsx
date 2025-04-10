@@ -25,6 +25,7 @@ const settings = () => {
 	return (
 		<section>
       <button onClick={handleLogout}>Log Out</button>
+			<br />
 			<button className='theme-toggle' onClick={toggleTheme}>
 				Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
 			</button>
