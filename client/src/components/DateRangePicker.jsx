@@ -15,9 +15,9 @@ import {
 import React from 'react';
 import './css/DateRangePicker.css';
 
-const MyDateRangePicker = ({ value, onChange, label }) => {
+const MyDateRangePicker = ({ date, onChange, label }) => {
 	return (
-		<DateRangePicker value={value} onChange={onChange}>
+		<DateRangePicker value={date} onChange={onChange}>
 			<Label>{label}</Label>
 			<Group>
 				<DateInput slot="start">
