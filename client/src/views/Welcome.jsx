@@ -28,6 +28,7 @@ const Welcome = () => {
             <p><Link to="/github">Need to report an issue or request a new feature?</Link></p>
             <p><Link to="/liveprojects">Live Projects Table</Link></p>
             <p><Link to="/productionreport">Production Reports</Link></p>
+            <p><Link to="/summaryreport">Summary Reports</Link></p>
             
         </section>
     );
