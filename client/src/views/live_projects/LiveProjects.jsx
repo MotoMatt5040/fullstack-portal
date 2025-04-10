@@ -8,7 +8,7 @@ import {
 import { useSearchParams, Link } from 'react-router-dom';
 import LiveProjectsFilters from './components/LiveProjectsFilters';
 import LiveProjectsSummaryTable from './components/LiveProjectsSummaryTable';
-import PieChart from '../../components/PieChart';
+import MyPieChart from '../../components/MyPieChart';
 
 const LiveProjects = () => {
 	// This helper is used to mitigate having to repeat the same logic for each query
