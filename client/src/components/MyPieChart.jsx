@@ -31,7 +31,7 @@ const MyPieChart = (props) => {
 	
 		const arc = d3.arc().innerRadius(0).outerRadius(radius);
 	
-		const labelRadius = radius * 0.8;
+		const labelRadius = radius * 0.7;
 		const arcLabel = d3.arc().innerRadius(labelRadius).outerRadius(labelRadius);
 	
 		const arcs = pie(filteredData);
