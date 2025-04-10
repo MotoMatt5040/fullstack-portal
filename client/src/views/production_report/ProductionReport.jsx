@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import PieChart from '../../components/PieChart';
-import MyDateRangePicker from '../../components/DateRangePicker';
-
 import useProductionReportLogic from './useProductionReportLogic';
 
+import MyPieChart from '../../components/MyPieChart';
+import MyDateRangePicker from '../../components/DateRangePicker';
 import MyTable from '../../components/MyTable';
 import MyMultiSelect from '../../components/MyMultiSelect';
 import MyToggle from '../../components/MyToggle';
@@ -24,9 +23,12 @@ const ProductionReport = () => {
     isSuccess,
     data,
     handleSelectProjects,
+    startDate,
+    endDate
   } = useProductionReportLogic();
 
   const columnKeyMap = {
+    "Project ID": "projectId",
     "EID": "eid",
     "Ref Name": "refname",
     "Rec Loc": "recloc",
@@ -35,14 +37,14 @@ const ProductionReport = () => {
     "Pause Time": "pausetime",
     "CPH": "cph",
     "CMS": "cms",
-    "Int. AL": "int_al",
+    "Int. AL": "intal",
     "MPH": "mph",
     "Total Dials": "totaldials",
   };
 
   return (
     <section>
-      <PieChart data={chartData} domainColumn='field' valueColumn='value' />
+      <MyPieChart data={chartData} domainColumn='field' valueColumn='value' />
 
       <div className='cph-group'>
         <label>CPH: </label>
@@ -67,7 +69,7 @@ const ProductionReport = () => {
         isDisabled={allProjectsToggle}
       />
 
-      <MyDateRangePicker value={value} onChange={handleChangeDate} />
+      <MyDateRangePicker start={startDate} end={endDate} onChange={handleChangeDate} />
 
       <Link to='/welcome'>Back to Welcome</Link>
       {isSuccess && <MyTable data={data} columnKeyMap={columnKeyMap} />}
