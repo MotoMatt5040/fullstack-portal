@@ -1,8 +1,8 @@
 const express = require('express')
 const router = express.Router()
-const LiveProductionController = require('../../controllers/liveProductionController')
 const ROLES_LIST = require('../../config/rolesList')
 const verifyRoles = require('../../middleware/verifyRoles')
+const LiveProductionController = require('../../controllers/liveProductionController')
 
 router.route('/get_live_project_data')
     .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {

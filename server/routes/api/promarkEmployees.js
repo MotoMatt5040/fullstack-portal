@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const promarkUsersController = require('../../controllers/promarkUsersController');
 const verifyRoles = require('../../middleware/verifyRoles');
 const ROLES_LIST = require('../../config/rolesList');
+const promarkUsersController = require('../../controllers/promarkUsersController');
 
 router.route('/')
     .get(verifyRoles(ROLES_LIST.Admin), promarkUsersController.handleGetAllUsers)
