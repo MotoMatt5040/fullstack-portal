@@ -59,25 +59,23 @@
 }
 
 main {
-  margin-left: 0; 
+  margin-left: 50px;  
   transition: margin-left 0.3s ease;
   min-width: 0; 
+  z-index: 1;
+  position: relative;
 }
 
 main.navbar-visible {
-  margin-left: 250px;
+  z-index: 0;
 }
-
-main:not(.navbar-visible) {
-  margin-left: 50px; 
-}
-
 
 .navbar {
   transition: transform 0.3s ease-in-out;
 }
 .navbar.visible {
   transform: translateX(0);
+  border-right: 1px solid var(--border-color);
 }
 .navbar.hidden {
   transform: translateX(-100%);

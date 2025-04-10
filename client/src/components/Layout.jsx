@@ -5,12 +5,12 @@ import NavBar from './NavBar';
 const Layout = () => {
   const [isNavVisible, setIsNavVisible] = useState(false);
   const location = useLocation();
-
-  // Check if the current route requires authentication
-  const isProtectedRoute = location.pathname !== '/login' && location.pathname !== '/reset-password';
+  const publicRoutes = ['/login', '/reset-password', '/'];
+  
+  const isProtectedRoute = !publicRoutes.includes(location.pathname);
 
   const handleNavToggle = (visibility) => {
-    setIsNavVisible(visibility); // Update the navbar visibility state
+    setIsNavVisible(visibility);
   };
 
   return (
