@@ -48,6 +48,7 @@ app.use("/users", require("./routes/api/promarkEmployees"));
 app.use("/github", require("./routes/api/github"));
 app.use("/productionreport", require("./routes/api/productionReports"))
 app.use("/live_data", require("./routes/api/liveProduction"));
+app.use("/summaryreport", require("./routes/api/summaryReports"));
 
 app.all("*", (req, res) => {
     res.status(404);

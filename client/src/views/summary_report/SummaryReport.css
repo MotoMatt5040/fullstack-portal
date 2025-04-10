@@ -1,0 +1,38 @@
+.project-report {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  /* gap: 2rem; */
+  padding: 2rem;
+}
+
+.project-report-header {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.table-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.table-data-header .toggle-button {
+  margin-left: auto;
+}
+
+.table-data {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex-direction: column;
+  /* gap: 2rem; */
+  padding: 2rem;
+}
+
+
