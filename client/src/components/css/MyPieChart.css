@@ -3,3 +3,13 @@
   height: auto;
   font: 20px sans-serif;
 }
+
+tspan {
+  font-size: 12px;
+}
+
+@media (min-width: 768px){
+  tspan {
+    font-size: 20px;
+  }
+}
