@@ -56,8 +56,8 @@ const poolPromise = new sql.ConnectionPool(config)
 				return; 
 			}
 	
-			if (!res || (Array.isArray(res) && res.length === 0 && attempts > 0)) {
-				// console.warn(`Query returned no results. Retrying... (${6 - attempts} of 5) - ${fnName}`);
+			if ((Array.isArray(res) && res.length === 0 && attempts > 0)) {
+				console.warn(`Query returned no results. Retrying... (${6 - attempts} of 5) - ${fnName}`);
 				
 				await new Promise((resolve) => setTimeout(resolve, 100));  
 	
