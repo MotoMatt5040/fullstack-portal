@@ -7,49 +7,52 @@ const MyPieChart = (props) => {
 	const skip = props.skip || [];
 	const domainColumn = props.domainColumn || 'name';
 	const valueColumn = props.valueColumn || 'value';
-	const width = props.width || 400;
-	const height = props.height || Math.min(width, 400);
-	const radius = props.radius || Math.min(width, height) / 2 - 1;
+	const width = props.width ?? (window.innerWidth < 768 ? 200 : 400);
+	const height = props.height ?? width;
+	const radius = props.radius ?? Math.min(width, height) / 2 - 1;
 	const colorScheme = props.colorScheme || d3.interpolateRdYlGn;
 	const svgRef = useRef();
 
 	useEffect(() => {
 		if (!data || data.length === 0) return;
-		const filteredData = data.filter(item => !skip.includes(item.field));
-	
+
+		const filteredData = data.filter(
+			(item) => !skip.includes(item.field) && item[valueColumn] > 0
+		);
+
 		const color = d3
 			.scaleOrdinal()
 			.domain(filteredData.map((d) => d[domainColumn]))
 			.range(
-				d3.quantize((t) => colorScheme(t * 0.8 + 0.1), filteredData.length).reverse()
+				d3
+					.quantize((t) => colorScheme(t * 0.8 + 0.1), filteredData.length)
+					.reverse()
 			);
-	
+
 		const pie = d3
 			.pie()
 			.sort(null)
 			.value((d) => d[valueColumn]);
-	
+
 		const arc = d3.arc().innerRadius(0).outerRadius(radius);
-	
-		const labelRadius = radius * 0.7;
+
+		const labelRadius = radius * 0.6;
 		const arcLabel = d3.arc().innerRadius(labelRadius).outerRadius(labelRadius);
-	
+
 		const arcs = pie(filteredData);
-	
+
 		const svg = d3
 			.select(svgRef.current)
 			.attr('width', width)
 			.attr('height', height)
 			.attr('viewBox', [-width / 2, -height / 2, width, height])
 			.attr('class', 'svg-pie-chart-container');
-	
+
 		// Remove existing text labels before updating arcs
 		svg.selectAll('text').remove();
-	
-		const path = svg
-			.selectAll('path')
-			.data(arcs, (d) => d.data[domainColumn]);
-	
+
+		const path = svg.selectAll('path').data(arcs, (d) => d.data[domainColumn]);
+
 		path
 			.enter()
 			.append('path')
@@ -62,7 +65,9 @@ const MyPieChart = (props) => {
 			.append('title')
 			.text(
 				(d) =>
-					`${d.data[domainColumn]}: ${d.data[valueColumn].toLocaleString('en-US')}`
+					`${d.data[domainColumn]}: ${d.data[valueColumn].toLocaleString(
+						'en-US'
+					)}`
 			)
 			.merge(path)
 			.transition()
@@ -72,9 +77,9 @@ const MyPieChart = (props) => {
 				this._current = interpolate(1); // Update stored angles
 				return (t) => arc(interpolate(t));
 			});
-	
+
 		path.exit().remove();
-	
+
 		const text = svg
 			.append('g')
 			.attr('text-anchor', 'middle')
@@ -112,7 +117,7 @@ const MyPieChart = (props) => {
 					})
 			)
 			.attr('opacity', 0);
-	
+
 		text.transition().duration(1000).attr('opacity', 1);
 	}, [data]);
 
