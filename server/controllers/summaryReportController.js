@@ -1,6 +1,9 @@
 const SummaryReports = require('../models/SummaryReportModel');
 const handleAsync = require('./asyncController');
-const { STATE_ABBREVIATIONS, OTHER_ABBREVIATIONS } = require('../config/abbreviations');
+const {
+	STATE_ABBREVIATIONS,
+	OTHER_ABBREVIATIONS,
+} = require('../config/abbreviations');
 
 // TODO - Abbrv proj names
 // TODO - If proj name too long, just extract state name
@@ -44,61 +47,78 @@ const calculateInterviewerStats = (interviewerData, project) => {
 const handleGetSummaryReportData = handleAsync(async (req, res, isLive) => {
 	const startDate = req?.query?.startdate || undefined;
 	const endDate = req?.query?.enddate || undefined;
-	
+
 	const data = isLive
 		? await SummaryReports.getLiveSummaryReportData()
-		: await SummaryReports.getHistoricSummaryReportProjectData(startDate, endDate);
-	
+		: await SummaryReports.getHistoricSummaryReportProjectData(
+				startDate,
+				endDate
+		  );
+
 	const interviewerData = isLive
 		? await SummaryReports.getLiveInterviewerData()
-		: await SummaryReports.getHistoricSummaryReportInterviewerData(startDate, endDate);
+		: await SummaryReports.getHistoricSummaryReportInterviewerData(
+				startDate,
+				endDate
+		  );
 
-	if (
-		data === 499 
-		|| interviewerData === 499
-		|| !data 
-		|| !interviewerData
-	) return res.status(499).json({ msg: 'Server canceled request' });
-
-	// if (!data || !interviewerData) return res.status(499).json({ msg: 'Request canceled by server' });
+	if (data === 499 || interviewerData === 499 || !data || !interviewerData)
+		return res.status(499).json({ msg: 'Server canceled request' });
 
 	if (data.length === 0 || interviewerData.length === 0) {
 		return res.status(204).json({ msg: 'No data found' });
 	}
 
 	const result = data.map((project) => {
-		const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(interviewerData, project);
+		const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(
+			interviewerData,
+			project
+		);
 		let abbreviatedProjName = project.projName || '';
 
-    
-    Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
-      const regex = new RegExp(`\\b${state}\\b`, 'gi'); 
-      if (regex.test(abbreviatedProjName)) {
-        abbreviatedProjName = abbreviatedProjName.replace(regex, STATE_ABBREVIATIONS[state]);
-      }
-    });
+		Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
+			const regex = new RegExp(`\\b${state}\\b`, 'gi');
+			if (regex.test(abbreviatedProjName)) {
+				abbreviatedProjName = abbreviatedProjName.replace(
+					regex,
+					STATE_ABBREVIATIONS[state]
+				);
+			}
+		});
 
-    Object.keys(OTHER_ABBREVIATIONS).forEach((other) => {
-      const regex = new RegExp(`\\b${other}\\b`, 'gi'); 
-      if (regex.test(abbreviatedProjName)) {
-        abbreviatedProjName = abbreviatedProjName.replace(regex, OTHER_ABBREVIATIONS[other]);
-      }
-    });
+		Object.keys(OTHER_ABBREVIATIONS).forEach((other) => {
+			const regex = new RegExp(`\\b${other}\\b`, 'gi');
+			if (regex.test(abbreviatedProjName)) {
+				abbreviatedProjName = abbreviatedProjName.replace(
+					regex,
+					OTHER_ABBREVIATIONS[other]
+				);
+			}
+		});
 
-    const stateNameMatches = abbreviatedProjName.match(/[A-Za-z\s]+/); 
-    if (stateNameMatches && stateNameMatches.length > 0) {
-      const stateName = stateNameMatches[0].trim();
-      if (STATE_ABBREVIATIONS[stateName]) {
-        abbreviatedProjName = STATE_ABBREVIATIONS[stateName];
-      }
-    }
+		const stateNameMatches = abbreviatedProjName.match(/[A-Za-z\s]+/);
+		if (stateNameMatches && stateNameMatches.length > 0) {
+			const stateName = stateNameMatches[0].trim();
+			if (STATE_ABBREVIATIONS[stateName]) {
+				abbreviatedProjName = STATE_ABBREVIATIONS[stateName];
+			}
+		}
+
+		if (abbreviatedProjName.length > 15) {
+			abbreviatedProjName = abbreviatedProjName.slice(0, 15);
+		}
 
 		const mphThreshold = project.projectId.endsWith('C') ? 18 : 22;
 		const offCphThreshold = project.hrs * 0.2;
 		const zcmsThreshold = project.hrs * 0.05;
 
+		const recDate = new Date(project.recDate);
+		const month = String(recDate.getMonth() + 1).padStart(2, '0');
+		const day = String(recDate.getDate()).padStart(2, '0');
+		
 		const update = {
 			...project,
+			recDate: `${month}/${day}`,
 			projName: abbreviatedProjName,
 			totalHrs: totalHrs.toFixed(2),
 			offCph: offCph.toFixed(2),

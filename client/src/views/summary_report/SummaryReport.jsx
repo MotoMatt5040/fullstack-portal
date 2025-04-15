@@ -9,8 +9,10 @@ import MyTable from '../../components/MyTable';
 // import MyMultiSelect from '../../components/MyMultiSelect';
 import MyToggle from '../../components/MyToggle';
 import './SummaryReport.css';
+import { useSelector  } from 'react-redux';
 
 const ProjectReport = () => {
+	const showGraphs = useSelector((state) => state.settings.showGraphs);
 	const {
 		liveToggle,
 		handleLiveToggle,
@@ -28,11 +30,13 @@ const ProjectReport = () => {
 		columnKeyMap = {
 			'Project ID': 'projectId',
 			'Proj Name': 'projName',
+			...(liveToggle ? {} : {Date: 'recDate'}),
 			CMS: 'cms',
 			HRS: 'hrs',
 			CPH: 'cph',
-			GPCPH: 'gpcph',
-			MPH: 'mph'
+			GPH: 'gpcph',
+			MPH: 'mph',
+			AL: 'al'
 		};
 
 	}
@@ -40,6 +44,7 @@ const ProjectReport = () => {
 		columnKeyMap = {
 			'Project ID': 'projectId',
 			'Project Name': 'projName',
+			...(liveToggle ? {} : {Date: 'recDate'}),
 			CMS: 'cms',
 			HRS: 'hrs',
 			CPH: 'cph',
@@ -64,12 +69,12 @@ const ProjectReport = () => {
 	return (
 		<section className='project-report'>
 			<div className='project-report-header'>
-				<MyPieChart data={chartData} domainColumn='field' valueColumn='value' />
-				<MyTable data={totalData} columnKeyMap={summaryColumnKeyMap} />
+				{showGraphs && <MyPieChart data={chartData} domainColumn='field' valueColumn='value' />}
+				<MyTable data={totalData} columnKeyMap={summaryColumnKeyMap} isLive={liveToggle}/>
 			</div>
 			<div className='table-data'>
 				<div className={`table-data-header`}>
-					<MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />
+					{liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />}
 					<MyToggle label='Live' active={liveToggle} onClick={handleLiveToggle} />
 				</div>
 				{isSuccess && (
@@ -78,6 +83,7 @@ const ProjectReport = () => {
 						data={data}
 						columnKeyMap={columnKeyMap}
 						reverseThresholds={['offCph', 'zcms']}
+						isLive={liveToggle}
 					/>
 				)}
 			</div>
