@@ -86,6 +86,6 @@ main.navbar-visible {
   }
 
   main {
-    margin-left: 0px; /* Adjust margin to account for sidebar width */
+    margin-left: 50px; /* Adjust margin to account for sidebar width */
   }
 }

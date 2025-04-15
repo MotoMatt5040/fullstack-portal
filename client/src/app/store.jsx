@@ -3,6 +3,7 @@ import { apiSlice } from "./api/apiSlice"
 import authReducer from '../features/auth/authSlice'
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
+import settingsReducer from '../features/settingsSlice'
 
 const persistConfig = {
     key: 'root',
@@ -11,7 +12,8 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
     [apiSlice.reducerPath]: apiSlice.reducer,
-    auth: authReducer
+    auth: authReducer,
+    settings: settingsReducer
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
