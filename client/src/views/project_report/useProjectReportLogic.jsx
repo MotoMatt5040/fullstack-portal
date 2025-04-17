@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-// import { useGetSummaryReportQuery } from '../../features/summaryReportApiSlice';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
 import { useSearchParams } from 'react-router-dom';
@@ -11,18 +10,19 @@ const getDateFromParams = (key, fallback) => {
 };
 
 const useProjectReportLogic = () => {
-	const [searchParams] = useSearchParams();
 	const queryHelper = (queryHook, params) => {
 		const { data, refetch } = queryHook(params);
 		return { data, refetch };
 	};
 
-	const [liveToggle, setLiveToggle] = useState(searchParams.get('live') === 'false' ? false : true);
+	const [searchParams] = useSearchParams();
+	const [liveToggle, setLiveToggle] = useState(false);
 	const [data, setData] = useState([]);
 	const [isSuccess, setIsSuccess] = useState(false);
 	const [timestamp, setTimestamp] = useState(Date.now());
 	const [projectCount, setProjectCount] = useState(0);
 	const [isRefetching, setIsRefetching] = useState(false);
+	const [projectId, setProjectId] = useState(searchParams.get('projectId') || undefined);
 	const [chartData, setChartData] = useState([
 		{ field: 'ON-CPH', value: 0 },
 		{ field: 'ON-VAR', value: 0 },
@@ -39,10 +39,11 @@ const useProjectReportLogic = () => {
 		},
 	]);
 	const [date, setDate] = useState({
-		start: getDateFromParams('startDate', today('America/Chicago').subtract({ days: 1 })),
-		end: getDateFromParams('endDate', today('America/Chicago').subtract({ days: 1 })),
+		// start: getDateFromParams('recDate', today('America/Chicago').subtract({ days: 1 })),
+		// end: getDateFromParams('recDate', today('America/Chicago').subtract({ days: 1 })),
 	});
-	const summaryReport = queryHelper(useGetReportQuery, {
+	const projectReport = queryHelper(useGetReportQuery, {
+		projectId,
 		live: liveToggle,
 		startDate: date.start,
 		endDate: date.end,
@@ -70,31 +71,10 @@ const useProjectReportLogic = () => {
 	};
 
 	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		const live = params.get('live');
-		const start = params.get('startDate');
-		const end = params.get('endDate');
-	
-		if (live !== null) setLiveToggle(live === 'true');
-	
-		if (start && end) {
-			try {
-				setDate({
-					start: parseDate(start),
-					end: parseDate(end),
-				});
-			} catch {
-				// fallback to yesterday
-				const fallback = today('America/Chicago').subtract({ days: 1 });
-				setDate({ start: fallback, end: fallback });
-			}
-		}
-	}, []);
-
-	useEffect(() => {
 		let intervalId;
 
 		const fetchParams = {
+			projectId: projectId,
 			live: liveToggle,
 			startDate: date.start,
 			endDate: date.end,
@@ -102,11 +82,11 @@ const useProjectReportLogic = () => {
 		};
 
 		if (liveToggle) {
-			fetchData(summaryReport.refetch, fetchParams);
+			fetchData(projectReport.refetch, fetchParams);
 			intervalId = setInterval(() => {
 				setTimestamp(Date.now());
 			}, 15000);
-		} else fetchData(summaryReport.refetch, fetchParams);
+		} else fetchData(projectReport.refetch, fetchParams);
 
 		return () => {
 			clearInterval(intervalId);
@@ -114,10 +94,10 @@ const useProjectReportLogic = () => {
 	}, [liveToggle, date]);
 
 	useEffect(() => {
-		if (!summaryReport.data) return;
+		if (!projectReport.data) return;
 
-		setData(summaryReport.data);
-	}, [projectCount, isRefetching, summaryReport.data]);
+		setData(projectReport.data);
+	}, [projectCount, isRefetching, projectReport.data]);
 
 	useEffect(() => {
 		if (!data || data.length === 0) return;
@@ -163,10 +143,11 @@ const useProjectReportLogic = () => {
 	}, [data]);
 
 	const refetchCheck = () => {
-		if (projectCount > summaryReport.data.length && !isRefetching) {
+		if (projectCount > projectReport.data.length && !isRefetching) {
 			setTimeout(() => {
 				setIsRefetching(true);
-				fetchData(summaryReport.refetch, {
+				fetchData(projectReport.refetch, {
+					projectId: projectId,
 					live: liveToggle,
 					startDate: date.start,
 					endDate: date.end,
@@ -176,20 +157,11 @@ const useProjectReportLogic = () => {
 				});
 			}, 1000);
 		}
-		setProjectCount(summaryReport.data.length);
+		setProjectCount(projectReport.data.length);
 	};
 
 	const handleLiveToggle = () => {
-		const newToggle = !liveToggle;
-		setLiveToggle(newToggle);
-	
-		const params = new URLSearchParams(window.location.search);
-		params.set('live', newToggle);
-		params.set('startDate', date.start.toString());
-		params.set('endDate', date.end.toString());
-	
-		const newUrl = `${window.location.pathname}?${params.toString()}`;
-		window.history.pushState({}, '', newUrl);
+		setLiveToggle((prev) => !prev);
 	};
 
 	const fetchData = async (refetch, props) => {
@@ -215,15 +187,15 @@ const useProjectReportLogic = () => {
 	const handleDateChange = (newDate) => {
 	const start = newDate.start;
 	const end = newDate.end;
+
 	setDate({ start, end });
 
-	const params = new URLSearchParams(window.location.search);
-	params.set('startDate', start.toString());
-	params.set('endDate', end.toString());
-	params.set('live', liveToggle);
+	// const params = new URLSearchParams(window.location.search);
+	// params.set('startDate', start.toString()); // toString() returns "YYYY-MM-DD"
+	// params.set('endDate', end.toString());
 
-	const newUrl = `${window.location.pathname}?${params.toString()}`;
-	window.history.pushState({}, '', newUrl);
+// 	const newUrl = `${window.location.pathname}?${params.toString()}`;
+// 	window.history.pushState({}, '', newUrl);
 };
 
 	return {

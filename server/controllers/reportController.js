@@ -1,9 +1,15 @@
-const SummaryReports = require('../models/SummaryReportModel');
+const Reports = require('../models/ReportModel');
 const handleAsync = require('./asyncController');
 const {
 	STATE_ABBREVIATIONS,
 	OTHER_ABBREVIATIONS,
 } = require('../config/abbreviations');
+
+const cleanQueryParam = (value) => {
+	if (value === 'undefined' || value === 'null' || value === '')
+		return undefined;
+	return value;
+};
 
 const calculateInterviewerStats = (interviewerData, project) => {
 	const gpcph = project.gpcph || 0;
@@ -32,15 +38,15 @@ const calculateInterviewerStats = (interviewerData, project) => {
 				// Add hours to the accumulator zcms whwere interviewer cms is 0
 				if (interviewer.cms === 0) {
 					acc.zcms += interviewer.hrs;
-				} 
+				}
 				// Add hours to the accumulator onVar where interviewer cph is on variance (within 80%)
 				else if (interviewer.cph >= threshold && interviewer.cph < cph) {
 					acc.onVar += interviewer.hrs;
-				} 
+				}
 				// Add hours to the accumulator offCph where interviewer cph is off variance (less than 80%)
 				else if (interviewer.cph < threshold) {
 					acc.offCph += interviewer.hrs;
-				} 
+				}
 				// Add hours to the accumulator onCph where interviewer cph is on cph (greater than or equal to gpcph)
 				else if (interviewer.cph >= gpcph) {
 					acc.onCph += interviewer.hrs;
@@ -56,26 +62,21 @@ const calculateInterviewerStats = (interviewerData, project) => {
 	return data;
 };
 
-const handleGetSummaryReportData = handleAsync(async (req, res, isLive) => {
-	const projectId = req.query?.projectId;
-	const startDate = req.query?.startdate;
-	const endDate = req.query?.enddate;
+const handleGetReportData = handleAsync(async (req, res) => {
+	const projectId = cleanQueryParam(req.query?.projectId);
+	const startDate = cleanQueryParam(req.query?.startdate);
+	const endDate = cleanQueryParam(req.query?.enddate);
+	const isLive = req.params?.type === 'live';
+
+	console.log(projectId, startDate, endDate, isLive);
 
 	const data = isLive
-		? await SummaryReports.getLiveSummaryReportData(projectId)
-		: await SummaryReports.getHistoricSummaryReportProjectData(
-				projectId,
-				startDate,
-				endDate
-		  );
+		? await Reports.getLiveReportData(projectId)
+		: await Reports.getHistoricProjectReportData(projectId, startDate, endDate);
 
 	const interviewerData = isLive
-		? await SummaryReports.getLiveInterviewerData(projectId)
-		: await SummaryReports.getHistoricSummaryReportInterviewerData(
-				projectId,
-				startDate,
-				endDate
-		  );
+		? await Reports.getLiveInterviewerData(projectId)
+		: await Reports.getHistoricInterviewerData(projectId, startDate, endDate);
 
 	// Check if the data is 499, which means the server canceled the request in the withDbConnection function (most likely)
 	// NOTE: This does need to be changed, returning a 499 is not generally a good idea as that signifies an error, and in this case
@@ -95,7 +96,7 @@ const handleGetSummaryReportData = handleAsync(async (req, res, isLive) => {
 			project
 		);
 		let abbreviatedProjName = project.projName || '';
-		
+
 		// First replace the state names with their abbreviations
 		Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
 			const regex = new RegExp(`\\b${state}\\b`, 'gi');
@@ -141,7 +142,7 @@ const handleGetSummaryReportData = handleAsync(async (req, res, isLive) => {
 		const recDate = new Date(project.recDate);
 		const month = String(recDate.getMonth() + 1).padStart(2, '0');
 		const day = String(recDate.getDate()).padStart(2, '0');
-		
+
 		// This is the final updated object that gets returned to result, which is then returned to the front end.
 		const update = {
 			...project, // ...project just means all previous data in project + everything specified after
@@ -173,6 +174,6 @@ const handleGetLiveInterviewerData = handleAsync(async (req, res) => {
 });
 
 module.exports = {
-	handleGetSummaryReportData,
+	handleGetReportData,
 	handleGetLiveInterviewerData,
 };

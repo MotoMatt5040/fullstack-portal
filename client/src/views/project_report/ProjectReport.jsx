@@ -1,12 +1,12 @@
 import React from 'react';
-import useProjectReportLogic from './useSummaryReportLogic';
+import useProjectReportLogic from './useProjectReportLogic';
 
 import MyPieChart from '../../components/MyPieChart';
 import MyDateRangePicker from '../../components/DateRangePicker';
 import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
 
-import './SummaryReport.css';
+import './ProjectReport.css';
 import { useSelector  } from 'react-redux';
 
 const ProjectReport = () => {
@@ -82,9 +82,9 @@ const ProjectReport = () => {
 						columnKeyMap={columnKeyMap}
 						reverseThresholds={['offCph', 'zcms']}
 						isLive={liveToggle}
-						isClickable={true}
+						isClickable={false}
 						clickParameters={['projectId', 'recDate']}
-						linkTo={'/projectreport'}
+						linkTo={'applesauce'}
 					/>
 				)}
 			</div>

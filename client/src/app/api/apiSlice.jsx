@@ -26,6 +26,7 @@ const baseQuery = fetchBaseQuery({
 });
 
 export const baseQueryWithReauth = async (args, api, extraOptions) => {
+  console.log(args, api, extraOptions);
   let result = await baseQuery(args, api, extraOptions);
   if (result?.error?.status === 403) {
     // Check if the trust this device box was checked. We want to log out if the device is not trusted.

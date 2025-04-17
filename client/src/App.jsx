@@ -16,9 +16,10 @@ import ResetPassword from './features/auth/ResetPassword';
 import Missing from './views/Missing';
 import IssueForm from './views/github/Github';
 import UpdateUserRoles from './views/users/UpdateUserRoles';
-import LiveProjectsTable from './views/live_projects/LiveProjects';
-import ProductionReport from './views/production_report/ProductionReport';
+// import LiveProjectsTable from './views/live_projects/LiveProjects';
+// import ProductionReport from './views/production_report/ProductionReport';
 import SummaryReport from './views/summary_report/SummaryReport';
+import ProjectReport from './views/project_report/ProjectReport';
 
 import ROLES from './ROLES_LIST.json';
 
@@ -51,11 +52,12 @@ function App() {
 				>
 					<Route path='welcome' element={<Welcome />} />
 					<Route path='github' element={<IssueForm />} />
-					<Route path='liveprojects' element={<LiveProjectsTable />} />
-					<Route path='productionreport' element={<ProductionReport />}>
+					{/* <Route path='liveprojects' element={<LiveProjectsTable />} /> */}
+					{/* <Route path='productionreport' element={<ProductionReport />}>
 						<Route path='tables' element={<ProductionReport />} />
-					</Route>
+					</Route> */}
 					<Route path='summaryreport' element={<SummaryReport />} />
+					<Route path='projectreport' element={<ProjectReport />} />
 				</Route>
 
 				<Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>

@@ -1,12 +1,14 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConnPromark');
 
-const getLiveSummaryReportData = async (projectId) => {
-	let projectIdCondition = projectId ? `AND hpd.projectId = @projectId` : '';
-	const liveSummaryQuery = `
+const getLiveReportData = async (projectId) => {
+	const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';
+	console.log(projectIdCondition, projectId, 'here')
+	// projectIdCondition = `AND hpd.projectId = '13070C'`
+	const qry = `
 	SELECT 
+		hp.projectId,
 		gpcph.recDate, 
-		hpd.projectId, 
 		projName, 
 		cms, 
 		hrs, 
@@ -14,67 +16,97 @@ const getLiveSummaryReportData = async (projectId) => {
 		gpcph, 
 		mph, 
 		al
-	FROM tblHourlyProduction AS hpd
+	FROM tblHourlyProduction AS hp
 	INNER JOIN tblGPCPHDaily AS gpcph 
-		ON hpd.projectId = gpcph.projectId
+		ON hp.projectId = gpcph.projectId
 	WHERE CONVERT(date, gpcph.recDate) = CONVERT(date, GETDATE()) 
 		AND recloc = 99
 		${projectIdCondition}`;
 		// where gpcph.recDate = '2025-03-11' and recloc = 99`; // THIS LINE IS FOR TESTING ONLY
 
-	return withDbConnection(
-		async (pool) => {
-			const result = await pool.query(liveSummaryQuery);
-			return result.recordset;
-		},
-		(attempts = 5),
-		(fnName = 'getLiveSummaryReportData')
-	);
+		const res = withDbConnection(
+			async (pool) => {
+				const request = pool.request();
+				if (projectId) request.input('projectId', sql.NVarChar, projectId);
+				
+				const result = await request.query(qry);
+				return result.recordset;
+			},
+			(attempts = 5),
+			(fnName = 'getLiveSummaryData')
+		);
+		return res
 };
 
 const getLiveInterviewerData = async (projectId) => {
-	let projectIdCondition = projectId ? `AND hpd.projectId = @projectId` : '';
+	const projectIdCondition = projectId ? `WHERE hpd.projectId = @projectId` : '';
+	console.log(projectId);
 	const qry = `
-	SELECT hpd.projectId, loc.longName, empList.eid, 
-		empList.lastName + ', ' + empList.firstName AS myName, 
-		emp.tenure, hpd.hrs, hpd.cms, avgLen.intAvg AS intAL, 
-		hpd.cph, hpd.mph, hpd.pauseTime, hpd.connectTime, 
-		ic.totalDials, naam.naam
-	FROM tblHourlyProductionDetail hpd
-	INNER JOIN tblCC3EmployeeList empList ON hpd.VoxcoID = empList.VoxcoID
-	INNER JOIN tblEmployees emp ON emp.EmpID = empList.eid 
-	INNER JOIN tblLocation loc ON hpd.recloc = loc.LocationID
-	LEFT JOIN (SELECT VoxcoID, ROUND(AVG(duration / 60), 2) AS IntAvg 
-		FROM tblavgLengthShift GROUP BY VoxcoID) avgLen 
-		ON avgLen.VoxcoID = empList.VoxcoID
-	INNER JOIN (SELECT VoxcoID, ProjectID, SUM(CodeQty) AS TotalDials 
-		FROM tblIntCodes WHERE Code = 'TD' 
-		GROUP BY VoxcoID, ProjectID) ic 
-		ON ic.VoxcoID = empList.VoxcoID AND hpd.projectID = ic.ProjectID
-	INNER JOIN (SELECT empList.eid, SUM(ic.CodeQty) AS NAAM 
-	FROM tblIntCodes ic
-	INNER JOIN tblCC3EmployeeList empList 
-		ON ic.VoxcoID = empList.VoxcoID 
-	WHERE ic.Code = '02'
-		${projectIdCondition}
-	GROUP BY empList.eid) naam 
-		ON naam.eid = empList.eid
-	ORDER BY hpd.cms DESC;`;
+	SELECT 
+    hpd.projectId, 
+    loc.longName, 
+    empList.eid,
+    empList.lastName + ', ' + empList.firstName AS myName,
+    emp.tenure, 
+    hpd.hrs, 
+    hpd.cms, 
+    avgLen.intAvg AS intAL,
+    hpd.cph, 
+    hpd.mph, 
+    hpd.pauseTime, 
+    hpd.connectTime,
+    ic.totalDials, 
+    naam.naam
+FROM tblHourlyProductionDetail AS hpd
+INNER JOIN tblCC3EmployeeList empList 
+    ON hpd.VoxcoID = empList.VoxcoID
+INNER JOIN tblEmployees emp 
+    ON emp.EmpID = empList.eid
+INNER JOIN tblLocation loc 
+    ON hpd.recloc = loc.LocationID
+LEFT JOIN (
+    SELECT VoxcoID, ROUND(AVG(duration / 60), 2) AS IntAvg
+    FROM tblavgLengthShift 
+    GROUP BY VoxcoID
+) avgLen
+    ON avgLen.VoxcoID = empList.VoxcoID
+INNER JOIN (
+    SELECT VoxcoID, ProjectID, SUM(CodeQty) AS TotalDials
+    FROM tblIntCodes 
+    WHERE Code = 'TD'
+    GROUP BY VoxcoID, ProjectID
+) ic
+    ON ic.VoxcoID = empList.VoxcoID 
+    AND hpd.projectId = ic.ProjectID
+INNER JOIN (
+    SELECT empList.eid, SUM(ic.CodeQty) AS NAAM
+    FROM tblIntCodes ic
+    INNER JOIN tblCC3EmployeeList empList
+        ON ic.VoxcoID = empList.VoxcoID
+    WHERE ic.Code = '02'
+    GROUP BY empList.eid
+) naam
+    ON naam.eid = empList.eid
+${projectIdCondition}  
+ORDER BY hpd.cms DESC;
+`
+
+	console.log(qry)
 
 	const res = withDbConnection(
 		async (pool) => {
 			const request = pool.request();
-			request.input('projectId', sql.NVarChar, projectId);
-			const result = await pool.query(qry);
+			if (projectId) request.input('projectId', sql.NVarChar, projectId);
+			const result = await request.query(qry);
 			return result.recordset;
 		},
 		(attempts = 5),
 		(fnName = 'getLiveInterviewerData')
 	);
-	return res
+	return res;
 };
 
-const getHistoricSummaryReportInterviewerData = async (projectId, startDate, endDate) => {
+const getHistoricInterviewerData = async (projectId, startDate, endDate) => {
 	const projectIdCondition = projectId ? `bbpm.projectId = @projectId` : '';
 	const dateCondition = startDate && endDate ? `bbpm.recDate BETWEEN @startDate AND @endDate` : '';
 	const andClause = projectIdCondition && dateCondition ? 'AND' : '';
@@ -124,7 +156,7 @@ const getHistoricSummaryReportInterviewerData = async (projectId, startDate, end
 	});
 };
 
-const getHistoricSummaryReportProjectData = async (projectId, startDate, endDate) => {
+const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
 	const projectIdCondition = projectId ? `bbpm.projectId = @projectId` : '';
 	const dateCondition = startDate && endDate ? `bbpm.recDate BETWEEN @startDate AND @endDate` : '';
 	const andClause = projectIdCondition && dateCondition ? 'AND' : '';
@@ -162,8 +194,8 @@ const getHistoricSummaryReportProjectData = async (projectId, startDate, endDate
 }
 
 module.exports = { 
-	getLiveSummaryReportData, 
+	getLiveReportData, 
 	getLiveInterviewerData, 
-	getHistoricSummaryReportInterviewerData, 
-	getHistoricSummaryReportProjectData 
+	getHistoricInterviewerData, 
+	getHistoricProjectReportData 
 };
