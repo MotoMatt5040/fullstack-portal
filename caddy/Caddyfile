@@ -1,6 +1,6 @@
 {
     email matt.w@promarkresearch.com
-    storage /caddy_data
+    # storage /caddy_data
 }
 
 {$VITE_DOMAIN_NAME:invalid} {
@@ -8,10 +8,11 @@
     reverse_proxy client:80
 
     # Deny access to hidden files (dotfiles like .env, .git, etc.)
-    @hidden {
-        path /.*
-    }
+    @hidden path_regexp ^/\..*
     respond @hidden 403
+
+    @blockedRoutes path /api* /config* /settings*
+    respond @blockedRoutes 403
 
     handle_path /.well-known/acme-challenge/* {
         file_server
