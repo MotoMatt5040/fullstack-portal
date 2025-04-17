@@ -50,7 +50,7 @@ const IssueForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="issue-form">
-      <h2>Create Issue or Request Feature Enhancement</h2>
+      <h2>Report Issue or Request Feature Enhancement</h2>
 
       <label htmlFor="title">
         Title:
