@@ -65,5 +65,8 @@ api.{$VITE_DOMAIN_NAME:invalid} {
             events 20
             window 1s
         }
+
+        @ratelimited expression `{rate_limit.burst_limit.remaining} == 0`
+        respond @ratelimited "Too many requests. Please slow down." 429
     }
 }
