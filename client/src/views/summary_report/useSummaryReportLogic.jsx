@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
 import { useSearchParams } from 'react-router-dom';
+import QueryHelper from '../../utils/QueryHelper';
 
 const getDateFromParams = (key, fallback) => {
 	const params = new URLSearchParams(window.location.search);
@@ -12,14 +13,10 @@ const getDateFromParams = (key, fallback) => {
 
 const useProjectReportLogic = () => {
 	const [searchParams] = useSearchParams();
-	const queryHelper = (queryHook, params) => {
-		const { data, refetch } = queryHook(params);
-		return { data, refetch };
-	};
 
 	const [liveToggle, setLiveToggle] = useState(searchParams.get('live') === 'false' ? false : true);
 	const [data, setData] = useState([]);
-	const [isSuccess, setIsSuccess] = useState(false);
+	// const [isSuccess, setIsSuccess] = useState(false);
 	const [timestamp, setTimestamp] = useState(Date.now());
 	const [projectCount, setProjectCount] = useState(0);
 	const [isRefetching, setIsRefetching] = useState(false);
@@ -42,7 +39,7 @@ const useProjectReportLogic = () => {
 		start: getDateFromParams('startDate', today('America/Chicago').subtract({ days: 1 })),
 		end: getDateFromParams('endDate', today('America/Chicago').subtract({ days: 1 })),
 	});
-	const summaryReport = queryHelper(useGetReportQuery, {
+	const summaryReport = QueryHelper(useGetReportQuery, {
 		live: liveToggle,
 		startDate: date.start,
 		endDate: date.end,
@@ -51,7 +48,7 @@ const useProjectReportLogic = () => {
 
 	const resetVariables = () => {
 		setData([]);
-		setIsSuccess(false);
+		// setIsSuccess(false);
 		setChartData([
 			{ field: 'ON-CPH', value: 0 },
 			{ field: 'ON-VAR', value: 0 },
@@ -200,15 +197,15 @@ const useProjectReportLogic = () => {
 			// Example: Start with live disabled..... Enable it, then disable it again. The server will cancel the first request.
 			if (result?.error?.status === 499) return;
 			if (result?.data) {
-				setIsSuccess(true);
+				// setIsSuccess(true);
 				setData(result.data);
 			} else {
-				setIsSuccess(false);
+				// setIsSuccess(false);
 				resetVariables();
 			}
 		} catch (err) {
 			// console.error(err);
-			setIsSuccess(false);
+			// setIsSuccess(false);
 		}
 	};
 
@@ -230,7 +227,9 @@ const useProjectReportLogic = () => {
 		liveToggle,
 		handleLiveToggle,
 		data,
-		isSuccess,
+		summaryReportIsSuccess: summaryReport.isSuccess,
+		summaryReportIsLoading: summaryReport.isLoading,
+		summaryReportIsFetching: summaryReport.isFetching,
 		chartData,
 		totalData,
 		date,

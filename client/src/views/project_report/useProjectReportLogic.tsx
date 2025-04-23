@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { useSearchParams } from 'react-router-dom';
+import QueryHelper from '../../utils/QueryHelper';
 
 interface ChartData {
   field: string;
@@ -23,15 +24,10 @@ interface ProjectReportData {
 }
 
 const useProjectReportLogic = () => {
-  const queryHelper = (queryHook: any, params: any) => {
-    const { data, refetch, isLoading, isFetching, isSuccess, isError } = queryHook(params);
-    return { data, refetch, isLoading, isFetching, isSuccess, isError };
-  };
 
   const [searchParams] = useSearchParams();
   const [liveToggle, setLiveToggle] = useState<boolean>(false);
   const [data, setData] = useState<ProjectReportData[]>([]);
-  // const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [timestamp, setTimestamp] = useState<number>(Date.now());
   const [projectCount, setProjectCount] = useState<number>(0);
   const [isRefetching, setIsRefetching] = useState<boolean>(false);
@@ -52,15 +48,14 @@ const useProjectReportLogic = () => {
     },
   ]);
 
-  const projectReport = queryHelper(useGetReportQuery, {
+  const projectReport = QueryHelper(useGetReportQuery, {
     projectId,
     live: liveToggle,
-    ts: timestamp,
+    ts: timestamp.toString(),
   });
 
   const resetVariables = () => {
     setData([]);
-    // setIsSuccess(false);
     setChartData([
       { field: 'ON-CPH', value: '0' },
       { field: 'ON-VAR', value: '0' },
@@ -173,14 +168,11 @@ const useProjectReportLogic = () => {
       const result = await refetch(props);
       if (result?.error?.status === 499) return;
       if (result?.data) {
-        // setIsSuccess(true);
         setData(result.data);
       } else {
-        // setIsSuccess(false);
         resetVariables();
       }
     } catch (err) {
-      // setIsSuccess(false);
     }
   };
 
@@ -188,7 +180,6 @@ const useProjectReportLogic = () => {
     liveToggle,
     handleLiveToggle,
     data,
-    // isSuccess,
     chartData,
     totalData,
     projectReportIsLoading: projectReport.isLoading,
