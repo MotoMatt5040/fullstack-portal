@@ -1,6 +1,6 @@
 /* Base styles - Mobile first */
 table {
-  width: 100%; /* full width on small screens */
+  width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
   font-size: 0.6rem;
@@ -49,26 +49,6 @@ table tbody tr:hover {
   cursor: pointer;
 }
 
-/* @keyframes blink-animation {
-  0% { opacity: 1; }
-  50% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-You can modify this to suit the look you're going for
-.highlight-red.blinking {
-  background-color: rgba(255, 0, 0, 0.3);
-}
-
-.highlight-yellow.blinking {
-  background-color: rgba(255, 255, 0, 0.3);
-}
-
-.highlight-green.blinking {
-  background-color: rgba(0, 255, 0, 0.3);
-} */
-
-/* Animations */
 @keyframes flash-red {
   0% { background-color: #b30000; }
   50% { background-color: #ff6666; }
@@ -82,18 +62,17 @@ You can modify this to suit the look you're going for
 }
 
 .highlight-red {
-  background-color: #b30000;
+  background-color: rgba(204, 0, 0, 0.9);
   color: white;
 }
 
 .highlight-yellow {
-  background-color: #ffcc00;
+  background-color: rgba(204, 204, 0, 0.9);
   color: black;
 }
 
 .highlight-green {
-  background-color: rgba(0, 255, 0, 0.5);
-  /* color: white; */
+  background-color: rgba(0, 204, 0, 0.9);
 }
 
 .highlight-red.blinking {

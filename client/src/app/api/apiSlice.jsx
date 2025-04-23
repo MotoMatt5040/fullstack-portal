@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logOut } from '../../features/auth/authSlice';
-const isDev = import.meta.env.VITE_ENV === 'dev';
 
 let BASE_URL;
 
@@ -26,8 +25,8 @@ const baseQuery = fetchBaseQuery({
 });
 
 export const baseQueryWithReauth = async (args, api, extraOptions) => {
-  console.log(args, api, extraOptions);
   let result = await baseQuery(args, api, extraOptions);
+
   if (result?.error?.status === 403) {
     // Check if the trust this device box was checked. We want to log out if the device is not trusted.
     const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
@@ -35,11 +34,13 @@ export const baseQueryWithReauth = async (args, api, extraOptions) => {
       acc[name] = value;
       return acc;
     }, {});
+
     const persist = cookies.persist === 'true';
     if (!persist) {
       api.dispatch(logOut());
       return result;
     }
+
     // send refresh token to get new access token
     const refreshResult = await baseQuery('/refresh', api, extraOptions);
     if (refreshResult?.data) {

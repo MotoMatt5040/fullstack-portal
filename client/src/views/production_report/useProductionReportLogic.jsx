@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { parseDate, today } from '@internationalized/date';
+import { today } from '@internationalized/date';
 
 import {
   useLazyGetProductionReportQuery,
@@ -65,9 +64,6 @@ const useProductionReportLogic = () => {
   }, [avgCPH]);
 
   useEffect(() => {
-    
-    // setprojectIdOptions([]);
-    // setProjectIds([]);
     fetchProjects();
 
     if (projectsData) {
@@ -106,7 +102,6 @@ const useProductionReportLogic = () => {
     }
   };
 
-
   const fetchData = async () => {
     try {
       const result = await getProductionReport({ projectIds, startDate, endDate });
@@ -129,9 +124,6 @@ const useProductionReportLogic = () => {
     setValue(e);
     setStartDate(e.start);
     setEndDate(e.end);
-    console.log(e)
-    console.log(e.start.toString())
-    console.log(e.end.toString())
     // refetchProjects();
   };
 
