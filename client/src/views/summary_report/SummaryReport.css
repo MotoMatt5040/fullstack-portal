@@ -15,32 +15,6 @@
   align-items: flex-start;
 }
 
-.table-data-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
 
-.table-data-header .toggle-button {
-  margin-left: auto;
-}
-
-.table-data {
-  display: flex;
-  justify-content: center; /* Centers horizontally */
-  align-items: center; /* Centers vertically */
-  flex-direction: column;
-  padding: 2rem;
-  max-width: 400px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-@media (max-width: 768px) {
-  .table-data {
-    max-width: 100%;
-  }
-}
 
 
