@@ -11,14 +11,14 @@ const cleanQueryParam = (value) => {
 	return value;
 };
 
-const calculateInterviewerStats = (interviewerData, project) => {
-	const gpcph = project.gpcph || 0;
-	const cph = project.cph || 0;
-	const threshold = gpcph * 0.8;
+const calculateInterviewerStats = (interviewerData, project, cph) => {
+	// NOTE: cph is the gpcph for live projects and the actual cph for historic projects
+	const threshold = cph * 0.8;
 
 	// This is an accumulator object to holds the stats for each interviewer
 	const data = interviewerData.reduce(
 		(acc, interviewer) => {
+			acc.realHours += interviewer.hrs;
 			// Skip interviewer if cms is 0 and their hours are less than half of cph
 			// if (interviewer.cms === 0 && interviewer.hrs < project.cph * 0.5) {
 			// 	return acc; // Skip this interviewer
@@ -29,35 +29,51 @@ const calculateInterviewerStats = (interviewerData, project) => {
 			// If the interviewer projectId is not the same as the projectId, skip them
 			// If the interviewer is part of the project, check if the recDate is the same as the project recDate
 			if (
-				interviewer.projectId === project.projectId &&
-				(!interviewer.recDate ||
-					interviewer.recDate.getTime() === project.recDate.getTime())
-			) {
-				acc.totalHrs += interviewer.hrs;
-
-				// Add hours to the accumulator zcms whwere interviewer cms is 0
-				if (interviewer.cms === 0) {
-					acc.zcms += interviewer.hrs;
-				}
-				// Add hours to the accumulator onVar where interviewer cph is on variance (within 80%)
-				else if (interviewer.cph >= threshold && interviewer.cph < cph) {
-					acc.onVar += interviewer.hrs;
-				}
-				// Add hours to the accumulator offCph where interviewer cph is off variance (less than 80%)
-				else if (interviewer.cph < threshold) {
-					acc.offCph += interviewer.hrs;
-				}
-				// Add hours to the accumulator onCph where interviewer cph is on cph (greater than or equal to gpcph)
-				else if (interviewer.cph >= gpcph) {
-					acc.onCph += interviewer.hrs;
-				}
+				interviewer.projectId !== project.projectId ||
+				(interviewer.recDate &&
+					interviewer.recDate.getTime() !== project.recDate.getTime())
+			){ 
+				return acc;
 			}
+
+			acc.totalHrs += interviewer.hrs;
+
+			// Add hours to the accumulator zcms whwere interviewer cms is 0
+			if (interviewer.cms === 0) {
+				acc.zcms += interviewer.hrs;
+			}
+			// Add hours to the accumulator onVar where interviewer cph is on variance (within 80%)
+			else if (interviewer.cph >= threshold && interviewer.cph < cph) {
+				acc.onVar += interviewer.hrs;
+			}
+			// Add hours to the accumulator offCph where interviewer cph is off variance (less than 80%)
+			else if (interviewer.cph < threshold) {
+				acc.offCph += interviewer.hrs;
+			}
+			// Add hours to the accumulator onCph where interviewer cph is on cph (greater than or equal to gpcph)
+			else if (interviewer.cph >= cph) {
+				acc.onCph += interviewer.hrs;
+			}
+			else {
+				console.warn(
+					'Interviewer skipped from categories:', 
+					'\ncms > 0:', interviewer.cms > 0,
+					'\nonVar:', interviewer.cph >= threshold && interviewer.cph < gpcph,
+					'\noffCph:', interviewer.cph < threshold,
+					'\nonCph:', interviewer.cph >= gpcph,
+					'\nprojectId:', interviewer.projectId,
+					interviewer
+				);
+				acc.unclassified += interviewer.hrs;
+			}
+
 			// When finished iterating through the data, the accumulator returns an object. In this case it is our interviewer data with the added stats
 			// Added stats: totalHrs, offCph, onCph, onVar, zcms
 			return acc;
 		},
-		{ totalHrs: 0, offCph: 0, onCph: 0, onVar: 0, zcms: 0 }
+		{ totalHrs: 0, offCph: 0, onCph: 0, onVar: 0, zcms: 0, realHours: 0 }
 	);
+	// console.log(data);
 
 	return data;
 };
@@ -67,8 +83,6 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	const startDate = cleanQueryParam(req.query?.startdate);
 	const endDate = cleanQueryParam(req.query?.enddate);
 	const isLive = req.params?.type === 'live';
-
-	console.log(projectId, startDate, endDate, isLive);
 
 	const data = isLive
 		? await Reports.getLiveReportData(projectId)
@@ -91,11 +105,17 @@ const handleGetReportData = handleAsync(async (req, res) => {
 
 	// This called the function above that creates and accumulator to iterate through the data
 	const result = data.map((project) => {
+		let cph;
+		if (isLive) 
+			cph = project.gpcph ?? 0;
+		else
+			cph = project.cph ?? 0;
 		const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(
 			interviewerData,
-			project
+			project,
+			cph
 		);
-		let abbreviatedProjName = project.projName || '';
+		let abbreviatedProjName = project.projName ?? '';
 
 		// First replace the state names with their abbreviations
 		Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
