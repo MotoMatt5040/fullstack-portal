@@ -7,6 +7,7 @@ import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
 
 import './SummaryReport.css';
+import '../styles/TableSelectors.css';
 import { useSelector  } from 'react-redux';
 
 const ProjectReport = () => {
@@ -22,16 +23,18 @@ const ProjectReport = () => {
 		handleDateChange
 	} = useProjectReportLogic();
 
-	let columnKeyMap;
+	let columnKeyMap = {
+		'Project ID': 'projectId',
+		'Proj Name': 'projName',
+		...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
+		CMS: 'cms',
+		HRS: 'hrs',
+		CPH: 'cph',
+	};
 
 	if (window.innerWidth < 768) { // Mobile view
 		columnKeyMap = {
-			'Project ID': 'projectId',
-			'Proj Name': 'projName',
-			...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
-			CMS: 'cms',
-			HRS: 'hrs',
-			CPH: 'cph',
+			...columnKeyMap,
 			GPH: 'gpcph',
 			MPH: 'mph',
 			AL: 'al'
@@ -40,12 +43,7 @@ const ProjectReport = () => {
 	}
 	else {
 		columnKeyMap = {
-			'Project ID': 'projectId',
-			'Project Name': 'projName',
-			...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
-			CMS: 'cms',
-			HRS: 'hrs',
-			CPH: 'cph',
+			...columnKeyMap,
 			GPCPH: 'gpcph',
 			MPH: 'mph',
 			'Avg. Len': 'al',
@@ -85,6 +83,7 @@ const ProjectReport = () => {
 						isClickable={true}
 						clickParameters={['projectId', 'recDate']}
 						linkTo={'/projectreport'}
+						redirect={true}
 					/>
 				)}
 			</div>
