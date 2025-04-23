@@ -2,11 +2,11 @@ import React from 'react';
 import useProjectReportLogic from './useProjectReportLogic';
 
 import MyPieChart from '../../components/MyPieChart';
-import MyDateRangePicker from '../../components/DateRangePicker';
 import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
 
 import './ProjectReport.css';
+import '../styles/TableSelectors.css';
 import { useSelector  } from 'react-redux';
 
 const ProjectReport = () => {
@@ -15,23 +15,23 @@ const ProjectReport = () => {
 		liveToggle,
 		handleLiveToggle,
 		data,
-		isSuccess,
+		// isSuccess,
 		chartData,
 		totalData,
-		date,
-		handleDateChange
+		projectReportIsLoading,
+		projectReportData
 	} = useProjectReportLogic();
 
-	let columnKeyMap;
+	let columnKeyMap = {
+		...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
+		CMS: 'cms',
+		HRS: 'hrs',
+		CPH: 'cph',
+	};
 
 	if (window.innerWidth < 768) { // Mobile view
 		columnKeyMap = {
-			'Project ID': 'projectId',
-			'Proj Name': 'projName',
-			...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
-			CMS: 'cms',
-			HRS: 'hrs',
-			CPH: 'cph',
+			...columnKeyMap,
 			GPH: 'gpcph',
 			MPH: 'mph',
 			AL: 'al'
@@ -40,12 +40,7 @@ const ProjectReport = () => {
 	}
 	else {
 		columnKeyMap = {
-			'Project ID': 'projectId',
-			'Project Name': 'projName',
-			...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
-			CMS: 'cms',
-			HRS: 'hrs',
-			CPH: 'cph',
+			...columnKeyMap,
 			GPCPH: 'gpcph',
 			MPH: 'mph',
 			'Avg. Len': 'al',
@@ -65,17 +60,23 @@ const ProjectReport = () => {
 	};
 
 	return (
-		<section className='summary-report'>
-			<div className='summary-report-header'>
-				{showGraphs && <MyPieChart data={chartData} domainColumn='field' valueColumn='value' />}
-				<MyTable data={totalData} columnKeyMap={summaryColumnKeyMap} isLive={liveToggle}/>
+		<section className='project-report'>
+			<div className='project-report-header'>
+				<h1> 
+					{projectReportData && <>{projectReportData[0]['projectId']} {projectReportData[0]['projName']} </>}
+					Report
+					</h1>
+				<div className='project-report-chart'>
+					{showGraphs && <MyPieChart data={chartData} domainColumn='field' valueColumn='value' />}
+					<MyTable data={totalData} columnKeyMap={summaryColumnKeyMap} isLive={liveToggle}/>
+				</div>
 			</div>
 			<div className='table-data'>
 				<div className={`table-data-header`}>
-					{liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />}
+					{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
 					<MyToggle label='Live' active={liveToggle} onClick={handleLiveToggle} />
 				</div>
-				{isSuccess && ( // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
+				{projectReportData && ( // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
 					<MyTable      // The syntax is {bool && <Component />} (please include the brackets)
 						className='project-table'
 						data={data}
@@ -87,6 +88,7 @@ const ProjectReport = () => {
 						linkTo={'applesauce'}
 					/>
 				)}
+				{/* <p>Status: {projectReportIsSuccess ? 'Success' : 'Failed or Loading'}</p> */}
 			</div>
 		</section>
 	);
