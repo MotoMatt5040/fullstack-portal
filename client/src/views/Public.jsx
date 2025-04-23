@@ -9,8 +9,6 @@ const Public = () => {
                 <h1>Welcome to the Promark Portal</h1>
             </header>
             <main>
-                {/* <p>Currently you can log in, and do nothing else.</p>
-                <p>&nbsp;</p> */}
                 <address>
                     Promark Research<br />
                     313 Sawdut Rd<br />
