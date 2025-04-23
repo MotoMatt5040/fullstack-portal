@@ -2,16 +2,43 @@ import * as d3 from 'd3';
 import React, { useEffect, useRef } from 'react';
 import './css/MyPieChart.css';
 
-const MyPieChart = (props) => {
-	const data = props.data;
-	const skip = props.skip || [];
-	const domainColumn = props.domainColumn || 'name';
-	const valueColumn = props.valueColumn || 'value';
-	const width = props.width ?? (window.innerWidth < 768 ? 200 : 400);
-	const height = props.height ?? width;
-	const radius = props.radius ?? Math.min(width, height) / 2 - 1;
-	const colorScheme = props.colorScheme || d3.interpolateRdYlGn;
-	const svgRef = useRef();
+interface PieChartData {
+  [key: string]: any;
+}
+
+interface MyPieChartProps {
+  data: PieChartData[];
+
+  skip?: string[];
+  domainColumn?: string;
+  valueColumn?: string;
+  width?: number;
+  height?: number;
+  radius?: number;
+  colorScheme?: (t: number) => string;
+	dataIsReady?: boolean;
+}
+
+const MyPieChart: React.FC<MyPieChartProps> = (props) => {
+  const {
+    data,
+    skip = [],
+    domainColumn = 'name',
+    valueColumn = 'value',
+    width = window.innerWidth < 768 ? 200 : 400,
+    height = width,
+    radius = Math.min(width, height) / 2 - 1,
+    colorScheme = d3.interpolateRdYlGn,
+		dataIsReady = false
+  } = props;
+
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+	useEffect(() => {
+		if (!dataIsReady && svgRef.current) {
+			d3.select(svgRef.current).selectAll('*').remove();
+		}
+	}, [dataIsReady]);
 
 	useEffect(() => {
 		if (!data || data.length === 0) return;
@@ -119,9 +146,15 @@ const MyPieChart = (props) => {
 			.attr('opacity', 0);
 
 		text.transition().duration(1000).attr('opacity', 1);
-	}, [data]);
+	}, [dataIsReady, data]);
 
-	return <svg ref={svgRef}></svg>;
+	return !dataIsReady ? (
+		<div className="flex items-center justify-center h-full">
+			<div className="spinner" />
+		</div>
+	) : (
+		<svg ref={svgRef}></svg>
+	);
 };
 
 export default MyPieChart;
