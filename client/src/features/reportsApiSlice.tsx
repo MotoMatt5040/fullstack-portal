@@ -1,10 +1,11 @@
 import { apiSlice } from '../app/api/apiSlice';
 
 interface ReportArgs {
-  projectId?: string; // Make projectId optional
   live: boolean;
-  startDate?: string;  // Make startDate optional
-  endDate?: string;    // Make endDate optional
+
+  projectId?: string; 
+  startDate?: string;  
+  endDate?: string;  
   ts?: string;
 }
 
@@ -19,7 +20,6 @@ interface ProjectReport {
   mph: number;
   al: number;
 
-  // Calculated Fields
   abbreviatedDate: string;
   totalHrs: string;
   offCph: string;

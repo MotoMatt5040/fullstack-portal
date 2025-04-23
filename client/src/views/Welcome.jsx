@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import React from "react";
+import { useSelector } from "react-redux";
 import { selectCurrentUser, selectCurrentToken } from "../features/auth/authSlice";
 import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import ROLES from "../ROLES_LIST.json";
 
 const Welcome = () => {
     const user = useSelector(selectCurrentUser);
@@ -33,6 +32,7 @@ const Welcome = () => {
             <br />
             <h1>Start Here!!</h1>
             <p><Link to="/summaryreport">Summary Reports</Link></p>
+            {/* <p><Link to="/projectreport">Project Report</Link></p> */}
             
         </section>
     );
