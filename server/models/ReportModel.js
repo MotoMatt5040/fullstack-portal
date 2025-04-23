@@ -3,8 +3,6 @@ const withDbConnection = require('../config/dbConnPromark');
 
 const getLiveReportData = async (projectId) => {
 	const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';
-	console.log(projectIdCondition, projectId, 'here')
-	// projectIdCondition = `AND hpd.projectId = '13070C'`
 	const qry = `
 	SELECT 
 		hp.projectId,
@@ -21,7 +19,7 @@ const getLiveReportData = async (projectId) => {
 		ON hp.projectId = gpcph.projectId
 	WHERE CONVERT(date, gpcph.recDate) = CONVERT(date, GETDATE()) 
 		AND recloc = 99
-		${projectIdCondition}`;
+		${projectIdCondition};`;
 		// where gpcph.recDate = '2025-03-11' and recloc = 99`; // THIS LINE IS FOR TESTING ONLY
 
 		const res = withDbConnection(
@@ -40,9 +38,8 @@ const getLiveReportData = async (projectId) => {
 
 const getLiveInterviewerData = async (projectId) => {
 	const projectIdCondition = projectId ? `WHERE hpd.projectId = @projectId` : '';
-	console.log(projectId);
 	const qry = `
-	SELECT 
+SELECT 
     hpd.projectId, 
     loc.longName, 
     empList.eid,
@@ -88,10 +85,7 @@ INNER JOIN (
 ) naam
     ON naam.eid = empList.eid
 ${projectIdCondition}  
-ORDER BY hpd.cms DESC;
-`
-
-	console.log(qry)
+ORDER BY hpd.cms DESC;`;
 
 	const res = withDbConnection(
 		async (pool) => {
@@ -179,7 +173,7 @@ const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
 	WHERE
 		${projectIdCondition}
 		${andClause}
-		${dateCondition}`;
+		${dateCondition};`;
 
 	 return withDbConnection(async (pool) => {
 		const request = pool.request();

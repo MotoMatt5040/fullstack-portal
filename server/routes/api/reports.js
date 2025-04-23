@@ -6,9 +6,6 @@ const ReportController = require('../../controllers/reportController');
 
 router.route('/tables/data/:type')
   .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
-    const { type } = req.params;  
-    // const isLive = type === 'live'; 
-
     ReportController.handleGetReportData(req, res);
   });
 
