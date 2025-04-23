@@ -7,7 +7,7 @@ import MyToggle from '../../components/MyToggle';
 
 import './ProjectReport.css';
 import '../styles/TableSelectors.css';
-import { useSelector  } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
@@ -18,27 +18,28 @@ const ProjectReport = () => {
 		// isSuccess,
 		chartData,
 		totalData,
+		projectReportIsSuccess,
+		projectReportIsFetching,
 		projectReportIsLoading,
-		projectReportData
+		projectReportData,
 	} = useProjectReportLogic();
 
 	let columnKeyMap = {
-		...(liveToggle ? {} : {Date: 'abbreviatedDate'}),
+		...(liveToggle ? {} : { Date: 'abbreviatedDate' }),
 		CMS: 'cms',
 		HRS: 'hrs',
 		CPH: 'cph',
 	};
 
-	if (window.innerWidth < 768) { // Mobile view
+	if (window.innerWidth < 768) {
+		// Mobile view
 		columnKeyMap = {
 			...columnKeyMap,
 			GPH: 'gpcph',
 			MPH: 'mph',
-			AL: 'al'
+			AL: 'al',
 		};
-
-	}
-	else {
+	} else {
 		columnKeyMap = {
 			...columnKeyMap,
 			GPCPH: 'gpcph',
@@ -62,32 +63,66 @@ const ProjectReport = () => {
 	return (
 		<section className='project-report'>
 			<div className='project-report-header'>
-				<h1> 
-					{projectReportData && <>{projectReportData[0]['projectId']} {projectReportData[0]['projName']} </>}
+				<h1>
+					{projectReportData && (
+						<>
+							{projectReportData[0]['projectId']}{' '}
+							{projectReportData[0]['projName']}{' '}
+						</>
+					)}
 					Report
-					</h1>
+				</h1>
 				<div className='project-report-chart'>
-					{showGraphs && <MyPieChart data={chartData} domainColumn='field' valueColumn='value' />}
-					<MyTable data={totalData} columnKeyMap={summaryColumnKeyMap} isLive={liveToggle}/>
+					{showGraphs && (
+						<MyPieChart
+							data={chartData}
+							domainColumn='field'
+							valueColumn='value'
+							dataIsReady={
+								projectReportIsSuccess &&
+								!projectReportIsLoading &&
+								!projectReportIsFetching
+							}
+						/>
+					)}
+					<MyTable
+						data={totalData}
+						columnKeyMap={summaryColumnKeyMap}
+						isLive={liveToggle}
+						dataIsReady={
+							projectReportIsSuccess &&
+							!projectReportIsLoading &&
+							!projectReportIsFetching
+						}
+					/>
 				</div>
 			</div>
 			<div className='table-data'>
 				<div className={`table-data-header`}>
 					{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
-					<MyToggle label='Live' active={liveToggle} onClick={handleLiveToggle} />
-				</div>
-				{projectReportData && ( // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
-					<MyTable      // The syntax is {bool && <Component />} (please include the brackets)
-						className='project-table'
-						data={data}
-						columnKeyMap={columnKeyMap}
-						reverseThresholds={['offCph', 'zcms']}
-						isLive={liveToggle}
-						isClickable={false}
-						clickParameters={['projectId', 'recDate']}
-						linkTo={'applesauce'}
+					<MyToggle
+						label='Live'
+						active={liveToggle}
+						onClick={handleLiveToggle}
 					/>
-				)}
+				</div>
+				 {/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
+						// The syntax is {bool && <Component />} (please include the brackets) */}
+						<MyTable 
+							className='project-table'
+							data={data}
+							columnKeyMap={columnKeyMap}
+							reverseThresholds={['offCph', 'zcms']}
+							isLive={liveToggle}
+							isClickable={false}
+							clickParameters={['projectId', 'recDate']}
+							linkTo={'applesauce'}
+							dataIsReady={
+								projectReportIsSuccess &&
+								!projectReportIsLoading &&
+								!projectReportIsFetching
+							}
+						/>
 				{/* <p>Status: {projectReportIsSuccess ? 'Success' : 'Failed or Loading'}</p> */}
 			</div>
 		</section>
