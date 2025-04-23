@@ -3,16 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import './css/MyTable.css';
 
 interface MyTableProps {
-	data: Array<Record<string, any>>; 
-	columnKeyMap: Record<string, string>; 
+	data: Array<Record<string, any>>;
+	columnKeyMap: Record<string, string>;
 
-	className?: string; 
-	clickParameters: string[]; 
-	redirect?: boolean; 
+	className?: string;
+	clickParameters: string[];
+	redirect?: boolean;
 	linkTo?: string;
-	reverseThresholds?: string[]; 
-	isLive?: boolean; 
-	isClickable?: boolean; 
+	reverseThresholds?: string[];
+	isLive?: boolean;
+	isClickable?: boolean;
+	dataIsReady?: boolean;
 }
 
 const MyTable: React.FC<MyTableProps> = ({
@@ -25,6 +26,7 @@ const MyTable: React.FC<MyTableProps> = ({
 	reverseThresholds = [],
 	isLive = false,
 	isClickable = false,
+	dataIsReady = false
 }) => {
 	const navigate = useNavigate();
 	const columnHeaders = Object.keys(columnKeyMap);
@@ -135,33 +137,43 @@ const MyTable: React.FC<MyTableProps> = ({
 				</tr>
 			</thead>
 			<tbody>
-				{sortedData.map((row, index) => (
-					<tr
-						key={index}
-						onClick={isClickable ? () => handleRowClick(row) : undefined}
-						style={{ cursor: isClickable ? 'pointer' : 'default' }}
-					>
-						{columnHeaders.map((header) => {
-							const key = columnKeyMap[header];
-							const cellValue = row?.[key] ?? 'N/A';
-							const thresholdKey = `${key}Threshold`;
-							const threshold = row?.[thresholdKey];
-							const cellClass = threshold
-								? highlightCellColor(cellValue, threshold, key)
-								: '';
-							const blinkingClass = isLive ? 'blinking' : '';
-							return (
-								<td
-									className={`${header} ${cellClass} ${blinkingClass}`}
-									key={header}
-								>
-									{cellValue}
-								</td>
-							);
-						})}
-					</tr>
-				))}
-			</tbody>
+  {!dataIsReady ? (
+    <tr>
+		<td colSpan={columnHeaders.length}>
+			<div className="spinner-container">
+				<div className="spinner" />
+			</div>
+		</td>
+	</tr>
+  ) : (
+    sortedData.map((row, index) => (
+      <tr
+        key={index}
+        onClick={isClickable ? () => handleRowClick(row) : undefined}
+        style={{ cursor: isClickable ? 'pointer' : 'default' }}
+      >
+        {columnHeaders.map((header) => {
+          const key = columnKeyMap[header];
+          const cellValue = row?.[key] ?? 'N/A';
+          const thresholdKey = `${key}Threshold`;
+          const threshold = row?.[thresholdKey];
+          const cellClass = threshold
+            ? highlightCellColor(cellValue, threshold, key)
+            : '';
+          const blinkingClass = isLive ? 'blinking' : '';
+          return (
+            <td
+              className={`${header} ${cellClass} ${blinkingClass}`}
+              key={header}
+            >
+              {cellValue}
+            </td>
+          );
+        })}
+      </tr>
+    ))
+  )}
+</tbody>
 		</table>
 	);
 };
