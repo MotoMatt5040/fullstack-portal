@@ -6,6 +6,7 @@ interface MyTableProps {
 	data: Array<Record<string, any>>;
 	columnKeyMap: Record<string, string>;
 
+	includeHeader?: boolean;
 	className?: string;
 	clickParameters: string[];
 	redirect?: boolean;
@@ -17,12 +18,14 @@ interface MyTableProps {
 }
 
 const MyTable: React.FC<MyTableProps> = ({
-	className = 'MyTable',
 	data,
 	columnKeyMap,
 	clickParameters,
 	redirect,
 	linkTo,
+
+	className = 'MyTable',
+	includeHeader = true,
 	reverseThresholds = [],
 	isLive = false,
 	isClickable = false,
@@ -116,7 +119,7 @@ const MyTable: React.FC<MyTableProps> = ({
 
 	return (
 		<table className={className}>
-			<thead>
+			{includeHeader && <thead>
 				<tr>
 					{columnHeaders.map((header) => (
 						<th
@@ -135,7 +138,7 @@ const MyTable: React.FC<MyTableProps> = ({
 						</th>
 					))}
 				</tr>
-			</thead>
+			</thead>}
 			<tbody>
   {!dataIsReady ? (
     <tr>
