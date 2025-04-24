@@ -1,0 +1,21 @@
+
+.summary-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: .9rem;
+  text-align: center;
+}
+
+.summary-overview-table tbody td {
+  padding: .5rem .5rem .5rem .5rem;
+  border-bottom: 1px solid var(--table-border-color, #666);
+  white-space: nowrap;
+}
+
+.summary-table tbody td {
+  font-size: .65rem;
+  padding: .5rem .2rem .5rem .2rem;
+  border-bottom: 1px solid var(--table-border-color, #666);
+  white-space: nowrap;
+}

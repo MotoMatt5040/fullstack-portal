@@ -113,7 +113,17 @@ const useProjectReportLogic = () => {
 	useEffect(() => {
 		if (!summaryReport.data) return;
 
-		setData(summaryReport.data);
+		let data = summaryReport.data
+
+		if (window.innerWidth < 768) {
+			const trimmedData = data.map(item => ({
+				...item,
+				projName: item.projName.length > 7 ? item.projName.slice(0, 7) + '…' : item.projName,
+			}));
+			data = trimmedData;
+		}
+
+		setData(data);
 	}, [projectCount, isRefetching, summaryReport.data]);
 
 	useEffect(() => {

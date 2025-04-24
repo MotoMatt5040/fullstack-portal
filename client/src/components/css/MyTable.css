@@ -3,8 +3,8 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
-  font-size: 0.6rem;
-  text-align: left;
+  font-size: 0.69rem;
+  text-align: center;
 }
 
 table thead {
@@ -13,12 +13,12 @@ table thead {
 }
 
 table thead th {
-  padding: 0.5rem;
+  padding: 0.1rem;
   white-space: nowrap;
 }
 
 table tbody td {
-  padding: 0.15rem;
+  padding: .5rem .1rem .5rem .1rem;
   border-bottom: 1px solid var(--table-border-color, #666);
   white-space: nowrap;
 }

@@ -1,0 +1,30 @@
+
+.project-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: .9rem;
+  text-align: center;
+}
+
+.project-overview-table tbody td {
+  padding: .5rem .5rem .5rem .5rem;
+  border-bottom: 1px solid var(--table-border-color, #666);
+  white-space: nowrap;
+}
+
+.project-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: .8rem;
+  text-align: center;
+}
+
+.project-table tbody td {
+  padding: .5rem .5rem .5rem .5rem;
+  border-bottom: 1px solid var(--table-border-color, #666);
+  white-space: nowrap;
+}
+
+

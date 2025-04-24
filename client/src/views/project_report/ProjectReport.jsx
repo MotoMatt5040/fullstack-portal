@@ -7,7 +7,9 @@ import MyToggle from '../../components/MyToggle';
 
 import './ProjectReport.css';
 import '../styles/TableSelectors.css';
+import './ProjectReportTable.css';
 import { useSelector } from 'react-redux';
+import MyGoBackButton from '../../components/MyGoBackButton';
 
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
@@ -62,17 +64,18 @@ const ProjectReport = () => {
 
 	return (
 		<section className='project-report'>
+			<h1 className='project-report-title'>
+				{projectReportData && (
+					<>
+						{projectReportData[0]['projectId']}{' '}
+						{projectReportData[0]['projName']}{' '}
+					</>
+				)}
+				Report
+			</h1>
 			<div className='project-report-header'>
-				<h1>
-					{projectReportData && (
-						<>
-							{projectReportData[0]['projectId']}{' '}
-							{projectReportData[0]['projName']}{' '}
-						</>
-					)}
-					Report
-				</h1>
-				<div className='project-report-chart'>
+				Overview
+				<div className='project-report-charts'>
 					{showGraphs && (
 						<MyPieChart
 							data={chartData}
@@ -86,6 +89,7 @@ const ProjectReport = () => {
 						/>
 					)}
 					<MyTable
+						className='project-overview-table'
 						data={totalData}
 						columnKeyMap={summaryColumnKeyMap}
 						isLive={liveToggle}
@@ -97,7 +101,7 @@ const ProjectReport = () => {
 					/>
 				</div>
 			</div>
-			<div className='table-data'>
+			<div className='table-data-container'>
 				<div className={`table-data-header`}>
 					{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
 					<MyToggle
@@ -106,25 +110,26 @@ const ProjectReport = () => {
 						onClick={handleLiveToggle}
 					/>
 				</div>
-				 {/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
+				{/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
 						// The syntax is {bool && <Component />} (please include the brackets) */}
-						<MyTable 
-							className='project-table'
-							data={data}
-							columnKeyMap={columnKeyMap}
-							reverseThresholds={['offCph', 'zcms']}
-							isLive={liveToggle}
-							isClickable={false}
-							clickParameters={['projectId', 'recDate']}
-							linkTo={'applesauce'}
-							dataIsReady={
-								projectReportIsSuccess &&
-								!projectReportIsLoading &&
-								!projectReportIsFetching
-							}
-						/>
+				<MyTable
+					className='project-table'
+					data={data}
+					columnKeyMap={columnKeyMap}
+					reverseThresholds={['offCph', 'zcms']}
+					isLive={liveToggle}
+					isClickable={false}
+					clickParameters={['projectId', 'recDate']}
+					linkTo={'applesauce'}
+					dataIsReady={
+						projectReportIsSuccess &&
+						!projectReportIsLoading &&
+						!projectReportIsFetching
+					}
+				/>
 				{/* <p>Status: {projectReportIsSuccess ? 'Success' : 'Failed or Loading'}</p> */}
 			</div>
+			<MyGoBackButton to='Summary Report' />
 		</section>
 	);
 };

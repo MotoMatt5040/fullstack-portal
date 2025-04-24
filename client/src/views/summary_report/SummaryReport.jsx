@@ -7,6 +7,7 @@ import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
 
 import './SummaryReport.css';
+import './SummaryReportTable.css';
 import '../styles/TableSelectors.css';
 import { useSelector } from 'react-redux';
 
@@ -16,7 +17,6 @@ const ProjectReport = () => {
 		liveToggle,
 		handleLiveToggle,
 		data,
-		isSuccess,
 		chartData,
 		totalData,
 		date,
@@ -27,8 +27,8 @@ const ProjectReport = () => {
 	} = useProjectReportLogic();
 
 	let columnKeyMap = {
-		'Project ID': 'projectId',
-		'Proj Name': 'projName',
+		'Proj ID': 'projectId',
+		'Proj Nme': 'projName',
 		...(liveToggle ? {} : { Date: 'abbreviatedDate' }),
 		CMS: 'cms',
 		HRS: 'hrs',
@@ -67,30 +67,34 @@ const ProjectReport = () => {
 	return (
 		<section className='summary-report'>
 			<div className='summary-report-header'>
-				{showGraphs && (
-					<MyPieChart
-						data={chartData}
-						domainColumn='field'
-						valueColumn='value'
+				Overview
+				<div className='summary-report-charts'>
+					{showGraphs && (
+						<MyPieChart
+							data={chartData}
+							domainColumn='field'
+							valueColumn='value'
+							dataIsReady={
+								summaryReportIsSuccess &&
+								!summaryReportIsLoading &&
+								!summaryReportIsFetching
+							}
+						/>
+					)}
+					<MyTable
+					  className='summary-overview-table'
+						data={totalData}
+						columnKeyMap={summaryColumnKeyMap}
+						isLive={liveToggle}
 						dataIsReady={
 							summaryReportIsSuccess &&
 							!summaryReportIsLoading &&
 							!summaryReportIsFetching
 						}
 					/>
-				)}
-				<MyTable
-					data={totalData}
-					columnKeyMap={summaryColumnKeyMap}
-					isLive={liveToggle}
-					dataIsReady={
-						summaryReportIsSuccess &&
-						!summaryReportIsLoading &&
-						!summaryReportIsFetching
-					}
-				/>
+				</div>
 			</div>
-			<div className='table-data'>
+			<div className='table-data-container'>
 				<div className={`table-data-header`}>
 					{liveToggle ? (
 						'Live Data'
@@ -110,7 +114,7 @@ const ProjectReport = () => {
 				{/* NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
 				    The syntax is {bool && <Component />} (please include the brackets) */}
 				<MyTable
-					className='project-table'
+					className='summary-table'
 					data={data}
 					columnKeyMap={columnKeyMap}
 					reverseThresholds={['offCph', 'zcms']}
