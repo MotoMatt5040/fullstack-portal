@@ -19,7 +19,9 @@ const getLiveReportData = async (projectId) => {
 		ON hp.projectId = gpcph.projectId
 	WHERE CONVERT(date, gpcph.recDate) = CONVERT(date, GETDATE()) 
 		AND recloc = 99
-		${projectIdCondition};`;
+		${projectIdCondition}
+	ORDER BY
+		hp.projectId ASC;`;
 		// where gpcph.recDate = '2025-03-11' and recloc = 99`; // THIS LINE IS FOR TESTING ONLY
 
 		const res = withDbConnection(
@@ -85,7 +87,8 @@ INNER JOIN (
 ) naam
     ON naam.eid = empList.eid
 ${projectIdCondition}  
-ORDER BY hpd.cms DESC;`;
+ORDER BY 
+	hpd.projectId ASC;`;
 
 	const res = withDbConnection(
 		async (pool) => {
@@ -173,7 +176,10 @@ const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
 	WHERE
 		${projectIdCondition}
 		${andClause}
-		${dateCondition};`;
+		${dateCondition}
+	ORDER BY
+		bbpm.projectId ASC,
+		bbpm.recDate ASC;`;
 
 	 return withDbConnection(async (pool) => {
 		const request = pool.request();
