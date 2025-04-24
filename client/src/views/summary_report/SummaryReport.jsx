@@ -10,6 +10,7 @@ import './SummaryReport.css';
 import './SummaryReportTable.css';
 import '../styles/TableSelectors.css';
 import { useSelector } from 'react-redux';
+import MyCard from '../../components/MyCard';
 
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
@@ -64,6 +65,22 @@ const ProjectReport = () => {
 		'Zero CMS': 'ZERO-CMS',
 	};
 
+	const cardColumnKeyMap = {
+		// 'Proj ID': 'projectId',
+		'Proj Name': 'projName',
+		...(liveToggle ? {} : { Date: 'abbreviatedDate' }),
+		CMS: 'cms',
+		HRS: 'hrs',
+		CPH: 'cph',
+		GPCPH: 'gpcph',
+		MPH: 'mph',
+		'Avg. Len': 'al',
+		'On CPH': 'onCph',
+		'On Var': 'onVar',
+		'Off CPH': 'offCph',
+		'Zero CMS': 'zcms',
+	};
+
 	return (
 		<section className='summary-report'>
 			<div className='summary-report-header'>
@@ -82,7 +99,7 @@ const ProjectReport = () => {
 						/>
 					)}
 					<MyTable
-					  className='summary-overview-table'
+						className='summary-overview-table'
 						data={totalData}
 						columnKeyMap={summaryColumnKeyMap}
 						isLive={liveToggle}
@@ -129,6 +146,21 @@ const ProjectReport = () => {
 						!summaryReportIsFetching
 					}
 				/>
+			</div>
+			<div className='card-container'>
+				{summaryReportIsSuccess &&
+					!summaryReportIsLoading &&
+					!summaryReportIsFetching && (
+							data.map((item, index) => (
+								<MyCard
+									key={index}
+									title={item.projectId}
+									data={item}
+									columnKeyMap={cardColumnKeyMap}
+								/>
+							))
+						
+					)}
 			</div>
 		</section>
 	);
