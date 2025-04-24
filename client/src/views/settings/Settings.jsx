@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector  } from 'react-redux';
 import { logOut } from '../../features/auth/authSlice';
+import { useLogoutMutation } from '../../features/auth/authApiSlice';
 import { toggleShowGraphs } from '../../features/settingsSlice';
 import MyToggle from '../../components/MyToggle';
 
 const settings = () => {
 	const dispatch = useDispatch();
+	const [logoutRequest] = useLogoutMutation();
 	const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
 
@@ -19,8 +21,14 @@ const settings = () => {
 		localStorage.setItem('theme', newTheme);
 	};
 
-	const handleLogout = () => {
-		dispatch(logOut());
+	const handleLogout = async () => {
+		try {
+			await logoutRequest(); // send request to backend
+			dispatch(logOut()); // clear Redux auth state
+			localStorage.removeItem('token'); // optional if you use token storage
+		} catch (err) {
+			console.error('Logout failed:', err);
+		}
 	};
 
 	const handleGraphToggle = () => {

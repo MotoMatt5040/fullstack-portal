@@ -63,19 +63,24 @@ const getUserByRefreshToken = async (refreshToken) => {
 };
 
 const clearRefreshToken = async (email) => {
+    let currentDate = new Date();
     return withDbConnection(async (pool) => {
         await pool.request()
             .input('email', sql.NVarChar, email)
-            .query('UPDATE tblAuthentication SET refreshToken = NULL WHERE email = @email');
+            .input('dateUpdated', sql.DateTime, currentDate)
+            .query('UPDATE tblAuthentication SET refreshToken = NULL, accessToken = NULL, dateUpdated = @dateUpdated WHERE email = @email');
     });
 };
 
-const updateUserRefreshToken = async (email, refreshToken) => {
+const updateUserRefreshToken = async (email, refreshToken, accessToken) => {
+    let currentDate = new Date();
     return withDbConnection(async (pool) => {
         await pool.request()
             .input('email', sql.NVarChar, email)
             .input('refreshToken', sql.NVarChar, refreshToken)
-            .query('UPDATE tblAuthentication SET refreshToken = @refreshToken WHERE email = @email');
+            .input('accessToken', sql.NVarChar, accessToken)
+            .input('dateUpdated', sql.DateTime, currentDate)
+            .query('UPDATE tblAuthentication SET refreshToken = @refreshToken, accessToken = @accessToken, dateUpdated = @dateUpdated WHERE email = @email');
     });
 };
 
