@@ -34,6 +34,7 @@ const settings = () => {
 			<button className='theme-toggle' onClick={toggleTheme}>
 				Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
 			</button>
+			<br />
 			<MyToggle label='Show Graphs' active={showGraphs} onClick={handleGraphToggle}/>
 		</section>
 	);
