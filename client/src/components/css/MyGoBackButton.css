@@ -1,0 +1,32 @@
+.go-back-button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.go-back-text {
+  text-decoration: underline;
+  margin-left: 5px;
+}
+
+.go-back-button:hover .go-back-text {
+  text-decoration: underline;
+  color: #007bff; /* Change color on hover if desired */
+}
+
+.go-back-button:focus {
+  outline: none; /* Optional: Remove focus outline */
+}
+
+@media (min-width: 768px) {
+  .go-back-button {
+    font-size: 1.2rem; /* Adjust font size for larger screens */
+  }
+}
