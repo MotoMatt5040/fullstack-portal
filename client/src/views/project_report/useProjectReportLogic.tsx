@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { useSearchParams } from 'react-router-dom';
 import QueryHelper from '../../utils/QueryHelper';
@@ -32,6 +32,7 @@ const useProjectReportLogic = () => {
   const [projectCount, setProjectCount] = useState<number>(0);
   const [isRefetching, setIsRefetching] = useState<boolean>(false);
   const [projectId, setProjectId] = useState<string | undefined>(searchParams.get('projectId') || undefined);
+  const [isListView, setIsListView] = useState<boolean>(true);
   const [chartData, setChartData] = useState<ChartData[]>([
     { field: 'ON-CPH', value: '0' },
     { field: 'ON-VAR', value: '0' },
@@ -143,6 +144,7 @@ const useProjectReportLogic = () => {
     setTotalData(newTotalData);
   }, [data]);
 
+
   const refetchCheck = () => {
     if (projectCount > projectReport.data.length && !isRefetching) {
       setTimeout(() => {
@@ -160,6 +162,7 @@ const useProjectReportLogic = () => {
   };
 
   const handleLiveToggle = () => {
+    // true is list view and false is grid view
     setLiveToggle((prev) => !prev);
   };
 
@@ -176,6 +179,10 @@ const useProjectReportLogic = () => {
     }
   };
 
+  const handleViewChange = () => {
+    setIsListView(prev => !prev);
+  }
+
   return {
     liveToggle,
     handleLiveToggle,
@@ -185,6 +192,8 @@ const useProjectReportLogic = () => {
     projectReportIsLoading: projectReport.isLoading,
     projectReportIsSuccess: projectReport.isSuccess,
     projectReportData: projectReport.data,
+    isListView,
+    handleViewChange
   };
 };
 

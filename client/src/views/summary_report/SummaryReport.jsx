@@ -1,5 +1,7 @@
 import React from 'react';
 import useProjectReportLogic from './useSummaryReportLogic';
+import Icon from '@mdi/react';
+import { mdiViewList, mdiViewGrid } from '@mdi/js';
 
 import MyPieChart from '../../components/MyPieChart';
 import MyDateRangePicker from '../../components/DateRangePicker';
@@ -8,7 +10,11 @@ import MyToggle from '../../components/MyToggle';
 
 import './SummaryReport.css';
 import './SummaryReportTable.css';
-import '../styles/TableSelectors.css';
+import '../styles/Tables.css';
+import '../styles/Headers.css';
+import '../styles/Cards.css';
+import '../styles/Sections.css';
+import '../styles/Charts.css';
 import { useSelector } from 'react-redux';
 import MyCard from '../../components/MyCard';
 
@@ -25,6 +31,8 @@ const ProjectReport = () => {
 		summaryReportIsLoading,
 		summaryReportIsSuccess,
 		summaryReportIsFetching,
+		isListView,
+		handleViewChange,
 	} = useProjectReportLogic();
 
 	let columnKeyMap = {
@@ -82,86 +90,98 @@ const ProjectReport = () => {
 	};
 
 	return (
-		<section className='summary-report'>
-			<div className='summary-report-header'>
-				Overview
-				<div className='summary-report-charts'>
-					{showGraphs && (
-						<MyPieChart
-							data={chartData}
-							domainColumn='field'
-							valueColumn='value'
+		<section className='report-section'>
+			<span className='report-container'>
+				<div className='report-header'>
+					Overview
+					<div className='report-charts'>
+						{showGraphs && (
+							<MyPieChart
+								data={chartData}
+								domainColumn='field'
+								valueColumn='value'
+								dataIsReady={
+									summaryReportIsSuccess &&
+									!summaryReportIsLoading &&
+									!summaryReportIsFetching
+								}
+							/>
+						)}
+						<MyTable
+							className='summary-overview-table'
+							data={totalData}
+							columnKeyMap={summaryColumnKeyMap}
+							isLive={liveToggle}
 							dataIsReady={
 								summaryReportIsSuccess &&
 								!summaryReportIsLoading &&
 								!summaryReportIsFetching
 							}
 						/>
-					)}
-					<MyTable
-						className='summary-overview-table'
-						data={totalData}
-						columnKeyMap={summaryColumnKeyMap}
-						isLive={liveToggle}
-						dataIsReady={
-							summaryReportIsSuccess &&
-							!summaryReportIsLoading &&
-							!summaryReportIsFetching
-						}
-					/>
+					</div>
 				</div>
-			</div>
-			<div className='table-data-container'>
-				<div className={`table-data-header`}>
-					{liveToggle ? (
-						'Live Data'
-					) : (
-						<MyDateRangePicker
-							date={date}
-							onChange={handleDateChange}
-							isDisabled={liveToggle}
+				<div className='table-data-container'>
+					<div className='view-toggle-div'>
+						<span className='view-toggle-span' onClick={handleViewChange}>
+							{isListView ? (
+								<Icon path={mdiViewGrid} size={1} title='Card View' />
+							) : (
+								<Icon path={mdiViewList} size={1} title='Table View' />
+							)}
+						</span>
+					</div>
+					<div className={`table-data-header`}>
+						{liveToggle ? (
+							'Live Data'
+						) : (
+							<MyDateRangePicker
+								date={date}
+								onChange={handleDateChange}
+								isDisabled={liveToggle}
+							/>
+						)}
+						<MyToggle
+							label='Live'
+							active={liveToggle}
+							onClick={handleLiveToggle}
 						/>
-					)}
-					<MyToggle
-						label='Live'
-						active={liveToggle}
-						onClick={handleLiveToggle}
-					/>
-				</div>
-				{/* NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
+					</div>
+					{/* NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
 				    The syntax is {bool && <Component />} (please include the brackets) */}
-				<MyTable
-					className='summary-table'
-					data={data}
-					columnKeyMap={columnKeyMap}
-					reverseThresholds={['offCph', 'zcms']}
-					isLive={liveToggle}
-					isClickable={true}
-					clickParameters={['projectId', 'recDate']}
-					linkTo={'/projectreport'}
-					redirect={true}
-					dataIsReady={
-						summaryReportIsSuccess &&
-						!summaryReportIsLoading &&
-						!summaryReportIsFetching
-					}
-				/>
-			</div>
-			<div className='card-container'>
-				{summaryReportIsSuccess &&
-					!summaryReportIsLoading &&
-					!summaryReportIsFetching && (
-							data.map((item, index) => (
-								<MyCard
-									key={index}
-									title={item.projectId}
-									data={item}
-									columnKeyMap={cardColumnKeyMap}
-								/>
-							))
-						
+					{isListView ? (
+						<MyTable
+							className='summary-table'
+							data={data}
+							columnKeyMap={columnKeyMap}
+							reverseThresholds={['offCph', 'zcms']}
+							isLive={liveToggle}
+							isClickable={true}
+							clickParameters={['projectId', 'recDate']}
+							linkTo={'/projectreport'}
+							redirect={true}
+							dataIsReady={
+								summaryReportIsSuccess &&
+								!summaryReportIsLoading &&
+								!summaryReportIsFetching
+							}
+						/>
+					) : (
+						<div className='card-container'>
+							{summaryReportIsSuccess &&
+								!summaryReportIsLoading &&
+								!summaryReportIsFetching &&
+								data.map((item, index) => (
+									<MyCard
+										key={index}
+										title={item.projectId}
+										data={item}
+										columnKeyMap={cardColumnKeyMap}
+									/>
+								))}
+						</div>
 					)}
-			</div>
+				</div>
+			</span>
 		</section>
 	);
 };

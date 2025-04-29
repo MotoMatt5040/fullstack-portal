@@ -14,12 +14,15 @@ const getDateFromParams = (key, fallback) => {
 const useProjectReportLogic = () => {
 	const [searchParams] = useSearchParams();
 
-	const [liveToggle, setLiveToggle] = useState(searchParams.get('live') === 'false' ? false : true);
+	const [liveToggle, setLiveToggle] = useState(
+		searchParams.get('live') === 'false' ? false : true
+	);
 	const [data, setData] = useState([]);
 	// const [isSuccess, setIsSuccess] = useState(false);
 	const [timestamp, setTimestamp] = useState(Date.now());
 	const [projectCount, setProjectCount] = useState(0);
 	const [isRefetching, setIsRefetching] = useState(false);
+	const [isListView, setIsListView] = useState(true);
 	const [chartData, setChartData] = useState([
 		{ field: 'ON-CPH', value: 0 },
 		{ field: 'ON-VAR', value: 0 },
@@ -36,8 +39,14 @@ const useProjectReportLogic = () => {
 		},
 	]);
 	const [date, setDate] = useState({
-		start: getDateFromParams('startDate', today('America/Chicago').subtract({ days: 1 })),
-		end: getDateFromParams('endDate', today('America/Chicago').subtract({ days: 1 })),
+		start: getDateFromParams(
+			'startDate',
+			today('America/Chicago').subtract({ days: 1 })
+		),
+		end: getDateFromParams(
+			'endDate',
+			today('America/Chicago').subtract({ days: 1 })
+		),
 	});
 	const summaryReport = QueryHelper(useGetReportQuery, {
 		live: liveToggle,
@@ -71,9 +80,9 @@ const useProjectReportLogic = () => {
 		const live = params.get('live');
 		const start = params.get('startDate');
 		const end = params.get('endDate');
-	
+
 		if (live !== null) setLiveToggle(live === 'true');
-	
+
 		if (start && end) {
 			try {
 				setDate({
@@ -113,12 +122,15 @@ const useProjectReportLogic = () => {
 	useEffect(() => {
 		if (!summaryReport.data) return;
 
-		let data = summaryReport.data
+		let data = summaryReport.data;
 
 		if (window.innerWidth < 768) {
-			const trimmedData = data.map(item => ({
+			const trimmedData = data.map((item) => ({
 				...item,
-				projName: item.projName.length > 7 ? item.projName.slice(0, 7) + '…' : item.projName,
+				projName:
+					item.projName.length > 7
+						? item.projName.slice(0, 7) + '…'
+						: item.projName,
 			}));
 			data = trimmedData;
 		}
@@ -189,12 +201,12 @@ const useProjectReportLogic = () => {
 	const handleLiveToggle = () => {
 		const newToggle = !liveToggle;
 		setLiveToggle(newToggle);
-	
+
 		const params = new URLSearchParams(window.location.search);
 		params.set('live', newToggle);
 		params.set('startDate', date.start.toString());
 		params.set('endDate', date.end.toString());
-	
+
 		const newUrl = `${window.location.pathname}?${params.toString()}`;
 		window.history.pushState({}, '', newUrl);
 	};
@@ -220,18 +232,22 @@ const useProjectReportLogic = () => {
 	};
 
 	const handleDateChange = (newDate) => {
-	const start = newDate.start;
-	const end = newDate.end;
-	setDate({ start, end });
+		const start = newDate.start;
+		const end = newDate.end;
+		setDate({ start, end });
 
-	const params = new URLSearchParams(window.location.search);
-	params.set('startDate', start.toString());
-	params.set('endDate', end.toString());
-	params.set('live', liveToggle);
+		const params = new URLSearchParams(window.location.search);
+		params.set('startDate', start.toString());
+		params.set('endDate', end.toString());
+		params.set('live', liveToggle);
 
-	const newUrl = `${window.location.pathname}?${params.toString()}`;
-	window.history.pushState({}, '', newUrl);
-};
+		const newUrl = `${window.location.pathname}?${params.toString()}`;
+		window.history.pushState({}, '', newUrl);
+	};
+
+	const handleViewChange = () => {
+		setIsListView((prev) => !prev);
+	};
 
 	return {
 		liveToggle,
@@ -244,6 +260,8 @@ const useProjectReportLogic = () => {
 		totalData,
 		date,
 		handleDateChange,
+		isListView,
+		handleViewChange
 	};
 };
 

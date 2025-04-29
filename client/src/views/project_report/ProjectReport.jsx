@@ -1,13 +1,20 @@
 import React from 'react';
 import useProjectReportLogic from './useProjectReportLogic';
+import Icon from '@mdi/react';
+import { mdiViewList, mdiViewGrid } from '@mdi/js';
 
 import MyPieChart from '../../components/MyPieChart';
 import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
+import MyCard from '../../components/MyCard';
 
 import './ProjectReport.css';
-import '../styles/TableSelectors.css';
 import './ProjectReportTable.css';
+import '../styles/Tables.css';
+import '../styles/Headers.css';
+import '../styles/Cards.css';
+import '../styles/Sections.css';
+import '../styles/Charts.css';
 import { useSelector } from 'react-redux';
 import MyGoBackButton from '../../components/MyGoBackButton';
 
@@ -24,6 +31,9 @@ const ProjectReport = () => {
 		projectReportIsFetching,
 		projectReportIsLoading,
 		projectReportData,
+		isListView,
+		handleViewChange,
+		viewIcon,
 	} = useProjectReportLogic();
 
 	let columnKeyMap = {
@@ -62,74 +72,116 @@ const ProjectReport = () => {
 		'Zero CMS': 'ZERO-CMS',
 	};
 
+	const cardColumnKeyMap = {
+		// 'Proj ID': 'projectId',
+		'Proj Name': 'projName',
+		...(liveToggle ? {} : { Date: 'abbreviatedDate' }),
+		CMS: 'cms',
+		HRS: 'hrs',
+		CPH: 'cph',
+		GPCPH: 'gpcph',
+		MPH: 'mph',
+		'Avg. Len': 'al',
+		'On CPH': 'onCph',
+		'On Var': 'onVar',
+		'Off CPH': 'offCph',
+		'Zero CMS': 'zcms',
+	};
+
 	return (
-		<section className='project-report'>
-			<h1 className='project-report-title'>
-				{projectReportData && (
-					<>
-						{projectReportData[0]['projectId']}{' '}
-						{projectReportData[0]['projName']}{' '}
-					</>
-				)}
-				Report
-			</h1>
-			<div className='project-report-header'>
-				Overview
-				<div className='project-report-charts'>
-					{showGraphs && (
-						<MyPieChart
-							data={chartData}
-							domainColumn='field'
-							valueColumn='value'
+		<section className='report-section'>
+			<span className='report-container'>
+				<div className='report-header'>
+					<h1 className='project-report-title'>
+						{projectReportData && (
+							<>
+								{projectReportData[0]['projectId']}{' '}
+								{projectReportData[0]['projName']}{' '}
+							</>
+						)}
+						Report
+					</h1>
+					<h3>Overview</h3>
+					<div className='report-charts'>
+						{showGraphs && (
+							<MyPieChart
+								data={chartData}
+								domainColumn='field'
+								valueColumn='value'
+								dataIsReady={
+									projectReportIsSuccess &&
+									!projectReportIsLoading &&
+									!projectReportIsFetching
+								}
+							/>
+						)}
+						<MyTable
+							className='project-overview-table'
+							data={totalData}
+							columnKeyMap={summaryColumnKeyMap}
+							isLive={liveToggle}
 							dataIsReady={
 								projectReportIsSuccess &&
 								!projectReportIsLoading &&
 								!projectReportIsFetching
 							}
 						/>
-					)}
-					<MyTable
-						className='project-overview-table'
-						data={totalData}
-						columnKeyMap={summaryColumnKeyMap}
-						isLive={liveToggle}
-						dataIsReady={
-							projectReportIsSuccess &&
-							!projectReportIsLoading &&
-							!projectReportIsFetching
-						}
-					/>
+					</div>
 				</div>
-			</div>
-			<div className='table-data-container'>
-				<div className={`table-data-header`}>
-					{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
-					<MyToggle
-						label='Live'
-						active={liveToggle}
-						onClick={handleLiveToggle}
-					/>
-				</div>
-				{/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
+				<div className='table-data-container'>
+					<div className='view-toggle-div'>
+						<span className='view-toggle-span' onClick={handleViewChange}>
+							{isListView ? (
+								<Icon path={mdiViewGrid} size={1} title='Card View' />
+							) : (
+								<Icon path={mdiViewList} size={1} title='Table View' />
+							)}
+						</span>
+					</div>
+					<div className={`table-data-header`}>
+						{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
+						<MyToggle
+							label='Live'
+							active={liveToggle}
+							onClick={handleLiveToggle}
+						/>
+					</div>
+					{/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
 						// The syntax is {bool && <Component />} (please include the brackets) */}
-				<MyTable
-					className='project-table'
-					data={data}
-					columnKeyMap={columnKeyMap}
-					reverseThresholds={['offCph', 'zcms']}
-					isLive={liveToggle}
-					isClickable={false}
-					clickParameters={['projectId', 'recDate']}
-					linkTo={'applesauce'}
-					dataIsReady={
-						projectReportIsSuccess &&
-						!projectReportIsLoading &&
-						!projectReportIsFetching
-					}
-				/>
-				{/* <p>Status: {projectReportIsSuccess ? 'Success' : 'Failed or Loading'}</p> */}
-			</div>
-			<MyGoBackButton to='Summary Report' />
+					{isListView ? (
+						<MyTable
+							className='project-table'
+							data={data}
+							columnKeyMap={columnKeyMap}
+							reverseThresholds={['offCph', 'zcms']}
+							isLive={liveToggle}
+							isClickable={false}
+							clickParameters={['projectId', 'recDate']}
+							linkTo={'applesauce'}
+							dataIsReady={
+								projectReportIsSuccess &&
+								!projectReportIsLoading &&
+								!projectReportIsFetching
+							}
+						/>
+					) : (
+						<div className='card-container'>
+							{projectReportIsSuccess &&
+								!projectReportIsLoading &&
+								!projectReportIsFetching &&
+								data.map((item, index) => (
+									<MyCard
+										key={index}
+										title={item.projectId}
+										data={item}
+										columnKeyMap={cardColumnKeyMap}
+									/>
+								))}
+						</div>
+					)}
+				</div>
+				<MyGoBackButton to='Summary Report' />
+			</span>
 		</section>
 	);
 };
