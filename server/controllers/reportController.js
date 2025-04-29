@@ -58,9 +58,9 @@ const calculateInterviewerStats = (interviewerData, project, cph) => {
 				console.warn(
 					'Interviewer skipped from categories:', 
 					'\ncms > 0:', interviewer.cms > 0,
-					'\nonVar:', interviewer.cph >= threshold && interviewer.cph < gpcph,
+					'\nonVar:', interviewer.cph >= threshold && interviewer.cph < cph,
 					'\noffCph:', interviewer.cph < threshold,
-					'\nonCph:', interviewer.cph >= gpcph,
+					'\nonCph:', interviewer.cph >= cph,
 					'\nprojectId:', interviewer.projectId,
 					interviewer
 				);
@@ -155,7 +155,7 @@ const handleGetReportData = handleAsync(async (req, res) => {
 
 		const mphThreshold = project.projectId.endsWith('C') ? 18 : 22;
 		const offCphThreshold = project.hrs * 0.2;
-		const zcmsThreshold = project.hrs * 0.05;
+		const zcmsThreshold = project.hrs * 0.05; // 10% or less may be acceptable
 
 		// This is to make sure the date is in the correct format for the frontend
 		// recDate will be YYYY-MM-DD format while abbreviatedDate will be MM/DD format
