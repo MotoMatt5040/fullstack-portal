@@ -3,36 +3,36 @@ import React, { useEffect, useRef } from 'react';
 import './css/MyPieChart.css';
 
 interface PieChartData {
-  [key: string]: any;
+	[key: string]: any;
 }
 
 interface MyPieChartProps {
-  data: PieChartData[];
+	data: PieChartData[];
 
-  skip?: string[];
-  domainColumn?: string;
-  valueColumn?: string;
-  width?: number;
-  height?: number;
-  radius?: number;
-  colorScheme?: (t: number) => string;
+	skip?: string[];
+	domainColumn?: string;
+	valueColumn?: string;
+	width?: number;
+	height?: number;
+	radius?: number;
+	colorScheme?: (t: number) => string;
 	dataIsReady?: boolean;
 }
 
 const MyPieChart: React.FC<MyPieChartProps> = (props) => {
-  const {
-    data,
-    skip = [],
-    domainColumn = 'name',
-    valueColumn = 'value',
-    width = window.innerWidth < 768 ? 200 : 400,
-    height = width,
-    radius = Math.min(width, height) / 2 - 1,
-    colorScheme = d3.interpolateRdYlGn,
-		dataIsReady = false
-  } = props;
+	const {
+		data,
+		skip = [],
+		domainColumn = 'name',
+		valueColumn = 'value',
+		width = window.innerWidth < 768 ? 200 : 400,
+		height = width,
+		radius = Math.min(width, height) / 2 - 1,
+		colorScheme = d3.interpolateRdYlGn,
+		dataIsReady = false,
+	} = props;
 
-  const svgRef = useRef<SVGSVGElement | null>(null);
+	const svgRef = useRef<SVGSVGElement | null>(null);
 
 	useEffect(() => {
 		if (!dataIsReady && svgRef.current) {
@@ -47,14 +47,32 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
 			(item) => !skip.includes(item.field) && item[valueColumn] > 0
 		);
 
-		const color = d3
-			.scaleOrdinal()
-			.domain(filteredData.map((d) => d[domainColumn]))
-			.range(
-				d3
-					.quantize((t) => colorScheme(t * 0.8 + 0.1), filteredData.length)
-					.reverse()
-			);
+		// const radius = Math.min(width, height) / 2 - 1;
+
+		const getColorForSingleSlice = (field: string) => {
+			// if (!field) return ['#000'];
+			if (field === 'On CPH') return ['rgb(34, 150, 79)'];
+			if (field === 'On VAR') return ['rgb(199, 231, 129)'];
+			if (field === 'Off CPH') return ['rgb(254, 206, 126)'];
+			if (field === 'Zero CMS') return ['rgb(212, 50, 44)'];
+			return ['#000']; // Default color for unknown fields
+		};
+
+		const color = d3.scaleOrdinal()
+  .domain(filteredData.map((d) => d[domainColumn]))
+  .range(
+    filteredData.length > 1
+      ? d3.quantize((t) => colorScheme(t * 0.8 + 0.1), filteredData.length).reverse()
+      : (filteredData[0] && filteredData[0][domainColumn]) 
+        ? getColorForSingleSlice(filteredData[0][domainColumn])
+        : ['#000']
+  );
+			//rgb(34, 150, 79)
+			//rgb(199, 231, 129)
+			//rgb(254, 206, 126)
+			//rgb(212, 50, 44)
+
+			filteredData.length == 1 ? console.log(filteredData[0][domainColumn]) : null;
 
 		const pie = d3
 			.pie()
@@ -149,8 +167,8 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
 	}, [dataIsReady, data]);
 
 	return !dataIsReady ? (
-		<div className="flex items-center justify-center h-full">
-			<div className="spinner" />
+		<div className='flex items-center justify-center h-full'>
+			<div className='spinner' />
 		</div>
 	) : (
 		<svg ref={svgRef}></svg>

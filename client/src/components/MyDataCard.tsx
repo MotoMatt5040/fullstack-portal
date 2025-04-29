@@ -4,10 +4,10 @@ import './css/MyCard.css';
 type Props<T> = {
 	title: string;
 	data: T;
-	columnKeyMap: Record<string, keyof T>; // Map of display names to actual keys
+	columnKeyMap: Record<string, keyof T>;
 };
 
-const MyCard = <T extends Record<string, any>>({
+const MyDataCard = <T extends Record<string, any>>({
 	title,
 	data,
 	columnKeyMap,
@@ -27,4 +27,4 @@ const MyCard = <T extends Record<string, any>>({
 	);
 };
 
-export default MyCard;
+export default MyDataCard;
