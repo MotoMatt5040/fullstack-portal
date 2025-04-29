@@ -36,7 +36,7 @@ const NavBar = ({ onToggleNav }) => {
 	}, [isNavVisible, onToggleNav]);
 
 	return (
-		<div>
+		<div className="navbar-container">
 			{/* Hamburger Menu Button */}
 			<span className='navbar-span'>
 				<button ref={buttonRef} className='hamburger' onClick={toggleNav}>
