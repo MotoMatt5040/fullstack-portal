@@ -1,0 +1,18 @@
+.report-section {
+  background-color: var(--background-color-muted);
+  border-radius: 1rem;
+  margin: 1rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 768px) {
+  .report-section {
+    align-items: flex-start;
+  }
+
+}
