@@ -30,6 +30,8 @@
   --table-row-hover-background: #555;
   --table-border-color: #666;
   --label-text-color: #e0e0e0;
+  --accent-color: #007bff;
+  --accent-color-hover: #0056b3;
   
   --input-background: #333; 
   --input-focus-background: #555; 
@@ -61,6 +63,8 @@
   --table-row-hover-background: #ddd;
   --table-border-color: #ddd;
   --label-text-color: #000;
+  --accent-color: #007bff;
+  --accent-color-hover: #0056b3;
   
   --input-background: #fff;
   --input-focus-background: #f5f5f5;

@@ -98,6 +98,8 @@ const useProjectReportLogic = () => {
   useEffect(() => {
     if (!projectReport.data) return;
 
+    
+
     setData(projectReport.data);
   }, [projectCount, isRefetching, projectReport.data]);
 

@@ -1,0 +1,23 @@
+.table-scroller {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table-scroller::-webkit-scrollbar {
+  height: 8px; /* Horizontal scrollbar height */
+}
+
+.table-scroller::-webkit-scrollbar-track {
+  background: var(--background-color-muted); /* Track background */
+  border-radius: 4px;
+}
+
+.table-scroller::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color); /* Scroll thumb color */
+  border-radius: 4px;
+  border: 2px solid var(--background-color-muted); /* Optional padding */
+}
+
+.table-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-color-hover); /* Hover color */
+}

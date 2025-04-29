@@ -15,8 +15,9 @@ import '../styles/Headers.css';
 import '../styles/Cards.css';
 import '../styles/Sections.css';
 import '../styles/Charts.css';
+import '../styles/Scrollers.css';
 import { useSelector } from 'react-redux';
-import MyCard from '../../components/MyCard';
+import MyDataCard from '../../components/MyDataCard';
 
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
@@ -149,29 +150,31 @@ const ProjectReport = () => {
 					{/* NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
 				    The syntax is {bool && <Component />} (please include the brackets) */}
 					{isListView ? (
-						<MyTable
-							className='summary-table'
-							data={data}
-							columnKeyMap={columnKeyMap}
-							reverseThresholds={['offCph', 'zcms']}
-							isLive={liveToggle}
-							isClickable={true}
-							clickParameters={['projectId', 'recDate']}
-							linkTo={'/projectreport'}
-							redirect={true}
-							dataIsReady={
-								summaryReportIsSuccess &&
-								!summaryReportIsLoading &&
-								!summaryReportIsFetching
-							}
-						/>
+						<div className='table-scroller'>
+							<MyTable
+								className='summary-table'
+								data={data}
+								columnKeyMap={columnKeyMap}
+								reverseThresholds={['offCph', 'zcms']}
+								isLive={liveToggle}
+								isClickable={true}
+								clickParameters={['projectId', 'recDate']}
+								linkTo={'/projectreport'}
+								redirect={true}
+								dataIsReady={
+									summaryReportIsSuccess &&
+									!summaryReportIsLoading &&
+									!summaryReportIsFetching
+								}
+							/>
+						</div>
 					) : (
 						<div className='card-container'>
 							{summaryReportIsSuccess &&
 								!summaryReportIsLoading &&
 								!summaryReportIsFetching &&
 								data.map((item, index) => (
-									<MyCard
+									<MyDataCard
 										key={index}
 										title={item.projectId}
 										data={item}

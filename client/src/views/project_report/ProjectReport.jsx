@@ -6,7 +6,8 @@ import { mdiViewList, mdiViewGrid } from '@mdi/js';
 import MyPieChart from '../../components/MyPieChart';
 import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
-import MyCard from '../../components/MyCard';
+import MyDataCard from '../../components/MyDataCard';
+import MySvgCard from '../../components/MySvgCard';
 
 import './ProjectReport.css';
 import './ProjectReportTable.css';
@@ -15,6 +16,7 @@ import '../styles/Headers.css';
 import '../styles/Cards.css';
 import '../styles/Sections.css';
 import '../styles/Charts.css';
+import '../styles/Containers.css';
 import { useSelector } from 'react-redux';
 import MyGoBackButton from '../../components/MyGoBackButton';
 
@@ -90,98 +92,128 @@ const ProjectReport = () => {
 
 	return (
 		<section className='report-section'>
-			<span className='report-container'>
-				<div className='report-header'>
-					<h1 className='project-report-title'>
-						{projectReportData && (
-							<>
-								{projectReportData[0]['projectId']}{' '}
-								{projectReportData[0]['projName']}{' '}
-							</>
-						)}
-						Report
-					</h1>
-					<h3>Overview</h3>
-					<div className='report-charts'>
-						{showGraphs && (
-							<MyPieChart
-								data={chartData}
-								domainColumn='field'
-								valueColumn='value'
+			<div className='master-report-container'>
+				<span className='report-container'>
+					<div className='report-header'>
+						<h1 className='project-report-title'>
+							{projectReportData && (
+								<>
+									{projectReportData[0]['projectId']}{' '}
+									{projectReportData[0]['projName']}{' '}
+								</>
+							)}
+							Report
+						</h1>
+						<h3>Overview</h3>
+						<div className='report-charts'>
+							{showGraphs && (
+								<MyPieChart
+									data={chartData}
+									domainColumn='field'
+									valueColumn='value'
+									dataIsReady={
+										projectReportIsSuccess &&
+										!projectReportIsLoading &&
+										!projectReportIsFetching
+									}
+								/>
+							)}
+							<MyTable
+								className='project-overview-table'
+								data={totalData}
+								columnKeyMap={summaryColumnKeyMap}
+								isLive={liveToggle}
 								dataIsReady={
 									projectReportIsSuccess &&
 									!projectReportIsLoading &&
 									!projectReportIsFetching
 								}
 							/>
-						)}
-						<MyTable
-							className='project-overview-table'
-							data={totalData}
-							columnKeyMap={summaryColumnKeyMap}
-							isLive={liveToggle}
-							dataIsReady={
-								projectReportIsSuccess &&
-								!projectReportIsLoading &&
-								!projectReportIsFetching
-							}
-						/>
-					</div>
-				</div>
-				<div className='table-data-container'>
-					<div className='view-toggle-div'>
-						<span className='view-toggle-span' onClick={handleViewChange}>
-							{isListView ? (
-								<Icon path={mdiViewGrid} size={1} title='Card View' />
-							) : (
-								<Icon path={mdiViewList} size={1} title='Table View' />
-							)}
-						</span>
-					</div>
-					<div className={`table-data-header`}>
-						{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
-						<MyToggle
-							label='Live'
-							active={liveToggle}
-							onClick={handleLiveToggle}
-						/>
-					</div>
-					{/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
-						// The syntax is {bool && <Component />} (please include the brackets) */}
-					{isListView ? (
-						<MyTable
-							className='project-table'
-							data={data}
-							columnKeyMap={columnKeyMap}
-							reverseThresholds={['offCph', 'zcms']}
-							isLive={liveToggle}
-							isClickable={false}
-							clickParameters={['projectId', 'recDate']}
-							linkTo={'applesauce'}
-							dataIsReady={
-								projectReportIsSuccess &&
-								!projectReportIsLoading &&
-								!projectReportIsFetching
-							}
-						/>
-					) : (
-						<div className='card-container'>
-							{projectReportIsSuccess &&
-								!projectReportIsLoading &&
-								!projectReportIsFetching &&
-								data.map((item, index) => (
-									<MyCard
-										key={index}
-										title={item.projectId}
-										data={item}
-										columnKeyMap={cardColumnKeyMap}
-									/>
-								))}
 						</div>
-					)}
-				</div>
-				<MyGoBackButton to='Summary Report' />
-			</span>
+					</div>
+					<div className='table-data-container'>
+						<div className='view-toggle-div'>
+							<span className='view-toggle-span' onClick={handleViewChange}>
+								{isListView ? (
+									<Icon path={mdiViewGrid} size={1} title='Card View' />
+								) : (
+									<Icon path={mdiViewList} size={1} title='Table View' />
+								)}
+							</span>
+						</div>
+						<div className={`table-data-header`}>
+							{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
+							<MyToggle
+								label='Live'
+								active={liveToggle}
+								onClick={handleLiveToggle}
+							/>
+						</div>
+						{/* // NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
+						// The syntax is {bool && <Component />} (please include the brackets) */}
+						{isListView ? (
+							<div className='table-scroller'>
+								<MyTable
+									className='project-table'
+									data={data}
+									columnKeyMap={columnKeyMap}
+									reverseThresholds={['offCph', 'zcms']}
+									isLive={liveToggle}
+									isClickable={false}
+									clickParameters={['projectId', 'recDate']}
+									linkTo={'applesauce'}
+									dataIsReady={
+										projectReportIsSuccess &&
+										!projectReportIsLoading &&
+										!projectReportIsFetching
+									}
+								/>
+							</div>
+						) : (
+							<div className='card-container'>
+								{projectReportIsSuccess &&
+									!projectReportIsLoading &&
+									!projectReportIsFetching &&
+									data.map((item, index) => (
+										<MyDataCard
+											key={index}
+											title={item.projectId}
+											data={item}
+											columnKeyMap={cardColumnKeyMap}
+										/>
+									))}
+							</div>
+						)}
+					</div>
+				</span>
+				{showGraphs && <span className='card-container span'>
+					{projectReportIsSuccess &&
+						!projectReportIsLoading &&
+						!projectReportIsFetching &&
+						data.map((item, index) => (
+							<MySvgCard
+								key={index}
+								centerTitle={item.abbreviatedDate}
+								svg={
+									<MyPieChart
+										width={300}
+										data={[
+											{ field: 'On CPH', value: item.onCph },
+											{ field: 'On Var', value: item.onVar },
+											{ field: 'Off CPH', value: item.offCph },
+											{ field: 'Zero CMS', value: item.zcms },
+										]}
+										domainColumn='field'
+										valueColumn='value'
+										dataIsReady={true}
+									/>
+								}
+							/>
+						))}
+				</span>}
+			</div>
+
+			<MyGoBackButton to='Summary Report' />
 		</section>
 	);
 };

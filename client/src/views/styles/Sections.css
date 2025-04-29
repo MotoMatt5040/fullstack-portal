@@ -15,4 +15,7 @@
     align-items: flex-start;
   }
 
+  .report-container {
+    width: 60%;
+  }
 }

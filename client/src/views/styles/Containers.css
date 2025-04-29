@@ -1,0 +1,23 @@
+.master-report-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.card-container {
+  background: var(--background-color);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+  width: 100%;
+  padding: 1rem;
+  border-radius: 1rem;
+  align-self: start;
+}
+
+@media (min-width: 768px) {
+  .master-report-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+  }
+}
