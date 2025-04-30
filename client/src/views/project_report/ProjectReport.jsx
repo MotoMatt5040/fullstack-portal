@@ -13,7 +13,6 @@ import './ProjectReport.css';
 import './ProjectReportTable.css';
 import '../styles/Tables.css';
 import '../styles/Headers.css';
-import '../styles/Cards.css';
 import '../styles/Sections.css';
 import '../styles/Charts.css';
 import '../styles/Containers.css';
@@ -22,11 +21,11 @@ import MyGoBackButton from '../../components/MyGoBackButton';
 
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
+	const useGpcph = useSelector((state) => state.settings.useGpcph);
 	const {
 		liveToggle,
 		handleLiveToggle,
 		data,
-		// isSuccess,
 		chartData,
 		totalData,
 		projectReportIsSuccess,
@@ -35,7 +34,6 @@ const ProjectReport = () => {
 		projectReportData,
 		isListView,
 		handleViewChange,
-		viewIcon,
 	} = useProjectReportLogic();
 
 	let columnKeyMap = {
@@ -92,6 +90,11 @@ const ProjectReport = () => {
 
 	return (
 		<section className='report-section'>
+			<div className='main report-header'>
+				<h1>
+					Calculations currently use {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
+				</h1>
+			</div>
 			<div className='master-report-container'>
 				<span className='report-container'>
 					<div className='report-header'>
@@ -186,31 +189,33 @@ const ProjectReport = () => {
 						)}
 					</div>
 				</span>
-				{showGraphs && <span className='card-container span'>
-					{projectReportIsSuccess &&
-						!projectReportIsLoading &&
-						!projectReportIsFetching &&
-						data.map((item, index) => (
-							<MySvgCard
-								key={index}
-								centerTitle={item.abbreviatedDate}
-								svg={
-									<MyPieChart
-										width={300}
-										data={[
-											{ field: 'On CPH', value: item.onCph },
-											{ field: 'On Var', value: item.onVar },
-											{ field: 'Off CPH', value: item.offCph },
-											{ field: 'Zero CMS', value: item.zcms },
-										]}
-										domainColumn='field'
-										valueColumn='value'
-										dataIsReady={true}
-									/>
-								}
-							/>
-						))}
-				</span>}
+				{showGraphs && (
+					<span className='card-container span'>
+						{projectReportIsSuccess &&
+							!projectReportIsLoading &&
+							!projectReportIsFetching &&
+							data.map((item, index) => (
+								<MySvgCard
+									key={index}
+									centerTitle={item.abbreviatedDate}
+									svg={
+										<MyPieChart
+											width={300}
+											data={[
+												{ field: 'On CPH', value: item.onCph },
+												{ field: 'On Var', value: item.onVar },
+												{ field: 'Off CPH', value: item.offCph },
+												{ field: 'Zero CMS', value: item.zcms },
+											]}
+											domainColumn='field'
+											valueColumn='value'
+											dataIsReady={true}
+										/>
+									}
+								/>
+							))}
+					</span>
+				)}
 			</div>
 
 			<MyGoBackButton to='Summary Report' />

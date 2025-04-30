@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { useSearchParams } from 'react-router-dom';
 import QueryHelper from '../../utils/QueryHelper';
+import { useSelector } from 'react-redux';
 
 interface ChartData {
   field: string;
@@ -24,6 +25,7 @@ interface ProjectReportData {
 }
 
 const useProjectReportLogic = () => {
+  const useGpcph = useSelector((state) => state.settings.useGpcph);
 
   const [searchParams] = useSearchParams();
   const [liveToggle, setLiveToggle] = useState<boolean>(false);
@@ -53,6 +55,7 @@ const useProjectReportLogic = () => {
     projectId,
     live: liveToggle,
     ts: timestamp.toString(),
+    useGpcph: useGpcph
   });
 
   const resetVariables = () => {
@@ -169,6 +172,7 @@ const useProjectReportLogic = () => {
   };
 
   const fetchData = async (refetch: Function, props: any) => {
+    props.useGpcph = useGpcph;
     try {
       const result = await refetch(props);
       if (result?.error?.status === 499) return;

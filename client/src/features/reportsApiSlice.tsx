@@ -1,12 +1,16 @@
+import { use } from 'react';
 import { apiSlice } from '../app/api/apiSlice';
+
 
 interface ReportArgs {
   live: boolean;
+  useGpcph: boolean;
 
   projectId?: string; 
   startDate?: string;  
   endDate?: string;  
   ts?: string;
+  
 }
 
 interface ProjectReport {
@@ -34,9 +38,10 @@ interface ProjectReport {
 type ReportResponse = ProjectReport[];
 
 export const ReportApiSlice = apiSlice.injectEndpoints({
+  
   endpoints: (builder) => ({
     getReport: builder.query<ReportResponse, ReportArgs>({
-      query: ({ projectId, live, startDate, endDate, ts }) => {
+      query: ({ projectId, live, startDate, endDate, ts, useGpcph }) => {
         
         const basePath = '/reports/tables/data/';
 
@@ -53,6 +58,10 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
           if (endDate) url += `enddate=${endDate}&`;
           if (projectId) url += `projectId=${projectId}&`;
         }
+
+        console.log(useGpcph);
+
+        url += `useGpcph=${useGpcph}`;
 
         // Remove the trailing '&' if there is one
         if (url.endsWith('&')) {

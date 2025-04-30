@@ -4,6 +4,7 @@ import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
 import { useSearchParams } from 'react-router-dom';
 import QueryHelper from '../../utils/QueryHelper';
+import { useSelector } from 'react-redux';
 
 const getDateFromParams = (key, fallback) => {
 	const params = new URLSearchParams(window.location.search);
@@ -12,6 +13,7 @@ const getDateFromParams = (key, fallback) => {
 };
 
 const useProjectReportLogic = () => {
+	const useGpcph = useSelector((state) => state.settings.useGpcph);
 	const [searchParams] = useSearchParams();
 
 	const [liveToggle, setLiveToggle] = useState(
@@ -53,6 +55,7 @@ const useProjectReportLogic = () => {
 		startDate: date.start,
 		endDate: date.end,
 		ts: timestamp,
+		useGpcph: useGpcph
 	});
 
 	const resetVariables = () => {
@@ -212,6 +215,7 @@ const useProjectReportLogic = () => {
 	};
 
 	const fetchData = async (refetch, props) => {
+		props.useGpcph = useGpcph;
 		try {
 			const result = await refetch(props);
 			// This is a custom error code for when the server cancels the request. This is not good practice and will be changed in the future.
@@ -261,7 +265,7 @@ const useProjectReportLogic = () => {
 		date,
 		handleDateChange,
 		isListView,
-		handleViewChange
+		handleViewChange,
 	};
 };
 

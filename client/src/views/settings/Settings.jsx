@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector  } from 'react-redux';
 import { logOut } from '../../features/auth/authSlice';
 import { useLogoutMutation } from '../../features/auth/authApiSlice';
-import { toggleShowGraphs } from '../../features/settingsSlice';
+import { toggleShowGraphs, toggleUseGpcph } from '../../features/settingsSlice';
 import MyToggle from '../../components/MyToggle';
 
 const settings = () => {
@@ -10,6 +10,7 @@ const settings = () => {
 	const [logoutRequest] = useLogoutMutation();
 	const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
+	const useGpcph = useSelector((state) => state.settings.useGpcph);
 
 	useEffect(() => {
 		document.documentElement.setAttribute('data-theme', theme);
@@ -35,6 +36,10 @@ const settings = () => {
 		dispatch(toggleShowGraphs());
 	};
 
+	const handleGpcphToggle = () => {
+		dispatch(toggleUseGpcph());
+	}
+
 	return (
 		<section>
 			<button onClick={handleLogout}>Log Out</button>
@@ -44,6 +49,7 @@ const settings = () => {
 			</button>
 			<br />
 			<MyToggle label='Show Graphs' active={showGraphs} onClick={handleGraphToggle}/>
+			<MyToggle label="Use GPCPH" active={useGpcph} onClick={handleGpcphToggle}/>
 		</section>
 	);
 };

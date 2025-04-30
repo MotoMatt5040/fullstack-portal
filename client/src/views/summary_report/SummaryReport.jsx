@@ -12,7 +12,6 @@ import './SummaryReport.css';
 import './SummaryReportTable.css';
 import '../styles/Tables.css';
 import '../styles/Headers.css';
-import '../styles/Cards.css';
 import '../styles/Sections.css';
 import '../styles/Charts.css';
 import '../styles/Scrollers.css';
@@ -21,6 +20,7 @@ import MyDataCard from '../../components/MyDataCard';
 
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
+	const useGpcph = useSelector((state) => state.settings.useGpcph);
 	const {
 		liveToggle,
 		handleLiveToggle,
@@ -92,6 +92,11 @@ const ProjectReport = () => {
 
 	return (
 		<section className='report-section'>
+			<div className='main report-header'>
+				<h1>
+					Calculations currently use {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
+				</h1>
+			</div>
 			<span className='report-container'>
 				<div className='report-header'>
 					Overview

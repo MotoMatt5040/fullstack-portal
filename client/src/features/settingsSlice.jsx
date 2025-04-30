@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
   showGraphs: true,
+  useGpcph: true
 }
 
 const settingsSlice = createSlice({
@@ -11,11 +12,11 @@ const settingsSlice = createSlice({
     toggleShowGraphs: (state) => {
       state.showGraphs = !state.showGraphs
     },
-    setShowGraphs: (state, action) => {
-      state.showGraphs = action.payload
-    },
+    toggleUseGpcph: (state) => {
+      state.useGpcph = !state.useGpcph
+    }
   },
 })
 
-export const { toggleShowGraphs, setShowGraphs } = settingsSlice.actions
+export const { toggleShowGraphs, toggleUseGpcph } = settingsSlice.actions
 export default settingsSlice.reducer

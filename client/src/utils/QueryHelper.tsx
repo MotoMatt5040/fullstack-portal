@@ -4,6 +4,7 @@ type ReportQueryArgs = {
   projectId: string | undefined;
   live: boolean;
   ts: string;
+  useGpcph: boolean;
 };
 
 export const QueryHelper = (

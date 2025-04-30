@@ -82,8 +82,9 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	const projectId = cleanQueryParam(req.query?.projectId);
 	const startDate = cleanQueryParam(req.query?.startdate);
 	const endDate = cleanQueryParam(req.query?.enddate);
+	const useGpcph = cleanQueryParam(req.query?.useGpcph) === 'true';
 	const isLive = req.params?.type === 'live';
-
+	
 	const data = isLive
 		? await Reports.getLiveReportData(projectId)
 		: await Reports.getHistoricProjectReportData(projectId, startDate, endDate);
@@ -106,7 +107,7 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	// This called the function above that creates and accumulator to iterate through the data
 	const result = data.map((project) => {
 		let cph;
-		if (isLive) 
+		if (isLive || useGpcph) 
 			cph = project.gpcph ?? 0;
 		else
 			cph = project.cph ?? 0;
