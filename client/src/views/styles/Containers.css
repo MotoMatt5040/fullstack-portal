@@ -12,6 +12,11 @@
   padding: 1rem;
   border-radius: 1rem;
   align-self: start;
+  gap: 1rem;
+}
+
+.card-container.span {
+  max-width: 50%;
 }
 
 @media (min-width: 768px) {

@@ -72,8 +72,6 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
 			//rgb(254, 206, 126)
 			//rgb(212, 50, 44)
 
-			filteredData.length == 1 ? console.log(filteredData[0][domainColumn]) : null;
-
 		const pie = d3
 			.pie()
 			.sort(null)
@@ -158,7 +156,7 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
 					.text((d) => {
 						const percentage =
 							((d.endAngle - d.startAngle) / (2 * Math.PI)) * 100;
-						return `${percentage.toFixed(1)}%`;
+						return `${percentage.toFixed(0)}%`;
 					})
 			)
 			.attr('opacity', 0);

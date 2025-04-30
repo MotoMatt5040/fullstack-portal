@@ -20,6 +20,7 @@
   --background-color-elevated: #111;
   --background-color-muted: #222;
   --background-color-elevated-hover: #333;
+  --background-color-hover: #444;
   --text-color: #fff;
   --link-color: whitesmoke;
   --link-hover-color: rgba(245, 245, 245, 0.9);
@@ -53,6 +54,7 @@
   --background-color-elevated: #f5f5f5;
   --background-color-elevated-hover: #ccc;
   --background-color-muted: #e0e0e0;
+  --background-color-hover: #ddd;
   --text-color: #000;
   --link-color: #0000EE;
   --link-hover-color: #551A8B;
