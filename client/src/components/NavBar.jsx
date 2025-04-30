@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Settings from '../views/settings/Settings';
+import Icon from '@mdi/react';
+import { mdiMenu } from '@mdi/js';
 import './css/NavBar.css';
 
 const NavBar = ({ onToggleNav }) => {
 	const [isNavVisible, setIsNavVisible] = useState(false);
-	const navRef = useRef(null); // Ref for navbar
-	const buttonRef = useRef(null); // Ref for the hamburger button
+	const navRef = useRef(null); 
+	const clickableRef = useRef(null); 
 
 	const toggleNav = () => {
 		setIsNavVisible((prev) => !prev);
@@ -18,8 +20,8 @@ const NavBar = ({ onToggleNav }) => {
 			if (
 				navRef.current &&
 				!navRef.current.contains(event.target) &&
-				buttonRef.current &&
-				!buttonRef.current.contains(event.target)
+				clickableRef.current &&
+				!clickableRef.current.contains(event.target)
 			) {
 				setIsNavVisible(false);
 				onToggleNav(false);
@@ -36,33 +38,35 @@ const NavBar = ({ onToggleNav }) => {
 	}, [isNavVisible, onToggleNav]);
 
 	return (
-		<div className="navbar-container">
-			{/* Hamburger Menu Button */}
-			<span className='navbar-span'>
-				<button ref={buttonRef} className='hamburger' onClick={toggleNav}>
-					&#9776; {/* Hamburger icon */}
-				</button>
+		<aside className='navbar-container'>
+			{/* <div className='navbar-content'> */}
+			<div
+				ref={clickableRef}
+				className={`navbar-clickable-area ${isNavVisible ? 'open' : ''}`}
+				onClick={toggleNav}
+			>
+				<Icon path={mdiMenu} size={1.5} className='hamburger-icon' />
+			</div>
 
-				{/* Navbar */}
-				<nav
-					ref={navRef}
-					className={`navbar ${isNavVisible ? 'visible' : 'hidden'}`}
-				>
-					<ul>
-						<li>
-							<Link to='/'>Home</Link>
-						</li>
-						<li>
-							<Link to='/about'>About</Link>
-						</li>
-						<li>
-							<Link to='/contact'>Contact</Link>
-						</li>
-					</ul>
-					<Settings />
-				</nav>
-			</span>
-		</div>
+			<nav
+				ref={navRef}
+				className={`navbar ${isNavVisible ? 'visible' : 'hidden'}`}
+			>
+				<ul>
+					<Link to='/'>
+						<li>Home</li>
+					</Link>
+					<Link to='/about'>
+						<li>About</li>
+					</Link>
+					<Link to='/contact'>
+						<li>Contact</li>
+					</Link>
+				</ul>
+				<Settings />
+			</nav>
+			{/* </div> */}
+		</aside>
 	);
 };
 
