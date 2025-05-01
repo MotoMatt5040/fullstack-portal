@@ -46,8 +46,8 @@ const settings = () => {
 			<br />
 			<MyRadioButton
 				groupName='theme'
-				labels={['Dark Theme', 'Light Theme', 'Super Dark Theme']}
-				values={['dark', 'light', 'superdark']}
+				labels={['Light Theme', 'Dark Theme', 'Super Dark Theme']}
+				values={['light', 'dark', 'superdark']}
 				selectedValue={theme}
 				onChange={handleThemeChange}
 			/>
