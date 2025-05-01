@@ -18,8 +18,10 @@ import IssueForm from './views/github/Github';
 import UpdateUserRoles from './views/users/UpdateUserRoles';
 import SummaryReport from './views/summary_report/SummaryReport';
 import ProjectReport from './views/project_report/ProjectReport';
+import AddUser from './views/secure/AddUser';
 
 import ROLES from './ROLES_LIST.json';
+import ProductionReport from './views/production_report/ProductionReport';
 
 function App() {
 	return (
@@ -30,10 +32,11 @@ function App() {
 					index
 					element={
 						<RedirectIfAuthenticated>
-							<Public />
+							<Login />
 						</RedirectIfAuthenticated>
 					}
 				/>
+
 				<Route
 					path='login'
 					element={
@@ -42,6 +45,7 @@ function App() {
 						</RedirectIfAuthenticated>
 					}
 				/>
+
 				<Route path='/reset-password' element={<ResetPassword />} />
 
 				{/* protected routes */}
@@ -52,6 +56,11 @@ function App() {
 					<Route path='github' element={<IssueForm />} />
 					<Route path='summaryreport' element={<SummaryReport />} />
 					<Route path='projectreport' element={<ProjectReport />} />
+					<Route path="productionreport" element={<ProductionReport />} />
+				</Route>
+
+				<Route element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive]} />}>
+				<Route path='adduser' element={<AddUser />} />
 				</Route>
 
 				<Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
