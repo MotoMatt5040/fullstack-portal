@@ -1,6 +1,4 @@
-import { use } from 'react';
 import { apiSlice } from '../app/api/apiSlice';
-
 
 interface ReportArgs {
   live: boolean;
@@ -10,7 +8,7 @@ interface ReportArgs {
   startDate?: string;  
   endDate?: string;  
   ts?: string;
-  
+  recDate?: string;
 }
 
 interface ProjectReport {
@@ -38,7 +36,6 @@ interface ProjectReport {
 type ReportResponse = ProjectReport[];
 
 export const ReportApiSlice = apiSlice.injectEndpoints({
-  
   endpoints: (builder) => ({
     getReport: builder.query<ReportResponse, ReportArgs>({
       query: ({ projectId, live, startDate, endDate, ts, useGpcph }) => {
@@ -59,8 +56,6 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
           if (projectId) url += `projectId=${projectId}&`;
         }
 
-        console.log(useGpcph);
-
         url += `useGpcph=${useGpcph}`;
 
         // Remove the trailing '&' if there is one
@@ -71,7 +66,14 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
         return { url, method: 'GET' };
       },
     }),
+
+    getProductionReport: builder.query<ReportResponse, ReportArgs>({
+      query: ({ projectId, recDate, useGpcph }) => {
+        const url = `/reports/data/productionreport?projectId=${projectId}&recDate=${recDate}&useGpcph=${useGpcph}`;
+        return { url, method: 'GET' };
+      }
+    })
   }),
 });
 
-export const { useGetReportQuery } = ReportApiSlice;
+export const { useGetReportQuery, useGetProductionReportQuery } = ReportApiSlice;
