@@ -16,11 +16,12 @@
 /* || GENERAL STYLES */
 
 :root {
-  --background-color: #000;
-  --background-color-elevated: #111;
+  --background-color: #333;
+  --background-color-elevated: #222;
   --background-color-muted: #222;
-  --background-color-elevated-hover: #333;
+  --background-color-elevated-hover: #444;
   --background-color-hover: #444;
+  --background-color-active: #777;
   --text-color: #fff;
   --link-color: whitesmoke;
   --link-hover-color: rgba(245, 245, 245, 0.9);
@@ -51,10 +52,11 @@
 /* Light Theme Variables */
 [data-theme="light"] {
   --background-color: #fff;
-  --background-color-elevated: #f5f5f5;
+  --background-color-elevated: #ddd;
   --background-color-elevated-hover: #ccc;
   --background-color-muted: #e0e0e0;
   --background-color-hover: #ddd;
+  --background-color-active: #777;
   --text-color: #000;
   --link-color: #0000EE;
   --link-hover-color: #551A8B;
@@ -82,6 +84,40 @@
   --border-color: #000;
 }
 
+[data-theme="superdark"] {
+  --background-color: #000;
+  --background-color-elevated: #111;
+  --background-color-muted: #222;
+  --background-color-elevated-hover: #333;
+  --background-color-hover: #444;
+  --background-color-active: #777;
+  --text-color: #fff;
+  --link-color: whitesmoke;
+  --link-hover-color: rgba(245, 245, 245, 0.9);
+  --button-background: #333;
+  --button-text: #fff;
+  --table-header-background: #444;
+  --table-header-color: #fff;
+  --table-row-hover-background: #555;
+  --table-border-color: #666;
+  --label-text-color: #e0e0e0;
+  --accent-color: #007bff;
+  --accent-color-hover: #0056b3;
+  
+  --input-background: #333; 
+  --input-focus-background: #555; 
+  --field-background: var(--input-background);
+  --highlight-background: #f0f0f0; 
+  --highlight-foreground: #000; 
+  --focus-ring-color: #007bff;
+  --background-popover: #333;
+  --background-popover-header: #222;
+  --active-button-background: #007bff;
+  --background-multi-select: #333;
+  --background-multi-select-hover: #444;
+  --border-color: #fff;
+}
+
 body {
   background: var(--background-color);
   color: var(--text-color);
@@ -91,21 +127,6 @@ body {
 
 input, button {
   font: inherit;
-}
-
-/* #root {
-  min-height: 100vh;
-  display: flex;
-  padding: 1rem;
-} */
-
-section {
-  padding: 1px;
-  
-}
-
-main {
-  padding: 1px;
 }
 
 a, a:visited {

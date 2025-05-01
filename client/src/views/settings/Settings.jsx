@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector  } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logOut } from '../../features/auth/authSlice';
 import { useLogoutMutation } from '../../features/auth/authApiSlice';
 import { toggleShowGraphs, toggleUseGpcph } from '../../features/settingsSlice';
 import MyToggle from '../../components/MyToggle';
+import MyRadioButton from '../../components/MyRadioButton';
 
 const settings = () => {
 	const dispatch = useDispatch();
@@ -16,17 +17,11 @@ const settings = () => {
 		document.documentElement.setAttribute('data-theme', theme);
 	}, [theme]);
 
-	const toggleTheme = () => {
-		const newTheme = theme === 'dark' ? 'light' : 'dark';
-		setTheme(newTheme);
-		localStorage.setItem('theme', newTheme);
-	};
-
 	const handleLogout = async () => {
 		try {
-			await logoutRequest(); // send request to backend
-			dispatch(logOut()); // clear Redux auth state
-			localStorage.removeItem('token'); // optional if you use token storage
+			await logoutRequest(); 
+			dispatch(logOut()); 
+			localStorage.removeItem('token'); 
 		} catch (err) {
 			console.error('Logout failed:', err);
 		}
@@ -38,18 +33,34 @@ const settings = () => {
 
 	const handleGpcphToggle = () => {
 		dispatch(toggleUseGpcph());
-	}
+	};
+
+	const handleThemeChange = (val) => {
+		setTheme(val);
+		localStorage.setItem('theme', val);
+	};
 
 	return (
 		<section>
 			<button onClick={handleLogout}>Log Out</button>
 			<br />
-			<button className='theme-toggle' onClick={toggleTheme}>
-				Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-			</button>
-			<br />
-			<MyToggle label='Show Graphs' active={showGraphs} onClick={handleGraphToggle}/>
-			<MyToggle label="Use GPCPH" active={useGpcph} onClick={handleGpcphToggle}/>
+			<MyRadioButton
+				groupName='theme'
+				labels={['Dark Theme', 'Light Theme', 'Super Dark Theme']}
+				values={['dark', 'light', 'superdark']}
+				selectedValue={theme}
+				onChange={handleThemeChange}
+			/>
+			<MyToggle
+				label='Show Graphs'
+				active={showGraphs}
+				onClick={handleGraphToggle}
+			/>
+			<MyToggle
+				label='Use GPCPH'
+				active={useGpcph}
+				onClick={handleGpcphToggle}
+			/>
 		</section>
 	);
 };
