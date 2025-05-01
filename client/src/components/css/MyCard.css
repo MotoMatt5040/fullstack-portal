@@ -1,25 +1,24 @@
 /* Card container */
 .card {
   background-color: var(--background-color-elevated);
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  max-width: 100%;  
+  border-radius: 1rem;
+  box-shadow: 0 .25rem 1rem rgba(0, 0, 0, 0.1);
+  padding: 1rem;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  min-width: 250px;
-  max-width: 250px;
+  min-width: 10rem;
+  max-width: 100%;
 }
 
 .card:hover {
   transform: translateY(-5px);
   background: var(--background-color-elevated-hover);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 .25rem 1rem rgba(0, 0, 0, 0.2);
 }
 
 .card-title {
   font-size: 1.25rem;  
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 1rem;
   color: var(--text-color);  
 }
 
@@ -27,7 +26,7 @@
   display: flex;
   font-size: 1.25rem;  
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 1rem;
   color: var(--text-color);
   justify-content: space-between;
 }
@@ -35,18 +34,18 @@
 .border-line-span {
   display: block;
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: 1rem;
   border-bottom: 1px solid var(--background-color-muted);
 }
 
 .card-content {
   font-size: 1rem;
   color: var(--text-color);
-  margin-bottom: 10px;  
+  margin-bottom: 1rem;  
 }
 
 .card-item {
-  margin-bottom: 8px;
+  margin-bottom: 1rem;
 }
 
 .card-item span {
@@ -54,23 +53,57 @@
   color: var(--text-color); 
 }
 
-@media (min-width: 600px) {
-  .card {
-    padding: 20px;
-    max-width: 400px;  
-  }
-
+@media (min-width: 768px) {
   .card-title {
     font-size: 1.5rem;  
   }
 }
 
-@media (min-width: 900px) {
-  .card {
-    max-width: 500px;  
-  }
+/* Extra small (phones) */
+@media (max-width: 479px) {
 
+}
+
+/* Small (phones) */
+@media (min-width: 480px) {
+
+}
+
+/* Medium (tablets) */
+@media (min-width: 768px) {
   .card-title {
     font-size: 1.75rem; 
   }
+}
+
+/* Large (small desktops & laptops) */
+@media (min-width: 1024px) {
+
+}
+
+/* X-Large (standard desktops) */
+@media (min-width: 1280px) {
+
+}
+
+/* Large Laptops */
+@media (min-width: 1440px) {
+
+}
+
+/* Standard Desktops (HD) */
+@media (min-width: 1600px) {
+
+}
+
+/* Ultra-wide HD (between HD and 2K) */
+@media (min-width: 1920px) {
+  .card-title {
+    font-size: 1.75rem; 
+  }
+}
+
+/* 2K+ (2560px and above) */
+@media (min-width: 2560px) {
+
 }

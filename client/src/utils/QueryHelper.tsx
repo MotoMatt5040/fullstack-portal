@@ -5,6 +5,7 @@ type ReportQueryArgs = {
   live: boolean;
   ts: string;
   useGpcph: boolean;
+  recDate?: string
 };
 
 export const QueryHelper = (

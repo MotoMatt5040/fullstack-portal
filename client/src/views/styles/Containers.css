@@ -1,28 +1,110 @@
 .master-report-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.summary .report-container {
+	width: 100%;
+}
+
+.report-container {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 100%;
+	max-height: fit-content;
 }
 
 .card-container {
-  background: var(--background-color);
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
-  width: 100%;
-  padding: 1rem;
-  border-radius: 1rem;
-  align-self: start;
-  gap: 1rem;
+	background: var(--background-color);
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+	width: 100%;
+	max-width: 100%;
+	padding: 1rem;
+	border-radius: 1rem;
+	align-self: start;
+	gap: 1rem;
 }
 
-.card-container.span {
-  max-width: 50%;
+.summary .table-data-container {
+  margin: 0 0 1rem 0;
 }
 
+.table-data-container {
+	margin: 0 0 1rem 0;
+	padding: 1rem 0.2rem 1rem 0.2rem;
+	background: var(--background-color);
+	border-radius: 1rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.card-container.graphs {
+	place-items: center;
+}
+
+/* Extra small (phones) */
+@media (min-width: 479px) {
+}
+
+/* Small (phones) */
+@media (min-width: 480px) {
+}
+
+/* Medium (tablets) */
 @media (min-width: 768px) {
-  .master-report-container {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-  }
+	.master-report-container {
+		flex-direction: row;
+	}
+
+	.card-container {
+		/* grid-template-columns: repeat(auto-fill, minmax(10rem, 100fr));  */
+		width: 40%;
+	}
+
+	.report-container {
+		width: 60%;
+	}
+
+	.table-data-container {
+		padding: 1rem;
+		align-items: flex-start;
+		margin: 0 1rem 1rem 0;
+	}
+}
+
+/* Large (small desktops & laptops) */
+@media (min-width: 1024px) {
+}
+
+/* X-Large (standard desktops) */
+@media (min-width: 1280px) {
+}
+
+/* Large Laptops */
+@media (min-width: 1440px) {
+	.report-container {
+		width: 50%;
+	}
+
+	.card-container {
+		width: 50%;
+	}
+}
+
+/* Standard Desktops (HD) */
+@media (min-width: 1600px) {
+}
+
+/* Ultra-wide HD (between HD and 2K) */
+@media (min-width: 1920px) {
+}
+
+/* 2K+ (2560px and above) */
+@media (min-width: 2560px) {
 }

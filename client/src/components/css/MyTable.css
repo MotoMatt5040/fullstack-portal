@@ -106,12 +106,29 @@ table tbody tr:hover {
   }
 }
 
+/* Extra small (phones) */
+@media (max-width: 479px) {
+}
 
-/* Tablet and up */
-@media (min-width: 768px) {
-  table {
+/* Small (phones) */
+@media (min-width: 480px) {
+  /* table {
     width: auto;
-    font-size: 1rem;
+    font-size: .65rem;
+  }
+
+  table thead th,
+  table tbody td {
+    padding: 0.25rem;
+  } */
+}
+
+/* Medium (tablets) */
+@media (min-width: 768px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: .6rem;
   }
 
   table thead th,
@@ -119,3 +136,59 @@ table tbody tr:hover {
     padding: 0.5rem;
   }
 }
+
+/* Large (small desktops & laptops) */
+@media (min-width: 1024px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: .6rem;
+  }
+}
+
+/* X-Large (standard desktops) */
+@media (min-width: 1280px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: .7rem;
+  }
+}
+
+/* Large Laptops */
+@media (min-width: 1440px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: .75rem;
+  }
+}
+
+/* Standard Desktops (HD) */
+@media (min-width: 1600px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: .8rem;
+  }
+}
+
+/* Ultra-wide HD (between HD and 2K) */
+@media (min-width: 1920px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: .85rem;
+  }
+}
+
+/* 2K+ (2560px and above) */
+@media (min-width: 2560px) {
+  table,
+  table thead th,
+  table tbody td {
+    font-size: 1rem;
+  }
+}
+
+

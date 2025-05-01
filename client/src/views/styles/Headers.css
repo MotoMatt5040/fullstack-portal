@@ -1,7 +1,7 @@
 .report-header {
   background-color: var(--background-color);
   border-radius: 1rem;
-  margin: 0 1rem 1rem 0;
+  margin: 0 0 1rem 0;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -11,6 +11,11 @@
   flex-wrap: wrap;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   font-size: 1rem;
+}
+
+.summary .report-header {
+  margin: 0 0 1rem 0;
+  /* margin: 0; */
 }
 
 .main{
@@ -23,6 +28,23 @@
   width: 100%;
 }
 
-@media (min-width: 768px) {
+.main.report-header {
+  position: sticky;
+	top: 0; /* or top: 60px; depending on your header/nav height */
+}
 
+.table-data-header.center {
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .report-header {
+
+    margin: 0 1rem 1rem 0;
+  }
+
+  .main.report-header {
+    flex-direction: row;
+    justify-content: space-between;
+  }
 }

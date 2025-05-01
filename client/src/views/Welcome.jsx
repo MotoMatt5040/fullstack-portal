@@ -4,6 +4,8 @@ import { selectCurrentUser, selectCurrentToken } from "../features/auth/authSlic
 import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
+import './styles/Welcome.css';
+
 const Welcome = () => {
     const user = useSelector(selectCurrentUser);
     const token = useSelector(selectCurrentToken);

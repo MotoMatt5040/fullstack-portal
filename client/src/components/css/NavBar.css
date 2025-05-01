@@ -6,7 +6,7 @@
   top: 0;
   left: 0;
   width: 100vw; 
-  height: 6rem; 
+  height: 5rem; 
   z-index: 1;
 }
 
@@ -85,7 +85,7 @@ main {
 @media (min-width: 769px) { 
 
   .navbar-container {
-    width: 6rem;
+    width: 4rem;
     height: 100vh;
     justify-content: flex-start;
     align-items: flex-start;
@@ -121,8 +121,6 @@ main {
 
   main {
     margin-top: 0;
-    margin-left: 6rem; 
-    padding-top: 1rem;
-    padding-left: 1rem;
+    margin-left: 4rem; 
   } 
 } 

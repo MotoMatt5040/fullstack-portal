@@ -15,6 +15,8 @@ interface MyTableProps {
 	isLive?: boolean;
 	isClickable?: boolean;
 	dataIsReady?: boolean;
+	isEditable?: boolean;
+	editableColumns?: string[];
 }
 
 const MyTable: React.FC<MyTableProps> = ({
@@ -23,13 +25,15 @@ const MyTable: React.FC<MyTableProps> = ({
 	clickParameters,
 	redirect,
 	linkTo,
+	editableColumns,
 
 	className = 'MyTable',
 	includeHeader = true,
 	reverseThresholds = [],
 	isLive = false,
 	isClickable = false,
-	dataIsReady = false
+	dataIsReady = false,
+	isEditable = false,
 }) => {
 	const navigate = useNavigate();
 	const columnHeaders = Object.keys(columnKeyMap);
@@ -119,64 +123,66 @@ const MyTable: React.FC<MyTableProps> = ({
 
 	return (
 		<table className={className}>
-			{includeHeader && <thead>
-				<tr>
-					{columnHeaders.map((header) => (
-						<th
-							key={header}
-							onClick={() => handleSort(header)}
-							style={{ cursor: 'pointer' }}
-						>
-							{header}
-							{(() => {
-								const sortEntry = sortConfig.find(
-									(sc) => sc.key === columnKeyMap[header]
-								);
-								if (!sortEntry) return null;
-								return sortEntry.direction === 'asc' ? ' ▲' : ' ▼';
-							})()}
-						</th>
-					))}
-				</tr>
-			</thead>}
+			{includeHeader && (
+				<thead>
+					<tr>
+						{columnHeaders.map((header) => (
+							<th
+								key={header}
+								onClick={() => handleSort(header)}
+								style={{ cursor: 'pointer' }}
+							>
+								{header}
+								{(() => {
+									const sortEntry = sortConfig.find(
+										(sc) => sc.key === columnKeyMap[header]
+									);
+									if (!sortEntry) return null;
+									return sortEntry.direction === 'asc' ? ' ▲' : ' ▼';
+								})()}
+							</th>
+						))}
+					</tr>
+				</thead>
+			)}
 			<tbody>
-  {!dataIsReady ? (
-    <tr>
-		<td colSpan={columnHeaders.length}>
-			<div className="spinner-container">
-				<div className="spinner" />
-			</div>
-		</td>
-	</tr>
-  ) : (
-    sortedData.map((row, index) => (
-      <tr
-        key={index}
-        onClick={isClickable ? () => handleRowClick(row) : undefined}
-        style={{ cursor: isClickable ? 'pointer' : 'default' }}
-      >
-        {columnHeaders.map((header) => {
-          const key = columnKeyMap[header];
-          const cellValue = row?.[key] ?? 'N/A';
-          const thresholdKey = `${key}Threshold`;
-          const threshold = row?.[thresholdKey];
-          const cellClass = threshold
-            ? highlightCellColor(cellValue, threshold, key)
-            : '';
-          const blinkingClass = isLive ? 'blinking' : '';
-          return (
-            <td
-              className={`${header} ${cellClass} ${blinkingClass}`}
-              key={header}
-            >
-              {cellValue}
-            </td>
-          );
-        })}
-      </tr>
-    ))
-  )}
-</tbody>
+				{!dataIsReady ? (
+					<tr>
+						<td colSpan={columnHeaders.length}>
+							<div className='spinner-container'>
+								<div className='spinner' />
+							</div>
+						</td>
+					</tr>
+				) : (
+					sortedData.map((row, index) => (
+						<tr
+							key={index}
+							onClick={isClickable ? () => handleRowClick(row) : undefined}
+							style={{ cursor: isClickable ? 'pointer' : 'default' }}
+						>
+							{columnHeaders.map((header) => {
+								const key = columnKeyMap[header];
+								const cellValue = row?.[key] ?? 'N/A';
+								const thresholdKey = `${key}Threshold`;
+								const threshold = row?.[thresholdKey];
+								const cellClass = threshold
+									? highlightCellColor(cellValue, threshold, key)
+									: '';
+								const blinkingClass = isLive ? 'blinking' : '';
+								return (
+									<td
+										className={`${header} ${cellClass} ${blinkingClass}`}
+										key={header}
+									>
+										{cellValue}
+									</td>
+								);
+							})}
+						</tr>
+					))
+				)}
+			</tbody>
 		</table>
 	);
 };
