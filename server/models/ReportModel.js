@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConnPromark');
+// const { get } = require('../routes/api/productionReports');
 
 const getLiveReportData = async (projectId) => {
 	const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';
@@ -33,7 +34,9 @@ const getLiveReportData = async (projectId) => {
 				return result.recordset;
 			},
 			(attempts = 5),
-			(fnName = 'getLiveSummaryData')
+			(fnName = 'getLiveSummaryData'),
+			(allowAbort = true),
+			(allowRetry = true),
 		);
 		return res
 };
@@ -98,7 +101,9 @@ ORDER BY
 			return result.recordset;
 		},
 		(attempts = 5),
-		(fnName = 'getLiveInterviewerData')
+		(fnName = 'getLiveInterviewerData'),
+		(allowAbort = true),
+		(allowRetry = true)
 	);
 	return res;
 };
@@ -150,7 +155,12 @@ const getHistoricInterviewerData = async (projectId, startDate, endDate) => {
 
 		const result = await request.query(qry);
 		return result.recordset
-	});
+	},
+		(attempts = 5),
+		(fnName = 'getHistoricInterviewerData'),
+		(allowAbort = false),
+		(allowRetry = false)
+	);
 };
 
 const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
@@ -190,12 +200,72 @@ const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
 
 		const result = await request.query(qry);
 		return result.recordset
-	});
+	},
+		(attempts = 5),
+		(fnName = 'getHistoricProjectReportData'),
+		(allowAbort = false),
+		(allowRetry = false)
+	);
+}
+
+const getInterviewerProductionReportData = async (projectId, recDate) => {
+	const qry = `
+SELECT DISTINCT 
+	eid, 
+	refName, 
+	recLoc, 
+	tenure, 
+	hrs, 
+	sum(connecttime) AS connectTime, 
+	sum(pausetime) AS pauseTime, 
+	cms, 
+	intal, 
+	mph, 
+	totalDials 
+FROM tblProduction 
+INNER JOIN tblEmployees 
+	ON empid = eid 
+INNER JOIN tblAspenProdII 
+	ON tblAspenProdII.empid = tblProduction.eid 
+		AND tblAspenProdII.projectid = tblProduction.projectid 
+		AND tblAspenProdII.recdate = tblProduction.recdate
+WHERE tblProduction.projectid = @projectId 
+	AND tblProduction.recdate = @recDate 
+GROUP BY 
+	eid, 
+	refname, 
+	tblProduction.recloc, 
+	tenure, 
+	hrs, 
+	cms, 
+	cph,
+	mph, 
+	dpc, 
+	dph, 
+	totaldials, 
+	intal
+	`
+
+	return withDbConnection(async (pool) => {
+		const request = pool.request();
+		request.input('projectId', sql.NVarChar, projectId);
+		request.input('recDate', sql.NVarChar, recDate);
+
+		const result = await request.query(qry);
+		// console.log('result', result.recordset);
+		return result.recordset
+	},
+		(attempts = 5),
+		(fnName = 'getInterviewerProductionReportData'),
+		(allowAbort = false),
+		(allowRetry = false)
+	);
 }
 
 module.exports = { 
 	getLiveReportData, 
 	getLiveInterviewerData, 
 	getHistoricInterviewerData, 
-	getHistoricProjectReportData 
+	getHistoricProjectReportData ,
+	getInterviewerProductionReportData,
 };

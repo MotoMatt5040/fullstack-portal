@@ -9,4 +9,10 @@ router.route('/tables/data/:type')
     ReportController.handleGetReportData(req, res);
   });
 
+router.route('/data/productionreport')
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+    console.log('hit production report');
+    ReportController.handleGetInterviewerProductionReportData(req, res);
+  });
+
 module.exports = router;

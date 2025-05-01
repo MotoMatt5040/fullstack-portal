@@ -84,7 +84,7 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	const endDate = cleanQueryParam(req.query?.enddate);
 	const useGpcph = cleanQueryParam(req.query?.useGpcph) === 'true';
 	const isLive = req.params?.type === 'live';
-	
+
 	const data = isLive
 		? await Reports.getLiveReportData(projectId)
 		: await Reports.getHistoricProjectReportData(projectId, startDate, endDate);
@@ -97,7 +97,7 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	// NOTE: This does need to be changed, returning a 499 is not generally a good idea as that signifies an error, and in this case
 	// this is the intended functionality. This is just a placeholder for now.
 	if (data === 499 || interviewerData === 499 || !data || !interviewerData)
-		return res.status(499).json({ msg: 'Server canceled request' });
+		return res.status(204).json({ msg: 'Server canceled request' });
 
 	// Check if the data is empty, if so return a 204 No Content response
 	if (data.length === 0 || interviewerData.length === 0) {
@@ -162,7 +162,7 @@ const handleGetReportData = handleAsync(async (req, res) => {
 		// recDate will be YYYY-MM-DD format while abbreviatedDate will be MM/DD format
 		const recDate = new Date(project.recDate);
 		const month = String(recDate.getMonth() + 1).padStart(2, '0');
-		const day = String(recDate.getDate()).padStart(2, '0');
+		const day = String(recDate.getDate() + 1).padStart(2, '0');
 
 		// This is the final updated object that gets returned to result, which is then returned to the front end.
 		const update = {
@@ -194,7 +194,22 @@ const handleGetLiveInterviewerData = handleAsync(async (req, res) => {
 	res.status(200).json(data);
 });
 
+const handleGetInterviewerProductionReportData = handleAsync(async (req, res) => {
+	const projectId = cleanQueryParam(req.query?.projectId);
+	const recDate = cleanQueryParam(req.query?.recDate);
+
+	const data = await Reports.getInterviewerProductionReportData(
+		projectId,
+		recDate
+	);
+	if (data.length === 0) {
+		return res.status(204).json({ msg: 'No data found' });
+	}
+	res.status(200).json(data);
+});
+
 module.exports = {
 	handleGetReportData,
 	handleGetLiveInterviewerData,
+	handleGetInterviewerProductionReportData
 };

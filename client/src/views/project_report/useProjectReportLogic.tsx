@@ -25,7 +25,7 @@ interface ProjectReportData {
 }
 
 const useProjectReportLogic = () => {
-  const useGpcph = useSelector((state) => state.settings.useGpcph);
+  const useGpcph = useSelector((state: any) => state.settings.useGpcph);
 
   const [searchParams] = useSearchParams();
   const [liveToggle, setLiveToggle] = useState<boolean>(false);
@@ -87,11 +87,11 @@ const useProjectReportLogic = () => {
     };
 
     if (liveToggle) {
-      fetchData(projectReport.refetch, fetchParams);
+      fetchData();
       intervalId = setInterval(() => {
         setTimestamp(Date.now());
       }, 15000);
-    } else fetchData(projectReport.refetch, fetchParams);
+    } else fetchData()
 
     return () => {
       clearInterval(intervalId);
@@ -100,8 +100,6 @@ const useProjectReportLogic = () => {
 
   useEffect(() => {
     if (!projectReport.data) return;
-
-    
 
     setData(projectReport.data);
   }, [projectCount, isRefetching, projectReport.data]);
@@ -154,11 +152,8 @@ const useProjectReportLogic = () => {
     if (projectCount > projectReport.data.length && !isRefetching) {
       setTimeout(() => {
         setIsRefetching(true);
-        fetchData(projectReport.refetch, {
-          projectId: projectId,
-          live: liveToggle,
-          ts: timestamp,
-        }).finally(() => {
+        fetchData(
+      ).finally(() => {
           setIsRefetching(false);
         });
       }, 1000);
@@ -167,14 +162,18 @@ const useProjectReportLogic = () => {
   };
 
   const handleLiveToggle = () => {
-    // true is list view and false is grid view
     setLiveToggle((prev) => !prev);
   };
 
-  const fetchData = async (refetch: Function, props: any) => {
-    props.useGpcph = useGpcph;
+  const fetchData = async () => {
+    const fetchParams = {
+      projectId: projectId,
+      live: liveToggle,
+      ts: timestamp,
+      useGpcph: useGpcph
+    };
     try {
-      const result = await refetch(props);
+      const result = await projectReport.refetch(fetchParams);
       if (result?.error?.status === 499) return;
       if (result?.data) {
         setData(result.data);

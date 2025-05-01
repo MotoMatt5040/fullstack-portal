@@ -33,47 +33,60 @@ const poolPromise = new sql.ConnectionPool(config)
 	const withDbConnection = async (
 		queryFn,
 		attempts = 5,
-		fnName = 'anonymous'
+		fnName = 'anonymous',
+		allowAbort = false,
+		allowRetry = false,
+		query = "No qry given"
 	) => {
+		// console.log(`\n\nExecuting ${fnName}...`);
+		// console.log(queryFn.toString());
+		// console.log(query)
 		const pool = await poolPromise;
 	
 		const controller = new AbortController();
 		const signal = controller.signal;
 		const requestVersion = ++currentRequestVersion;
 	
-		if (currentRequest) {
-			// console.log(`Cancelling previous request for ${fnName}...`);
+		// Only abort previous request if allowAbort is true
+		if (allowAbort && currentRequest) {
+			console.log(`Cancelling previous request for ${fnName}...`);
 			currentRequest.abort();
 		}
 	
-		currentRequest = controller;
+		// Only track currentRequest if aborting is allowed
+		if (allowAbort) {
+			currentRequest = controller;
+		}
 	
 		try {
 			const res = await queryFn(pool, signal);
 	
-			if (requestVersion !== currentRequestVersion) {
-				// console.log(`Response for ${fnName} is outdated, ignoring...`);
-				return; 
+			if (allowAbort && requestVersion !== currentRequestVersion) { // if aborting is allowed
+				console.log(`Response for ${fnName} is outdated, ignoring...`);
+				return;
 			}
 	
-			if ((Array.isArray(res) && res.length === 0 && attempts > 0)) {
-				console.warn(`Query returned no results. Retrying... (${6 - attempts} of 5) - ${fnName}`);
-				
-				await new Promise((resolve) => setTimeout(resolve, 100));  
+			const isEmptyResult = Array.isArray(res) && res.length === 0;
 	
-				if (signal.aborted) {
-					// console.log(`Request for ${fnName} was canceled, not retrying.`);
-					return 499; 
+			if (isEmptyResult && attempts > 0 && allowRetry) {
+				console.warn(`Query returned no results. Retrying... (${6 - attempts} of 5) - ${fnName}`);
+				await new Promise((resolve) => setTimeout(resolve, 100));
+	
+				if (allowAbort && signal.aborted) {
+					console.log(`Request for ${fnName} was canceled, not retrying.`);
+					return 499;
 				}
-				return withDbConnection(queryFn, attempts - 1, fnName);
+	
+				return withDbConnection(queryFn, attempts - 1, fnName, allowAbort, allowRetry);
 			}
 	
 			return res;
 		} catch (err) {
 			console.error('Database query failed:', err);
+			console.error(`Error in ${fnName}:`, err.message);
 			throw err;
 		} finally {
-			if (currentRequest === controller) {
+			if (allowAbort && currentRequest === controller) {
 				currentRequest = null;
 			}
 		}

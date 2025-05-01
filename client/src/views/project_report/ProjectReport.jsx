@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import useProjectReportLogic from './useProjectReportLogic';
 import Icon from '@mdi/react';
 import { mdiViewList, mdiViewGrid } from '@mdi/js';
+
+import ProductionReport from '../production_report/ProductionReport';
 
 import MyPieChart from '../../components/MyPieChart';
 import MyTable from '../../components/MyTable';
@@ -22,6 +24,10 @@ import MyGoBackButton from '../../components/MyGoBackButton';
 const ProjectReport = () => {
 	const showGraphs = useSelector((state) => state.settings.showGraphs);
 	const useGpcph = useSelector((state) => state.settings.useGpcph);
+	const summaryStartDate = useSelector((state) => state.summary.summaryStartDate);
+	const summaryEndDate = useSelector((state) => state.summary.summaryEndDate);
+	const summaryIsLive = useSelector((state) => state.summary.summaryIsLive);
+
 	const {
 		liveToggle,
 		handleLiveToggle,
@@ -87,16 +93,23 @@ const ProjectReport = () => {
 		'Off CPH': 'offCph',
 		'Zero CMS': 'zcms',
 	};
-
 	return (
 		<section className='report-section'>
 			<div className='main report-header'>
+				<MyGoBackButton
+					to='Summary Report'
+					url={
+						summaryStartDate && summaryEndDate
+							? `/summaryreport?live=${summaryIsLive}&startDate=${summaryStartDate}&endDate=${summaryEndDate}`
+							: '/summaryreport'
+					}
+				/>
 				<h1>
 					Calculations currently use {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
 				</h1>
 			</div>
 			<div className='master-report-container'>
-				<span className='report-container'>
+				<div className='report-container'>
 					<div className='report-header'>
 						<h1 className='project-report-title'>
 							{projectReportData && (
@@ -144,7 +157,7 @@ const ProjectReport = () => {
 								)}
 							</span>
 						</div>
-						<div className={`table-data-header`}>
+						<div className='table-data-header'>
 							{/* {liveToggle ? "Live Data" : <MyDateRangePicker date={date} onChange={handleDateChange} isDisabled={liveToggle} />} */}
 							<MyToggle
 								label='Live'
@@ -157,14 +170,15 @@ const ProjectReport = () => {
 						{isListView ? (
 							<div className='table-scroller'>
 								<MyTable
-									className='project-table'
+									// className='project-table'
 									data={data}
 									columnKeyMap={columnKeyMap}
 									reverseThresholds={['offCph', 'zcms']}
 									isLive={liveToggle}
-									isClickable={false}
+									isClickable={true}
+									redirect={true}
 									clickParameters={['projectId', 'recDate']}
-									linkTo={'applesauce'}
+									linkTo={''}
 									dataIsReady={
 										projectReportIsSuccess &&
 										!projectReportIsLoading &&
@@ -188,9 +202,10 @@ const ProjectReport = () => {
 							</div>
 						)}
 					</div>
-				</span>
+					<ProductionReport />
+				</div>
 				{showGraphs && (
-					<span className='card-container span'>
+					<article className='card-container graphs'>
 						{projectReportIsSuccess &&
 							!projectReportIsLoading &&
 							!projectReportIsFetching &&
@@ -214,11 +229,12 @@ const ProjectReport = () => {
 									}
 								/>
 							))}
-					</span>
+					</article>
 				)}
+				
 			</div>
 
-			<MyGoBackButton to='Summary Report' />
+			
 		</section>
 	);
 };

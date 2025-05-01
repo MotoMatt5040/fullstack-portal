@@ -4,7 +4,9 @@ import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
 import { useSearchParams } from 'react-router-dom';
 import QueryHelper from '../../utils/QueryHelper';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { setSummaryStartDate, setSummaryEndDate, setSummaryIsLive } from '../../features/summarySlice';
+
 
 const getDateFromParams = (key, fallback) => {
 	const params = new URLSearchParams(window.location.search);
@@ -13,14 +15,15 @@ const getDateFromParams = (key, fallback) => {
 };
 
 const useProjectReportLogic = () => {
+	const dispatch = useDispatch()
 	const useGpcph = useSelector((state) => state.settings.useGpcph);
+
 	const [searchParams] = useSearchParams();
 
 	const [liveToggle, setLiveToggle] = useState(
 		searchParams.get('live') === 'false' ? false : true
 	);
 	const [data, setData] = useState([]);
-	// const [isSuccess, setIsSuccess] = useState(false);
 	const [timestamp, setTimestamp] = useState(Date.now());
 	const [projectCount, setProjectCount] = useState(0);
 	const [isRefetching, setIsRefetching] = useState(false);
@@ -83,6 +86,10 @@ const useProjectReportLogic = () => {
 		const live = params.get('live');
 		const start = params.get('startDate');
 		const end = params.get('endDate');
+		console.log(live, start, end);
+		dispatch(setSummaryIsLive(live === 'true'));
+		dispatch(setSummaryStartDate(start));
+		dispatch(setSummaryEndDate(end));
 
 		if (live !== null) setLiveToggle(live === 'true');
 
@@ -202,17 +209,29 @@ const useProjectReportLogic = () => {
 	};
 
 	const handleLiveToggle = () => {
-		const newToggle = !liveToggle;
-		setLiveToggle(newToggle);
+    const newToggle = !liveToggle;
+    dispatch(setSummaryIsLive(newToggle));
+    setLiveToggle(newToggle);
 
-		const params = new URLSearchParams(window.location.search);
-		params.set('live', newToggle);
-		params.set('startDate', date.start.toString());
-		params.set('endDate', date.end.toString());
+    if (newToggle) {
+        const newUrl = window.location.pathname; 
+        window.history.pushState({}, '', newUrl);
+				dispatch(setSummaryStartDate(null));
+				dispatch(setSummaryEndDate(null));
+				dispatch(setSummaryIsLive(true));
+    } else {
+        const params = new URLSearchParams(window.location.search);
+        params.set('live', newToggle);
+        params.set('startDate', date.start.toString());
+        params.set('endDate', date.end.toString());
+        dispatch(setSummaryStartDate(date.start.toString()));
+        dispatch(setSummaryEndDate(date.end.toString()));
+				dispatch(setSummaryIsLive(false));
 
-		const newUrl = `${window.location.pathname}?${params.toString()}`;
-		window.history.pushState({}, '', newUrl);
-	};
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({}, '', newUrl);
+    }
+};
 
 	const fetchData = async (refetch, props) => {
 		props.useGpcph = useGpcph;
@@ -223,21 +242,19 @@ const useProjectReportLogic = () => {
 			// Example: Start with live disabled..... Enable it, then disable it again. The server will cancel the first request.
 			if (result?.error?.status === 499) return;
 			if (result?.data) {
-				// setIsSuccess(true);
 				setData(result.data);
 			} else {
-				// setIsSuccess(false);
 				resetVariables();
 			}
 		} catch (err) {
-			// console.error(err);
-			// setIsSuccess(false);
 		}
 	};
 
 	const handleDateChange = (newDate) => {
 		const start = newDate.start;
 		const end = newDate.end;
+		dispatch(setSummaryStartDate(start.toString()));
+		dispatch(setSummaryEndDate(end.toString()));
 		setDate({ start, end });
 
 		const params = new URLSearchParams(window.location.search);

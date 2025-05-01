@@ -8,7 +8,7 @@ import MyDateRangePicker from '../../components/DateRangePicker';
 import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
 
-import './SummaryReport.css';
+// import './SummaryReport.css';
 import './SummaryReportTable.css';
 import '../styles/Tables.css';
 import '../styles/Headers.css';
@@ -91,7 +91,7 @@ const ProjectReport = () => {
 	};
 
 	return (
-		<section className='report-section'>
+		<section className='summary report-section'>
 			<div className='main report-header'>
 				<h1>
 					Calculations currently use {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
@@ -157,7 +157,7 @@ const ProjectReport = () => {
 					{isListView ? (
 						<div className='table-scroller'>
 							<MyTable
-								className='summary-table'
+								// className='summary-table'
 								data={data}
 								columnKeyMap={columnKeyMap}
 								reverseThresholds={['offCph', 'zcms']}
