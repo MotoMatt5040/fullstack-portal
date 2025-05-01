@@ -95,7 +95,7 @@ const ProjectReport = () => {
 	};
 	return (
 		<section className='report-section'>
-			<div className='main report-header'>
+			<div className='project header'>
 				<MyGoBackButton
 					to='Summary Report'
 					url={

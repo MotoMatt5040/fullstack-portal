@@ -92,7 +92,7 @@ const ProjectReport = () => {
 
 	return (
 		<section className='summary report-section'>
-			<div className='main report-header'>
+			<div className='summary header'>
 				<h1>
 					Calculations currently use {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
 				</h1>

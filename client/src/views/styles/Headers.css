@@ -1,7 +1,7 @@
-.report-header {
+.header {
   background-color: var(--background-color);
   border-radius: 1rem;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0 0;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -13,12 +13,26 @@
   font-size: 1rem;
 }
 
-.summary .report-header {
-  margin: 0 0 1rem 0;
-  /* margin: 0; */
+.report-header {
+  background-color: var(--background-color);
+  border-radius: 1rem;
+  margin: 1rem 0 0 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
 }
 
-.main{
+.summary .header {
+  width: 100%;
+}
+
+.project{
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -28,9 +42,11 @@
   width: 100%;
 }
 
-.main.report-header {
+.project.header {
+  /* margin: 0 0 1rem 0; */
+  margin: 0;
   position: sticky;
-	top: 0; /* or top: 60px; depending on your header/nav height */
+	top: 5rem; /* or top: 60px; depending on your header/nav height */
 }
 
 .table-data-header.center {
@@ -38,13 +54,18 @@
 }
 
 @media (min-width: 768px) {
+  .summary .report-header {
+    margin: 1rem 0 0 0;
+  }
   .report-header {
-
-    margin: 0 1rem 1rem 0;
+    margin: 1rem 1rem 0 0;
   }
 
-  .main.report-header {
+  .project.header {
     flex-direction: row;
     justify-content: space-between;
+    margin: 0;
+    top: 0;
+    /* margin: 1rem 0 0 0; */
   }
 }

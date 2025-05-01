@@ -26,14 +26,15 @@
 	border-radius: 1rem;
 	align-self: start;
 	gap: 1rem;
+	margin: 1rem 0 0 0;
 }
 
 .summary .table-data-container {
-  margin: 0 0 1rem 0;
+  margin: 1rem 0 0 0;
 }
 
 .table-data-container {
-	margin: 0 0 1rem 0;
+	margin: 1rem 0 0 0;
 	padding: 1rem 0.2rem 1rem 0.2rem;
 	background: var(--background-color);
 	border-radius: 1rem;
@@ -74,7 +75,7 @@
 	.table-data-container {
 		padding: 1rem;
 		align-items: flex-start;
-		margin: 0 1rem 1rem 0;
+		margin: 1rem 1rem 0 0;
 	}
 }
 
