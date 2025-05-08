@@ -65,11 +65,11 @@
 
 	.card-container {
 		/* grid-template-columns: repeat(auto-fill, minmax(10rem, 100fr));  */
-		width: 40%;
+		width: 20%;
 	}
 
 	.report-container {
-		width: 60%;
+		width: 80%;
 	}
 
 	.table-data-container {
@@ -90,11 +90,11 @@
 /* Large Laptops */
 @media (min-width: 1440px) {
 	.report-container {
-		width: 50%;
+		width: 80%;
 	}
 
 	.card-container {
-		width: 50%;
+		width: 20%;
 	}
 }
 
