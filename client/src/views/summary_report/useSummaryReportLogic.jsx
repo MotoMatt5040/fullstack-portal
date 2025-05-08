@@ -258,8 +258,8 @@ const useProjectReportLogic = () => {
 		setDate({ start, end });
 
 		const params = new URLSearchParams(window.location.search);
-		params.set('startDate', start.toString());
-		params.set('endDate', end.toString());
+		params.set('startDate', start);
+		params.set('endDate', end);
 		params.set('live', liveToggle);
 
 		const newUrl = `${window.location.pathname}?${params.toString()}`;

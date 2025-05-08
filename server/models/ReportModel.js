@@ -218,33 +218,50 @@ SELECT DISTINCT
 	hrs, 
 	sum(connecttime) AS connectTime, 
 	sum(pausetime) AS pauseTime, 
-	cms, 
+	tp.cms, 
 	intal, 
 	mph, 
-	totalDials 
-FROM tblProduction 
+	totalDials,
+	tp.gpcph,
+	inc,
+	mean,
+	targetMph,
+	projName
+FROM tblProduction tp
 INNER JOIN tblEmployees 
 	ON empid = eid 
 INNER JOIN tblAspenProdII 
-	ON tblAspenProdII.empid = tblProduction.eid 
-		AND tblAspenProdII.projectid = tblProduction.projectid 
-		AND tblAspenProdII.recdate = tblProduction.recdate
-WHERE tblProduction.projectid = @projectId 
-	AND tblProduction.recdate = @recDate 
+	ON tblAspenProdII.empid = tp.eid 
+		AND tblAspenProdII.projectid = tp.projectid 
+		AND tblAspenProdII.recdate = tp.recdate
+INNER JOIN tblDispo td
+	ON tp.projectid = td.projid
+	AND tp.recdate = td.dispodate
+	AND singleday = 0
+INNER JOIN tblGPCPHDaily gph
+	ON tp.projectid = gph.projectid
+	AND tp.recdate = gph.recdate
+WHERE tp.projectid = @projectId 
+	AND tp.recdate = @recDate 
 GROUP BY 
 	eid, 
 	refname, 
-	tblProduction.recloc, 
+	tp.recloc, 
 	tenure, 
 	hrs, 
-	cms, 
+	tp.cms, 
 	cph,
 	mph, 
-	dpc, 
-	dph, 
 	totaldials, 
-	intal
+	intal,
+	tp.gpcph,
+	inc,
+	mean,
+	targetMph,
+	projName
 	`
+
+	console.log(recDate)
 
 	return withDbConnection(async (pool) => {
 		const request = pool.request();
@@ -262,10 +279,39 @@ GROUP BY
 	);
 }
 
+const updateTargetMph = async (projectId, recDate, targetMph, user) => {
+	const qry = `
+	UPDATE tblGPCPHDaily 
+	SET targetmph = @targetMph,
+		dateupdated = @dateupdated,
+		updatedby = @updatedby
+	WHERE projectId = @projectId 
+	AND recDate = @recDate
+	`;
+
+	return withDbConnection(async (pool) => {
+		const request = pool.request();
+		request.input('projectId', sql.NVarChar, projectId);
+		request.input('dateupdated', sql.DateTime, new Date());
+		request.input('updatedby', sql.NVarChar, user); 
+		request.input('recDate', sql.NVarChar, recDate);
+		request.input('targetMph', sql.Float, targetMph);
+
+		const result = await request.query(qry);
+		return result.rowsAffected;
+	},
+		(attempts = 5),
+		(fnName = 'updateTargetMph'),
+		(allowAbort = false),
+		(allowRetry = false)
+	);
+}
+
 module.exports = { 
 	getLiveReportData, 
 	getLiveInterviewerData, 
 	getHistoricInterviewerData, 
 	getHistoricProjectReportData ,
 	getInterviewerProductionReportData,
+	updateTargetMph,
 };

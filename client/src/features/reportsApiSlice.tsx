@@ -1,4 +1,5 @@
 import { apiSlice } from '../app/api/apiSlice';
+import { removeTimeZone } from '../utils/DateFormat';
 
 interface ReportArgs {
   live: boolean;
@@ -69,11 +70,22 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
 
     getProductionReport: builder.query<ReportResponse, ReportArgs>({
       query: ({ projectId, recDate, useGpcph }) => {
-        const url = `/reports/data/productionreport?projectId=${projectId}&recDate=${recDate}&useGpcph=${useGpcph}`;
+        const url = `/reports/data/productionreport?projectId=${projectId}&recDate=${removeTimeZone(recDate ?? '')}&useGpcph=${useGpcph}`; //removeTimeZone is required
         return { url, method: 'GET' };
       }
-    })
+    }),
+
+    updateTargetMph: builder.mutation<void, { projectId: number; recDate: string | Date; targetMph: number, prevTargetMph: number }>({
+      query: ({ projectId, recDate, targetMph, prevTargetMph }) => ({
+        url: '/reports/data/update/targetmph',
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: { projectId, recDate: removeTimeZone(recDate), targetMph, prevTargetMph },//removeTimeZone is required
+      }),
+    }),
   }),
 });
 
-export const { useGetReportQuery, useGetProductionReportQuery } = ReportApiSlice;
+export const { useGetReportQuery, useGetProductionReportQuery, useUpdateTargetMphMutation } = ReportApiSlice;

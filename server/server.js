@@ -5,21 +5,12 @@ const path = require("path");
 const cors = require("cors");
 const corsOptions = require("./config/corsOptions");
 const { logger } = require("./middleware/logEvents");
+const auditLogger = require('./middleware/auditor');
 const errorHandler = require("./middleware/errorHandler");
 const verifyJWT = require("./middleware/verifyJWT");
 const cookieParser = require("cookie-parser");
 const credentials = require("./middleware/credentials");
-// const mongoose = require("mongoose");
-// const connectDB = require("./config/dbConn");
-// const useDB = require("./config/dbConnPromark");
 const PORT = process.env.PORT || 5000;
-
-// const hashPasswordsForAllRows = require("./controllers/hashPasswords");
-// hashPasswordsForAllRows();
-
-// connectDB();
-// useDB("SELECT DISTINCT projectid , recdate FROM tblGPCPHDaily WHERE RecDate >= '2025-02-17'");
-// connectDB();
 
 app.use(logger);
 
@@ -35,20 +26,18 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 //routes
+
 app.use("/", require("./routes/root"));
-// app.use("/register", require("./routes/register"));
 app.use("/auth", require("./routes/auth"));
 app.use("/refresh", require("./routes/refresh"));
 app.use("/logout", require("./routes/logout"));
 app.use("/reset" , require("./routes/resetPassword"));
 
 app.use(verifyJWT); //everything after this line requires a jwt
-// app.use("/employees", require("./routes/api/employees"));
+
+app.use(auditLogger);
 app.use("/users", require("./routes/api/promarkEmployees"));
 app.use("/github", require("./routes/api/github"));
-// app.use("/productionreport", require("./routes/api/productionReports"))
-// app.use("/live_data", require("./routes/api/liveProduction"));
-// app.use("/summaryreport", require("./routes/api/summaryReports"));
 app.use("/reports", require("./routes/api/reports"));
 
 app.all("*", (req, res) => {
@@ -66,10 +55,3 @@ app.use(errorHandler);
 app.listen(PORT, () =>
     console.log(`Server running on port ${PORT}`)
 );
-
-// mongoose.connection.once("open", () => {
-//     console.log("Connected to MongoDB");
-//     app.listen(PORT, () =>
-//         console.log(`Server running on port http://localhost:${PORT}`)
-//     );
-// });

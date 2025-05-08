@@ -32,7 +32,7 @@ const calculateInterviewerStats = (interviewerData, project, cph) => {
 				interviewer.projectId !== project.projectId ||
 				(interviewer.recDate &&
 					interviewer.recDate.getTime() !== project.recDate.getTime())
-			){ 
+			) {
 				return acc;
 			}
 
@@ -53,15 +53,19 @@ const calculateInterviewerStats = (interviewerData, project, cph) => {
 			// Add hours to the accumulator onCph where interviewer cph is on cph (greater than or equal to gpcph)
 			else if (interviewer.cph >= cph) {
 				acc.onCph += interviewer.hrs;
-			}
-			else {
+			} else {
 				console.warn(
-					'Interviewer skipped from categories:', 
-					'\ncms > 0:', interviewer.cms > 0,
-					'\nonVar:', interviewer.cph >= threshold && interviewer.cph < cph,
-					'\noffCph:', interviewer.cph < threshold,
-					'\nonCph:', interviewer.cph >= cph,
-					'\nprojectId:', interviewer.projectId,
+					'Interviewer skipped from categories:',
+					'\ncms > 0:',
+					interviewer.cms > 0,
+					'\nonVar:',
+					interviewer.cph >= threshold && interviewer.cph < cph,
+					'\noffCph:',
+					interviewer.cph < threshold,
+					'\nonCph:',
+					interviewer.cph >= cph,
+					'\nprojectId:',
+					interviewer.projectId,
 					interviewer
 				);
 				acc.unclassified += interviewer.hrs;
@@ -76,6 +80,58 @@ const calculateInterviewerStats = (interviewerData, project, cph) => {
 	// console.log(data);
 
 	return data;
+};
+
+const calculateInterviewerProductionStats = (productionData) => {
+	const { totalDials, totalHours, totalCms, totalCph } = productionData.reduce(
+		(acc, interviewer) => {
+			acc.totalDials += interviewer.totalDials || 0;
+			acc.totalHours += interviewer.hrs || 0;
+			acc.totalCms += interviewer.cms || 0;
+			return acc;
+		},
+		{ totalDials: 0, totalHours: 0, totalCms: 0, totalCph: 0 }
+	);
+
+	const actualCph = totalCms / totalHours;
+	
+	const data = productionData.map((interviewer) => {
+		const timeDifference = (interviewer.hrs - interviewer.connectTime) * 60.0;
+		const pauseMinutes = interviewer.pauseTime > 0.0 ? interviewer.pauseTime * 60.0 : 0.0;
+		const pauseTimePercent = (interviewer.pauseTime / interviewer.hrs) * 100.0;
+		const nph = (timeDifference + pauseMinutes) / (interviewer.hrs * 60.0) * 100.0;
+		const xcms = (interviewer.hrs * interviewer.gpcph);
+		const cmsDifference = interviewer.cms - xcms;
+		const xcpd = interviewer.totalDials / totalDials;
+		const cph = interviewer.cms / interviewer.hrs;
+		const dpc = interviewer.cms > 0 ? interviewer.totalDials / interviewer.cms : 0;
+		const dph = interviewer.totalDials / interviewer.hrs;
+		return {
+			...interviewer,
+			timeDifference: Number(timeDifference.toFixed(2)),
+			pauseMinutes: Number(pauseMinutes.toFixed(2)),
+			pauseTimePercent: Number(pauseTimePercent.toFixed(2)),
+			nph: Number(nph.toFixed(0)),
+			xcms: Number(xcms.toFixed(2)),
+			cmsDifference: Number(cmsDifference.toFixed(2)),
+			xcpd: Number(xcpd.toFixed(2)),
+			cph: Number(cph.toFixed(2)),
+			dpc: Number(dpc.toFixed(0)),
+			dph: Number(dph.toFixed(0)),
+			totalHours: Number(totalHours.toFixed(2)),
+			totalCms: Number(totalCms),
+			actualCph: Number(actualCph.toFixed(2)),
+		};
+	});
+
+	const ranked = [...data]
+		.sort((a, b) => b.cmsDifference - a.cmsDifference)
+		.map((item, index) => ({
+			...item,
+			productionImpact: index + 1,
+		}));
+
+	return ranked;
 };
 
 const handleGetReportData = handleAsync(async (req, res) => {
@@ -107,10 +163,8 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	// This called the function above that creates and accumulator to iterate through the data
 	const result = data.map((project) => {
 		let cph;
-		if (isLive || useGpcph) 
-			cph = project.gpcph ?? 0;
-		else
-			cph = project.cph ?? 0;
+		if (isLive || useGpcph) cph = project.gpcph ?? 0;
+		else cph = project.cph ?? 0;
 		const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(
 			interviewerData,
 			project,
@@ -160,14 +214,17 @@ const handleGetReportData = handleAsync(async (req, res) => {
 
 		// This is to make sure the date is in the correct format for the frontend
 		// recDate will be YYYY-MM-DD format while abbreviatedDate will be MM/DD format
-		const recDate = new Date(project.recDate);
+		const rd = new Date(project.recDate); // This is a bandaid fix for the timezone issue, it will be fixed in the future
+		const CST_OFFSET_MS = 6 * 60 * 60 * 1000; 
+		const recDate = new Date(rd.getTime() + CST_OFFSET_MS); // This is a bandaid fix for the timezone issue, it will be fixed in the future
 		const month = String(recDate.getMonth() + 1).padStart(2, '0');
-		const day = String(recDate.getDate() + 1).padStart(2, '0');
+		const day = String(recDate.getDate()).padStart(2, '0');
+		console.log(recDate, month, day);
 
 		// This is the final updated object that gets returned to result, which is then returned to the front end.
 		const update = {
 			...project, // ...project just means all previous data in project + everything specified after
-			recDate: recDate.toISOString().split('T')[0], // This is just to keep the date in ISO format... looks a little cleaner
+			recDate: recDate,//.toISOString().split('T')[0], // This is just to keep the date in ISO format... looks a little cleaner
 			abbreviatedDate: `${month}/${day}`, // this is the actual displayed date
 			projName: abbreviatedProjName,
 			totalHrs: totalHrs.toFixed(2),
@@ -194,22 +251,61 @@ const handleGetLiveInterviewerData = handleAsync(async (req, res) => {
 	res.status(200).json(data);
 });
 
-const handleGetInterviewerProductionReportData = handleAsync(async (req, res) => {
-	const projectId = cleanQueryParam(req.query?.projectId);
-	const recDate = cleanQueryParam(req.query?.recDate);
+const handleGetInterviewerProductionReportData = handleAsync(
+	async (req, res) => {
+		const projectId = cleanQueryParam(req.query?.projectId);
+		const recDate = cleanQueryParam(req.query?.recDate);
 
-	const data = await Reports.getInterviewerProductionReportData(
-		projectId,
-		recDate
-	);
-	if (data.length === 0) {
+		const productionReportData = await Reports.getInterviewerProductionReportData(
+			projectId,
+			recDate
+		);
+
+		if (productionReportData.length === 0) {
+			return res.status(204).json({ msg: 'No data found' });
+		}
+
+		const data = calculateInterviewerProductionStats(productionReportData);
+
+		// console.log(data);
+
+		res.status(200).json(data);
+	}
+);
+
+const handleUpdateTargetMph = handleAsync(async (req, res) => {
+	const projectId = cleanQueryParam(req.body?.projectId);
+	const recDate = cleanQueryParam(req.body?.recDate);
+	const targetMph = cleanQueryParam(req.body?.targetMph);
+	const prevTargetMph = cleanQueryParam(req.body?.prevTargetMph);
+	const user = cleanQueryParam(req.user);
+	console.log(user, projectId, recDate, targetMph, prevTargetMph);
+	console.log(typeof targetMph, typeof prevTargetMph);
+
+	req.auditData = {
+    userid: user,  
+    tableModified: 'tblGPCPHDaily',  
+    columnModified: 'targetMph',  
+    modifiedFrom: prevTargetMph,  
+    modifiedTo: targetMph,      
+  };
+
+	if (!projectId || !recDate || !targetMph) {
+		return res.status(400).json({ msg: 'Missing required fields' });
+	}
+
+	const result = await Reports.updateTargetMph(projectId, recDate, targetMph, user);
+
+	if (result === 0) {
 		return res.status(204).json({ msg: 'No data found' });
 	}
-	res.status(200).json(data);
+
+	res.status(200).json({ msg: 'Target MPH updated successfully' });
 });
 
 module.exports = {
 	handleGetReportData,
 	handleGetLiveInterviewerData,
-	handleGetInterviewerProductionReportData
+	handleGetInterviewerProductionReportData,
+	handleUpdateTargetMph
 };

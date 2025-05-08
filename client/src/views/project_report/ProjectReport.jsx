@@ -55,14 +55,14 @@ const ProjectReport = () => {
 			...columnKeyMap,
 			GPH: 'gpcph',
 			MPH: 'mph',
-			AL: 'al',
+			TL: 'al',
 		};
 	} else {
 		columnKeyMap = {
 			...columnKeyMap,
 			GPCPH: 'gpcph',
 			MPH: 'mph',
-			'Avg. Len': 'al',
+			'True Len': 'al',
 			'On CPH': 'onCph',
 			'On Var': 'onVar',
 			'Off CPH': 'offCph',
@@ -87,7 +87,7 @@ const ProjectReport = () => {
 		CPH: 'cph',
 		GPCPH: 'gpcph',
 		MPH: 'mph',
-		'Avg. Len': 'al',
+		'True Len': 'al',
 		'On CPH': 'onCph',
 		'On Var': 'onVar',
 		'Off CPH': 'offCph',
@@ -177,7 +177,7 @@ const ProjectReport = () => {
 									isLive={liveToggle}
 									isClickable={true}
 									redirect={true}
-									clickParameters={['projectId', 'recDate']}
+									clickParameters={['projectId', 'recDate', 'projName', 'cms', 'cph', 'hrs', 'al', 'mph']}
 									linkTo={''}
 									dataIsReady={
 										projectReportIsSuccess &&

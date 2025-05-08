@@ -4,15 +4,22 @@ const ROLES_LIST = require('../../config/rolesList');
 const verifyRoles = require('../../middleware/verifyRoles');
 const ReportController = require('../../controllers/reportController');
 
-router.route('/tables/data/:type')
-  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
-    ReportController.handleGetReportData(req, res);
-  });
+router
+	.route('/tables/data/:type')
+	.get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+		ReportController.handleGetReportData(req, res);
+	});
 
-router.route('/data/productionreport')
-  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
-    console.log('hit production report');
-    ReportController.handleGetInterviewerProductionReportData(req, res);
-  });
+router
+	.route('/data/productionreport')
+	.get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+		ReportController.handleGetInterviewerProductionReportData(req, res);
+	});
+
+router
+	.route('/data/update/targetmph')
+	.put(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), (req, res) => {
+		ReportController.handleUpdateTargetMph(req, res);
+	});
 
 module.exports = router;
