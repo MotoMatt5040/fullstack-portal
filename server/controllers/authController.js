@@ -1,5 +1,5 @@
-const { getUserByEmail, updateUserRefreshToken, getUserByRefreshToken, clearRefreshToken } = require('../models/PromarkUsers');
-const { getUserRoles } = require('../models/UserRoles');
+const { getUserByEmail, updateUserRefreshToken, getUserByRefreshToken, clearRefreshToken } = require('../services/PromarkUsers');
+const { getUserRoles } = require('../services/UserRoles');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 

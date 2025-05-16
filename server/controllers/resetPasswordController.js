@@ -1,4 +1,4 @@
-const { getUserByEmail, updateUserPassword, saveResetToken, getUserByResetToken } = require('../models/PromarkUsers');
+const { getUserByEmail, updateUserPassword, saveResetToken, getUserByResetToken } = require('../services/PromarkUsers');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');

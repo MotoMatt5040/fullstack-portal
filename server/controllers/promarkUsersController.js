@@ -1,4 +1,4 @@
-const promarkUsers = require('../models/PromarkUsers');
+const promarkUsers = require('../services/PromarkUsers');
 const bcrypt = require('bcrypt');
 const handleAsync = require('./asyncController.js');
 
@@ -93,6 +93,8 @@ const handleRemoveUserRoles = handleAsync(async (req, res) => {
     res.status(200).json({ success: `Roles added to user ${email} successfully` });
 });
 
+
+
 module.exports = {
     handleGetAllUsers,
     handleGetUserById,
@@ -102,5 +104,5 @@ module.exports = {
     handleSaveResetToken,
     handleGetUserByResetToken,
     handleAddUserRoles,
-    handleRemoveUserRoles
+    handleRemoveUserRoles,
 };

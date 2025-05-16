@@ -1,4 +1,4 @@
-const { getUserByRefreshToken, clearRefreshToken } = require('../models/PromarkUsers');
+const { getUserByRefreshToken, clearRefreshToken } = require('../services/PromarkUsers');
 
 const handleLogout = async (req, res) => {
     // On client/front end, please also delete the accessToken

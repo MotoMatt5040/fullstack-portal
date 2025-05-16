@@ -1,4 +1,4 @@
-const Reports = require('../models/ReportModel');
+const Reports = require('../services/ReportModel');
 const handleAsync = require('./asyncController');
 const {
 	STATE_ABBREVIATIONS,
