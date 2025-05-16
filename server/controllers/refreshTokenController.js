@@ -1,5 +1,5 @@
-const { getUserByRefreshToken } = require('../models/PromarkUsers');
-const { getUserRoles } = require('../models/UserRoles');
+const { getUserByRefreshToken } = require('../services/PromarkUsers');
+const { getUserRoles } = require('../services/UserRoles');
 const jwt = require('jsonwebtoken');
 
 const handleRefreshToken = async (req, res) => {
