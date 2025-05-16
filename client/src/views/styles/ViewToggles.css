@@ -1,0 +1,20 @@
+.view-toggle-div {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.view-toggle-span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+.view-toggle-span:hover {
+  cursor: pointer;
+  background-color: var(--background-color-muted);
+  border-radius: 0.5rem;
+}

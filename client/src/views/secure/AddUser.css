@@ -1,0 +1,96 @@
+.add-user-form {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--background-color-elevated);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.add-user-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--label-text-color);
+}
+
+.add-user-input,
+.add-user-select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: var(--input-background);
+  color: var(--text-color);
+}
+
+.add-user-select {
+  height: 120px;
+}
+
+.add-user-input:focus,
+.add-user-select:focus {
+  background-color: var(--input-focus-background);
+  border-color: var(--focus-ring-color);
+  outline: none;
+}
+
+.add-user-submit {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 20px;
+  background-color: var(--accent-color);
+  color: var(--button-text);
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.add-user-submit:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.add-user-input:focus,
+.add-user-select:focus,
+.add-user-submit:focus {
+  outline: none;
+}
+
+
+.multi-select {
+  width: 20%;
+  background-color: var(--background-multi-select);
+  color: var(--text-color);
+  border-radius: 5px;
+}
+
+.css-13cymwt-control {
+  background-color: var(--background-multi-select) !important;
+  color: var(--text-color) !important;
+}
+
+.css-t3ipsp-control {
+  background-color: var(--background-multi-select) !important;
+  color: var(--text-color) !important;
+}
+
+.css-19bb58m {
+  color: var(--text-color) !important;
+}
+
+.css-1dimb5e-singleValue {
+  color: var(--text-color) !important;
+}
+
+.css-1nmdiq5-menu {
+  background-color: var(--background-multi-select) !important;
+}
+
+.css-d7l1ni-option {
+  background-color: var(--background-multi-select-hover) !important;
+}
