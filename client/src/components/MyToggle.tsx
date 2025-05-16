@@ -5,12 +5,14 @@ type MyToggleProps = {
   active: boolean;
   onClick: () => void;
   label: string;
+  blink?: boolean;
 };
 
-const MyToggle: React.FC<MyToggleProps> = ({ active, onClick, label }) => {
+const MyToggle: React.FC<MyToggleProps> = ({ active, onClick, label, blink = false }) => {
   return (
     <button
-      className={`toggle-button ${active ? 'active' : ''}`}
+      type='button'
+      className={`toggle-button ${active ? 'active' : ''} ${blink ? 'blink' : ''}`}
       onClick={onClick}
     >
       {label}

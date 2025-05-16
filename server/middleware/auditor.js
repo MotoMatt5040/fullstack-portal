@@ -1,17 +1,20 @@
 const sql = require('mssql');
-const withDbConnection = require('../config/dbConnPromark');
+const withDbConnection = require('../config/dbConn');
+const { promark } = require('../utils/databaseTypes');
 
 const auditLogger = async (req, res, next) => {
 	if (!['PUT', 'POST', 'DELETE'].includes(req.method)) return next();
 
 	res.on('finish', async () => {
-		const { userid, tableModified, columnModified, modifiedFrom, modifiedTo } = req.auditData || {};
+		const { userid, tableModified, columnModified, modifiedFrom, modifiedTo } =
+			req.auditData || {};
 
 		if (res.statusCode >= 400) return;
 
 		try {
-			await withDbConnection(
-				async (pool) => {
+			await withDbConnection({
+				database: promark,
+				queryFn: async (pool) => {
 					const request = pool.request();
 					request.input('userid', sql.VarChar(50), userid);
 					request.input('tablemodified', sql.VarChar(50), tableModified);
@@ -25,11 +28,11 @@ const auditLogger = async (req, res, next) => {
 						VALUES (@userid, @tablemodified, @columnmodified, @modifiedfrom, @modifiedto, @datemodified)
 					`);
 				},
-				5,
-				'auditLogger',
-				true,
-				true
-			);
+				attempts: 5,
+				fnName: 'auditLogger',
+				allowAbort: true,
+				allowRetry: true,
+			});
 		} catch (err) {
 			console.error('Audit log failed:', err);
 		}

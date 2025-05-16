@@ -47,6 +47,7 @@
   --background-multi-select: #333;
   --background-multi-select-hover: #444;
   --border-color: #fff;
+  --border-color-soft: #666;
 }
 
 /* Light Theme Variables */
@@ -82,6 +83,7 @@
   --background-multi-select: #fff;
   --background-multi-select-hover: #f0f0f0;
   --border-color: #000;
+  --border-color-soft: #ccc;
 }
 
 [data-theme="superdark"] {
@@ -116,6 +118,7 @@
   --background-multi-select: #333;
   --background-multi-select-hover: #444;
   --border-color: #fff;
+  --border-color-soft: #666;
 }
 
 body {
@@ -164,3 +167,6 @@ button.theme-toggle {
 .users ul {
   list-style-type: none;
 }
+
+
+

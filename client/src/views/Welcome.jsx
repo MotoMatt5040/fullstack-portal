@@ -34,6 +34,8 @@ const Welcome = () => {
             <br />
             <h1>Start Here!!</h1>
             <p><Link to="/summaryreport">Summary Reports</Link></p>
+            <br />
+            <p><Link to="/quotas">Quotas</Link></p>
             {/* <p><Link to="/projectreport">Project Report</Link></p> */}
             
         </section>

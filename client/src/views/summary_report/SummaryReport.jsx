@@ -15,6 +15,7 @@ import '../styles/Headers.css';
 import '../styles/Sections.css';
 import '../styles/Charts.css';
 import '../styles/Scrollers.css';
+import '../styles/ViewToggles.css'
 import { useSelector } from 'react-redux';
 import MyDataCard from '../../components/MyDataCard';
 
@@ -91,7 +92,7 @@ const ProjectReport = () => {
 	};
 
 	return (
-		<section className='summary report-section'>
+		<section className='summary report section'>
 			<div className='summary header'>
 				<h1>
 					Calculations currently use {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
@@ -150,6 +151,7 @@ const ProjectReport = () => {
 							label='Live'
 							active={liveToggle}
 							onClick={handleLiveToggle}
+							blink={liveToggle}
 						/>
 					</div>
 					{/* NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
@@ -163,7 +165,7 @@ const ProjectReport = () => {
 								reverseThresholds={['offCph', 'zcms']}
 								isLive={liveToggle}
 								isClickable={true}
-								clickParameters={['projectId', 'recDate']}
+								clickParameters={['projectId', 'recDate', 'projName', 'cms', 'cph', 'hrs', 'al', 'mph']}
 								linkTo={'/projectreport'}
 								redirect={true}
 								dataIsReady={

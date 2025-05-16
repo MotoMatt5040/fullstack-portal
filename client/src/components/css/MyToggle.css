@@ -8,6 +8,7 @@
   background-color: var(--button-background);
   color: var(--button-text);
   transition: background-color 0.3s ease, color 0.3s ease;
+  white-space: nowrap;
 }
 
 @keyframes blink {
@@ -25,6 +26,10 @@
 .toggle-button.active {
   background-color: var(--active-button-background);
   color: white;
+  
+}
+
+.toggle-button.active.blink {
   animation: blink 3s infinite;
 }
 

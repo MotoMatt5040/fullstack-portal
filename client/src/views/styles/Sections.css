@@ -1,13 +1,22 @@
-.report-section {
+.section {
   background-color: var(--background-color-muted);
   border-radius: 1rem;
   margin: 1rem;
   padding: 1rem;
   display: flex;
+  box-shadow: 0 .25rem 1rem rgba(0, 0, 0, 0.2);
+}
+
+.report.section {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  box-shadow: 0 .25rem 1rem rgba(0, 0, 0, 0.2);
+}
+
+.quota-management {
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
 }
 
 @media (min-width: 768px) {

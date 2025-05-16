@@ -16,6 +16,14 @@
 	max-height: fit-content;
 }
 
+.quota-management-container {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 100%;
+	max-height: fit-content;
+}
+
 .card-container {
 	background: var(--background-color);
 	display: grid;

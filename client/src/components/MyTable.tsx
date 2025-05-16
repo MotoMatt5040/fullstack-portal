@@ -280,7 +280,8 @@ const MyTable: React.FC<MyTableProps> = ({
 
 								if (key in _gc) {
 									const columnData = data.map((r) => r[key]);
-									const min = Math.min(...columnData.filter((val) => val > 0));
+									
+									const min = Math.min(...columnData.filter((val) => val >= 0));
 									const max = Math.max(...columnData);
 									const ignoreZero = _gc[key]?.ignoreZero ?? false;
 									style = {

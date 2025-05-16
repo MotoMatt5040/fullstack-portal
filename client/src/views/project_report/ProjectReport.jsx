@@ -94,7 +94,10 @@ const ProjectReport = () => {
 		'Zero CMS': 'zcms',
 	};
 	return (
-		<section className='report-section'>
+		//soft refusal
+		//naam
+		//respondant terminates
+		<section className='report section'>
 			<div className='project header'>
 				<MyGoBackButton
 					to='Summary Report'
