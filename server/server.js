@@ -39,6 +39,8 @@ app.use(auditLogger);
 app.use("/users", require("./routes/api/promarkEmployees"));
 app.use("/github", require("./routes/api/github"));
 app.use("/reports", require("./routes/api/reports"));
+app.use("/users", require("./routes/api/users"));
+app.use("/quotas", require("./routes/api/quotaManagement"));
 
 app.all("*", (req, res) => {
     res.status(404);
