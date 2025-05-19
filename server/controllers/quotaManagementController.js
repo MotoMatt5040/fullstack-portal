@@ -22,15 +22,21 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	const webProject = await ProjectInfo.getWebProjects(projectId);
 	const webId = webProject[0]?.id;
 
-	// console.log('phoneProjects', phoneProjects);
-	// console.log('webProject', webProject);
+	console.log('phoneProjects', phoneProjects);
+	console.log('webProject', webProject);
 
 	let projectIds = {};
 	let landlineStructure = [];
 	let cellStructure = [];
 	let comStructure = [];
-	let t2wStructure = [];
 	let panelStructure = [];
+	let t2wStructure = [];
+	let stypeObjectives = {
+		landline: 0,
+		cell: 0,
+		panel: 0,
+		t2w: 0,
+	};
 
 	// You cant use a foreach loop for async/await operations
 	// phoneProjects.forEach(async (project) => { will not work in this instance
@@ -54,6 +60,29 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			// });
 			const selectedPhones = phone.map(
 				({ Position, Criterion, Label, Quota, Frequence, ToDo }) => {
+					// console.log(Criterion)
+					if (/^STYPE=\d$/.test(Criterion.trim())) {
+						// just checking for STYPE=#
+						const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
+						if (parenMatch) {
+							console.log(
+								`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`
+							);
+							const obj = parseInt(parenMatch[1], 10);
+							if (obj > 0) {
+								switch (Criterion) {
+									case 'STYPE=1':
+										// landline
+										stypeObjectives['landline'] = obj;
+										break;
+									case 'STYPE=2':
+										// cell
+										stypeObjectives['cell'] = obj;
+										break;
+								}
+							}
+						}
+					}
 					let modifiedCriterion = Criterion;
 					if (project.name.endsWith('C')) {
 						modifiedCriterion = Criterion.replace(' AND STYPE=2', '');
@@ -62,7 +91,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 						StratumId: Position,
 						Criterion: modifiedCriterion,
 						Label,
-						// Objective: Quota,
+						Objective: Quota,
 						Frequency: Frequence,
 						// ToDo,
 						// Percent: Quota > 0 ? ((Frequence / Quota) * 100).toFixed(2) : 0,
@@ -86,43 +115,87 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 
 	projectIds['web'] = webId;
 
-	const web = await QuotaServices.getWebQuotas(projectIds['web']);
-	// console.log('web', web);
-	const selectedWeb = web.map(
-		({ StratumId, Criterion, Label, Objective, Frequency }) => ({
-			StratumId,
-			Criterion,
-			Label,
-			// Objective,
-			Frequency,
-			// ToDo: Objective - Frequency,
-			// Percent: Objective > 0 ? ((Frequency / Objective) * 100).toFixed(2): 0,
-		})
-	);
+	// console.log(projectIds);
 
-	selectedWeb.forEach((variable) => {
-		const stypeMatch = variable.Criterion.match(/AND STYPE=(\d+)/i);
-		if (stypeMatch) {
-			const stype = stypeMatch[1];
-			variable.Criterion = variable.Criterion.replace(/ AND STYPE=\d+/i, '');
-			switch (stype) {
-				case '3': //panel
-					panelStructure.push(variable);
-					break;
-				case '4': //t2w
-					t2wStructure.push(variable);
-					break;
-				case '5': //email
-					// handle stype=5
-					break;
-				case '6': //mailer
-					// handle stype=6
-					break;
+	if (webId) {
+		const web = await QuotaServices.getWebQuotas(projectIds['web']);
+		// console.log(web)
+		// console.log('web', web);
+		const selectedWeb = web.map(
+			({ StratumId, Criterion, Label, Objective, Frequency }) => {
+				if (/^STYPE=\d$/.test(Criterion.trim())) {
+					// just checking for STYPE=#
+					const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
+					if (parenMatch) {
+						console.log(`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`);
+						const obj = parseInt(parenMatch[1], 10);
+						if (obj > 0) {
+							switch (Criterion) {
+								case 'STYPE=3':
+									// panel
+									stypeObjectives['panel'] = obj;
+									break;
+								case 'STYPE=4':
+									// t2w
+									stypeObjectives['t2w'] = obj;
+									break;
+								case 'STYPE=5':
+									// email
+									// handle stype=5
+									break;
+								case 'STYPE=6':
+									// mailer
+									// handle stype=6
+									break;
+							}
+						}
+					}
+				}
+
+				return {
+					StratumId,
+					Criterion,
+					Label,
+					Objective,
+					Frequency,
+					// ToDo: Objective - Frequency,
+					// Percent: Objective > 0 ? ((Frequency / Objective) * 100).toFixed(2): 0,
+				};
 			}
-		} else {
-			panelStructure.push(variable);
-		}
-	});
+		);
+		// console.log(selectedWeb)
+
+		selectedWeb.forEach((variable) => {
+			const stypeOnlyMatch = variable.Criterion.match(/^STYPE=(\d+)$/i);
+			if (stypeOnlyMatch) {
+				const stype = stypeOnlyMatch[1];
+				// console.log(`STYPE=${stype} Objective: ${variable.Objective}`);
+				// console.log(variable);
+			}
+
+			const stypeMatch = variable.Criterion.match(/AND STYPE=(\d+)/i);
+			if (stypeMatch) {
+				const stype = stypeMatch[1];
+				variable.Criterion = variable.Criterion.replace(/ AND STYPE=\d+/i, '');
+				switch (stype) {
+					case '3': //panel
+						panelStructure.push(variable);
+						break;
+					case '4': //t2w
+						t2wStructure.push(variable);
+						break;
+					case '5': //email
+						// handle stype=5
+						break;
+					case '6': //mailer
+						// handle stype=6
+						break;
+				}
+			} else {
+				panelStructure.push(variable);
+			}
+		});
+	}
 
 	// selectedWeb.forEach((variable) => {
 	// 	// variable.ToDo = variable.Objective - variable.Frequency;
@@ -168,15 +241,15 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	// console.log(Object.keys(comStructure[0]));
 	// console.log(Object.keys(landlineStructure[0]));
 
-	const rowCount = (
-		Math.max(
-			landlineStructure.length,
-			cellStructure.length,
-			comStructure.length,
-			t2wStructure.length,
-			panelStructure.length
-		) + 1
-	).toString();
+	// const rowCount = (
+	// 	Math.max(
+	// 		landlineStructure.length,
+	// 		cellStructure.length,
+	// 		comStructure.length,
+	// 		panelStructure.length,
+	// 		t2wStructure.length
+	// 	) + 1
+	// ).toString();
 	// console.log(rowCount);
 
 	//all row counts
@@ -187,36 +260,50 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	// 		t2wStructure.length,
 	// 		panelStructure.length)
 
-		const allStructures = {
-			com: comStructure,
-			landline: landlineStructure,
-			cell: cellStructure,
-			t2w: t2wStructure,
-			panel: panelStructure,
-		};
+	const allStructures = {
+		com: comStructure,
+		landline: landlineStructure,
+		cell: cellStructure,
+		panel: panelStructure,
+		t2w: t2wStructure,
+	};
 
 	const mergedRows = {};
 	totalStructure = [];
 
-	function processRow(row) {
+	function processRow(row, stypeObjective) {
 		const label = row.Label.split(' (')[0];
 		const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
 		const obj = parseFloat(objText) || 0;
-		const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(2) : 0;
-		const toDo = obj - row.Frequency;
+		// console.log(row?.Label, row?.Objective, obj)
+		// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
+		// const toDo = obj - row.Frequency;
+		const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
+
+		if (row?.Objective >= 1000) row.Objective -= 1000;
+		const modalityPercent =
+			row.Objective > 0
+				? ((row.Frequency / stypeObjective) * 100).toFixed(1)
+				: 0;
+		const toDo = row.Objective - row.Frequency;
 
 		return {
-			StratumId: row.StratumId,
 			Label: label,
-			'%': percent,
-			Objective: obj,
+			Objective: row?.Objective || 0,
 			Frequency: row.Frequency,
+			'%': percent,
+			// Objective: obj,
+			'M%': modalityPercent,
 			'To Do': toDo,
 		};
 	}
 
 	Object.entries(allStructures).forEach(([category, rows]) => {
+		// console.log(category, rows.length);
+		const stypeObjective = stypeObjectives[category] || 0;
+
 		rows.forEach((row) => {
+			// console.log(category, row)
 			const key = row.Criterion;
 			if (!mergedRows[key]) {
 				mergedRows[key] = {
@@ -224,10 +311,10 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				};
 			}
 
-			const processed = processRow(row);
+			const processed = processRow(row, stypeObjective);
 			mergedRows[key][category] = processed;
 
-			// Update totals right here
+			// Update totals here
 			mergedRows[key].total.Objective += processed.Objective;
 			mergedRows[key].total.Frequency += processed.Frequency;
 
@@ -238,12 +325,12 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 							(mergedRows[key].total.Frequency /
 								mergedRows[key].total.Objective) *
 							100
-					  ).toFixed(2)
+					  ).toFixed(1)
 					: '0';
 			mergedRows[key].total['To Do'] =
 				mergedRows[key].total.Objective - mergedRows[key].total.Frequency;
 
-			// Optionally copy some common fields (StratumId, Label) from the current row if needed
+			// copy common fields (StratumId, Label) from the current row
 			mergedRows[key].total.StratumId = processed.StratumId;
 			mergedRows[key].total.Label = processed.Label;
 		});

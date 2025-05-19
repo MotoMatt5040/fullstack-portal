@@ -35,14 +35,16 @@ const getWebProjects = async (projectId) => {
 	// SELECT id FROM [A4Survey_Client_1].[dbo].[Survey] WHERE Name LIKE '<projectid>%'
 	// get the quotas then filter the stype from there
 
-	return withDbConnection({
+	return withDbConnection({  //possibly have userprofile with how lfar back to show data
 		database: voxco,
 		queryFn: async (pool) => {
+			const qry = "SELECT id, name FROM [A4Survey_Client_1].[dbo].[Survey] WHERE Name LIKE @projectId + '%' "
 			const result = await pool
 				.request()
 				.input('projectId', sql.NVarChar, projectId)
 				.query(
-					"SELECT id, name FROM [A4Survey_Client_1].[dbo].[Survey] WHERE Name LIKE @projectId + '%'"
+					 //and fieldstart is < 30 days
+					 qry
 				);
 			return result.recordset;
 		},

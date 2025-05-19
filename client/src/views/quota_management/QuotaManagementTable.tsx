@@ -2,9 +2,11 @@ import React from 'react';
 import HoverableLabelCell from '../../components/MyHoverableCell';
 
 type RowData = {
-	'%': number | string;
+	
 	Objective: number | string;
 	Frequency: number | string;
+	'%': number | string;
+	'M%': number | string;
 	'To Do': number | string;
 	Label: string;
 	StratumId: number;
@@ -41,7 +43,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 }) => {
 	const groupKeys = Object.keys(quotaData);
 	const headerKeyMap: Record<string, string> = {
-		'Total Quotas': 'total',
+		'Total Quotas': 'total', //remove
 		Landline: 'landline',
 		Cell: 'cell',
 		T2W: 't2w',
@@ -49,13 +51,14 @@ const QuotaManagementTable: React.FC<Props> = ({
 	};
 
 	const dataKeyMap: Record<string, keyof RowData> = {
-		'%': '%',
 		Obj: 'Objective',
 		Freq: 'Frequency',
+		'%': '%',
+		'M%': 'M%',
 		'To Do': 'To Do',
 	};
 
-	const skipRows = ['TZONE', 'VTYPE', 'TFLAG', 'PREL', '$a>4'];
+	const skipRows = ['TZONE', 'VTYPE', 'TFLAG', 'PREL', '$a>4', 'SOURCE'];
 
 	const visibleColumnGroups = headers
 		.map((header) => {

@@ -38,7 +38,7 @@ const getProjectsList = async (directorId) => {
 			if (directorId) request.input('directorId', directorId);
 			const result = await request.query(
 				`
-SELECT DISTINCT TOP 20
+SELECT DISTINCT 
     projectId, 
     projectName, 
     fieldStart 

@@ -15,7 +15,7 @@ import ExportExcelButton from '../../components/ExportExcelButton';
 type Props = {};
 
 const headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
-const subHeaders = ['%', 'Obj', 'Freq', 'To Do'];
+const subHeaders = ['Obj', 'Freq', '%', 'M%', 'To Do'];
 
 const QuotaManagement = (props: Props) => {
 	const {
