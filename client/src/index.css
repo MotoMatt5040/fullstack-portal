@@ -26,6 +26,7 @@
   --link-color: whitesmoke;
   --link-hover-color: rgba(245, 245, 245, 0.9);
   --button-background: #333;
+  --button-background-hover: #444;
   --button-text: #fff;
   --table-header-background: #444;
   --table-header-color: #fff;
@@ -62,6 +63,7 @@
   --link-color: #0000EE;
   --link-hover-color: #551A8B;
   --button-background: #ddd;
+  --button-background-hover: #ccc;
   --button-text: #000;
   --table-header-background: #ddd;
   --table-header-color: #000;
@@ -97,6 +99,7 @@
   --link-color: whitesmoke;
   --link-hover-color: rgba(245, 245, 245, 0.9);
   --button-background: #333;
+  --button-background-hover: #444;
   --button-text: #fff;
   --table-header-background: #444;
   --table-header-color: #fff;

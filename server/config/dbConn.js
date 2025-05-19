@@ -44,12 +44,14 @@ const getPool = async (database) => {
 	}
 
 	if (!poolCache[database]) {
+		// console.log(dbConfigs[database]);
 		poolCache[database] = new sql.ConnectionPool(dbConfigs[database])
 			.connect()
 			.then((pool) => {
 				return pool;
 			})
 			.catch((err) => {
+				// console.log("Error in connection pool");
 				console.error(`Database connection failed for ${database}:`, err);
 				process.exit(1);
 			});

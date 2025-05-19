@@ -53,6 +53,18 @@
 	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
+.quota-table-data-container {
+	margin: 1rem 0 0 0;
+	padding: 1rem 0.2rem 1rem 0.2rem;
+	background: var(--background-color);
+	border-radius: 1rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
 .card-container.graphs {
 	place-items: center;
 }
@@ -84,6 +96,12 @@
 		padding: 1rem;
 		align-items: flex-start;
 		margin: 1rem 1rem 0 0;
+	}
+
+	.quota-table-data-container {
+		padding: 1rem;
+		align-items: flex-start;
+		margin: 1rem 0;
 	}
 }
 
