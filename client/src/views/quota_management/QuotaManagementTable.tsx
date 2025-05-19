@@ -78,7 +78,6 @@ const QuotaManagementTable: React.FC<Props> = ({
 	return (
 		<table id={id} className='quota-management-table'>
 			<colgroup>
-				{/* Add this for the "Label" first column */}
 				<col className='col-label' />
 
 				{visibleColumnGroups.map(({ key, subCols }) =>

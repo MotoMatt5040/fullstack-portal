@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef  } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../../features/auth/authSlice';
@@ -17,6 +17,7 @@ const useQuotaManagementLogic = () => {
 	const [showMainColumnGroups, setShowMainColumnGroups] = useState(false);
 	const [showSubColumnGroups, setShowSubColumnGroups] = useState(false);
 	const [quotas, setQuotas] = useState([]);
+	const filterRef = useRef<HTMLDivElement>(null);
 	// const [emptyStructures, setEmptyStructures] = useState([]);
 
 	const columnGroups = [
@@ -39,6 +40,25 @@ const useQuotaManagementLogic = () => {
 	);
 
 	useEffect(() => {
+	if (!showFilter) return;
+
+	const handleClickOutside = (event: MouseEvent) => {
+		if (
+			filterRef.current &&
+			!filterRef.current.contains(event.target as Node)
+		) {
+			setShowFilter(false);
+		}
+	};
+
+	document.addEventListener('mousedown', handleClickOutside);
+
+	return () => {
+		document.removeEventListener('mousedown', handleClickOutside);
+	};
+}, [showFilter]);
+
+	useEffect(() => {
 		// fetchData('13094');
 		if (token) {
 			try {
@@ -48,10 +68,10 @@ const useQuotaManagementLogic = () => {
 
 				if (roles.includes(4)) {
 					setInternalUser(false);
-					console.log('User is not internal');
+					// console.log('User is not internal');
 				} else {
 					setInternalUser(true);
-					console.log('User is internal');
+					// console.log('User is internal');
 				}
 			} catch (err) {
 				console.error('Invalid token', err);
@@ -61,7 +81,7 @@ const useQuotaManagementLogic = () => {
 
 	useEffect(() => {
 		if (projectListIsFetching) return;
-		console.log(projectList)
+		// console.log(projectList)
 		if (projectList && projectList.length > 0) {
 			const options = projectList.map((item: any) => ({
 				value: item.projectId,
@@ -76,8 +96,8 @@ const useQuotaManagementLogic = () => {
 	useEffect(() => {
 		if (!quotaData) return;
 
-		console.log('Quotas data:', quotaData);
-		console.log(typeof quotaData);
+		// console.log('Quotas data:', quotaData);
+		// console.log(typeof quotaData);
 
 		setQuotas(quotaData.mergedRows);
 		// setEmptyStructures(quotaData.emptyStructures);
@@ -145,6 +165,7 @@ const useQuotaManagementLogic = () => {
 		setShowMainColumnGroups,
 		showSubColumnGroups,
 		setShowSubColumnGroups,
+		filterRef,
 	};
 };
 

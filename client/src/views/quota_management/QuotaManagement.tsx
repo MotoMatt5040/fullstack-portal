@@ -14,12 +14,6 @@ import ExportExcelButton from '../../components/ExportExcelButton';
 
 type Props = {};
 
-// const options = [
-// 	{ value: 13901, label: '13901' },
-// 	{ value: 13902, label: '13902' },
-// 	{ value: 13903, label: '13903' },
-// ];
-
 const headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
 const subHeaders = ['%', 'Obj', 'Freq', 'To Do'];
 
@@ -40,6 +34,7 @@ const QuotaManagement = (props: Props) => {
 		showSubColumnGroups,
 		setShowSubColumnGroups,
 		projectListOptions,
+		filterRef,
 	} = useQuotaManagementLogic();
 
 	const columnGroups = [
@@ -65,7 +60,7 @@ const QuotaManagement = (props: Props) => {
 								) || null
 							}
 							onChange={(selected: any) => {
-								setSelectedProject(selected.value);
+								setSelectedProject(selected ? selected.value : null);
 							}}
 							isDisabled={false}
 							placeholder='Select...'
@@ -86,7 +81,7 @@ const QuotaManagement = (props: Props) => {
 						</span>
 
 						{showFilter && (
-							<div className='filter-popup'>
+							<div className='filter-popup' ref={filterRef}>
 								<div className='filter-popup-group all-subcolumns-toggle'>
 									<strong>Toggle All Sub Columns</strong>
 									<div className='filter-popup-subgroup'>
@@ -183,15 +178,13 @@ const QuotaManagement = (props: Props) => {
 						)}
 					</div>
 				</div>
-				<div className='table-data-container'>
+				<div className='quota-table-data-container'>
 					<ExportExcelButton
-						tableId={`${selectedProject}-table`}
-						// fileName={`QuotaManagement_${selectedProject}.xlsx`}
+						tableId={`${selectedProject}-quotas`}
 					/>
-					{selectedProject}
 					{quotas && !quotaDataIsFetching && (
 						<QuotaManagementTable
-							id={`${selectedProject}-table`}
+							id={`${selectedProject}-quotas`}
 							quotaData={quotas}
 							headers={headers}
 							subHeaders={subHeaders}
