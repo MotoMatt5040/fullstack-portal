@@ -6,29 +6,35 @@ interface HoverableLabelCellProps {
 }
 
 const HoverableLabelCell: React.FC<HoverableLabelCellProps> = ({ label, popupText }) => {
-  const [showPopup, setShowPopup] = React.useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMousePos({ x: e.clientX + 10, y: e.clientY + 10 }); // add offset to avoid covering cursor
+  };
 
   return (
     <td
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', position: 'relative' }}
       onMouseEnter={() => setShowPopup(true)}
       onMouseLeave={() => setShowPopup(false)}
+      onMouseMove={handleMouseMove}
     >
       {label}
       {showPopup && (
         <div
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
+            position: 'fixed',
+            top: mousePos.y,
+            left: mousePos.x,
             backgroundColor: 'black',
             color: 'white',
             padding: '5px 10px',
             borderRadius: '4px',
             whiteSpace: 'nowrap',
-            zIndex: 10,
-            marginTop: '4px',
+            zIndex: 9999,
             boxShadow: '0 0 6px rgba(0,0,0,0.3)',
+            pointerEvents: 'none', // prevent flicker if mouse overlaps popup
           }}
         >
           {popupText}
