@@ -6,13 +6,13 @@ const ReportController = require('../../controllers/reportController');
 
 router
 	.route('/tables/data/:type')
-	.get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+	.get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager, ROLES_LIST.Programmer), (req, res) => {
 		ReportController.handleGetReportData(req, res);
 	});
 
 router
 	.route('/data/productionreport')
-	.get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), (req, res) => {
+	.get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager, ROLES_LIST.Programmer), (req, res) => {
 		ReportController.handleGetInterviewerProductionReportData(req, res);
 	});
 

@@ -51,17 +51,18 @@ function App() {
 
 				{/* protected routes */}
 				<Route
-					element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive, ROLES.Manager, ROLES.External]} />}
+					element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive, ROLES.Manager, ROLES.External, ROLES.Programmer]} />}
 				>
+					<Route path='github' element={<IssueForm />} />
 					<Route path='welcome' element={<Welcome />} />
 					<Route path='quotas' element={<QuotaManagement />} />
 				</Route>
 
 				<Route
-					element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive, ROLES.Manager]} />}
+					element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive, ROLES.Manager, ROLES.Programmer]} />}
 				>
 					
-					<Route path='github' element={<IssueForm />} />
+					
 					<Route path='summaryreport' element={<SummaryReport />} />
 					<Route path='projectreport' element={<ProjectReport />} />
 					<Route path='productionreport' element={<ProductionReport />} />

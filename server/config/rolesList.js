@@ -4,7 +4,8 @@ const ROLES_LIST = {
     "Manager": 3,
     "External": 4,
     "Team Lead": 5,
-    "Monitor": 6
+    "Monitor": 6,
+    "Programmer": 7
 }
 
 module.exports = ROLES_LIST;

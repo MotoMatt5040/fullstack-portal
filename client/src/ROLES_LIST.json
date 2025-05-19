@@ -4,5 +4,6 @@
     "Manager": 3,
     "External": 4,
     "Team Lead": 5,
-    "Monitor": 6
+    "Monitor": 6,
+    "Programmer": 7
 }
