@@ -22,6 +22,9 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	const webProject = await ProjectInfo.getWebProjects(projectId);
 	const webId = webProject[0]?.id;
 
+	// console.log('phoneProjects', phoneProjects);
+	// console.log('webProject', webProject);
+
 	let projectIds = {};
 	let landlineStructure = [];
 	let cellStructure = [];
@@ -73,7 +76,6 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				landlineStructure.push(...selectedPhones);
 			} else if (project.name.endsWith('C')) {
 				projectIds['cell'] = project.k_Id;
-
 				cellStructure.push(...selectedPhones);
 			} else if (project.name.endsWith('COM')) {
 				projectIds['com'] = project.k_Id;
@@ -85,6 +87,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	projectIds['web'] = webId;
 
 	const web = await QuotaServices.getWebQuotas(projectIds['web']);
+	// console.log('web', web);
 	const selectedWeb = web.map(
 		({ StratumId, Criterion, Label, Objective, Frequency }) => ({
 			StratumId,
@@ -102,21 +105,22 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		if (stypeMatch) {
 			const stype = stypeMatch[1];
 			variable.Criterion = variable.Criterion.replace(/ AND STYPE=\d+/i, '');
-
 			switch (stype) {
-				case '3':
-					t2wStructure.push(variable);
-					break;
-				case '4':
+				case '3': //panel
 					panelStructure.push(variable);
 					break;
-				case '5':
+				case '4': //t2w
+					t2wStructure.push(variable);
+					break;
+				case '5': //email
 					// handle stype=5
 					break;
-				case '6':
+				case '6': //mailer
 					// handle stype=6
 					break;
 			}
+		} else {
+			panelStructure.push(variable);
 		}
 	});
 
@@ -173,23 +177,23 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			panelStructure.length
 		) + 1
 	).toString();
-	console.log(rowCount);
+	// console.log(rowCount);
 
-//all row counts
-console.log(
-		landlineStructure.length,
-		cellStructure.length,
-		comStructure.length,
-		t2wStructure.length,
-		panelStructure.length)
+	//all row counts
+	// console.log(
+	// 		landlineStructure.length,
+	// 		cellStructure.length,
+	// 		comStructure.length,
+	// 		t2wStructure.length,
+	// 		panelStructure.length)
 
-	const allStructures = {
-		com: comStructure,
-		landline: landlineStructure,
-		cell: cellStructure,
-		t2w: t2wStructure,
-		panel: panelStructure,
-	};
+		const allStructures = {
+			com: comStructure,
+			landline: landlineStructure,
+			cell: cellStructure,
+			t2w: t2wStructure,
+			panel: panelStructure,
+		};
 
 	const mergedRows = {};
 	totalStructure = [];
@@ -231,7 +235,8 @@ console.log(
 			mergedRows[key].total['%'] =
 				mergedRows[key].total.Objective > 0
 					? (
-							(mergedRows[key].total.Frequency / mergedRows[key].total.Objective) *
+							(mergedRows[key].total.Frequency /
+								mergedRows[key].total.Objective) *
 							100
 					  ).toFixed(2)
 					: '0';
@@ -246,10 +251,10 @@ console.log(
 	// console.log(mergedRows);
 	// console.log(mergedRows)
 	const emptyStructures = {};
-Object.entries(allStructures).forEach(([key, arr]) => {
-  emptyStructures[key] = arr.length === 0;  // true if empty, false otherwise
-});
-	return res.status(200).json({mergedRows, emptyStructures});
+	Object.entries(allStructures).forEach(([key, arr]) => {
+		emptyStructures[key] = arr.length === 0; // true if empty, false otherwise
+	});
+	return res.status(200).json({ mergedRows, emptyStructures });
 	// return;
 
 	const quotas = await User.getQuotas(type);
