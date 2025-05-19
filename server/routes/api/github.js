@@ -5,6 +5,6 @@ const ROLES_LIST = require('../../config/rolesList');
 const githubController = require('../../controllers/githubController');
 
 router.route('/createIssue')
-    .post(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Manager), githubController.createIssue);
+    .post(githubController.createIssue);
 
 module.exports = router
