@@ -21,8 +21,8 @@ const getPhoneProjects = async (projectId) => {
 			const result = await pool
 				.request()
 				.input('projectId', sql.NVarChar, projectId)
-				.query(
-					"SELECT k_Id, name FROM [VoxcoSystem].[dbo].[tblObjects] where tblobjects.Type = 1 and name LIKE @projectId + '%'"
+				.query( // ParentId > 1000 is to filter out folders. To understand run SELECT k_Id, name, * FROM [VoxcoSystem].[dbo].[tblObjects] where tblobjects.Type = 1 and name LIKE '13100%'
+					"SELECT k_Id, name FROM [VoxcoSystem].[dbo].[tblObjects] where tblobjects.Type = 1 and name LIKE @projectId + '%' and ParentId > 1000"
 				);
 			return result.recordset;
 		},
