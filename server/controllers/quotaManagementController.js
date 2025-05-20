@@ -173,7 +173,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				// console.log(variable);
 			}
 
-			const stypeMatch = variable.Criterion.match(/AND STYPE=(\d+)/i);
+			const stypeMatch = variable.Criterion.match(/STYPE=(\d+)/i);
 			if (stypeMatch) {
 				const stype = stypeMatch[1];
 				variable.Criterion = variable.Criterion.replace(/ AND STYPE=\d+/i, '');
@@ -191,7 +191,8 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 						// handle stype=6
 						break;
 				}
-			} else {
+			} else if (!variable.Criterion.includes('TFLAG') && !variable.Criterion.includes('STYPE=WR')) {
+				console.log(variable)
 				panelStructure.push(variable);
 			}
 		});
@@ -278,7 +279,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		// console.log(row?.Label, row?.Objective, obj)
 		// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
 		// const toDo = obj - row.Frequency;
-		const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
+		const percent = row?.Objective > 0 ? ((row.Frequency / row.Objective) * 100).toFixed(1) : 0;
 
 		if (row?.Objective >= 1000) row.Objective -= 1000;
 		const modalityPercent =
@@ -286,6 +287,18 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				? ((row.Frequency / stypeObjective) * 100).toFixed(1)
 				: 0;
 		const toDo = row.Objective - row.Frequency;
+
+		// if (row.Criterion.includes('REGN')) {
+		// 	console.log()
+		// 	console.log(stypeObjective)
+		// 	// console.log(row)
+		// 	console.log(label)
+		// 	console.log(row.Objective, '|', obj)
+		// 	console.log(row.Frequency)
+		// 	console.log(percent)
+		// 	console.log(modalityPercent)
+		// 	console.log(toDo)
+		// }
 
 		return {
 			Label: label,
@@ -301,6 +314,9 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	Object.entries(allStructures).forEach(([category, rows]) => {
 		// console.log(category, rows.length);
 		const stypeObjective = stypeObjectives[category] || 0;
+		// console.log()
+		// console.log()
+		// console.log(category)
 
 		rows.forEach((row) => {
 			// console.log(category, row)
@@ -329,6 +345,11 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 					: '0';
 			mergedRows[key].total['To Do'] =
 				mergedRows[key].total.Objective - mergedRows[key].total.Frequency;
+
+				mergedRows[key].total['M%'] =
+				mergedRows[key].total.Objective > 0
+					? ((mergedRows[key].total.Frequency / mergedRows[key].total.Objective) * 100).toFixed(1)
+					: '0';
 
 			// copy common fields (StratumId, Label) from the current row
 			mergedRows[key].total.StratumId = processed.StratumId;
