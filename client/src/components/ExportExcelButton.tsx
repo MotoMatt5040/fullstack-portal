@@ -8,6 +8,9 @@ interface ExportExcelButtonProps {
 	tableId: string;
 }
 
+// export numbers as numbers
+// macro for formatting
+
 const ExportExcelButton: React.FC<ExportExcelButtonProps> = ({
 	tableId,
 }) => {
@@ -41,10 +44,13 @@ const ExportExcelButton: React.FC<ExportExcelButtonProps> = ({
 
 	const bodyRows = table.querySelectorAll('tbody tr');
 	bodyRows.forEach((tr) => {
-		const rowData = Array.from(tr.querySelectorAll('td')).map((td) => td.innerText);
-		worksheet.addRow(rowData);
+	const rowData = Array.from(tr.querySelectorAll('td')).map((td) => {
+		const text = td.innerText.trim();
+		const num = Number(text);
+		return !isNaN(num) && text !== '' ? num : text;
 	});
-
+	worksheet.addRow(rowData);
+});
 		const buffer = await workbook.xlsx.writeBuffer();
 		const blob = new Blob([buffer], {
 			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
