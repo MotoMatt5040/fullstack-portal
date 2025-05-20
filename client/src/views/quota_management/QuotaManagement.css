@@ -111,6 +111,10 @@
   background-color: var(--background-multi-select-hover) !important;
 }
 
+.css-1cfo1cf {
+  color: var(--text-color) !important;
+}
+
 .filter-popup {
 	position: absolute;
   width: fit-content;;
