@@ -47,6 +47,7 @@ FROM
 WHERE 
     projectid NOT LIKE '%c' 
     AND projectid NOT LIKE '%w' 
+		AND fieldStart >= DATEADD(DAY, -180, GETDATE())
 ORDER BY 
     fieldstart DESC;`
 			);
