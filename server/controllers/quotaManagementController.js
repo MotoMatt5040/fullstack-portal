@@ -22,8 +22,8 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	const webProject = await ProjectInfo.getWebProjects(projectId);
 	const webId = webProject[0]?.id;
 
-	console.log('phoneProjects', phoneProjects);
-	console.log('webProject', webProject);
+	// console.log('phoneProjects', phoneProjects);
+	// console.log('webProject', webProject);
 
 	let projectIds = {};
 	let landlineStructure = [];
@@ -71,9 +71,9 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 						// just checking for STYPE=#
 						const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
 						if (parenMatch) {
-							console.log(
-								`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`
-							);
+							// console.log(
+							// 	`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`
+							// );
 							const obj = parseInt(parenMatch[1], 10);
 							if (obj > 0) {
 								switch (Criterion) {
@@ -137,7 +137,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			// }
 		})
 	);
-	console.log(landlineStructure);
+	// console.log(landlineStructure);
 
 	projectIds['web'] = webId;
 
@@ -153,7 +153,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 					// just checking for STYPE=#
 					const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
 					if (parenMatch) {
-						console.log(`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`);
+						// console.log(`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`);
 						const obj = parseInt(parenMatch[1], 10);
 						if (obj > 0) {
 							switch (Criterion) {
@@ -208,7 +208,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		// console.log(selectedWeb)
 
 		selectedWeb.forEach((variable) => {
-			const stypeOnlyMatch = variable.Criterion.match(/^STYPE=(\d+)$/i);
+			// const stypeOnlyMatch = variable.Criterion.match(/^STYPE=(\d+)$/i);
 			// if (stypeOnlyMatch) {
 			// 	const stype = stypeOnlyMatch[1];
 			// 	// console.log(`STYPE=${stype} Objective: ${variable.Objective}`);
@@ -404,7 +404,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		// console.log(stypeData)
 		// console.log(category)
 		const stypeObjective = stypeData[category]?.Objective || 0;
-		console.log(stypeObjective);
+		// console.log(stypeObjective);
 		// console.log()
 		// console.log()
 		// console.log(category)
@@ -431,18 +431,18 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
 			// const toDo = obj - row.Frequency;
 			if (row?.Objective >= 1000) row.Objective -= 1000;
-			const stypePercent =
+			const totalPercent =
 				row?.Objective > 0
 					? ((row.Frequency / row.Objective) * 100).toFixed(1)
 					: 0;
 			// console.log(key)
 			// console.log(totalMap[key])
-			const totalPercent =
+			const globalPercent =
 				row?.Objective > 0
 					? ((row.Frequency / totalMap.get(key).Objective) * 100).toFixed(1)
 					: 0;
 
-			const modalityPercent =
+			const stypePercent =
 				row.Objective > 0
 					? ((row.Frequency / stypeObjective) * 100).toFixed(1)
 					: 0;
@@ -450,9 +450,9 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			mergedRows[key][category].Label = label;
 			mergedRows[key][category].Objective = row?.Objective || 0;
 			mergedRows[key][category].Frequency = row.Frequency;
+			mergedRows[key][category]['G%'] = globalPercent;
 			mergedRows[key][category]['%'] = totalPercent;
-			mergedRows[key][category]['Stype%'] = stypePercent;
-			mergedRows[key][category]['M%'] = modalityPercent;
+			mergedRows[key][category]['S%'] = stypePercent;
 			mergedRows[key][category]['To Do'] = toDo;
 
 			// mergedRows[key][category] = processed;
