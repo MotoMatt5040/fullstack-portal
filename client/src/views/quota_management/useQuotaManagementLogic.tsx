@@ -40,9 +40,9 @@ const useQuotaManagementLogic = () => {
 					subColumns: {
 						Obj: true,
 						Freq: true,
+						'G%': false,
 						'%': false,
-						'Stype%': false,
-						'M%': false,
+						'S%': false,
 						'To Do': false,
 					},
 				},
@@ -117,15 +117,16 @@ const useQuotaManagementLogic = () => {
 			columnGroups.map((group) => [
 				group.key,
 				{
+					...visibleColumns[group.key],
 					active: !quotaData.emptyStructures[group.key], // active only if NOT empty
-					subColumns: {
-						Obj: true,
-						Freq: true,
-						'%': false,
-						'Stype%': false,
-						'M%': false,
-						'To Do': false,
-					},
+					// subColumns: {
+					// 	Obj: true,
+					// 	Freq: true,
+					// 	'G%': false,
+					// 	'%': false,
+					// 	'S%': false,
+					// 	'To Do': false,
+					// },
 				},
 			])
 		);
@@ -146,17 +147,25 @@ const useQuotaManagementLogic = () => {
 	}, [selectedProject]);
 
 	const toggleSubColumn = (key: string, subKey: string) => {
-		setVisibleColumns((prev) => ({
+	setVisibleColumns((prev) => {
+		const updatedSubColumns = {
+			...prev[key].subColumns,
+			[subKey]: !prev[key].subColumns[subKey],
+		};
+
+		const anySubColumnActive = Object.values(updatedSubColumns).some(Boolean);
+
+		return {
 			...prev,
 			[key]: {
 				...prev[key],
-				subColumns: {
-					...prev[key].subColumns,
-					[subKey]: !prev[key].subColumns[subKey],
-				},
+				active: anySubColumnActive ? true : prev[key].active,
+				subColumns: updatedSubColumns,
 			},
-		}));
-	};
+		};
+	});
+};
+
 
 	const fetchData = async (projectId: string) => {
 		try {
