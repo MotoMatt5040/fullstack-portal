@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import HoverableLabelCell from '../../components/MyHoverableCell';
 
 type RowData = {
 	Objective: number | string;
 	Frequency: number | string;
+	'G%': number | string;
 	'%': number | string;
-	'Stype%': number | string;
-	'M%': number | string;
+	'S%': number | string;
 	'To Do': number | string;
 	Label: string;
 	StratumId: number;
@@ -53,9 +53,9 @@ const QuotaManagementTable: React.FC<Props> = ({
 	const dataKeyMap: Record<string, keyof RowData> = {
 		Obj: 'Objective',
 		Freq: 'Frequency',
+		'G%': 'G%',
 		'%': '%',
-		'Stype%': 'Stype%',
-		'M%': 'M%',
+		'S%': 'S%',
 		'To Do': 'To Do',
 	};
 
@@ -70,6 +70,12 @@ const QuotaManagementTable: React.FC<Props> = ({
 		'STYPE',
 	];
 	const skipRowsByLabel = ['Refuse'];
+
+	const [hovered, setHovered] = useState<{
+		groupKey: string;
+		headerKey: string;
+		subKey: string;
+	} | null>(null);
 
 	// A lot of very complex stuff is happening in this file. Please read the comment carefully to understand.
 
@@ -205,16 +211,79 @@ const QuotaManagementTable: React.FC<Props> = ({
 										// Map over the filtered sub-columns to create table cells
 										// Use the dataKeyMap to get the actual data key for each sub-column
 										.map((sub) => {
-											const actualDataKey = dataKeyMap[sub];
-											return (
-												<td key={`${group}-${header}-${sub}`}>
-													{categoryData &&
-													categoryData[actualDataKey] !== undefined &&
-													categoryData[actualDataKey] !== 0
-														? categoryData[actualDataKey]
-														: '-'}
-												</td>
-											);
+											const firstGroup = groupKeys[0]; // Get the first group key from all groups (used for special highlight on first group)
+
+											// Check if the currently hovered group matches this cell's group (row)
+											const isSameGroup = hovered?.groupKey === group;
+											// Check if the currently hovered header matches this cell's header (column)
+											const isSameHeader = hovered?.headerKey === header;
+
+											// Hovered subKey checks
+											const isHoveringP = hovered?.subKey === '%';
+											const isHoveringS = hovered?.subKey === 'G%'; 
+											const isHoveringG = hovered?.subKey === 'S%'; 
+
+											const totalHeader = 'Total Quotas'; // The header name of the 'Total' column
+
+											// Highlight 'Freq' if:
+											// - in same group and header
+											// - and hovering %, G%, or S%
+											// - and this cell is the Freq row
+											const highlightFreq =
+												isSameGroup &&
+												isSameHeader &&
+												(isHoveringP || isHoveringG || isHoveringS) &&
+												sub === 'Freq';
+
+											// Highlight 'Obj' if:
+											// - (1) same group, header is 'Total Quotas', and hovering 'G%'
+											// - (2) first group and same header and hovering 'S%'
+											// - (3) same group and header, and hovering '%'
+											const highlightObj =
+												((isSameGroup &&
+													header === totalHeader &&
+													isHoveringS) ||
+													(group === firstGroup &&
+														isSameHeader &&
+														isHoveringG) ||
+													(isSameGroup && isSameHeader && isHoveringP)) &&
+												sub === 'Obj';
+
+											// Final highlight decision
+											const highlight = highlightFreq || highlightObj;
+											const theme = localStorage.getItem('theme');
+											const highlightBg = theme === 'light' ? '#b3e5fc' : '#1565c0';
+
+											const cellData = categoryData &&
+													categoryData[dataKeyMap[sub]] !== undefined &&
+													categoryData[dataKeyMap[sub]] !== 0
+														? categoryData[dataKeyMap[sub]]
+														: '-'
+											const hoverableColumns = ['%', 'G%', 'S%']; // Check if the sub-column is hoverable
+
+											const content = ( <td
+													key={`${group}-${header}-${sub}`} // Unique key for React rendering
+													onMouseEnter={() => {
+														// Set hover context for group/header/sub on mouse enter
+														setHovered({
+															groupKey: group,
+															headerKey: header,
+															subKey: sub,
+														});
+													}}
+													onMouseLeave={() => setHovered(null)} // Clear hover on leave
+													style={{
+														cursor: 'pointer',
+														backgroundColor: highlight ? highlightBg: '',
+														// color: highlight ? '#3CB371' : undefined,
+														fontWeight: highlight ? 'bold' : undefined,
+													}}
+												>
+													{cellData}
+												</td>  
+											)
+
+											return content;
 										})
 								);
 							})}
@@ -227,4 +296,3 @@ const QuotaManagementTable: React.FC<Props> = ({
 };
 
 export default QuotaManagementTable;
-
