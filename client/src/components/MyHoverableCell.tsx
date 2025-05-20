@@ -15,7 +15,7 @@ const HoverableLabelCell: React.FC<HoverableLabelCellProps> = ({ label, popupTex
 
   return (
     <td
-      style={{ cursor: 'pointer', position: 'relative' }}
+      style={{ cursor: 'pointer'}}
       onMouseEnter={() => setShowPopup(true)}
       onMouseLeave={() => setShowPopup(false)}
       onMouseMove={handleMouseMove}
