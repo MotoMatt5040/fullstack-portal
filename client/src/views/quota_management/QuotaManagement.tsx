@@ -15,7 +15,7 @@ import ExportExcelButton from '../../components/ExportExcelButton';
 type Props = {};
 
 const headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
-const subHeaders: string[] = ['Obj', 'Freq', '%', 'Stype%', 'M%', 'To Do'];
+const subHeaders: string[] = ['Obj', 'Freq', 'G%', '%', 'S%', 'To Do'];
 
 const QuotaManagement = (props: Props) => {
 	const {
@@ -82,7 +82,41 @@ const QuotaManagement = (props: Props) => {
 						</span>
 
 						{showFilter && (
-							<div className='filter-popup' >
+							<div className='filter-popup'>
+								<div className='filter-popup-group'>
+									<strong>Toggle Everything</strong>
+									<MyToggle
+										label='All Columns'
+										active={Object.values(visibleColumns).every(
+											(col) =>
+												col.active &&
+												Object.values(col.subColumns).every((subVal) => subVal)
+										)}
+										onClick={() => {
+											const allOn = Object.values(visibleColumns).every(
+												(col) =>
+													col.active &&
+													Object.values(col.subColumns).every(
+														(subVal) => subVal
+													)
+											);
+
+											setVisibleColumns((prev) => {
+												const newState = {};
+												for (const key in prev) {
+													newState[key] = {
+														active: !allOn,
+														subColumns: {},
+													};
+													for (const subKey in prev[key].subColumns) {
+														newState[key].subColumns[subKey] = !allOn;
+													}
+												}
+												return newState;
+											});
+										}}
+									/>
+								</div>
 								<div className='filter-popup-group all-subcolumns-toggle'>
 									<strong>Toggle All Sub Columns</strong>
 									<div className='filter-popup-subgroup'>
@@ -180,9 +214,7 @@ const QuotaManagement = (props: Props) => {
 					</div>
 				</div>
 				<div className='quota-table-data-container'>
-					<ExportExcelButton
-						tableId={`${selectedProject}-quotas`}
-					/>
+					<ExportExcelButton tableId={`${selectedProject}-quotas`} />
 					{quotas && !quotaDataIsFetching && (
 						<QuotaManagementTable
 							id={`${selectedProject}-quotas`}
