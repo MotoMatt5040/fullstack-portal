@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useRef  } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../../features/auth/authSlice';
-import { useLazyGetQuotasQuery, useGetProjectListQuery } from '../../features/quotasApiSlice';
+import {
+	useLazyGetQuotasQuery,
+	useGetProjectListQuery,
+} from '../../features/quotasApiSlice';
 
 const useQuotaManagementLogic = () => {
 	const [getQuotas, { data: quotaData, isFetching: quotaDataIsFetching }] =
 		useLazyGetQuotasQuery();
-	const {data: projectList, isFetching: projectListIsFetching} = useGetProjectListQuery('');
+	const { data: projectList, isFetching: projectListIsFetching } =
+		useGetProjectListQuery('');
 	const [projectListOptions, setProjectListOptions] = useState([]);
 	const [selectedProject, setSelectedProject] = useState<string>('');
 	const [userRoles, setUserRoles] = useState<[]>([]);
@@ -33,30 +37,37 @@ const useQuotaManagementLogic = () => {
 				group.key,
 				{
 					active: true,
-					subColumns: { '%': false, Obj: true, Freq: true, 'To Do': false },
+					subColumns: {
+						Obj: true,
+						Freq: true,
+						'%': false,
+						'Stype%': false,
+						'M%': false,
+						'To Do': false,
+					},
 				},
 			])
 		)
 	);
 
 	useEffect(() => {
-	if (!showFilter) return;
+		if (!showFilter) return;
 
-	const handleClickOutside = (event: MouseEvent) => {
-		if (
-			filterRef.current &&
-			!filterRef.current.contains(event.target as Node)
-		) {
-			setShowFilter(false);
-		}
-	};
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				filterRef.current &&
+				!filterRef.current.contains(event.target as Node)
+			) {
+				setShowFilter(false);
+			}
+		};
 
-	document.addEventListener('mousedown', handleClickOutside);
+		document.addEventListener('mousedown', handleClickOutside);
 
-	return () => {
-		document.removeEventListener('mousedown', handleClickOutside);
-	};
-}, [showFilter]);
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [showFilter]);
 
 	useEffect(() => {
 		// fetchData('13094');
@@ -107,7 +118,14 @@ const useQuotaManagementLogic = () => {
 				group.key,
 				{
 					active: !quotaData.emptyStructures[group.key], // active only if NOT empty
-					subColumns: { '%': false, Obj: true, Freq: true, 'To Do': false },
+					subColumns: {
+						Obj: true,
+						Freq: true,
+						'%': false,
+						'Stype%': false,
+						'M%': false,
+						'To Do': false,
+					},
 				},
 			])
 		);
@@ -125,7 +143,7 @@ const useQuotaManagementLogic = () => {
 		} else {
 			setQuotas([]);
 		}
-	}, [selectedProject])
+	}, [selectedProject]);
 
 	const toggleSubColumn = (key: string, subKey: string) => {
 		setVisibleColumns((prev) => ({

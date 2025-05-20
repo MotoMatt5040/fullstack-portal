@@ -28,9 +28,15 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	let projectIds = {};
 	let landlineStructure = [];
 	let cellStructure = [];
-	let comStructure = [];
+	// let comStructure = [];
 	let panelStructure = [];
 	let t2wStructure = [];
+	let stypeData = {
+		landline: { Objective: 0, Frequency: 0 },
+		cell: { Objective: 0, Frequency: 0 },
+		panel: { Objective: 0, Frequency: 0 },
+		t2w: { Objective: 0, Frequency: 0 },
+	};
 	let stypeObjectives = {
 		landline: 0,
 		cell: 0,
@@ -73,11 +79,13 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 								switch (Criterion) {
 									case 'STYPE=1':
 										// landline
-										stypeObjectives['landline'] = obj;
+										stypeData.landline.Objective = obj;
+										stypeData.landline.Frequency = Frequence;
 										break;
 									case 'STYPE=2':
 										// cell
-										stypeObjectives['cell'] = obj;
+										stypeData.cell.Objective = obj;
+										stypeData.cell.Frequency = Frequence;
 										break;
 								}
 							}
@@ -87,6 +95,8 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 					if (project.name.endsWith('C')) {
 						modifiedCriterion = Criterion.replace(' AND STYPE=2', '');
 					}
+					if (modifiedCriterion.includes('REGN'))
+						modifiedCriterion = modifiedCriterion.replace(' AND VTYPE=1', '');
 					return {
 						StratumId: Position,
 						Criterion: modifiedCriterion,
@@ -102,16 +112,32 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			// use ... to spread the array. Push only accepts single objects, this will push all the objects in the array
 			if (project.name.length === 5) {
 				projectIds['landline'] = project.k_Id;
+				landlineStructure.push({
+					StratumId: 0,
+					Criterion: 'Total',
+					Label: 'Total',
+					Objective: stypeData.landline.Objective,
+					Frequency: stypeData.landline.Frequency,
+				});
 				landlineStructure.push(...selectedPhones);
 			} else if (project.name.endsWith('C')) {
 				projectIds['cell'] = project.k_Id;
+				cellStructure.push({
+					StratumId: 0,
+					Criterion: 'Total',
+					Label: 'Total',
+					Objective: stypeData.cell.Objective,
+					Frequency: stypeData.cell.Frequency,
+				});
 				cellStructure.push(...selectedPhones);
-			} else if (project.name.endsWith('COM')) {
-				projectIds['com'] = project.k_Id;
-				// comStructure.push(...selectedPhones);
 			}
+			// else if (project.name.endsWith('COM')) {
+			// 	projectIds['com'] = project.k_Id;
+			// 	// comStructure.push(...selectedPhones);
+			// }
 		})
 	);
+	console.log(landlineStructure);
 
 	projectIds['web'] = webId;
 
@@ -133,11 +159,27 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 							switch (Criterion) {
 								case 'STYPE=3':
 									// panel
-									stypeObjectives['panel'] = obj;
+									stypeData.panel.Objective = obj;
+									stypeData.panel.Frequency = Frequency;
+									panelStructure.push({
+										StratumId: 0,
+										Criterion: 'Total',
+										Label: 'Total',
+										Objective: obj,
+										Frequency: Frequency,
+									});
 									break;
 								case 'STYPE=4':
 									// t2w
-									stypeObjectives['t2w'] = obj;
+									stypeData.t2w.Objective = obj;
+									stypeData.t2w.Frequency = Frequency;
+									t2wStructure.push({
+										StratumId: 0,
+										Criterion: 'Total',
+										Label: 'Total',
+										Objective: obj,
+										Frequency: Frequency,
+									});
 									break;
 								case 'STYPE=5':
 									// email
@@ -167,11 +209,11 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 
 		selectedWeb.forEach((variable) => {
 			const stypeOnlyMatch = variable.Criterion.match(/^STYPE=(\d+)$/i);
-			if (stypeOnlyMatch) {
-				const stype = stypeOnlyMatch[1];
-				// console.log(`STYPE=${stype} Objective: ${variable.Objective}`);
-				// console.log(variable);
-			}
+			// if (stypeOnlyMatch) {
+			// 	const stype = stypeOnlyMatch[1];
+			// 	// console.log(`STYPE=${stype} Objective: ${variable.Objective}`);
+			// 	// console.log(variable);
+			// }
 
 			const stypeMatch = variable.Criterion.match(/STYPE=(\d+)/i);
 			if (stypeMatch) {
@@ -191,8 +233,11 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 						// handle stype=6
 						break;
 				}
-			} else if (!variable.Criterion.includes('TFLAG') && !variable.Criterion.includes('STYPE=WR')) {
-				console.log(variable)
+			} else if (
+				!variable.Criterion.includes('TFLAG') &&
+				!variable.Criterion.includes('STYPE=WR')
+			) {
+				// console.log(variable)
 				panelStructure.push(variable);
 			}
 		});
@@ -262,15 +307,54 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	// 		panelStructure.length)
 
 	const allStructures = {
-		com: comStructure,
+		// com: comStructure,
 		landline: landlineStructure,
 		cell: cellStructure,
 		panel: panelStructure,
 		t2w: t2wStructure,
 	};
 
+	const totalMap = new Map();
+
+	Object.values(allStructures).forEach((structure) => {
+		structure.forEach(
+			({ StratumId, Criterion, Label, Objective, Frequency }) => {
+				if (!Criterion) return; // skip if Criterion is undefined/null
+
+				// console.log(Criterion, Label, Objective, Frequency);
+				if (Objective >= 1000) {
+					Objective -= 1000;
+				}
+
+				if (!totalMap.has(Criterion)) {
+					totalMap.set(Criterion, {
+						StratumId, // just take the first one seen
+						Criterion,
+						Label,
+						Objective: 0,
+						Frequency: 0,
+					});
+				}
+
+				const entry = totalMap.get(Criterion);
+				entry.Objective += Objective;
+				entry.Frequency += Frequency;
+			}
+		);
+	});
+
+	const totalStructure = Array.from(totalMap.values());
+	allStructures.total = totalStructure;
+
+	// console.log(totalMap)
+
+	// console.log('totalStructure', totalStructure);
+	// return
+
+	// console.log('allStructures', allStructures);
+
 	const mergedRows = {};
-	totalStructure = [];
+	// totalStructure = [];
 
 	function processRow(row, stypeObjective) {
 		const label = row.Label.split(' (')[0];
@@ -279,32 +363,36 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		// console.log(row?.Label, row?.Objective, obj)
 		// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
 		// const toDo = obj - row.Frequency;
-		const percent = row?.Objective > 0 ? ((row.Frequency / row.Objective) * 100).toFixed(1) : 0;
-
 		if (row?.Objective >= 1000) row.Objective -= 1000;
+		const percent =
+			row?.Objective > 0
+				? ((row.Frequency / row.Objective) * 100).toFixed(1)
+				: 0;
+
 		const modalityPercent =
 			row.Objective > 0
 				? ((row.Frequency / stypeObjective) * 100).toFixed(1)
 				: 0;
 		const toDo = row.Objective - row.Frequency;
 
-		// if (row.Criterion.includes('REGN')) {
+		// if (row.Criterion.includes('SEX1')) {
 		// 	console.log()
-		// 	console.log(stypeObjective)
+		// 	console.log('stypeObj:', stypeObjective)
 		// 	// console.log(row)
-		// 	console.log(label)
-		// 	console.log(row.Objective, '|', obj)
-		// 	console.log(row.Frequency)
-		// 	console.log(percent)
-		// 	console.log(modalityPercent)
-		// 	console.log(toDo)
+		// 	console.log('label:', label)
+		// 	console.log('obj:', row.Objective, '|', obj)
+		// 	console.log('freq:', row.Frequency)
+		// 	console.log('%:', percent)
+		// 	console.log(((row.Frequency / row.Objective) * 100).toFixed(1))
+		// 	console.log('m%:', modalityPercent)
+		// 	console.log('todo:', toDo)
 		// }
 
 		return {
 			Label: label,
 			Objective: row?.Objective || 0,
 			Frequency: row.Frequency,
-			'%': percent,
+			'S%': percent,
 			// Objective: obj,
 			'M%': modalityPercent,
 			'To Do': toDo,
@@ -313,49 +401,93 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 
 	Object.entries(allStructures).forEach(([category, rows]) => {
 		// console.log(category, rows.length);
-		const stypeObjective = stypeObjectives[category] || 0;
+		// console.log(stypeData)
+		// console.log(category)
+		const stypeObjective = stypeData[category]?.Objective || 0;
+		console.log(stypeObjective);
 		// console.log()
 		// console.log()
 		// console.log(category)
+		// console.log(allStructures[category])
 
 		rows.forEach((row) => {
 			// console.log(category, row)
 			const key = row.Criterion;
 			if (!mergedRows[key]) {
 				mergedRows[key] = {
-					total: { Objective: 0, Frequency: 0, '%': 0, 'To Do': 0 },
+					total: { Objective: 0, Frequency: 0, 'S%': 0, 'To Do': 0 },
 				};
 			}
+			if (!mergedRows[key][category]) {
+				mergedRows[key][category] = {};
+			}
 
-			const processed = processRow(row, stypeObjective);
-			mergedRows[key][category] = processed;
+			// const processed = processRow(row, stypeObjective);
+
+			const label = row.Label.split(' (')[0];
+			const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
+			const obj = parseFloat(objText) || 0;
+			// console.log(row?.Label, row?.Objective, obj)
+			// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
+			// const toDo = obj - row.Frequency;
+			if (row?.Objective >= 1000) row.Objective -= 1000;
+			const stypePercent =
+				row?.Objective > 0
+					? ((row.Frequency / row.Objective) * 100).toFixed(1)
+					: 0;
+			// console.log(key)
+			// console.log(totalMap[key])
+			const totalPercent =
+				row?.Objective > 0
+					? ((row.Frequency / totalMap.get(key).Objective) * 100).toFixed(1)
+					: 0;
+
+			const modalityPercent =
+				row.Objective > 0
+					? ((row.Frequency / stypeObjective) * 100).toFixed(1)
+					: 0;
+			const toDo = row.Objective - row.Frequency;
+			mergedRows[key][category].Label = label;
+			mergedRows[key][category].Objective = row?.Objective || 0;
+			mergedRows[key][category].Frequency = row.Frequency;
+			mergedRows[key][category]['%'] = totalPercent;
+			mergedRows[key][category]['Stype%'] = stypePercent;
+			mergedRows[key][category]['M%'] = modalityPercent;
+			mergedRows[key][category]['To Do'] = toDo;
+
+			// mergedRows[key][category] = processed;
 
 			// Update totals here
-			mergedRows[key].total.Objective += processed.Objective;
-			mergedRows[key].total.Frequency += processed.Frequency;
+			// mergedRows[key].total.Objective += processed.Objective;
+			// mergedRows[key].total.Frequency += processed.Frequency;
 
-			// Recalculate % and To Do for total on the fly
-			mergedRows[key].total['%'] =
-				mergedRows[key].total.Objective > 0
-					? (
-							(mergedRows[key].total.Frequency /
-								mergedRows[key].total.Objective) *
-							100
-					  ).toFixed(1)
-					: '0';
-			mergedRows[key].total['To Do'] =
-				mergedRows[key].total.Objective - mergedRows[key].total.Frequency;
+			// // Recalculate % and To Do for total on the fly
+			// mergedRows[key].total['S%'] =
+			// 	mergedRows[key].total.Objective > 0
+			// 		? (
+			// 				(mergedRows[key].total.Frequency /
+			// 					mergedRows[key].total.Objective) *
+			// 				100
+			// 		  ).toFixed(1)
+			// 		: '0';
+			// mergedRows[key].total['To Do'] =
+			// 	mergedRows[key].total.Objective - mergedRows[key].total.Frequency;
 
-				mergedRows[key].total['M%'] =
-				mergedRows[key].total.Objective > 0
-					? ((mergedRows[key].total.Frequency / mergedRows[key].total.Objective) * 100).toFixed(1)
-					: '0';
+			// mergedRows[key].total['M%'] =
+			// 	mergedRows[key].total.Objective > 0
+			// 		? (
+			// 				(mergedRows[key].total.Frequency /
+			// 					mergedRows[key].total.Objective) *
+			// 				100
+			// 		  ).toFixed(1)
+			// 		: '0';
 
-			// copy common fields (StratumId, Label) from the current row
-			mergedRows[key].total.StratumId = processed.StratumId;
-			mergedRows[key].total.Label = processed.Label;
+			// // copy common fields (StratumId, Label) from the current row
+			// mergedRows[key].total.StratumId = processed.StratumId;
+			// mergedRows[key].total.Label = processed.Label;
 		});
 	});
+
 	// console.log(mergedRows);
 	// console.log(mergedRows)
 	const emptyStructures = {};

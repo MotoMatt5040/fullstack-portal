@@ -15,7 +15,7 @@ import ExportExcelButton from '../../components/ExportExcelButton';
 type Props = {};
 
 const headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
-const subHeaders = ['Obj', 'Freq', '%', 'M%', 'To Do'];
+const subHeaders: string[] = ['Obj', 'Freq', '%', 'Stype%', 'M%', 'To Do'];
 
 const QuotaManagement = (props: Props) => {
 	const {
@@ -72,6 +72,7 @@ const QuotaManagement = (props: Props) => {
 					<div
 						className='filter-toggle-wrapper'
 						style={{ position: 'relative' }}
+						ref={filterRef}
 					>
 						<span
 							className='view-toggle-span'
@@ -81,7 +82,7 @@ const QuotaManagement = (props: Props) => {
 						</span>
 
 						{showFilter && (
-							<div className='filter-popup' ref={filterRef}>
+							<div className='filter-popup' >
 								<div className='filter-popup-group all-subcolumns-toggle'>
 									<strong>Toggle All Sub Columns</strong>
 									<div className='filter-popup-subgroup'>

@@ -5,6 +5,7 @@ type RowData = {
 	Objective: number | string;
 	Frequency: number | string;
 	'%': number | string;
+	'Stype%': number | string;
 	'M%': number | string;
 	'To Do': number | string;
 	Label: string;
@@ -53,6 +54,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 		Obj: 'Objective',
 		Freq: 'Frequency',
 		'%': '%',
+		'Stype%': 'Stype%',
 		'M%': 'M%',
 		'To Do': 'To Do',
 	};
@@ -141,18 +143,22 @@ const QuotaManagementTable: React.FC<Props> = ({
 						const key = headerKeyMap[header];
 						if (!visibleColumns[key]?.active) return [];
 
-						return subHeaders
-							// Filter sub-columns based on visibility
-							.filter((sub) => visibleColumns[key]?.subColumns[sub])
-							// Map over the filtered sub-columns to create table header cells
-							.map((sub) => <th key={`${header}-${sub}`}>{sub}</th>);
+						return (
+							subHeaders
+								// Filter sub-columns based on visibility
+								.filter((sub) => visibleColumns[key]?.subColumns[sub])
+								// Map over the filtered sub-columns to create table header cells
+								.map((sub) => <th key={`${header}-${sub}`}>{sub}</th>)
+						);
 					})}
 				</tr>
 			</thead>
 			<tbody>
 				{/* Render a row for each group, skipping hidden rows based on criteria */}
 				{groupKeys.map((group) => {
-					{/* Skip rows based on criteria or labels if internalUser is false */}
+					{
+						/* Skip rows based on criteria or labels if internalUser is false */
+					}
 
 					const criterionMatched = skipRowsByCriterion.some((word) =>
 						group.includes(word)
@@ -165,7 +171,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 
 					// If internalUser is false, skip rows that match the criteria or labels
 					if (!internalUser && (criterionMatched || labelMatched)) {
-						console.log(quotaData[group]);
+						// console.log(quotaData[group]);
 						return null;
 					}
 
@@ -192,23 +198,25 @@ const QuotaManagementTable: React.FC<Props> = ({
 								// Get the data for the current group and key
 								const categoryData = quotaData[group]?.[key];
 
-								return subHeaders
-									// Filter sub-columns based on visibility
-									.filter((sub) => visibleColumns[key]?.subColumns[sub])
-									// Map over the filtered sub-columns to create table cells
-									// Use the dataKeyMap to get the actual data key for each sub-column
-									.map((sub) => {
-										const actualDataKey = dataKeyMap[sub];
-										return (
-											<td key={`${group}-${header}-${sub}`}>
-												{categoryData &&
-												categoryData[actualDataKey] !== undefined &&
-												categoryData[actualDataKey] !== 0
-													? categoryData[actualDataKey]
-													: '-'}
-											</td>
-										);
-									});
+								return (
+									subHeaders
+										// Filter sub-columns based on visibility
+										.filter((sub) => visibleColumns[key]?.subColumns[sub])
+										// Map over the filtered sub-columns to create table cells
+										// Use the dataKeyMap to get the actual data key for each sub-column
+										.map((sub) => {
+											const actualDataKey = dataKeyMap[sub];
+											return (
+												<td key={`${group}-${header}-${sub}`}>
+													{categoryData &&
+													categoryData[actualDataKey] !== undefined &&
+													categoryData[actualDataKey] !== 0
+														? categoryData[actualDataKey]
+														: '-'}
+												</td>
+											);
+										})
+								);
 							})}
 						</tr>
 					);
@@ -219,3 +227,4 @@ const QuotaManagementTable: React.FC<Props> = ({
 };
 
 export default QuotaManagementTable;
+
