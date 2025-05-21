@@ -31,25 +31,51 @@ const useQuotaManagementLogic = () => {
 		{ key: 't2w', label: 'T2W' },
 		{ key: 'panel', label: 'Panel' },
 	];
+
+	const defaultSubColumns = {
+		Obj: false,
+		'Obj%': false,
+		Freq: false,
+		'Freq%': false,
+		'G%': false,
+		'%': false,
+		'S%': false,
+		'CG%': false,
+		'To Do': false,
+	};
+
 	const [visibleColumns, setVisibleColumns] = useState(
 		Object.fromEntries(
-			columnGroups.map((group) => [
-				group.key,
-				{
-					active: true,
-					subColumns: {
-						Obj: true,
-						'Obj%': true,
-						Freq: true,
-						'Freq%': true,
-						'G%': false,
-						'%': false,
-						'S%': false,
-						'CG%': false,
-						'To Do': true,
-					},
-				},
-			])
+			columnGroups.map((group) => {
+				if (group.key === 'total') {
+					return [
+						group.key,
+						{
+							active: true,
+							subColumns: {
+								...defaultSubColumns,
+								Obj: true,
+								'Obj%': true,
+								Freq: true,
+								'Freq%': true,
+								'To Do': true,
+							},
+						},
+					];
+				} else {
+					return [
+						group.key,
+						{
+							active: true,
+							subColumns: {
+								...defaultSubColumns,
+								Freq: true,
+								'Freq%': true,
+							},
+						},
+					];
+				}
+			})
 		)
 	);
 
@@ -139,6 +165,7 @@ const useQuotaManagementLogic = () => {
 		// quotaData.map((item) => {
 		// 	console.log('Item:', item);
 		// });
+		// console.log(quotaData);
 	}, [quotaData]);
 
 	useEffect(() => {
@@ -150,25 +177,24 @@ const useQuotaManagementLogic = () => {
 	}, [selectedProject]);
 
 	const toggleSubColumn = (key: string, subKey: string) => {
-	setVisibleColumns((prev) => {
-		const updatedSubColumns = {
-			...prev[key].subColumns,
-			[subKey]: !prev[key].subColumns[subKey],
-		};
+		setVisibleColumns((prev) => {
+			const updatedSubColumns = {
+				...prev[key].subColumns,
+				[subKey]: !prev[key].subColumns[subKey],
+			};
 
-		const anySubColumnActive = Object.values(updatedSubColumns).some(Boolean);
+			const anySubColumnActive = Object.values(updatedSubColumns).some(Boolean);
 
-		return {
-			...prev,
-			[key]: {
-				...prev[key],
-				active: anySubColumnActive ? true : prev[key].active,
-				subColumns: updatedSubColumns,
-			},
-		};
-	});
-};
-
+			return {
+				...prev,
+				[key]: {
+					...prev[key],
+					active: anySubColumnActive ? true : prev[key].active,
+					subColumns: updatedSubColumns,
+				},
+			};
+		});
+	};
 
 	const fetchData = async (projectId: string) => {
 		try {

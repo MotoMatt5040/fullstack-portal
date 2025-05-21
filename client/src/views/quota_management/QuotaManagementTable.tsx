@@ -274,9 +274,13 @@ const QuotaManagementTable: React.FC<Props> = ({
 													(group === firstGroup &&
 														isSameHeader &&
 														isHoveringS) ||
-														(group === firstGroup &&
+													(group === firstGroup &&
 														isSameHeader &&
 														isHoveringObjP) ||
+													(hovered?.groupKey === firstGroup &&
+														group === firstGroup &&
+														header === totalHeader && // RIGHT HERE
+														isHoveringFreqP) ||
 													(isSameGroup && isSameHeader && isHoveringP) ||
 													(isSameGroup && isSameHeader && isHoveringObjP)) &&
 												subColumn === 'Obj';
@@ -309,7 +313,6 @@ const QuotaManagementTable: React.FC<Props> = ({
 											if (cellData < 0) {
 												fColor = 'red';
 											}
-
 											const content = (
 												<td
 													key={`${group}-${header}-${subColumn}`} // Unique key for React rendering
@@ -333,46 +336,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 														{cellData}
 													</span>
 												</td>
-												// obj, obj%, freq, freq%, todo
-												// hoverableColumns.includes(subColumn) ? (
-												// 	<HoverableLabelCell
-												// 		key={`${group}-${header}-${subColumn}`}
-												// 		label={cellData}
-												// 		popupText={tooltipText}
-												// 		mouseEnter={() =>
-												// 			setHovered({
-												// 				groupKey: group,
-												// 				headerKey: header,
-												// 				subKey: subColumn,
-												// 			})
-												// 		}
-												// 		mouseLeave={() => setHovered(null)}
-												// 		style={{
-												// 			backgroundColor: highlight ? highlightBg : '',
-												// 			fontWeight: highlight ? 'bold' : undefined,
-												// 		}}
-												// 	/>
-												// ) : (
-												// 	<td
-												// 		key={`${group}-${header}-${subColumn}`} // Unique key for React rendering
-												// 		onMouseEnter={() => {
-												// 			// Set hover context for group/header/sub on mouse enter
-												// 			setHovered({
-												// 				groupKey: group,
-												// 				headerKey: header,
-												// 				subKey: subColumn,
-												// 			});
-												// 		}}
-												// 		onMouseLeave={() => setHovered(null)} // Clear hover on leave
-												// 		style={{
-												// 			cursor: 'pointer',
-												// 			backgroundColor: highlight ? highlightBg : '',
-												// 			// color: highlight ? '#3CB371' : undefined,
-												// 			fontWeight: highlight ? 'bold' : undefined,
-												// 		}}
-												// 	>
-												// 		<span title={tooltipText}>{cellData}</span>
-												// 	</td>
+												
 											);
 
 											return content;
