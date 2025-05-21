@@ -3,10 +3,14 @@ import HoverableLabelCell from '../../components/MyHoverableCell';
 
 type RowData = {
 	Objective: number | string;
+	'Obj%': number | string;
 	Frequency: number | string;
+	'Freq%': number | string;
 	'G%': number | string;
 	'%': number | string;
 	'S%': number | string;
+	'CG%': number | string;
+	'C%': number | string;
 	'To Do': number | string;
 	Label: string;
 	StratumId: number;
@@ -52,10 +56,13 @@ const QuotaManagementTable: React.FC<Props> = ({
 
 	const dataKeyMap: Record<string, keyof RowData> = {
 		Obj: 'Objective',
+		'Obj%': 'Obj%',
 		Freq: 'Frequency',
+		'Freq%': 'Freq%',
 		'G%': 'G%',
 		'%': '%',
 		'S%': 'S%',
+		'CG%': 'CG%',
 		'To Do': 'To Do',
 	};
 
@@ -69,13 +76,15 @@ const QuotaManagementTable: React.FC<Props> = ({
 		'$Q>0',
 		'STYPE',
 	];
-	const skipRowsByLabel = ['Refuse'];
+	const skipRowsByLabel = []; //['Refuse'];
 
 	const [hovered, setHovered] = useState<{
 		groupKey: string;
 		headerKey: string;
 		subKey: string;
 	} | null>(null);
+
+	const [hoverUpdated, setHoverUpdated] = useState(false);
 
 	// A lot of very complex stuff is happening in this file. Please read the comment carefully to understand.
 
@@ -207,10 +216,12 @@ const QuotaManagementTable: React.FC<Props> = ({
 								return (
 									subHeaders
 										// Filter sub-columns based on visibility
-										.filter((sub) => visibleColumns[key]?.subColumns[sub])
+										.filter(
+											(subColumn) => visibleColumns[key]?.subColumns[subColumn]
+										)
 										// Map over the filtered sub-columns to create table cells
 										// Use the dataKeyMap to get the actual data key for each sub-column
-										.map((sub) => {
+										.map((subColumn) => {
 											const firstGroup = groupKeys[0]; // Get the first group key from all groups (used for special highlight on first group)
 
 											// Check if the currently hovered group matches this cell's group (row)
@@ -219,21 +230,38 @@ const QuotaManagementTable: React.FC<Props> = ({
 											const isSameHeader = hovered?.headerKey === header;
 
 											// Hovered subKey checks
+											const isHoveringObjP = hovered?.subKey === 'Obj%';
+											const isHoveringFreqP = hovered?.subKey === 'Freq%';
 											const isHoveringP = hovered?.subKey === '%';
-											const isHoveringS = hovered?.subKey === 'G%'; 
-											const isHoveringG = hovered?.subKey === 'S%'; 
+											const isHoveringG = hovered?.subKey === 'G%';
+											const isHoveringS = hovered?.subKey === 'S%';
+											const isHoveringCG = hovered?.subKey === 'CG%';
 
 											const totalHeader = 'Total Quotas'; // The header name of the 'Total' column
+
+											// Tooltip text for the cell
 
 											// Highlight 'Freq' if:
 											// - in same group and header
 											// - and hovering %, G%, or S%
 											// - and this cell is the Freq row
 											const highlightFreq =
-												isSameGroup &&
-												isSameHeader &&
-												(isHoveringP || isHoveringG || isHoveringS) &&
-												sub === 'Freq';
+												// Normal highlight logic (same group & header)
+												((isSameGroup &&
+													isSameHeader &&
+													(isHoveringP ||
+														isHoveringS ||
+														isHoveringG ||
+														isHoveringCG ||
+														isHoveringFreqP)) ||
+													// hovering CG% on Total → highlight Freq
+													(isSameGroup &&
+														header === totalHeader &&
+														isHoveringCG) ||
+													(group === firstGroup &&
+														isSameHeader &&
+														isHoveringFreqP)) &&
+												subColumn === 'Freq';
 
 											// Highlight 'Obj' if:
 											// - (1) same group, header is 'Total Quotas', and hovering 'G%'
@@ -242,46 +270,110 @@ const QuotaManagementTable: React.FC<Props> = ({
 											const highlightObj =
 												((isSameGroup &&
 													header === totalHeader &&
-													isHoveringS) ||
+													isHoveringG) ||
 													(group === firstGroup &&
 														isSameHeader &&
-														isHoveringG) ||
-													(isSameGroup && isSameHeader && isHoveringP)) &&
-												sub === 'Obj';
+														isHoveringS) ||
+														(group === firstGroup &&
+														isSameHeader &&
+														isHoveringObjP) ||
+													(isSameGroup && isSameHeader && isHoveringP) ||
+													(isSameGroup && isSameHeader && isHoveringObjP)) &&
+												subColumn === 'Obj';
 
 											// Final highlight decision
 											const highlight = highlightFreq || highlightObj;
 											const theme = localStorage.getItem('theme');
-											const highlightBg = theme === 'light' ? '#b3e5fc' : '#1565c0';
+											const highlightBg =
+												theme === 'light' ? '#b3e5fc' : '#1565c0';
 
-											const cellData = categoryData &&
-													categoryData[dataKeyMap[sub]] !== undefined &&
-													categoryData[dataKeyMap[sub]] !== 0
-														? categoryData[dataKeyMap[sub]]
-														: '-'
-											const hoverableColumns = ['%', 'G%', 'S%']; // Check if the sub-column is hoverable
+											const cellData =
+												categoryData &&
+												categoryData[dataKeyMap[subColumn]] !== undefined &&
+												categoryData[dataKeyMap[subColumn]] !== 0
+													? categoryData[dataKeyMap[subColumn]]
+													: '-';
 
-											const content = ( <td
-													key={`${group}-${header}-${sub}`} // Unique key for React rendering
+											let tooltipText: string = '';
+											if (isHoveringP)
+												tooltipText = `${group} Frequency by ${group} Objective`;
+											else if (isHoveringS) {
+												tooltipText = `${group} Objective by ${header} Frequency`;
+												console.log('test');
+											} else if (isHoveringG)
+												tooltipText = `${subColumn} Frequency by Total ${subColumn} Objective`;
+											else if (isHoveringCG)
+												tooltipText = `${group} Frequency by ${group} Frequency`;
+											else tooltipText = `${subColumn} - ${header} (${group})`;
+											let fColor: string = '';
+											if (cellData < 0) {
+												fColor = 'red';
+											}
+
+											const content = (
+												<td
+													key={`${group}-${header}-${subColumn}`} // Unique key for React rendering
 													onMouseEnter={() => {
 														// Set hover context for group/header/sub on mouse enter
 														setHovered({
 															groupKey: group,
 															headerKey: header,
-															subKey: sub,
+															subKey: subColumn,
 														});
 													}}
 													onMouseLeave={() => setHovered(null)} // Clear hover on leave
 													style={{
 														cursor: 'pointer',
-														backgroundColor: highlight ? highlightBg: '',
+														backgroundColor: highlight ? highlightBg : '',
 														// color: highlight ? '#3CB371' : undefined,
 														fontWeight: highlight ? 'bold' : undefined,
 													}}
 												>
-													{cellData}
-												</td>  
-											)
+													<span title={tooltipText} style={{ color: fColor }}>
+														{cellData}
+													</span>
+												</td>
+												// obj, obj%, freq, freq%, todo
+												// hoverableColumns.includes(subColumn) ? (
+												// 	<HoverableLabelCell
+												// 		key={`${group}-${header}-${subColumn}`}
+												// 		label={cellData}
+												// 		popupText={tooltipText}
+												// 		mouseEnter={() =>
+												// 			setHovered({
+												// 				groupKey: group,
+												// 				headerKey: header,
+												// 				subKey: subColumn,
+												// 			})
+												// 		}
+												// 		mouseLeave={() => setHovered(null)}
+												// 		style={{
+												// 			backgroundColor: highlight ? highlightBg : '',
+												// 			fontWeight: highlight ? 'bold' : undefined,
+												// 		}}
+												// 	/>
+												// ) : (
+												// 	<td
+												// 		key={`${group}-${header}-${subColumn}`} // Unique key for React rendering
+												// 		onMouseEnter={() => {
+												// 			// Set hover context for group/header/sub on mouse enter
+												// 			setHovered({
+												// 				groupKey: group,
+												// 				headerKey: header,
+												// 				subKey: subColumn,
+												// 			});
+												// 		}}
+												// 		onMouseLeave={() => setHovered(null)} // Clear hover on leave
+												// 		style={{
+												// 			cursor: 'pointer',
+												// 			backgroundColor: highlight ? highlightBg : '',
+												// 			// color: highlight ? '#3CB371' : undefined,
+												// 			fontWeight: highlight ? 'bold' : undefined,
+												// 		}}
+												// 	>
+												// 		<span title={tooltipText}>{cellData}</span>
+												// 	</td>
+											);
 
 											return content;
 										})
