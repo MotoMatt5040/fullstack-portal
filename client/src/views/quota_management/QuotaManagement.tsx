@@ -15,7 +15,7 @@ import ExportExcelButton from '../../components/ExportExcelButton';
 type Props = {};
 
 const headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
-const subHeaders: string[] = ['Obj', 'Freq', 'G%', '%', 'S%', 'To Do'];
+const subHeaders: string[] = ['Obj', 'Obj%', 'Freq', 'Freq%', 'G%', '%', 'S%', 'CG%', 'To Do'];
 
 const QuotaManagement = (props: Props) => {
 	const {
@@ -214,7 +214,17 @@ const QuotaManagement = (props: Props) => {
 					</div>
 				</div>
 				<div className='quota-table-data-container'>
-					<ExportExcelButton tableId={`${selectedProject}-quotas`} />
+					<div className='quota-table-header'>
+						<ExportExcelButton tableId={`${selectedProject}-quotas`} />
+						{/* <table className='quota-table-legend'>
+							<tbody>
+								<tr>
+									<td></td>
+								</tr>
+							</tbody>
+						</table> */}
+					</div>
+					
 					{quotas && !quotaDataIsFetching && (
 						<QuotaManagementTable
 							id={`${selectedProject}-quotas`}
