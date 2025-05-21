@@ -39,11 +39,14 @@ const useQuotaManagementLogic = () => {
 					active: true,
 					subColumns: {
 						Obj: true,
+						'Obj%': true,
 						Freq: true,
+						'Freq%': true,
 						'G%': false,
 						'%': false,
 						'S%': false,
-						'To Do': false,
+						'CG%': false,
+						'To Do': true,
 					},
 				},
 			])
