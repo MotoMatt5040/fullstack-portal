@@ -356,54 +356,65 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	const mergedRows = {};
 	// totalStructure = [];
 
-	function processRow(row, stypeObjective) {
-		const label = row.Label.split(' (')[0];
-		const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
-		const obj = parseFloat(objText) || 0;
-		// console.log(row?.Label, row?.Objective, obj)
-		// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
-		// const toDo = obj - row.Frequency;
-		if (row?.Objective >= 1000) row.Objective -= 1000;
-		const percent =
-			row?.Objective > 0
-				? ((row.Frequency / row.Objective) * 100).toFixed(1)
-				: 0;
+	// function processRow(row, stypeObjective) {
+	// 	const label = row.Label.split(' (')[0];
+	// 	const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
+	// 	const obj = parseFloat(objText) || 0;
+	// 	// console.log(row?.Label, row?.Objective, obj)
+	// 	// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
+	// 	// const toDo = obj - row.Frequency;
+	// 	if (row?.Objective >= 1000) row.Objective -= 1000;
+	// 	const percent =
+	// 		row?.Objective > 0
+	// 			? ((row.Frequency / row.Objective) * 100).toFixed(1)
+	// 			: 0;
 
-		const modalityPercent =
-			row.Objective > 0
-				? ((row.Frequency / stypeObjective) * 100).toFixed(1)
-				: 0;
-		const toDo = row.Objective - row.Frequency;
+	// 	const modalityPercent =
+	// 		row.Objective > 0
+	// 			? ((row.Frequency / stypeObjective) * 100).toFixed(1)
+	// 			: 0;
 
-		// if (row.Criterion.includes('SEX1')) {
-		// 	console.log()
-		// 	console.log('stypeObj:', stypeObjective)
-		// 	// console.log(row)
-		// 	console.log('label:', label)
-		// 	console.log('obj:', row.Objective, '|', obj)
-		// 	console.log('freq:', row.Frequency)
-		// 	console.log('%:', percent)
-		// 	console.log(((row.Frequency / row.Objective) * 100).toFixed(1))
-		// 	console.log('m%:', modalityPercent)
-		// 	console.log('todo:', toDo)
-		// }
+	// 	const currentCercent =
+	// 		row?.Objective > 0
+	// 			? ((row.Frequency / row.Frequency) * 100).toFixed(1)
+	// 			: 0;
 
-		return {
-			Label: label,
-			Objective: row?.Objective || 0,
-			Frequency: row.Frequency,
-			'S%': percent,
-			// Objective: obj,
-			'M%': modalityPercent,
-			'To Do': toDo,
-		};
-	}
+	// 	const currentModalityPercent =
+	// 		row.Objective > 0
+	// 			? ((row.Frequency / stypeFrequency) * 100).toFixed(1)
+	// 			: 0;
+	// 	const toDo = row.Objective - row.Frequency;
+
+	// 	// if (row.Criterion.includes('SEX1')) {
+	// 	// 	console.log()
+	// 	// 	console.log('stypeObj:', stypeObjective)
+	// 	// 	// console.log(row)
+	// 	// 	console.log('label:', label)
+	// 	// 	console.log('obj:', row.Objective, '|', obj)
+	// 	// 	console.log('freq:', row.Frequency)
+	// 	// 	console.log('%:', percent)
+	// 	// 	console.log(((row.Frequency / row.Objective) * 100).toFixed(1))
+	// 	// 	console.log('m%:', modalityPercent)
+	// 	// 	console.log('todo:', toDo)
+	// 	// }
+
+	// 	return {
+	// 		Label: label,
+	// 		Objective: row?.Objective || 0,
+	// 		Frequency: row.Frequency,
+	// 		'%': percent,
+	// 		// Objective: obj,
+	// 		'M%': modalityPercent,
+	// 		'To Do': toDo,
+	// 	};
+	// }
 
 	Object.entries(allStructures).forEach(([category, rows]) => {
 		// console.log(category, rows.length);
 		// console.log(stypeData)
 		// console.log(category)
-		const stypeObjective = stypeData[category]?.Objective || 0;
+		const stypeObjective = category !== 'total' ? stypeData[category]?.Objective : totalMap.get('Total').Objective;
+		const stypeFrequency = category !== 'total' ? stypeData[category]?.Frequency : totalMap.get('Total').Frequency;
 		// console.log(stypeObjective);
 		// console.log()
 		// console.log()
@@ -415,7 +426,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			const key = row.Criterion;
 			if (!mergedRows[key]) {
 				mergedRows[key] = {
-					total: { Objective: 0, Frequency: 0, 'S%': 0, 'To Do': 0 },
+					total: { Objective: 0, Frequency: 0, '%': 0, 'To Do': 0 },
 				};
 			}
 			if (!mergedRows[key][category]) {
@@ -425,12 +436,17 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			// const processed = processRow(row, stypeObjective);
 
 			const label = row.Label.split(' (')[0];
-			const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
-			const obj = parseFloat(objText) || 0;
+			// const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
+			// const obj = parseFloat(objText) || 0;
 			// console.log(row?.Label, row?.Objective, obj)
 			// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
 			// const toDo = obj - row.Frequency;
 			if (row?.Objective >= 1000) row.Objective -= 1000;
+			const objPercent =
+				row?.Objective > 0
+					? ((row.Objective / stypeObjective) * 100).toFixed(1)
+					: 0;
+
 			const totalPercent =
 				row?.Objective > 0
 					? ((row.Frequency / row.Objective) * 100).toFixed(1)
@@ -446,13 +462,38 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				row.Objective > 0
 					? ((row.Frequency / stypeObjective) * 100).toFixed(1)
 					: 0;
+
+			// const currentTotalPercent = 
+			// 	row?.Objective > 0 ?
+			// 		((row.Frequency / totalMap.get(key).Frequency) * 100).toFixed(1)
+			// 		: 0;
+
+			const currentGlobalPercent =
+				row?.Objective > 0
+					? ((row.Frequency / totalMap.get(key).Frequency) * 100).toFixed(1)
+					: 0;
+					
+			const currentStypePercent =
+				row.Objective > 0
+					? ((row.Frequency / stypeFrequency) * 100).toFixed(1)
+					: 0;
+
+			// if (category === 't2w') {
+			// 	console.log(row.Frequency, '|', stypeFrequency, '|', stypeObjective);
+			// 	console.log(currentStypePercent, stypePercent)
+			// }
+					
 			const toDo = row.Objective - row.Frequency;
 			mergedRows[key][category].Label = label;
 			mergedRows[key][category].Objective = row?.Objective || 0;
+			mergedRows[key][category]['Obj%'] = objPercent;
 			mergedRows[key][category].Frequency = row.Frequency;
 			mergedRows[key][category]['G%'] = globalPercent;
 			mergedRows[key][category]['%'] = totalPercent;
 			mergedRows[key][category]['S%'] = stypePercent;
+			mergedRows[key][category]['CG%'] = currentGlobalPercent;
+			// mergedRows[key][category]['C%'] = currentTotalPercent;
+			mergedRows[key][category]['Freq%'] = currentStypePercent;
 			mergedRows[key][category]['To Do'] = toDo;
 
 			// mergedRows[key][category] = processed;
