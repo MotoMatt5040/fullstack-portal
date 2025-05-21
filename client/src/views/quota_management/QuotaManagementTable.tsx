@@ -254,6 +254,10 @@ const QuotaManagementTable: React.FC<Props> = ({
 														isHoveringG ||
 														isHoveringCG ||
 														isHoveringFreqP)) ||
+													(hovered?.groupKey === firstGroup &&
+														group === firstGroup &&
+														header === totalHeader &&
+														isHoveringFreqP) ||
 													// hovering CG% on Total → highlight Freq
 													(isSameGroup &&
 														header === totalHeader &&
@@ -277,10 +281,6 @@ const QuotaManagementTable: React.FC<Props> = ({
 													(group === firstGroup &&
 														isSameHeader &&
 														isHoveringObjP) ||
-													(hovered?.groupKey === firstGroup &&
-														group === firstGroup &&
-														header === totalHeader && // RIGHT HERE
-														isHoveringFreqP) ||
 													(isSameGroup && isSameHeader && isHoveringP) ||
 													(isSameGroup && isSameHeader && isHoveringObjP)) &&
 												subColumn === 'Obj';
@@ -300,14 +300,13 @@ const QuotaManagementTable: React.FC<Props> = ({
 
 											let tooltipText: string = '';
 											if (isHoveringP)
-												tooltipText = `${group} Frequency by ${group} Objective`;
-											else if (isHoveringS) {
-												tooltipText = `${group} Objective by ${header} Frequency`;
-												console.log('test');
-											} else if (isHoveringG)
-												tooltipText = `${subColumn} Frequency by Total ${subColumn} Objective`;
+												tooltipText = `${group} ${header} Frequency by ${group} ${header} Objective`;
+											else if (isHoveringS)
+												tooltipText = `${group} ${header} Frequency by ${header} Objective`;
+											else if (isHoveringG)
+												tooltipText = `${group} ${header} Frequency by Total ${group} Objective`;
 											else if (isHoveringCG)
-												tooltipText = `${group} Frequency by ${group} Frequency`;
+												tooltipText = `${group} ${header} Frequency by ${group} Total Frequency`;
 											else tooltipText = `${subColumn} - ${header} (${group})`;
 											let fColor: string = '';
 											if (cellData < 0) {
@@ -336,7 +335,6 @@ const QuotaManagementTable: React.FC<Props> = ({
 														{cellData}
 													</span>
 												</td>
-												
 											);
 
 											return content;
