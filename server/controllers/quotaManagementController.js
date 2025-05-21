@@ -22,13 +22,11 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	const webProject = await ProjectInfo.getWebProjects(projectId);
 	const webId = webProject[0]?.id;
 
-	// console.log('phoneProjects', phoneProjects);
-	// console.log('webProject', webProject);
-
 	let projectIds = {};
 	let landlineStructure = [];
 	let cellStructure = [];
 	let comStructure = [];
+	let webComStructure = [];
 	let panelStructure = [];
 	let t2wStructure = [];
 	let stypeData = {
@@ -53,30 +51,14 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 	await Promise.all(
 		phoneProjects.map(async (project) => {
 			const phone = await QuotaServices.getPhoneQuotas(project.k_Id, token);
-			// const slimPhone = {
-
-			// }
-			// console.log(phone);
-			//       const fs = require('fs');
-			//       fs.writeFile(`phone ${project.k_Id}.json`, JSON.stringify(phone, null, 2), (err) => {
-			//   if (err) {
-			//     console.error('Error saving file:', err);
-			//   } else {
-			//     console.log('File saved successfully!');
-			//   }
-			// });
 			const selectedPhones = phone.map(
 				({ Position, Criterion, Label, Quota, Frequence, ToDo }) => {
-					// console.log(Criterion)
 					if (/^STYPE=\d$/.test(Criterion.trim())) {
 						if (project.name.endsWith('COM')) {
 							stypeObjectives.total += Quota;
 						} else {
 							const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
 							if (parenMatch) {
-								// console.log(
-								// 	`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`
-								// );
 								const obj = parseInt(parenMatch[1], 10);
 								if (obj > 0) {
 									switch (Criterion) {
@@ -152,37 +134,54 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			}
 		})
 	);
-	// console.log(landlineStructure);
-	// console.log(comStructure)
 
 	projectIds['web'] = webId;
 
-	// console.log(projectIds);
 
 	if (webId) {
 		const web = await QuotaServices.getWebQuotas(projectIds['web']);
-		// console.log(web)
-		// console.log('web', web);
 		const selectedWeb = web.map(
 			({ StratumId, Criterion, Label, Objective, Frequency }) => {
+				if (!comStructure.length > 0 && Criterion === '$Q>0') {
+					stypeData.panel.Frequency = Frequency;
+				}
+				if (Objective === 0) {
+					const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
+					if (parenMatch) {
+						const obj = parseInt(parenMatch[1], 10);
+						if (obj > 0) {
+							Objective = obj;
+						}
+					}
+				}
 				if (/^STYPE=\d$/.test(Criterion.trim())) {
 					// just checking for STYPE=#
 					const parenMatch = Label.match(/\(([^)]+)\)/); // pulles the ### between parentheses
 					if (parenMatch) {
-						// console.log(`STYPE: ${Criterion} In parentheses: ${parenMatch[1]}`);
 						const obj = parseInt(parenMatch[1], 10);
 						if (obj > 0) {
 							switch (Criterion) {
 								case 'STYPE=3':
 									// panel
 									stypeData.panel.Objective = obj;
-									stypeData.panel.Frequency = Frequency;
+									if (comStructure.length > 0) {
+										stypeData.panel.Frequency = Frequency;
+									} else {
+										webComStructure.push({
+											StratumId: 0,
+											Criterion: 'Total',
+											Label: 'Total',
+											Objective: obj,
+											Frequency: Frequency,
+										});
+									}
+									
 									panelStructure.push({
 										StratumId: 0,
 										Criterion: 'Total',
 										Label: 'Total',
 										Objective: obj,
-										Frequency: Frequency,
+										Frequency: stypeData.panel.Frequency,
 									});
 									break;
 								case 'STYPE=4':
@@ -216,25 +215,19 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 					Label,
 					Objective,
 					Frequency,
-					// ToDo: Objective - Frequency,
-					// Percent: Objective > 0 ? ((Frequency / Objective) * 100).toFixed(2): 0,
 				};
 			}
 		);
-		// console.log(selectedWeb)
 
 		selectedWeb.forEach((variable) => {
-			// const stypeOnlyMatch = variable.Criterion.match(/^STYPE=(\d+)$/i);
-			// if (stypeOnlyMatch) {
-			// 	const stype = stypeOnlyMatch[1];
-			// 	// console.log(`STYPE=${stype} Objective: ${variable.Objective}`);
-			// 	// console.log(variable);
-			// }
-
+			if (!comStructure.length > 0) {
+				webComStructure.push(variable);
+			}
 			const stypeMatch = variable.Criterion.match(/STYPE=(\d+)/i);
 			if (stypeMatch) {
 				const stype = stypeMatch[1];
 				variable.Criterion = variable.Criterion.replace(/ AND STYPE=\d+/i, '');
+
 				switch (stype) {
 					case '3': //panel
 						panelStructure.push(variable);
@@ -251,78 +244,13 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				}
 			} else if (
 				!variable.Criterion.includes('TFLAG') &&
-				!variable.Criterion.includes('STYPE=WR')
+				!variable.Criterion.includes('STYPE=WR') &&
+				!variable.Criterion.includes('$Q')
 			) {
-				// console.log(variable)
 				panelStructure.push(variable);
 			}
 		});
 	}
-
-	// console.log(panelStructure);
-
-	// selectedWeb.forEach((variable) => {
-	// 	// variable.ToDo = variable.Objective - variable.Frequency;
-	// 	// variable.Percent = (
-	// 	// 	(variable.Frequency / variable.Objective) *
-	// 	// 	100
-	// 	// ).toFixed(2);
-	// 	if (variable.Criterion.includes('STYPE=3')) {
-	// 		t2wStructure.push(variable);
-	// 	} else if (variable.Criterion.includes('STYPE=4')) {
-	// 		panelStructure.push(variable);
-	// 	} else if (variable.Criterion.includes('STYPE=5')) {
-	// 	} else if (variable.Criterion.includes('STYPE=6')) {
-	// 	}
-	// });
-	// console.log(t2wStructure);
-	// console.log(web[135]);
-
-	// console.log(web);
-	// const d = QuotaManagement.getPhoneQuotas(projectIds['ll']);
-	// const c = QuotaManagement.getPhoneQuotas(projectIds['c']);
-	// console.log(d);
-	// constole.log(c);
-	//   console.log(Array.isArray(cellStructure));      // should be true
-	// console.log(Array.isArray(comStructure));       // should be true
-	// console.log(Array.isArray(landlineStructure));  // should be true
-
-	// console.log(cellStructure.length, comStructure.length, landlineStructure.length);
-
-	// console.log(cellStructure[0]);
-	// console.log(comStructure[0]);
-	// console.log(landlineStructure[0]);
-
-	// // For a deeper structural check:
-	// function keysOfFirstItem(arr) {
-	//   return arr.length ? Object.keys(arr[0]) : [];
-	// }
-
-	// console.log(keysOfFirstItem(cellStructure));
-	// console.log(keysOfFirstItem(comStructure));
-	// console.log(keysOfFirstItem(landlineStructure));
-	// console.log(Object.keys(cellStructure[0]));
-	// console.log(Object.keys(comStructure[0]));
-	// console.log(Object.keys(landlineStructure[0]));
-
-	// const rowCount = (
-	// 	Math.max(
-	// 		landlineStructure.length,
-	// 		cellStructure.length,
-	// 		comStructure.length,
-	// 		panelStructure.length,
-	// 		t2wStructure.length
-	// 	) + 1
-	// ).toString();
-	// console.log(rowCount);
-
-	//all row counts
-	// console.log(
-	// 		landlineStructure.length,
-	// 		cellStructure.length,
-	// 		comStructure.length,
-	// 		t2wStructure.length,
-	// 		panelStructure.length)
 
 	const allStructures = {
 		// com: comStructure,
@@ -332,17 +260,14 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		t2w: t2wStructure,
 	};
 
-	// console.log(comStructure);
 
 	const totalMap = new Map();
-
 	Object.values(allStructures).forEach((structure) => {
 		structure.forEach(
 			({ StratumId, Criterion, Label, Objective, Frequency }) => {
 				if (!Criterion) return; // skip if Criterion is undefined/null
 
-				// console.log(Criterion, Label, Objective, Frequency);
-				if (Objective >= 1000) {
+				if (Objective >= 1000 && comStructure.length > 0) {
 					Objective -= 1000;
 				}
 
@@ -363,86 +288,31 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		);
 	});
 
-	comStructure.forEach(({ Criterion, Objective }) => {
-		if (!Criterion) return;
 
-		if (totalMap.has(Criterion)) {
-			const entry = totalMap.get(Criterion);
-			entry.Objective += Objective;
-		}
-	});
+	if (comStructure.length > 0) {
+		comStructure.forEach(({ Criterion, Objective }) => {
+			if (!Criterion) return;
+
+			if (totalMap.has(Criterion)) {
+				const entry = totalMap.get(Criterion);
+				entry.Objective += Objective;
+			}
+		});
+	} else if (webComStructure.length > 0) {
+		webComStructure.forEach(({ Criterion, Objective }) => {
+			if (!Criterion) return;
+			if (totalMap.has(Criterion)) {
+				const entry = totalMap.get(Criterion);
+				entry.Objective += Objective;
+			}
+		});
+	}
 
 	const totalStructure = Array.from(totalMap.values());
 	allStructures.total = totalStructure;
-	// console.log(totalStructure)
-
-	// console.log(totalMap)
-
-	// console.log('totalStructure', totalStructure);
-	// return
-
-	// console.log('allStructures', allStructures);
-
 	const mergedRows = {};
-	// totalStructure = [];
 
-	// function processRow(row, stypeObjective) {
-	// 	const label = row.Label.split(' (')[0];
-	// 	const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
-	// 	const obj = parseFloat(objText) || 0;
-	// 	// console.log(row?.Label, row?.Objective, obj)
-	// 	// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
-	// 	// const toDo = obj - row.Frequency;
-	// 	if (row?.Objective >= 1000) row.Objective -= 1000;
-	// 	const percent =
-	// 		row?.Objective > 0
-	// 			? ((row.Frequency / row.Objective) * 100).toFixed(1)
-	// 			: 0;
-
-	// 	const modalityPercent =
-	// 		row.Objective > 0
-	// 			? ((row.Frequency / stypeObjective) * 100).toFixed(1)
-	// 			: 0;
-
-	// 	const currentCercent =
-	// 		row?.Objective > 0
-	// 			? ((row.Frequency / row.Frequency) * 100).toFixed(1)
-	// 			: 0;
-
-	// 	const currentModalityPercent =
-	// 		row.Objective > 0
-	// 			? ((row.Frequency / stypeFrequency) * 100).toFixed(1)
-	// 			: 0;
-	// 	const toDo = row.Objective - row.Frequency;
-
-	// 	// if (row.Criterion.includes('SEX1')) {
-	// 	// 	console.log()
-	// 	// 	console.log('stypeObj:', stypeObjective)
-	// 	// 	// console.log(row)
-	// 	// 	console.log('label:', label)
-	// 	// 	console.log('obj:', row.Objective, '|', obj)
-	// 	// 	console.log('freq:', row.Frequency)
-	// 	// 	console.log('%:', percent)
-	// 	// 	console.log(((row.Frequency / row.Objective) * 100).toFixed(1))
-	// 	// 	console.log('m%:', modalityPercent)
-	// 	// 	console.log('todo:', toDo)
-	// 	// }
-
-	// 	return {
-	// 		Label: label,
-	// 		Objective: row?.Objective || 0,
-	// 		Frequency: row.Frequency,
-	// 		'%': percent,
-	// 		// Objective: obj,
-	// 		'M%': modalityPercent,
-	// 		'To Do': toDo,
-	// 	};
-	// }
-	// console.log(stypeData.landline);
 	Object.entries(allStructures).forEach(([category, rows]) => {
-		// console.log(category, rows.length);
-		// console.log(stypeData)
-		// console.log(category)
 		const stypeObjective =
 			category !== 'total'
 				? stypeData[category]?.Objective
@@ -451,18 +321,8 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			category !== 'total'
 				? stypeData[category]?.Frequency
 				: totalMap.get('Total').Frequency;
-		// if (category !== 'total') {
-		// 	console.log(category, stypeObjective, stypeFrequency);
-		// }
-		// console.log(stypeData[category]);
-		// console.log(stypeObjective);
-		// console.log()
-		// console.log()
-		// console.log(category)
-		// console.log(allStructures[category])
 
 		rows.forEach((row) => {
-			// console.log(category, row)
 			const key = row.Criterion;
 			if (!mergedRows[key]) {
 				mergedRows[key] = {
@@ -473,15 +333,11 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				mergedRows[key][category] = {};
 			}
 
-			// const processed = processRow(row, stypeObjective);
-
 			const label = row.Label.split(' (')[0];
-			// const objText = (row.Label.match(/\(([^)]+)\)/) || [])[1] || '';
-			// const obj = parseFloat(objText) || 0;
-			// console.log(row?.Label, row?.Objective, obj)
-			// const percent = obj > 0 ? ((row.Frequency / obj) * 100).toFixed(1) : 0;
-			// const toDo = obj - row.Frequency;
-			if (row?.Objective >= 1000) row.Objective -= 1000;
+			if (row?.Objective >= 1000 && comStructure.length > 0) {
+				row.Objective -= 1000;
+			}
+
 			const objPercent =
 				row?.Objective > 0
 					? ((row.Objective / stypeObjective) * 100).toFixed(1)
@@ -491,8 +347,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 				row?.Objective > 0
 					? ((row.Frequency / row.Objective) * 100).toFixed(1)
 					: 0;
-			// console.log(key)
-			// console.log(totalMap[key])
+
 			const globalPercent =
 				row?.Objective > 0
 					? ((row.Frequency / totalMap.get(key).Objective) * 100).toFixed(1)
@@ -503,11 +358,6 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 					? ((row.Frequency / stypeObjective) * 100).toFixed(1)
 					: 0;
 
-			// const currentTotalPercent =
-			// 	row?.Objective > 0 ?
-			// 		((row.Frequency / totalMap.get(key).Frequency) * 100).toFixed(1)
-			// 		: 0;
-
 			const currentGlobalPercent =
 				row?.Objective > 0
 					? ((row.Frequency / totalMap.get(key).Frequency) * 100).toFixed(1)
@@ -517,18 +367,10 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 					? ((row.Frequency / stypeFrequency) * 100).toFixed(1)
 					: 0;
 
-			// console.log(row.Frequency, '/', stypeFrequency, '=', currentStypePercent)
-			// if (category === 't2w') {
-			// 	console.log(row.Frequency, '|', stypeFrequency, '|', stypeObjective);
-			// 	console.log(currentStypePercent, stypePercent)
-			// }
-
 			const toDo = row.Objective - row.Frequency;
 			if (row.Label !== 'Total') {
-				// console.log(category, row.Label);
-			mergedRows[key][category]['Freq%'] = currentStypePercent;
+				mergedRows[key][category]['Freq%'] = currentStypePercent;
 			} else {
-				// console.log(category, row.Label);
 				mergedRows[key][category]['Freq%'] = currentGlobalPercent;
 			}
 
@@ -540,64 +382,19 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 			mergedRows[key][category]['%'] = totalPercent;
 			mergedRows[key][category]['S%'] = stypePercent;
 			mergedRows[key][category]['CG%'] = currentGlobalPercent;
-			// mergedRows[key][category]['C%'] = currentTotalPercent;
-			
+
 			mergedRows[key][category]['To Do'] = toDo;
-
-			// mergedRows[key][category] = processed;
-
-			// Update totals here
-			// mergedRows[key].total.Objective += processed.Objective;
-			// mergedRows[key].total.Frequency += processed.Frequency;
-
-			// // Recalculate % and To Do for total on the fly
-			// mergedRows[key].total['S%'] =
-			// 	mergedRows[key].total.Objective > 0
-			// 		? (
-			// 				(mergedRows[key].total.Frequency /
-			// 					mergedRows[key].total.Objective) *
-			// 				100
-			// 		  ).toFixed(1)
-			// 		: '0';
-			// mergedRows[key].total['To Do'] =
-			// 	mergedRows[key].total.Objective - mergedRows[key].total.Frequency;
-
-			// mergedRows[key].total['M%'] =
-			// 	mergedRows[key].total.Objective > 0
-			// 		? (
-			// 				(mergedRows[key].total.Frequency /
-			// 					mergedRows[key].total.Objective) *
-			// 				100
-			// 		  ).toFixed(1)
-			// 		: '0';
-
-			// // copy common fields (StratumId, Label) from the current row
-			// mergedRows[key].total.StratumId = processed.StratumId;
-			// mergedRows[key].total.Label = processed.Label;
 		});
 	});
 
-	// console.log(mergedRows);
-	// console.log(mergedRows)
 	const emptyStructures = {};
 	Object.entries(allStructures).forEach(([key, arr]) => {
 		emptyStructures[key] = arr.length === 0; // true if empty, false otherwise
 	});
 	return res.status(200).json({ mergedRows, emptyStructures });
-	// return;
-
-	const quotas = await User.getQuotas(type);
-	if (!quotas) {
-		return res.status(404).json({ message: 'Problem getting quotas' });
-	}
-	res.status(200).json(quotas);
 });
 
 const handleGetProjectList = handleAsync(async (req, res) => {
-	// const { directorId } = req.query;
-	// if (!directorId) {
-	// 	return res.status(400).json({ message: 'Director ID required' });
-	// }
 	const projects = await QuotaServices.getProjectsList('');
 	if (!projects) {
 		return res.status(404).json({ message: 'Problem getting projects' });
