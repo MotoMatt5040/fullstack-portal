@@ -14,6 +14,7 @@ type RowData = {
 	'To Do': number | string;
 	Label: string;
 	StratumId: number;
+	TotalObjective: number | string;
 };
 
 type QuotaData = {
@@ -64,6 +65,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 		'S%': 'S%',
 		'CG%': 'CG%',
 		'To Do': 'To Do',
+		TotalObjective: 'TotalObjective', // Special case for Total Quotas
 	};
 
 	const skipRowsByCriterion = [
@@ -71,12 +73,15 @@ const QuotaManagementTable: React.FC<Props> = ({
 		'VTYPE',
 		'TFLAG',
 		'PREL',
-		'$a>4',
+		// '$a>4',
 		'SOURCE',
-		'$Q>0',
+		// '$Q>0',
 		'STYPE',
+		'LNREL',
+		'CNREL',
+		'>'
 	];
-	const skipRowsByLabel = []; //['Refuse'];
+	const skipRowsByLabel = ['Sample']; //['Refuse'];
 
 	const [hovered, setHovered] = useState<{
 		groupKey: string;
@@ -253,7 +258,8 @@ const QuotaManagementTable: React.FC<Props> = ({
 														isHoveringS ||
 														isHoveringG ||
 														isHoveringCG ||
-														isHoveringFreqP)) ||
+														isHoveringFreqP ||
+													isHoveringObjP)) ||
 													(hovered?.groupKey === firstGroup &&
 														group === firstGroup &&
 														header === totalHeader &&
@@ -281,8 +287,10 @@ const QuotaManagementTable: React.FC<Props> = ({
 													(group === firstGroup &&
 														isSameHeader &&
 														isHoveringObjP) ||
-													(isSameGroup && isSameHeader && isHoveringP) ||
-													(isSameGroup && isSameHeader && isHoveringObjP)) &&
+													(isSameGroup && isSameHeader && isHoveringP) 
+													// ||
+													// (isSameGroup && isSameHeader && isHoveringObjP)
+												) &&
 												subColumn === 'Obj';
 
 											// Final highlight decision
@@ -291,11 +299,16 @@ const QuotaManagementTable: React.FC<Props> = ({
 											const highlightBg =
 												theme === 'light' ? '#b3e5fc' : '#1565c0';
 
+											let dataColumn = subColumn;
+											if ((header === 'Total Quotas' || group === 'total') && subColumn === 'Obj') {
+												dataColumn = 'TotalObjective';
+											}
+
 											const cellData =
 												categoryData &&
-												categoryData[dataKeyMap[subColumn]] !== undefined &&
-												categoryData[dataKeyMap[subColumn]] !== 0
-													? categoryData[dataKeyMap[subColumn]]
+												categoryData[dataKeyMap[dataColumn]] !== undefined &&
+												categoryData[dataKeyMap[dataColumn]] !== 0
+													? categoryData[dataKeyMap[dataColumn]]
 													: '-';
 
 											let tooltipText: string = '';
