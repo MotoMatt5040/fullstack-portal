@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import HoverableLabelCell from '../../components/MyHoverableCell';
+import HoverableLabelCell from '../../../components/MyHoverableCell';
 
 type RowData = {
 	Objective: number | string;
 	'Obj%': number | string;
 	Frequency: number | string;
 	'Freq%': number | string;
+	Unused: number | string;
 	'G%': number | string;
 	'%': number | string;
 	'S%': number | string;
@@ -60,6 +61,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 		'Obj%': 'Obj%',
 		Freq: 'Frequency',
 		'Freq%': 'Freq%',
+		Fresh: 'Unused',
 		'G%': 'G%',
 		'%': '%',
 		'S%': 'S%',
@@ -79,7 +81,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 		'STYPE',
 		'LNREL',
 		'CNREL',
-		'>'
+		'>',
 	];
 	const skipRowsByLabel = ['Sample']; //['Refuse'];
 
@@ -199,6 +201,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 						<tr key={group}>
 							{/* First cell is a hoverable label from the first found label in the group */}
 							<HoverableLabelCell
+								className='label-cell'
 								label={
 									// Find the first label that is not undefined
 									headers
@@ -259,7 +262,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 														isHoveringG ||
 														isHoveringCG ||
 														isHoveringFreqP ||
-													isHoveringObjP)) ||
+														isHoveringObjP)) ||
 													(hovered?.groupKey === firstGroup &&
 														group === firstGroup &&
 														header === totalHeader &&
@@ -287,10 +290,9 @@ const QuotaManagementTable: React.FC<Props> = ({
 													(group === firstGroup &&
 														isSameHeader &&
 														isHoveringObjP) ||
-													(isSameGroup && isSameHeader && isHoveringP) 
-													// ||
-													// (isSameGroup && isSameHeader && isHoveringObjP)
-												) &&
+													(isSameGroup && isSameHeader && isHoveringP)) &&
+												// ||
+												// (isSameGroup && isSameHeader && isHoveringObjP)
 												subColumn === 'Obj';
 
 											// Final highlight decision
@@ -300,7 +302,10 @@ const QuotaManagementTable: React.FC<Props> = ({
 												theme === 'light' ? '#b3e5fc' : '#1565c0';
 
 											let dataColumn = subColumn;
-											if ((header === 'Total Quotas' || group === 'total') && subColumn === 'Obj') {
+											if (
+												(header === 'Total Quotas' || group === 'total') &&
+												subColumn === 'Obj'
+											) {
 												dataColumn = 'TotalObjective';
 											}
 
@@ -327,6 +332,7 @@ const QuotaManagementTable: React.FC<Props> = ({
 											}
 											const content = (
 												<td
+												className={cellData !== '-' ? 'text-align right' : 'text-align center'}
 													key={`${group}-${header}-${subColumn}`} // Unique key for React rendering
 													onMouseEnter={() => {
 														// Set hover context for group/header/sub on mouse enter

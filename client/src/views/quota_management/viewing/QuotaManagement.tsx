@@ -1,21 +1,21 @@
 import React from 'react';
 import Select from 'react-select';
-import MyToggle from '../../components/MyToggle';
+import MyToggle from '../../../components/MyToggle';
 
 import './QuotaManagement.css';
-import '../styles/Sections.css';
-import '../styles/ViewToggles.css';
-import '../styles/Containers.css';
+import '../../styles/Sections.css';
+import '../../styles/ViewToggles.css';
+import '../../styles/Containers.css';
 import useQuotaManagementLogic from './useQuotaManagementLogic';
 import QuotaManagementTable from './QuotaManagementTable';
 import Icon from '@mdi/react';
 import { mdiFilterMenu } from '@mdi/js';
-import ExportExcelButton from '../../components/ExportExcelButton';
+import ExportExcelButton from '../../../components/ExportExcelButton';
 
 type Props = {};
 
-const headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
-const subHeaders: string[] = ['Obj', 'Obj%', 'Freq', 'Freq%', 'G%', '%', 'S%', 'CG%', 'To Do'];
+let headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
+let subHeaders: string[] = ['Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'];
 
 const QuotaManagement = (props: Props) => {
 	const {
@@ -37,6 +37,10 @@ const QuotaManagement = (props: Props) => {
 		filterRef,
 	} = useQuotaManagementLogic();
 
+	if (internalUser) {
+		subHeaders.push('Fresh', 'G%', '%', 'S%', 'CG%');
+	}
+
 	const columnGroups = [
 		{ key: 'total', label: 'Total Quota' },
 		{ key: 'landline', label: 'Landline' },
@@ -44,6 +48,11 @@ const QuotaManagement = (props: Props) => {
 		{ key: 't2w', label: 'T2W' },
 		{ key: 'panel', label: 'Panel' },
 	];
+
+	const allColumnsActive = Object.values(visibleColumns).every(
+		(col) =>
+			col.active && Object.values(col.subColumns).every((subVal) => subVal)
+	);
 
 	return (
 		<section className='quota-management section'>
@@ -87,29 +96,18 @@ const QuotaManagement = (props: Props) => {
 									<strong>Toggle Everything</strong>
 									<MyToggle
 										label='All Columns'
-										active={Object.values(visibleColumns).every(
-											(col) =>
-												col.active &&
-												Object.values(col.subColumns).every((subVal) => subVal)
-										)}
+										active={allColumnsActive}
 										onClick={() => {
-											const allOn = Object.values(visibleColumns).every(
-												(col) =>
-													col.active &&
-													Object.values(col.subColumns).every(
-														(subVal) => subVal
-													)
-											);
-
 											setVisibleColumns((prev) => {
 												const newState = {};
 												for (const key in prev) {
 													newState[key] = {
-														active: !allOn,
+														active: !allColumnsActive,
 														subColumns: {},
 													};
 													for (const subKey in prev[key].subColumns) {
-														newState[key].subColumns[subKey] = !allOn;
+														newState[key].subColumns[subKey] =
+															!allColumnsActive;
 													}
 												}
 												return newState;
@@ -224,7 +222,7 @@ const QuotaManagement = (props: Props) => {
 							</tbody>
 						</table> */}
 					</div>
-					
+
 					{quotas && !quotaDataIsFetching && (
 						<QuotaManagementTable
 							id={`${selectedProject}-quotas`}

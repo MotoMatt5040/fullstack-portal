@@ -1,17 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
-import { selectCurrentToken } from '../../features/auth/authSlice';
+import { selectCurrentToken } from '../../../features/auth/authSlice';
 import {
 	useLazyGetQuotasQuery,
 	useGetProjectListQuery,
-} from '../../features/quotasApiSlice';
+	useLazyGetProjectListQuery,
+} from '../../../features/quotasApiSlice';
+
+type FetchFunction = (params: object) => Promise<any>;
 
 const useQuotaManagementLogic = () => {
-	const [getQuotas, { data: quotaData, isFetching: quotaDataIsFetching }] =
+	const [getQuotas, { data: quotaData, isFetching: quotaDataIsFetching, refetch: refetchQuotas }] =
 		useLazyGetQuotasQuery();
-	const { data: projectList, isFetching: projectListIsFetching } =
-		useGetProjectListQuery('');
+	const [
+		getProjectList,
+		{ data: projectList, isFetching: projectListIsFetching, refetch: refetchProjectList },
+	] = useLazyGetProjectListQuery();
+	// const { data: projectList, isFetching: projectListIsFetching } =
+	// 	useGetProjectListQuery('');
 	const [projectListOptions, setProjectListOptions] = useState([]);
 	const [selectedProject, setSelectedProject] = useState<string>('');
 	const [userRoles, setUserRoles] = useState<[]>([]);
@@ -37,6 +44,7 @@ const useQuotaManagementLogic = () => {
 		'Obj%': false,
 		Freq: false,
 		'Freq%': false,
+		Fresh: false,
 		'G%': false,
 		'%': false,
 		'S%': false,
@@ -104,13 +112,16 @@ const useQuotaManagementLogic = () => {
 			try {
 				const decoded: any = jwtDecode(token);
 				const roles = decoded?.UserInfo?.roles ?? [];
+				const username = decoded?.UserInfo?.username ?? '';
 				setUserRoles(roles);
 
 				if (roles.includes(4)) {
 					setInternalUser(false);
+					fetchData(getProjectList, { userId: username });
 					// console.log('User is not internal');
 				} else {
 					setInternalUser(true);
+					fetchData(getProjectList, {});
 					// console.log('User is internal');
 				}
 			} catch (err) {
@@ -141,24 +152,33 @@ const useQuotaManagementLogic = () => {
 
 		setQuotas(quotaData.mergedRows);
 		// setEmptyStructures(quotaData.emptyStructures);
-
+		const visibleStructures = quotaData.visibleStructures;
 		const newVisibleColumns = Object.fromEntries(
 			columnGroups.map((group) => [
 				group.key,
 				{
 					...visibleColumns[group.key],
-					active: !quotaData.emptyStructures[group.key], // active only if NOT empty
-					// subColumns: {
-					// 	Obj: true,
-					// 	Freq: true,
-					// 	'G%': false,
-					// 	'%': false,
-					// 	'S%': false,
-					// 	'To Do': false,
-					// },
+					active: visibleStructures.includes(group.key),
 				},
 			])
 		);
+		// const newVisibleColumns = Object.fromEntries(
+		// 	columnGroups.map((group) => [
+		// 		group.key,
+		// 		{
+		// 			...visibleColumns[group.key],
+		// 			active: !quotaData.emptyStructures[group.key], // active only if NOT empty
+		// 			// subColumns: {
+		// 			// 	Obj: true,
+		// 			// 	Freq: true,
+		// 			// 	'G%': false,
+		// 			// 	'%': false,
+		// 			// 	'S%': false,
+		// 			// 	'To Do': false,
+		// 			// },
+		// 		},
+		// 	])
+		// );
 
 		setVisibleColumns(newVisibleColumns);
 
@@ -170,7 +190,7 @@ const useQuotaManagementLogic = () => {
 
 	useEffect(() => {
 		if (selectedProject) {
-			fetchData(selectedProject);
+			fetchData(getQuotas, { projectId: selectedProject });
 		} else {
 			setQuotas([]);
 		}
@@ -196,9 +216,11 @@ const useQuotaManagementLogic = () => {
 		});
 	};
 
-	const fetchData = async (projectId: string) => {
+	const fetchData = async (refetch: FetchFunction, params: Object) => {
+		// const fetchData = async (projectId: string) => {
 		try {
-			const res = await getQuotas({ projectId }).unwrap();
+			const res = await refetch(params);
+			// const res = await getQuotas({ projectId }).unwrap();
 		} catch (error) {
 			console.error('Error fetching quotas:', error);
 		}
