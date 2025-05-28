@@ -36,7 +36,7 @@ const getProjectsList = async (userId) => {
 	let whereConditions = [
 		"ph.projectId NOT LIKE '%c'",
 		"ph.projectId NOT LIKE '%w'",
-		"ph.fieldStart >= DATEADD(DAY, -360, GETDATE())"
+		'ph.fieldStart >= DATEADD(DAY, -180, GETDATE())',
 	];
 
 	if (userId) {

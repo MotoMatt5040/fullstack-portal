@@ -2,7 +2,7 @@ const handleAsync = require('./asyncController');
 const ProjectInfo = require('../services/ProjectInfo');
 const QuotaServices = require('../services/QuotaServices');
 const VoxcoApi = require('../services/VoxcoApi');
-
+const { cleanQueryParam } = require('../utils/CleanQueryParam');
 // Add unused
 
 const buildPhoneStructure = async (project, token, dataStructure) => {
@@ -387,7 +387,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 });
 
 const handleGetProjectList = handleAsync(async (req, res) => {
-	const { userId } = req.query;
+	const userId = cleanQueryParam(req?.query?.userId);
 	const projects = await QuotaServices.getProjectsList(userId);
 	if (!projects) {
 		return res.status(404).json({ message: 'Problem getting projects' });
