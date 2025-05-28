@@ -47,12 +47,12 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
       },
     }),
     getProjectList: builder.query({
-      query: ({ directoId }) => ({
-        url: `/quotas/projects?directoId=${directoId}`,
+      query: ({ userId }) => ({
+        url: `/quotas/projects?userId=${userId}`,
         method: 'GET',
       }),
     })
   }),
 });
 
-export const { useGetProjectListQuery, useLazyGetQuotasQuery } = ReportApiSlice;
+export const { useGetProjectListQuery, useLazyGetProjectListQuery, useLazyGetQuotasQuery } = ReportApiSlice;
