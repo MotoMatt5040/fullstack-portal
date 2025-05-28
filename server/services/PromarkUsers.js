@@ -26,9 +26,9 @@ const updateUserPassword = async (email, hashedPwd) => {
 				.request()
 				.input('email', sql.NVarChar, email)
 				.input('password', sql.NVarChar, hashedPwd)
-				.input('dateUpdated', sql.DateTime, new Date())
+				// .input('dateUpdated', sql.DateTime, new Date())
 				.query(
-					'UPDATE tblAuthentication SET password = @password, dateUpdated = @dateUpdated WHERE email = @email'
+					'UPDATE tblAuthentication SET password = @password, dateUpdated = GETDATE() WHERE email = @email'
 				);
 			return result;
 		},
@@ -47,9 +47,9 @@ const saveResetToken = async (email, token, expires) => {
 				.input('email', sql.NVarChar, email)
 				.input('token', sql.UniqueIdentifier, token)
 				.input('expires', sql.DateTime, expires)
-				.input('dateUpdated', sql.DateTime, new Date())
+				// .input('dateUpdated', sql.DateTime, new Date())
 				.query(
-					'UPDATE tblAuthentication SET resetPasswordToken = @token, resetPasswordExpires = @expires, dateUpdated = @dateUpdated WHERE email = @email'
+					'UPDATE tblAuthentication SET resetPasswordToken = @token, resetPasswordExpires = @expires, dateUpdated = GETDATE() WHERE email = @email'
 				);
 		},
 		fnName: 'saveResetToken',
@@ -84,10 +84,10 @@ const createInternalUser = async (email, hashedPwd) => {
 				.request()
 				.input('email', sql.NVarChar, email)
 				.input('password', sql.NVarChar, hashedPwd)
-				.input('dateCreated', sql.DateTime, new Date())
-				.input('dateUpdated', sql.DateTime, new Date())
+				// .input('dateCreated', sql.DateTime, new Date())
+				// .input('dateUpdated', sql.DateTime, new Date())
 				.query(
-					'INSERT INTO tblAuthentication (email, password, dateCreated, dateUpdated) VALUES (@email, @password, @dateCreated, @dateUpdated)'
+					'INSERT INTO tblAuthentication (email, password, dateCreated, dateUpdated) VALUES (@email, @password, GETDATE(), GETDATE())'
 				);
 			return result;
 		},
@@ -114,16 +114,16 @@ const getUserByRefreshToken = async (refreshToken) => {
 };
 
 const clearRefreshToken = async (email) => {
-	let currentDate = new Date();
+	// let currentDate = new Date();
 	return withDbConnection({
 		database: promark,
 		queryFn: async (pool) => {
 			await pool
 				.request()
 				.input('email', sql.NVarChar, email)
-				.input('dateUpdated', sql.DateTime, currentDate)
+				// .input('dateUpdated', sql.DateTime, currentDate)
 				.query(
-					'UPDATE tblAuthentication SET refreshToken = NULL, accessToken = NULL, dateUpdated = @dateUpdated WHERE email = @email'
+					'UPDATE tblAuthentication SET refreshToken = NULL, accessToken = NULL, dateUpdated = GETDATE() WHERE email = @email'
 				);
 		},
 		fnName: 'clearRefreshToken',
@@ -131,7 +131,7 @@ const clearRefreshToken = async (email) => {
 };
 
 const updateUserRefreshToken = async (email, refreshToken, accessToken) => {
-	let currentDate = new Date();
+	// let currentDate = new Date();
 	return withDbConnection({
 		database: promark,
 		queryFn: async (pool) => {
@@ -140,9 +140,9 @@ const updateUserRefreshToken = async (email, refreshToken, accessToken) => {
 				.input('email', sql.NVarChar, email)
 				.input('refreshToken', sql.NVarChar, refreshToken)
 				.input('accessToken', sql.NVarChar, accessToken)
-				.input('dateUpdated', sql.DateTime, currentDate)
+				// .input('dateUpdated', sql.DateTime, currentDate)
 				.query(
-					'UPDATE tblAuthentication SET refreshToken = @refreshToken, accessToken = @accessToken, dateUpdated = @dateUpdated WHERE email = @email'
+					'UPDATE tblAuthentication SET refreshToken = @refreshToken, accessToken = @accessToken, dateUpdated = GETDATE() WHERE email = @email'
 				);
 		},
 		fnName: 'updateUserRefreshToken',
