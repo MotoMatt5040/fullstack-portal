@@ -1,4 +1,5 @@
 const axios = require('../api/axios');
+const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
 const { promark } = require('../utils/databaseTypes');
 
@@ -30,27 +31,41 @@ const getPhoneQuotas = async (sid, token) => {
 	}
 };
 
-const getProjectsList = async (directorId) => {
+const getProjectsList = async (userId) => {
+	let joinClause = '';
+	let whereConditions = [
+		"ph.projectId NOT LIKE '%c'",
+		"ph.projectId NOT LIKE '%w'",
+		"ph.fieldStart >= DATEADD(DAY, -360, GETDATE())"
+	];
+
+	if (userId) {
+		joinClause = `
+INNER JOIN tblUserProjects up ON ph.projectId = up.projectId
+INNER JOIN tblAuthentication a ON a.uuid = up.uuid`;
+		whereConditions.unshift(`a.email = @userId`); //This adds the condition for the email to the beginning of the whereConditions array, making sure it appears first in the SQL WHERE clause.
+	}
+
+	const qry = `
+SELECT DISTINCT 
+    ph.projectId, 
+    ph.projectName, 
+    ph.fieldStart 
+FROM 
+    tblcc3projectheader ph
+${joinClause}
+WHERE 
+    ${whereConditions.join(' AND ')}
+ORDER BY 
+    ph.fieldStart DESC;
+`;
+
 	return withDbConnection({
 		database: promark,
 		queryFn: async (pool) => {
 			const request = pool.request();
-			if (directorId) request.input('directorId', directorId);
-			const result = await request.query(
-				`
-SELECT DISTINCT 
-    projectId, 
-    projectName, 
-    fieldStart 
-FROM 
-    tblcc3projectheader 
-WHERE 
-    projectid NOT LIKE '%c' 
-    AND projectid NOT LIKE '%w' 
-		AND fieldStart >= DATEADD(DAY, -180, GETDATE())
-ORDER BY 
-    fieldstart DESC;`
-			);
+			if (userId) request.input('userId', sql.VarChar, userId);
+			const result = await request.query(qry);
 			return result.recordset;
 		},
 		attempts: 5,

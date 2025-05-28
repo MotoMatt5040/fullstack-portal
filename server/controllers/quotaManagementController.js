@@ -3,6 +3,8 @@ const ProjectInfo = require('../services/ProjectInfo');
 const QuotaServices = require('../services/QuotaServices');
 const VoxcoApi = require('../services/VoxcoApi');
 
+// Add unused
+
 const buildPhoneStructure = async (project, token, dataStructure) => {
 	const phone = await QuotaServices.getPhoneQuotas(project.k_Id, token);
 	const structure = {};
@@ -14,10 +16,15 @@ const buildPhoneStructure = async (project, token, dataStructure) => {
 			Label,
 			Quota: Objective,
 			Frequence: Frequency,
+			Unused,
 		} = item;
 
+		const newLabel = Label.replace(/\((?:T|P|MIN|MAX)?\s*:?\s*\d+\)/gi, '').trim().replace(/\s{2,}/g, ' ');
+
+
 		// Extract TotalObjective from Label
-		const matches = [...Label.matchAll(/\((?:MIN|MAX)?\s*(\d+)\)/gi)];
+		const matches = [...Label.matchAll(/\((?:(?:MIN|MAX|T)\s*:?\s*)?(\d+)\)/gi)];
+
 		const TotalObjective =
 			matches.length > 0 ? parseInt(matches[matches.length - 1][1], 10) : 0;
 
@@ -27,21 +34,26 @@ const buildPhoneStructure = async (project, token, dataStructure) => {
 		// Update structure
 		structure[modifiedCriterion] = {
 			StratumId,
-			Label,
+			Label: newLabel,
 			Objective,
 			Frequency,
+			Unused,
 			TotalObjective,
 		};
 
 		// Update total
 		if (!dataStructure.total[modifiedCriterion]) {
 			dataStructure.total[modifiedCriterion] = {
-				Label,
+				Label: newLabel,
 				StratumId,
 				Objective: 0,
 				Frequency: 0,
+				Unused,
 				TotalObjective,
 			};
+		}
+		if (dataStructure.total[modifiedCriterion].TotalObjective === 0) {
+			dataStructure.total[modifiedCriterion].TotalObjective = TotalObjective;
 		}
 		if (!modifiedCriterion.includes('STYPE') && !project.name.endsWith('COM')) {
 			dataStructure.total[modifiedCriterion].Frequency += Frequency;
@@ -73,7 +85,9 @@ const buildPhoneStructure = async (project, token, dataStructure) => {
 const buildWebStructure = async (projectId, dataStructure) => {
 	const web = await QuotaServices.getWebQuotas(projectId);
 
-	web.forEach(({ StratumId, Criterion, Label, Objective, Frequency }) => {
+	web.forEach(({ StratumId, Criterion, Label, Objective, Frequency, Unused }) => {
+		const newLabel = Label.replace(/\((?:T|P|MIN|MAX)?\s*:?\s*\d+\)/gi, '').trim().replace(/\s{2,}/g, ' ');
+
 		const matches = [...Label.matchAll(/\((\d+)\)/g)];
 		const TotalObjective =
 			matches.length > 0 ? parseInt(matches[matches.length - 1][1], 10) : 0;
@@ -113,6 +127,7 @@ const buildWebStructure = async (projectId, dataStructure) => {
 				StratumId: 0,
 				Objective: TotalObjective,
 				Frequency,
+				Unused,
 				TotalObjective,
 			};
 		}
@@ -121,18 +136,20 @@ const buildWebStructure = async (projectId, dataStructure) => {
 
 		dataStructure[type][modifiedCriterion] = {
 			StratumId,
-			Label,
+			Label: newLabel,
 			Objective,
 			Frequency,
+			Unused,
 			TotalObjective,
 		};
 
 		if (!dataStructure.total[modifiedCriterion]) {
 			dataStructure.total[modifiedCriterion] = {
-				Label,
+				Label: newLabel,
 				StratumId,
 				Objective: 0,
 				Frequency: 0,
+				Unused,
 				TotalObjective,
 			};
 		}
@@ -362,14 +379,16 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 		}
 	}
 	calculateData(dataStructure);
+	
 
 	const mergedRows = restructureByQuota(dataStructure);
-	let emptyStructures = {};
-	return res.status(200).json({ mergedRows, emptyStructures });
+	const visibleStructures = Object.keys(dataStructure)
+	return res.status(200).json({ mergedRows, visibleStructures });
 });
 
 const handleGetProjectList = handleAsync(async (req, res) => {
-	const projects = await QuotaServices.getProjectsList('');
+	const { userId } = req.query;
+	const projects = await QuotaServices.getProjectsList(userId);
 	if (!projects) {
 		return res.status(404).json({ message: 'Problem getting projects' });
 	}
