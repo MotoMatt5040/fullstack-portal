@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 
 interface HoverableLabelCellProps {
+  className?: string;
   label: string;
   popupText: string;
+  mouseEnter?: () => void;
+  mouseLeave?: () => void;
+  style?: React.CSSProperties;
 }
 
-const HoverableLabelCell: React.FC<HoverableLabelCellProps> = ({ label, popupText }) => {
+const HoverableLabelCell: React.FC<HoverableLabelCellProps> = ({ className, label, popupText, mouseEnter, mouseLeave, style }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -13,11 +17,22 @@ const HoverableLabelCell: React.FC<HoverableLabelCellProps> = ({ label, popupTex
     setMousePos({ x: e.clientX + 10, y: e.clientY + 10 }); // add offset to avoid covering cursor
   };
 
+  const handleMouseEnter = () => {
+    setShowPopup(true);
+    mouseEnter?.(); // Call external handler if provided
+  };
+
+  const handleMouseLeave = () => {
+    setShowPopup(false);
+    mouseLeave?.(); // Call external handler if provided
+  };
+
   return (
     <td
-      style={{ cursor: 'pointer'}}
-      onMouseEnter={() => setShowPopup(true)}
-      onMouseLeave={() => setShowPopup(false)}
+      className={className ?? undefined}
+      style={{ cursor: 'pointer', ...style }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
     >
       {label}
