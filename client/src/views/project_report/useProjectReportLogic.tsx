@@ -33,7 +33,9 @@ const useProjectReportLogic = () => {
   const [timestamp, setTimestamp] = useState<number>(Date.now());
   const [projectCount, setProjectCount] = useState<number>(0);
   const [isRefetching, setIsRefetching] = useState<boolean>(false);
-  const [projectId, setProjectId] = useState<string | undefined>(searchParams.get('projectId') || undefined);
+  const [projectId, setProjectId] = useState<string | undefined>(
+    searchParams.get('projectId') || undefined
+  );
   const [isListView, setIsListView] = useState<boolean>(true);
   const [chartData, setChartData] = useState<ChartData[]>([
     { field: 'ON-CPH', value: '0' },
@@ -55,7 +57,7 @@ const useProjectReportLogic = () => {
     projectId,
     live: liveToggle,
     ts: timestamp.toString(),
-    useGpcph: useGpcph
+    useGpcph: useGpcph,
   });
 
   const resetVariables = () => {
@@ -91,7 +93,7 @@ const useProjectReportLogic = () => {
       intervalId = setInterval(() => {
         setTimestamp(Date.now());
       }, 15000);
-    } else fetchData()
+    } else fetchData();
 
     return () => {
       clearInterval(intervalId);
@@ -147,13 +149,11 @@ const useProjectReportLogic = () => {
     setTotalData(newTotalData);
   }, [data]);
 
-
   const refetchCheck = () => {
     if (projectCount > projectReport.data.length && !isRefetching) {
       setTimeout(() => {
         setIsRefetching(true);
-        fetchData(
-      ).finally(() => {
+        fetchData().finally(() => {
           setIsRefetching(false);
         });
       }, 1000);
@@ -170,7 +170,7 @@ const useProjectReportLogic = () => {
       projectId: projectId,
       live: liveToggle,
       ts: timestamp,
-      useGpcph: useGpcph
+      useGpcph: useGpcph,
     };
     try {
       const result = await projectReport.refetch(fetchParams);
@@ -180,13 +180,12 @@ const useProjectReportLogic = () => {
       } else {
         resetVariables();
       }
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const handleViewChange = () => {
-    setIsListView(prev => !prev);
-  }
+    setIsListView((prev) => !prev);
+  };
 
   return {
     liveToggle,
@@ -198,7 +197,7 @@ const useProjectReportLogic = () => {
     projectReportIsSuccess: projectReport.isSuccess,
     projectReportData: projectReport.data,
     isListView,
-    handleViewChange
+    handleViewChange,
   };
 };
 

@@ -1,15 +1,11 @@
-import React, {useState} from 'react'
+import React, { useState } from 'react';
 
-type Props = {}
+type Props = {};
 
 const UserRoles = (props: Props) => {
   const [data, setData] = useState([]);
 
-  return (
-    <section>
-      
-    </section>
-  )
-}
+  return <section></section>;
+};
 
-export default UserRoles
+export default UserRoles;
