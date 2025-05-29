@@ -36,7 +36,7 @@ interface Props {
       subColumns: Record<string, boolean>;
     }
   >;
-  internalUser?: boolean;
+  isInternalUser?: boolean;
 }
 
 const QuotaManagementTable: React.FC<Props> = ({
@@ -45,7 +45,7 @@ const QuotaManagementTable: React.FC<Props> = ({
   headers,
   subHeaders,
   visibleColumns,
-  internalUser = true,
+  isInternalUser = true,
 }) => {
   const groupKeys = Object.keys(quotaData);
   const headerKeyMap: Record<string, string> = {
@@ -69,21 +69,6 @@ const QuotaManagementTable: React.FC<Props> = ({
     'To Do': 'To Do',
     TotalObjective: 'TotalObjective', // Special case for Total Quotas
   };
-
-  const skipRowsByCriterion = [
-    'TZONE',
-    'VTYPE',
-    'TFLAG',
-    'PREL',
-    // '$a>4',
-    'SOURCE',
-    // '$Q>0',
-    'STYPE',
-    'LNREL',
-    'CNREL',
-    '>',
-  ];
-  const skipRowsByLabel = ['Sample']; //['Refuse'];
 
   const [hovered, setHovered] = useState<{
     groupKey: string;
@@ -178,25 +163,6 @@ const QuotaManagementTable: React.FC<Props> = ({
       <tbody>
         {/* Render a row for each group, skipping hidden rows based on criteria */}
         {groupKeys.map((group) => {
-          {
-            /* Skip rows based on criteria or labels if internalUser is false */
-          }
-
-          const criterionMatched = skipRowsByCriterion.some((word) =>
-            group.includes(word)
-          );
-          // Check if any of the labels in the group match the skipRowsByLabel criteria
-          // This is a bit tricky because quotaData[group] is an object with keys as sub-columns
-          const labelMatched = Object.values(quotaData[group] || {}).some(
-            (item) => skipRowsByLabel.some((word) => item.Label?.includes(word))
-          );
-
-          // If internalUser is false, skip rows that match the criteria or labels
-          if (!internalUser && (criterionMatched || labelMatched)) {
-            // console.log(quotaData[group]);
-            return null;
-          }
-
           return (
             <tr key={group}>
               {/* First cell: Shows a hoverable label using the first available label in the group */}
@@ -250,8 +216,7 @@ const QuotaManagementTable: React.FC<Props> = ({
                           isHoveringS ||
                           isHoveringG ||
                           isHoveringCG ||
-                          isHoveringFreqP ||
-                          isHoveringObjP)) ||
+                          isHoveringFreqP)) ||
                         (hovered?.groupKey === firstGroup &&
                           group === firstGroup &&
                           header === totalHeader &&
@@ -271,7 +236,8 @@ const QuotaManagementTable: React.FC<Props> = ({
                         (group === firstGroup &&
                           isSameHeader &&
                           isHoveringObjP) ||
-                        (isSameGroup && isSameHeader && isHoveringP)) &&
+                        (isSameGroup && isSameHeader && isHoveringP) ||
+											(isSameGroup && isSameHeader && isHoveringObjP)) &&
                       subColumn === 'Obj';
 
                     const highlight = highlightFreq || highlightObj;

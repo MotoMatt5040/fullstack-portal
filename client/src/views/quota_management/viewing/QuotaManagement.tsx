@@ -23,7 +23,7 @@ const QuotaManagement = (props: Props) => {
 		setSelectedProject,
 		visibleColumns,
 		setVisibleColumns,
-		internalUser,
+		isInternalUser,
 		quotas,
 		quotaDataIsFetching,
 		showFilter,
@@ -37,7 +37,7 @@ const QuotaManagement = (props: Props) => {
 		filterRef,
 	} = useQuotaManagementLogic();
 
-	if (internalUser) {
+	if (isInternalUser) {
 		subHeaders.push('Fresh', 'G%', '%', 'S%', 'CG%');
 	}
 
@@ -230,7 +230,7 @@ const QuotaManagement = (props: Props) => {
 							headers={headers}
 							subHeaders={subHeaders}
 							visibleColumns={visibleColumns}
-							internalUser={internalUser}
+							isInternalUser={isInternalUser}
 						/>
 					)}
 				</div>

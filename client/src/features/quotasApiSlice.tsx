@@ -3,6 +3,7 @@ import { removeTimeZone } from '../utils/DateFormat';
 
 interface QuotaArgs {
   projectId: string;
+  isInternalUser: boolean;
 }
 
 interface QuotaData {
@@ -37,8 +38,8 @@ type QuotasResponse = Quotas[];
 export const ReportApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getQuotas: builder.query<QuotasResponse, QuotaArgs>({
-      query: ({ projectId }) => {
-        const url = `/quotas/data?projectId=${projectId}`;
+      query: ({ projectId, isInternalUser }) => {
+        const url = `/quotas/data?projectId=${projectId}&isInternalUser=${isInternalUser}`;
         // if (url.endsWith('&')) {
         //   url = url.slice(0, -1);
         // }

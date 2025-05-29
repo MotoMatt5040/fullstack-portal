@@ -22,7 +22,7 @@ const useQuotaManagementLogic = () => {
 	const [projectListOptions, setProjectListOptions] = useState([]);
 	const [selectedProject, setSelectedProject] = useState<string>('');
 	const [userRoles, setUserRoles] = useState<[]>([]);
-	const [internalUser, setInternalUser] = useState(false);
+	const [isInternalUser, setIsInternalUser] = useState(false);
 	const token = useSelector(selectCurrentToken);
 	const [showFilter, setShowFilter] = useState(false);
 	const [showMainColumnGroups, setShowMainColumnGroups] = useState(false);
@@ -116,11 +116,11 @@ const useQuotaManagementLogic = () => {
 				setUserRoles(roles);
 
 				if (roles.includes(4)) {
-					setInternalUser(false);
+					setIsInternalUser(false);
 					fetchData(getProjectList, { userId: username });
 					// console.log('User is not internal');
 				} else {
-					setInternalUser(true);
+					setIsInternalUser(true);
 					fetchData(getProjectList, {});
 					// console.log('User is internal');
 				}
@@ -190,7 +190,7 @@ const useQuotaManagementLogic = () => {
 
 	useEffect(() => {
 		if (selectedProject) {
-			fetchData(getQuotas, { projectId: selectedProject });
+			fetchData(getQuotas, { projectId: selectedProject, isInternalUser });
 		} else {
 			setQuotas([]);
 		}
@@ -232,7 +232,7 @@ const useQuotaManagementLogic = () => {
 		visibleColumns,
 		setVisibleColumns,
 		userRoles,
-		internalUser,
+		isInternalUser,
 		quotas,
 		quotaDataIsFetching,
 		showFilter,
