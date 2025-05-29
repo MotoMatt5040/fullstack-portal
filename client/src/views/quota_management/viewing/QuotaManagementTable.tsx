@@ -199,168 +199,138 @@ const QuotaManagementTable: React.FC<Props> = ({
 
 					return (
 						<tr key={group}>
-							{/* First cell is a hoverable label from the first found label in the group */}
-							<HoverableLabelCell
-								className='label-cell'
-								label={
-									// Find the first label that is not undefined
-									headers
-										.map((h) => headerKeyMap[h])
-										.map((key) => quotaData[group]?.[key]?.Label)
-										.find((label) => label !== undefined) || group
-								}
-								popupText={group}
-							/>
-							{/* Render data cells for each active sub-column under visible headers */}
-							{headers.flatMap((header) => {
-								const key = headerKeyMap[header];
-								// Check if the column is active and has sub-columns
-								// If not, return an empty array
-								if (!visibleColumns[key]?.active) return [];
+  {/* First cell: Shows a hoverable label using the first available label in the group */}
+  <HoverableLabelCell
+    className="label-cell"
+    label={
+      // Get the first defined label for the group, or fallback to group name
+      headers
+        .map((h) => headerKeyMap[h])
+        .map((key) => quotaData[group]?.[key]?.Label)
+        .find((label) => label !== undefined) || group
+    }
+    popupText={group}
+  />
 
-								// Get the data for the current group and key
-								const categoryData = quotaData[group]?.[key];
+  {/* Render data cells for each visible sub-column under visible headers */}
+  {headers.flatMap((header) => {
+    const key = headerKeyMap[header];
+    if (!visibleColumns[key]?.active) return [];
 
-								return (
-									subHeaders
-										// Filter sub-columns based on visibility
-										.filter(
-											(subColumn) => visibleColumns[key]?.subColumns[subColumn]
-										)
-										// Map over the filtered sub-columns to create table cells
-										// Use the dataKeyMap to get the actual data key for each sub-column
-										.map((subColumn) => {
-											const firstGroup = groupKeys[0]; // Get the first group key from all groups (used for special highlight on first group)
+    const categoryData = quotaData[group]?.[key];
 
-											// Check if the currently hovered group matches this cell's group (row)
-											const isSameGroup = hovered?.groupKey === group;
-											// Check if the currently hovered header matches this cell's header (column)
-											const isSameHeader = hovered?.headerKey === header;
+    return subHeaders
+      .filter((subColumn) => visibleColumns[key]?.subColumns[subColumn])
+      .map((subColumn) => {
+        const firstGroup = groupKeys[0];
 
-											// Hovered subKey checks
-											const isHoveringObjP = hovered?.subKey === 'Obj%';
-											const isHoveringFreqP = hovered?.subKey === 'Freq%';
-											const isHoveringP = hovered?.subKey === '%';
-											const isHoveringG = hovered?.subKey === 'G%';
-											const isHoveringS = hovered?.subKey === 'S%';
-											const isHoveringCG = hovered?.subKey === 'CG%';
+        // Hover matching checks
+        const isSameGroup = hovered?.groupKey === group;
+        const isSameHeader = hovered?.headerKey === header;
 
-											const totalHeader = 'Total Quotas'; // The header name of the 'Total' column
+        const isHoveringObjP = hovered?.subKey === 'Obj%';
+        const isHoveringFreqP = hovered?.subKey === 'Freq%';
+        const isHoveringP = hovered?.subKey === '%';
+        const isHoveringG = hovered?.subKey === 'G%';
+        const isHoveringS = hovered?.subKey === 'S%';
+        const isHoveringCG = hovered?.subKey === 'CG%';
 
-											// Tooltip text for the cell
+        const totalHeader = 'Total Quotas';
+        const theme = localStorage.getItem('theme');
+        const highlightBg = theme === 'light' ? '#b3e5fc' : '#1565c0';
 
-											// Highlight 'Freq' if:
-											// - in same group and header
-											// - and hovering %, G%, or S%
-											// - and this cell is the Freq row
-											const highlightFreq =
-												// Normal highlight logic (same group & header)
-												((isSameGroup &&
-													isSameHeader &&
-													(isHoveringP ||
-														isHoveringS ||
-														isHoveringG ||
-														isHoveringCG ||
-														isHoveringFreqP ||
-														isHoveringObjP)) ||
-													(hovered?.groupKey === firstGroup &&
-														group === firstGroup &&
-														header === totalHeader &&
-														isHoveringFreqP) ||
-													// hovering CG% on Total → highlight Freq
-													(isSameGroup &&
-														header === totalHeader &&
-														isHoveringCG) ||
-													(group === firstGroup &&
-														isSameHeader &&
-														isHoveringFreqP)) &&
-												subColumn === 'Freq';
+        // Highlight logic for Freq cell
+        const highlightFreq =
+          (
+            (isSameGroup &&
+              isSameHeader &&
+              (isHoveringP ||
+                isHoveringS ||
+                isHoveringG ||
+                isHoveringCG ||
+                isHoveringFreqP ||
+                isHoveringObjP)) ||
+            (hovered?.groupKey === firstGroup &&
+              group === firstGroup &&
+              header === totalHeader &&
+              isHoveringFreqP) ||
+            (isSameGroup && header === totalHeader && isHoveringCG) ||
+            (group === firstGroup && isSameHeader && isHoveringFreqP)
+          ) &&
+          subColumn === 'Freq';
 
-											// Highlight 'Obj' if:
-											// - (1) same group, header is 'Total Quotas', and hovering 'G%'
-											// - (2) first group and same header and hovering 'S%'
-											// - (3) same group and header, and hovering '%'
-											const highlightObj =
-												((isSameGroup &&
-													header === totalHeader &&
-													isHoveringG) ||
-													(group === firstGroup &&
-														isSameHeader &&
-														isHoveringS) ||
-													(group === firstGroup &&
-														isSameHeader &&
-														isHoveringObjP) ||
-													(isSameGroup && isSameHeader && isHoveringP)) &&
-												// ||
-												// (isSameGroup && isSameHeader && isHoveringObjP)
-												subColumn === 'Obj';
+        // Highlight logic for Obj cell
+        const highlightObj =
+          (
+            (isSameGroup && header === totalHeader && isHoveringG) ||
+            (group === firstGroup && isSameHeader && isHoveringS) ||
+            (group === firstGroup && isSameHeader && isHoveringObjP) ||
+            (isSameGroup && isSameHeader && isHoveringP)
+          ) &&
+          subColumn === 'Obj';
 
-											// Final highlight decision
-											const highlight = highlightFreq || highlightObj;
-											const theme = localStorage.getItem('theme');
-											const highlightBg =
-												theme === 'light' ? '#b3e5fc' : '#1565c0';
+        const highlight = highlightFreq || highlightObj;
 
-											let dataColumn = subColumn;
-											if (
-												(header === 'Total Quotas' || group === 'total') &&
-												subColumn === 'Obj'
-											) {
-												dataColumn = 'TotalObjective';
-											}
+        // Override data key for total objective if applicable
+        let dataColumn = subColumn;
+        if (
+          (header === 'Total Quotas' || group === 'total') &&
+          subColumn === 'Obj'
+        ) {
+          dataColumn = 'TotalObjective';
+        }
 
-											const cellData =
-												categoryData &&
-												categoryData[dataKeyMap[dataColumn]] !== undefined &&
-												categoryData[dataKeyMap[dataColumn]] !== 0
-													? categoryData[dataKeyMap[dataColumn]]
-													: '-';
+        const cellData =
+          categoryData &&
+          categoryData[dataKeyMap[dataColumn]] !== undefined &&
+          categoryData[dataKeyMap[dataColumn]] !== 0
+            ? categoryData[dataKeyMap[dataColumn]]
+            : '-';
 
-											let tooltipText: string = '';
-											if (isHoveringP)
-												tooltipText = `${group} ${header} Frequency by ${group} ${header} Objective`;
-											else if (isHoveringS)
-												tooltipText = `${group} ${header} Frequency by ${header} Objective`;
-											else if (isHoveringG)
-												tooltipText = `${group} ${header} Frequency by Total ${group} Objective`;
-											else if (isHoveringCG)
-												tooltipText = `${group} ${header} Frequency by ${group} Total Frequency`;
-											else tooltipText = `${subColumn} - ${header} (${group})`;
-											let fColor: string = '';
-											if (cellData < 0) {
-												fColor = 'red';
-											}
-											const content = (
-												<td
-												className={cellData !== '-' ? 'text-align right' : 'text-align center'}
-													key={`${group}-${header}-${subColumn}`} // Unique key for React rendering
-													onMouseEnter={() => {
-														// Set hover context for group/header/sub on mouse enter
-														setHovered({
-															groupKey: group,
-															headerKey: header,
-															subKey: subColumn,
-														});
-													}}
-													onMouseLeave={() => setHovered(null)} // Clear hover on leave
-													style={{
-														cursor: 'pointer',
-														backgroundColor: highlight ? highlightBg : '',
-														// color: highlight ? '#3CB371' : undefined,
-														fontWeight: highlight ? 'bold' : undefined,
-													}}
-												>
-													<span title={tooltipText} style={{ color: fColor }}>
-														{cellData}
-													</span>
-												</td>
-											);
+        // Build tooltip text based on hover context
+        let tooltipText: string = '';
+        if (isHoveringP)
+          tooltipText = `${group} ${header} Frequency by ${group} ${header} Objective`;
+        else if (isHoveringS)
+          tooltipText = `${group} ${header} Frequency by ${header} Objective`;
+        else if (isHoveringG)
+          tooltipText = `${group} ${header} Frequency by Total ${group} Objective`;
+        else if (isHoveringCG)
+          tooltipText = `${group} ${header} Frequency by ${group} Total Frequency`;
+        else tooltipText = `${subColumn} - ${header} (${group})`;
 
-											return content;
-										})
-								);
-							})}
-						</tr>
+        let fColor: string = '';
+        if (cellData < 0) fColor = 'red';
+
+        return (
+          <td
+            className={
+              cellData !== '-' ? 'text-align right' : 'text-align center'
+            }
+            key={`${group}-${header}-${subColumn}`}
+            onMouseEnter={() =>
+              setHovered({
+                groupKey: group,
+                headerKey: header,
+                subKey: subColumn,
+              })
+            }
+            onMouseLeave={() => setHovered(null)}
+            style={{
+              cursor: 'pointer',
+              backgroundColor: highlight ? highlightBg : '',
+              fontWeight: highlight ? 'bold' : undefined,
+            }}
+          >
+            <span title={tooltipText} style={{ color: fColor }}>
+              {cellData}
+            </span>
+          </td>
+        );
+      });
+  })}
+</tr>
+
 					);
 				})}
 			</tbody>
