@@ -6,13 +6,12 @@ type RowData = {
   'Obj%': number | string;
   Frequency: number | string;
   'Freq%': number | string;
-  Unused: number | string;
-  'G%': number | string;
-  '%': number | string;
-  'S%': number | string;
-  'CG%': number | string;
-  'C%': number | string;
-  'To Do': number | string;
+  // 'G%': number | string;
+  // '%': number | string;
+  // 'S%': number | string;
+  // 'CG%': number | string;
+  // 'C%': number | string;
+  // 'To Do': number | string;
   Label: string;
   StratumId: number;
   TotalObjective: number | string;
@@ -27,284 +26,211 @@ type QuotaData = {
 interface Props {
   id?: string;
   quotaData: QuotaData;
-  headers: string[];
-  subHeaders: string[];
-  visibleColumns: Record<
-    string,
-    {
-      active: boolean;
-      subColumns: Record<string, boolean>;
-    }
-  >;
+  // subHeaders: string[];
+  // visibleColumns: Record<
+  //   string,
+  //   {
+  //     active: boolean;
+  //     subColumns: Record<string, boolean>;
+  //   }
+  // >;
   isInternalUser?: boolean;
+  visibleStypes?: string[];
 }
 
 const QuotaManagementTable: React.FC<Props> = ({
   id,
   quotaData,
-  headers,
-  subHeaders,
-  visibleColumns,
-  isInternalUser = true,
+  visibleStypes,
 }) => {
-  const groupKeys = Object.keys(quotaData);
-  const headerKeyMap: Record<string, string> = {
-    'Total Quotas': 'total', //remove
-    Landline: 'landline',
-    Cell: 'cell',
-    T2W: 't2w',
-    Panel: 'panel',
-  };
-
-  const dataKeyMap: Record<string, keyof RowData> = {
-    Obj: 'Objective',
-    'Obj%': 'Obj%',
-    Freq: 'Frequency',
-    'Freq%': 'Freq%',
-    Fresh: 'Unused',
-    'G%': 'G%',
-    '%': '%',
-    'S%': 'S%',
-    'CG%': 'CG%',
-    'To Do': 'To Do',
-    TotalObjective: 'TotalObjective', // Special case for Total Quotas
-  };
-
   const [hovered, setHovered] = useState<{
     groupKey: string;
     headerKey: string;
     subKey: string;
   } | null>(null);
 
-  const [hoverUpdated, setHoverUpdated] = useState(false);
-
-  // A lot of very complex stuff is happening in this file. Please read the comment carefully to understand.
-
-  // Build an array of visible column groups with their active sub-columns
-  const visibleColumnGroups = headers
-    .map((header) => {
-      const key = headerKeyMap[header];
-      if (!visibleColumns[key]?.active) return null;
-
-      const activeSubCols = subHeaders.filter(
-        (sub) => visibleColumns[key]?.subColumns[sub]
-      );
-
-      if (activeSubCols.length === 0) return null;
-
-      return {
-        key,
-        subCols: activeSubCols,
-      };
-    })
-    .filter(Boolean) as { key: string; subCols: string[] }[];
-
   return (
     <table id={id} className='quota-management-table'>
-      {/* Define column widths and styling for each visible sub-column */}
-      <colgroup>
-        <col className='col-label' />
-
-        {visibleColumnGroups.map(({ key, subCols }) =>
-          // Map over the sub-columns to create col elements with specific classes
-          // The last column in each group gets a special class
-          subCols.map((_, i) => (
-            <col
-              key={`${key}-col-${i}`}
-              className={`col-${key} ${
-                i === subCols.length - 1 ? 'last-col' : ''
-              }`}
-            />
-          ))
-        )}
-      </colgroup>
+      {Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
+        Object.entries(subGroups).map(([subGroup, cols]) => {
+          const colsArray = Array.isArray(cols) ? cols : [cols];
+          return (
+            <colgroup
+              key={`colgroup-${group}-${subGroup}`}
+              className={`colgroup ${subGroup
+                .toLowerCase()
+                .replace(/\s+/g, '-')}`}
+              data-main-group={group}
+              data-sub-group={subGroup}
+            >
+              {colsArray.map((col, i) => (
+                <col
+                  key={`${group}-${subGroup}-${col}-${i}`}
+                  className={`col-${col.toLowerCase().replace(/\s+/g, '-')}`}
+                  data-main-group={group}
+                  data-sub-group={subGroup}
+                  data-column={col}
+                />
+              ))}
+            </colgroup>
+          );
+        })
+      )}
       <thead>
         <tr>
-          <th />
-          {/* Render top-level headers with colSpan based on active sub-columns. Don't delete the blank th above. It's used as a spacer for Label*/}
-          {headers.map((header) => {
-            const key = headerKeyMap[header];
-            // Check if the column is active and has sub-columns
-            // If not, return null
-            if (!visibleColumns[key]?.active) return null;
-
-            const activeSubColsCount = subHeaders.filter(
-              // Filter sub-columns based on visibility
-              // Check if the sub-column is active in the visibleColumns object
-              (sub) => visibleColumns[key]?.subColumns[sub]
-            ).length;
-
-            if (activeSubColsCount === 0) return null;
-
+          {Object.entries(visibleStypes).map(([group, subGroups]) => {
+            const colspan = Object.values(subGroups).reduce((acc, cols) => {
+              const colsArray = Array.isArray(cols) ? cols : [cols];
+              return acc + colsArray.length;
+            }, 0);
             return (
-              <th key={header} colSpan={activeSubColsCount}>
-                {header}
+              <th key={`r1-${group}`} colSpan={colspan}>
+                {group.startsWith('blankSpace') ? '' : group}
               </th>
             );
           })}
         </tr>
         <tr>
-          <th>Label</th>
-          {/* Render sub-column headers under each top-level header */}
-          {headers.flatMap((header) => {
-            const key = headerKeyMap[header];
-            if (!visibleColumns[key]?.active) return [];
+          {Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
+            Object.entries(subGroups).map(([subGroup, cols]) => {
+              const colsArray = Array.isArray(cols) ? cols : [cols];
+              return (
+                <th key={`r2-${group}-${subGroup}`} colSpan={colsArray.length}>
+                  {subGroup.startsWith('blankSpace') ? '' : subGroup}
+                </th>
+              );
+            })
+          )}
+        </tr>
+        <tr>
+          {Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
+            Object.entries(subGroups).flatMap(([subGroup, cols]) => {
+              const colsArray = Array.isArray(cols) ? cols : [cols];
+              return colsArray.map((col) => {
+                // Map column names to display names
+                const getDisplayName = (columnName: string) => {
+                  switch (columnName) {
+                    case 'Status':
+                      return 'S';
+                    default:
+                      return columnName;
+                  }
+                };
 
-            return (
-              subHeaders
-                // Filter sub-columns based on visibility
-                .filter((sub) => visibleColumns[key]?.subColumns[sub])
-                // Map over the filtered sub-columns to create table header cells
-                .map((sub) => <th key={`${header}-${sub}`}>{sub}</th>)
-            );
-          })}
+                return (
+                  <th key={`r3-${group}-${subGroup}-${col}`}>
+                    {getDisplayName(col)}
+                  </th>
+                );
+              });
+            })
+          )}
         </tr>
       </thead>
       <tbody>
-        {/* Render a row for each group, skipping hidden rows based on criteria */}
-        {groupKeys.map((group) => {
-          return (
-            <tr key={group}>
-              {/* First cell: Shows a hoverable label using the first available label in the group */}
-              <HoverableLabelCell
-                className='label-cell'
-                label={
-                  // Get the first defined label for the group, or fallback to group name
-                  headers
-                    .map((h) => headerKeyMap[h])
-                    .map((key) => quotaData[group]?.[key]?.Label)
-                    .find((label) => label !== undefined) || group
-                }
-                popupText={group}
-              />
+        {quotaData &&
+          Object.entries(quotaData).map(([rowKey, rowData]) => {
+            return (
+              <tr key={rowKey}>
+                {Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
+                  Object.entries(subGroups).flatMap(([subGroup, cols]) => {
+                    // Add this defensive check
+                    const colsArray = Array.isArray(cols) ? cols : [cols];
+                    return colsArray.map((col) => {
+                      let cellData;
 
-              {/* Render data cells for each visible sub-column under visible headers */}
-              {headers.flatMap((header) => {
-                const key = headerKeyMap[header];
-                if (!visibleColumns[key]?.active) return [];
-
-                const categoryData = quotaData[group]?.[key];
-
-                return subHeaders
-                  .filter(
-                    (subColumn) => visibleColumns[key]?.subColumns[subColumn]
-                  )
-                  .map((subColumn) => {
-                    const firstGroup = groupKeys[0];
-
-                    // Hover matching checks
-                    const isSameGroup = hovered?.groupKey === group;
-                    const isSameHeader = hovered?.headerKey === header;
-
-                    const isHoveringObjP = hovered?.subKey === 'Obj%';
-                    const isHoveringFreqP = hovered?.subKey === 'Freq%';
-                    const isHoveringP = hovered?.subKey === '%';
-                    const isHoveringG = hovered?.subKey === 'G%';
-                    const isHoveringS = hovered?.subKey === 'S%';
-                    const isHoveringCG = hovered?.subKey === 'CG%';
-
-                    const totalHeader = 'Total Quotas';
-                    const theme = localStorage.getItem('theme');
-                    const highlightBg =
-                      theme === 'light' ? '#b3e5fc' : '#1565c0';
-
-                    // Highlight logic for Freq cell
-                    const highlightFreq =
-                      ((isSameGroup &&
-                        isSameHeader &&
-                        (isHoveringP ||
-                          isHoveringS ||
-                          isHoveringG ||
-                          isHoveringCG ||
-                          isHoveringFreqP)) ||
-                        (hovered?.groupKey === firstGroup &&
-                          group === firstGroup &&
-                          header === totalHeader &&
-                          isHoveringFreqP) ||
-                        (isSameGroup &&
-                          header === totalHeader &&
-                          isHoveringCG) ||
-                        (group === firstGroup &&
-                          isSameHeader &&
-                          isHoveringFreqP)) &&
-                      subColumn === 'Freq';
-
-                    // Highlight logic for Obj cell
-                    const highlightObj =
-                      ((isSameGroup && header === totalHeader && isHoveringG) ||
-                        (group === firstGroup && isSameHeader && isHoveringS) ||
-                        (group === firstGroup &&
-                          isSameHeader &&
-                          isHoveringObjP) ||
-                        (isSameGroup && isSameHeader && isHoveringP) ||
-											(isSameGroup && isSameHeader && isHoveringObjP)) &&
-                      subColumn === 'Obj';
-
-                    const highlight = highlightFreq || highlightObj;
-
-                    // Override data key for total objective if applicable
-                    let dataColumn = subColumn;
-                    if (
-                      (header === 'Total Quotas' || group === 'total') &&
-                      subColumn === 'Obj'
-                    ) {
-                      dataColumn = 'TotalObjective';
-                    }
-
-                    const cellData =
-                      categoryData &&
-                      categoryData[dataKeyMap[dataColumn]] !== undefined &&
-                      categoryData[dataKeyMap[dataColumn]] !== 0
-                        ? categoryData[dataKeyMap[dataColumn]]
-                        : '-';
-
-                    // Build tooltip text based on hover context
-                    let tooltipText: string = '';
-                    if (isHoveringP)
-                      tooltipText = `${group} ${header} Frequency by ${group} ${header} Objective`;
-                    else if (isHoveringS)
-                      tooltipText = `${group} ${header} Frequency by ${header} Objective`;
-                    else if (isHoveringG)
-                      tooltipText = `${group} ${header} Frequency by Total ${group} Objective`;
-                    else if (isHoveringCG)
-                      tooltipText = `${group} ${header} Frequency by ${group} Total Frequency`;
-                    else tooltipText = `${subColumn} - ${header} (${group})`;
-
-                    let fColor: string = '';
-                    if (cellData < 0) fColor = 'red';
-
-                    return (
-                      <td
-                        className={
-                          cellData !== '-'
-                            ? 'text-align right'
-                            : 'text-align center'
+                      if (group.startsWith('blankSpace')) {
+                        // Updated this condition too
+                        // Handle special case for row labels - get from total.total or just total
+                        cellData = rowData.Total?.Total || rowData.Total;
+                        // console.log('BlankSpace cellData:', cellData, 'for col:', col);
+                      } else {
+                        // Check if this group exists in the row data
+                        if (!rowData[group]) {
+                          // If the group doesn't exist, render empty cell
+                          return (
+                            <td key={`${rowKey}-${group}-${subGroup}-${col}`}>
+                              -
+                            </td>
+                          );
                         }
-                        key={`${group}-${header}-${subColumn}`}
-                        onMouseEnter={() =>
-                          setHovered({
-                            groupKey: group,
-                            headerKey: header,
-                            subKey: subColumn,
-                          })
+
+                        // Check if this subGroup exists within the group
+                        if (!rowData[group][subGroup]) {
+                          return (
+                            <td key={`${rowKey}-${group}-${subGroup}-${col}`}>
+                              -
+                            </td>
+                          );
                         }
-                        onMouseLeave={() => setHovered(null)}
-                        style={{
-                          cursor: 'pointer',
-                          backgroundColor: highlight ? highlightBg : '',
-                          fontWeight: highlight ? 'bold' : undefined,
-                        }}
-                      >
-                        <span title={tooltipText} style={{ color: fColor }}>
-                          {cellData}
-                        </span>
-                      </td>
-                    );
-                  });
-              })}
-            </tr>
-          );
-        })}
+
+                        cellData = rowData[group][subGroup];
+                      }
+
+                      if (!cellData) {
+                        return (
+                          <td key={`${rowKey}-${group}-${subGroup}-${col}`}>
+                            -
+                          </td>
+                        );
+                      }
+
+                      // Map column names to data keys
+                      let value;
+                      switch (col) {
+                        case 'Label':
+                          value = cellData.Label;
+                          break;
+                        case 'Obj':
+                          value = cellData.TotalObjective;
+                          break;
+                        case 'Obj%':
+                          value = cellData['Obj%'];
+                          break;
+                        case 'Freq':
+                          value = cellData.Frequency;
+                          break;
+                        case 'Freq%':
+                          value = cellData['Freq%'];
+                          break;
+                        case 'To Do':
+                          value = cellData['To Do'];
+                          break;
+                        default:
+                          value = cellData[col];
+                      }
+
+                      const className = `cell-${col
+                        .toLowerCase()
+                        .replace(/\s+/g, '-')} ${value}`;
+
+                      switch (value) {
+                        case undefined:
+                        case null:
+                        case 0:
+                        // case 0.0:
+                        case '0':
+                        case '0.0':
+                          value = '-';
+                          break;
+                        default:
+                          value = String(value);
+                      }
+
+                      return (
+                        <td
+                          key={`${rowKey}-${group}-${subGroup}-${col}`}
+                          className={className}
+                        >
+                          {value}
+                        </td>
+                      );
+                    });
+                  })
+                )}
+              </tr>
+            );
+          })}
       </tbody>
     </table>
   );

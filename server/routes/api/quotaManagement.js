@@ -13,9 +13,9 @@ const quotaManagementController = require('../../controllers/quotaManagementCont
 //     .delete(verifyRoles(ROLES_LIST.Admin), promarkUsersController.handleRemoveUserRoles)
 
 router.route('/data')
-  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.External), quotaManagementController.handleGetQuotas);
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer, ROLES_LIST.Manager, ROLES_LIST.External), quotaManagementController.handleGetQuotas);
 
 router.route('/projects')
-  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.External), quotaManagementController.handleGetProjectList);
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer, ROLES_LIST.Manager,  ROLES_LIST.External), quotaManagementController.handleGetProjectList);
 
 module.exports = router;

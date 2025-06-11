@@ -3,12 +3,128 @@ const ProjectInfo = require('../services/ProjectInfo');
 const QuotaServices = require('../services/QuotaServices');
 const VoxcoApi = require('../services/VoxcoApi');
 const { cleanQueryParam } = require('../utils/CleanQueryParam');
-// Add unused
 
-const buildPhoneStructure = async (project, token, dataStructure) => {
+// Constants
+const STATUS_MAP = {
+  0: 'O',
+  1: 'H',
+  2: 'C',
+  Open: 'O',
+  'Half Open': 'H',
+  Closed: 'C',
+};
+
+const STYPE_MAP = {
+  1: 'Landline',
+  2: 'Cell',
+  3: 'Panel',
+  4: 'T2W',
+  5: 'Email',
+  6: 'Mailer',
+};
+
+const STYPE_REVERSE_MAP = Object.fromEntries(
+  Object.entries(STYPE_MAP).map(([key, value]) => [value, `STYPE=${key}`])
+);
+
+// Precompiled regex patterns
+const REGEX_PATTERNS = {
+  LABEL_CLEANUP: /\((?:T|P|MIN|MAX)?\s*:?\s*\d+\)/gi,
+  WHITESPACE: /\s{2,}/g,
+  TOTAL_OBJECTIVE: /\((?:(?:MIN|MAX|T)\s*:?\s*)?(\d+)\)/gi,
+  STYPE_CRITERION: / AND STYPE=\d+/,
+  VTYPE_CRITERION: / AND VTYPE=1/,
+  STYPE_EXTRACT: /STYPE=(\d+)/i,
+};
+
+// Utility functions
+const cleanLabel = (label) => {
+  return label
+    .replace(REGEX_PATTERNS.LABEL_CLEANUP, '')
+    .trim()
+    .replace(REGEX_PATTERNS.WHITESPACE, ' ');
+};
+
+const extractTotalObjective = (label) => {
+  const matches = [...label.matchAll(REGEX_PATTERNS.TOTAL_OBJECTIVE)];
+  return matches.length > 0 ? parseInt(matches[matches.length - 1][1], 10) : 0;
+};
+
+const cleanCriterion = (criterion) => {
+  return criterion
+    .replace(REGEX_PATTERNS.STYPE_CRITERION, '')
+    .replace(REGEX_PATTERNS.VTYPE_CRITERION, '');
+};
+
+const calculatePercentages = (frequency, total, decimals = 1) => {
+  return total > 0 ? ((frequency / total) * 100).toFixed(decimals) : '0.0';
+};
+
+// Create base data structure
+const createBaseDataStructure = (label, newLabel) => ({
+  Total: {
+    Label: label,
+    StratumId: 0,
+    Objective: 0,
+    Frequency: 0,
+    Unused: 0,
+    TotalObjective: 0,
+    Status: 'C',
+  },
+  Phone: {
+    Total: {
+      Label: newLabel,
+      StratumId: 0,
+      Objective: 0,
+      Frequency: 0,
+      Unused: 0,
+      TotalObjective: 0,
+      Status: 'C',
+    },
+  },
+});
+
+const createWebDataStructure = (label) => ({
+  Total: {
+    Label: label,
+    StratumId: 0,
+    Objective: 0,
+    Frequency: 0,
+    Unused: 0,
+    TotalObjective: 0,
+    Status: 'C',
+  },
+  Web: {
+    Total: {
+      Label: label,
+      StratumId: 0,
+      Objective: 0,
+      Frequency: 0,
+      Unused: 0,
+      TotalObjective: 0,
+      Status: 'C',
+    },
+  },
+});
+
+const buildPhoneStructure = async (project, token, data, visibleStypes) => {
   const phone = await QuotaServices.getPhoneQuotas(project.k_Id, token);
-  const structure = {};
+  
+  // Determine project type once
+  let type;
+  if (project.name.endsWith('C')) {
+    type = 'Cell';
+    visibleStypes.Phone.push(type);
+  } else if (project.name.endsWith('COM')) {
+    type = 'com';
+  } else {
+    type = 'Landline';
+    visibleStypes.Phone.push(type);
+  }
 
+  const structure = new Map();
+
+  // Process all phone items
   for (const item of phone) {
     const {
       Position: StratumId,
@@ -17,353 +133,216 @@ const buildPhoneStructure = async (project, token, dataStructure) => {
       Quota: Objective,
       Frequence: Frequency,
       Unused,
+      Status,
     } = item;
 
-    const newLabel = Label.replace(/\((?:T|P|MIN|MAX)?\s*:?\s*\d+\)/gi, '')
-      .trim()
-      .replace(/\s{2,}/g, ' ');
+    const newStatus = STATUS_MAP[Status] || 'Unknown';
+    const newLabel = cleanLabel(Label);
+    const TotalObjective = extractTotalObjective(Label);
+    const modifiedCriterion = cleanCriterion(Criterion);
 
-    // Extract TotalObjective from Label
-    const matches = [
-      ...Label.matchAll(/\((?:(?:MIN|MAX|T)\s*:?\s*)?(\d+)\)/gi),
-    ];
+    // Initialize data structure if not exists
+    if (!data[modifiedCriterion]) {
+      data[modifiedCriterion] = createBaseDataStructure(Label, newLabel);
+    }
 
-    const TotalObjective =
-      matches.length > 0 ? parseInt(matches[matches.length - 1][1], 10) : 0;
-
-    let modifiedCriterion = Criterion.replace(/ AND STYPE=\d+/, '');
-    modifiedCriterion = modifiedCriterion.replace(' AND VTYPE=1', '');
-
-    // Update structure
-    structure[modifiedCriterion] = {
+    // Create structure entry
+    const structureEntry = {
       StratumId,
       Label: newLabel,
       Objective,
       Frequency,
       Unused,
       TotalObjective,
+      Status: newStatus,
     };
 
-    // Update total
-    if (!dataStructure.total[modifiedCriterion]) {
-      dataStructure.total[modifiedCriterion] = {
-        Label: newLabel,
-        StratumId,
-        Objective: 0,
-        Frequency: 0,
-        Unused,
-        TotalObjective,
-      };
+    structure.set(modifiedCriterion, structureEntry);
+
+    // Update TotalObjective if needed
+    if (data[modifiedCriterion].Total.TotalObjective === 0) {
+      data[modifiedCriterion].Total.TotalObjective = TotalObjective;
+      data[modifiedCriterion].Phone.Total.TotalObjective = TotalObjective;
     }
-    if (dataStructure.total[modifiedCriterion].TotalObjective === 0) {
-      dataStructure.total[modifiedCriterion].TotalObjective = TotalObjective;
+
+    // Update frequency conditionally
+    if (!modifiedCriterion.includes('STYPE') && type !== 'com') {
+      data[modifiedCriterion].Total.Frequency += Frequency;
+      data[modifiedCriterion].Phone.Total.Frequency += Frequency;
     }
-    if (!modifiedCriterion.includes('STYPE') && !project.name.endsWith('COM')) {
-      dataStructure.total[modifiedCriterion].Frequency += Frequency;
-    }
+
+    data[modifiedCriterion].Phone[type] = structureEntry;
   }
 
-  let type;
-  if (project.name.endsWith('C')) {
-    type = 'cell';
-    dataStructure.total.total.TotalObjective +=
-      structure['STYPE=2'].TotalObjective;
-    dataStructure.total['STYPE=2'] = structure['STYPE=2'];
-    dataStructure.total.total.Frequency += structure['STYPE=2'].Frequency;
-    structure['total'] = structure['STYPE=2'];
-  } else if (project.name.endsWith('COM')) {
-    type = 'com';
-  } else {
-    dataStructure.total.total.TotalObjective +=
-      structure['STYPE=1'].TotalObjective;
-    structure['total'] = structure['STYPE=1'];
-    dataStructure.total['STYPE=1'] = structure['STYPE=1'];
-    dataStructure.total.total.Frequency += structure['STYPE=1'].Frequency;
-    type = 'landline';
-  }
+  // Update totals based on project type
+  const updateTotals = (stypeKey, typeKey) => {
+    const stypeData = structure.get(stypeKey);
+    if (!stypeData) return;
 
-  dataStructure[type] = structure;
+    data[stypeKey].Total = stypeData;
+    data.totalRow.Total.TotalObjective += stypeData.TotalObjective;
+    data.totalRow.Total.Frequency += stypeData.Frequency;
+    data.totalRow.Phone.Total.Frequency += stypeData.Frequency;
+
+    data.totalRow.Phone[typeKey] = {
+      TotalObjective: stypeData.TotalObjective,
+      Frequency: stypeData.Frequency,
+    };
+  };
+
+  if (type === 'Cell') {
+    updateTotals('STYPE=2', 'Cell');
+  } else if (type === 'Landline') {
+    updateTotals('STYPE=1', 'Landline');
+  }
 };
 
-const buildWebStructure = async (projectId, dataStructure) => {
+const buildWebStructure = async (projectId, data, visibleStypes) => {
   const web = await QuotaServices.getWebQuotas(projectId);
+  data.totalRow.Web = { Total: { Frequency: 0 } };
+  visibleStypes.Web = [];
 
-  web.forEach(
-    ({ StratumId, Criterion, Label, Objective, Frequency, Unused }) => {
-      const newLabel = Label.replace(/\((?:T|P|MIN|MAX)?\s*:?\s*\d+\)/gi, '')
-        .trim()
-        .replace(/\s{2,}/g, ' ');
+  for (const item of web) {
+    const {
+      StratumId,
+      Criterion,
+      Label,
+      Objective,
+      Frequency,
+      Unused,
+      Status,
+    } = item;
 
-      const matches = [...Label.matchAll(/\((\d+)\)/g)];
-      const TotalObjective =
-        matches.length > 0 ? parseInt(matches[matches.length - 1][1], 10) : 0;
+    const newLabel = cleanLabel(Label);
+    const TotalObjective = extractTotalObjective(Label);
+    const modifiedCriterion = cleanCriterion(Criterion);
+    const newStatus = STATUS_MAP[Status] || 'Unknown';
 
-      let modifiedCriterion = Criterion.replace(/ AND STYPE=\d+/, '');
-      modifiedCriterion = modifiedCriterion.replace(' AND VTYPE=1', '');
-      if (modifiedCriterion === 'STYPE=2') {
-        return;
-      }
+    // Initialize data structure if not exists
+    if (!data[modifiedCriterion]) {
+      data[modifiedCriterion] = createWebDataStructure(Label);
+    } else if (!data[modifiedCriterion].Web) {
+      data[modifiedCriterion].Web = {
+        Total: createWebDataStructure(Label).Web.Total,
+      };
+    }
 
-      const stypeMatch = Criterion.match(/STYPE=(\d+)/i);
-      const stype = stypeMatch ? stypeMatch[1] : null;
+    if (modifiedCriterion === 'STYPE=2') continue;
 
-      let type;
-      switch (stype) {
-        case '3':
-          type = 'panel';
-          break;
-        case '4':
-          type = 't2w';
-          break;
-        case '5':
-          type = 'email';
-          break;
-        case '6':
-          type = 'mailer';
-          break;
-        default:
-          type = 'unknown';
-      }
+    const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
+    const stype = stypeMatch ? stypeMatch[1] : null;
+    const type = STYPE_MAP[stype] || 'unknown';
 
-      if (modifiedCriterion.includes('STYPE') && type !== 'unknown') {
-        dataStructure.total.total.TotalObjective += TotalObjective;
-        dataStructure.total.total.Frequency += Frequency;
-        dataStructure[type].total = {
-          Label: 'Total',
-          StratumId: 0,
-          Objective: TotalObjective,
-          Frequency,
-          Unused,
-          TotalObjective,
-        };
-      }
+    // Handle STYPE totals
+    if (modifiedCriterion.includes('STYPE') && type !== 'unknown') {
+      visibleStypes.Web.push(type);
+      data.totalRow.Total.TotalObjective += TotalObjective;
+      data.totalRow.Total.Frequency += Frequency;
+      data.totalRow.Web.Total.Frequency += Frequency;
 
-      if (!dataStructure[type]) dataStructure[type] = {};
-
-      dataStructure[type][modifiedCriterion] = {
-        StratumId,
-        Label: newLabel,
-        Objective,
-        Frequency,
-        Unused,
+      data.totalRow.Web[type] = {
         TotalObjective,
-      };
-
-      if (!dataStructure.total[modifiedCriterion]) {
-        dataStructure.total[modifiedCriterion] = {
-          Label: newLabel,
-          StratumId,
-          Objective: 0,
-          Frequency: 0,
-          Unused,
-          TotalObjective,
-        };
-      }
-      dataStructure.total[modifiedCriterion].Frequency += Frequency;
-    }
-  );
-
-  // Handle merging `unknown` into a known key
-  const keys = Object.keys(dataStructure);
-  if (keys.includes('unknown') && keys.length < 3) {
-    const knownKey = keys.find((k) => k !== 'unknown');
-    if (Object.keys(dataStructure[knownKey]).length < 3) {
-      for (const subKey in dataStructure[knownKey]) {
-        if (subKey.startsWith('STYPE=')) {
-          delete dataStructure[knownKey][subKey];
-        }
-      }
-    }
-
-    if (knownKey && Object.keys(dataStructure[knownKey]).length < 1) {
-      dataStructure[knownKey] = {
-        ...dataStructure[knownKey],
-        ...dataStructure.unknown,
+        Frequency,
       };
     }
 
-    delete dataStructure.unknown;
+    // Update data
+    data[modifiedCriterion].Total.Frequency += Frequency;
+    data[modifiedCriterion].Total.TotalObjective = TotalObjective;
+    data[modifiedCriterion].Web.Total.Frequency += Frequency;
+    data[modifiedCriterion].Web.Total.TotalObjective = TotalObjective;
+
+    data[modifiedCriterion].Web[type] = {
+      StratumId,
+      Label: newLabel,
+      Objective,
+      Frequency,
+      Unused,
+      TotalObjective,
+      Status: newStatus,
+    };
   }
 };
 
-const calculateData = (dataStructure) => {
-  Object.entries(dataStructure).forEach(([key, structure]) => {
-    let stype;
-    switch (key) {
-      case 'landline':
-        stype = 'STYPE=1';
-        break;
-      case 'cell':
-        stype = 'STYPE=2';
-        break;
-      case 'panel':
-        stype = 'STYPE=3';
-        break;
-      case 't2w':
-        stype = 'STYPE=4';
-        break;
-      case 'email':
-        stype = 'STYPE=5';
-        break;
-      case 'mailer':
-        stype = 'STYPE=6';
-        break;
-      case 'total':
-        // return;
-        break;
-      default:
-        return;
-    }
-    if (!structure) return;
-    Object.keys(structure).forEach((subKey) => {
-      const { StratumId, Label, Objective, Frequency, TotalObjective } =
-        structure[subKey];
+const calculateData = (data) => {
+  const quotaKeys = Object.keys(data).filter(key => key !== 'totalRow');
+  
+  for (const quota of quotaKeys) {
+    const quotaData = data[quota];
+    
+    for (const [group, groupData] of Object.entries(quotaData)) {
+      if (group === 'Total') {
+        // Calculate frequency percentage for Total group
+        const freqPercent = quotaData.Total.Frequency > 0 
+          ? calculatePercentages(groupData.Frequency, quotaData.Total.Frequency)
+          : '0.0';
+        groupData['Freq%'] = freqPercent;
+        continue;
+      }
 
-      const toDo = TotalObjective - Frequency;
-      let objPercent = 0;
-      let totalPercent = 0;
-      let globalPercent = 0;
-      let stypePercent = 0;
-      let currentGlobalPercent = 0;
-      let currentStypePercent = 0;
+      for (const [type, typeData] of Object.entries(groupData)) {
+        const stype = STYPE_REVERSE_MAP[type] || 'unknown';
 
-      if (subKey === 'total') {
-        if (structure.total.TotalObjective > 0) {
-          objPercent = (TotalObjective * 100) / structure.total.TotalObjective;
+        // Calculate "To Do"
+        if (type === 'Total') {
+          if (!quotaData.Total['To Do']) {
+            quotaData.Total['To Do'] = quotaData.Total.TotalObjective;
+          }
+          quotaData.Total['To Do'] -= typeData.Frequency;
         } else {
-          console.log('No Objective found for total');
+          typeData['To Do'] = typeData.TotalObjective > 0 
+            ? typeData.TotalObjective - typeData.Frequency 
+            : 0;
         }
 
-        if (dataStructure.total.total.Frequency > 0) {
-          currentStypePercent =
-            (Frequency * 100) / dataStructure.total.total.Frequency;
+        // Calculate Obj%
+        let objPercent = '0.0';
+        if (stype !== 'unknown' && data.totalRow[group]?.[type]?.TotalObjective > 0) {
+          objPercent = calculatePercentages(
+            typeData.Frequency,
+            data.totalRow[group][type].TotalObjective
+          );
         }
 
-        dataStructure[key].total['Obj%'] = objPercent.toFixed(1);
-        dataStructure[key].total['Freq%'] = currentStypePercent.toFixed(1);
-        dataStructure[key].total['To Do'] = toDo;
+        // Calculate Freq%
+        let freqPercent = '0.0';
+        if (stype !== 'unknown' && data[stype]?.Total?.Frequency > 0) {
+          freqPercent = calculatePercentages(
+            typeData.Frequency,
+            data[stype].Total.Frequency
+          );
+        } else if (type === 'Total' && typeData.Frequency > 0) {
+          freqPercent = calculatePercentages(
+            typeData.Frequency,
+            data.totalRow[group].Total.Frequency
+          );
+        }
 
-        return;
+        typeData['Obj%'] = objPercent;
+        typeData['Freq%'] = freqPercent;
       }
-
-      if (dataStructure.total[subKey].TotalObjective > 0) {
-        globalPercent = (
-          (Frequency * 100) /
-          dataStructure.total[subKey].TotalObjective
-        ).toFixed(1);
-      }
-
-      if (dataStructure.total[subKey].Frequency > 0) {
-        currentGlobalPercent = (
-          (Frequency * 100) /
-          dataStructure.total[subKey].Frequency
-        ).toFixed(1);
-      }
-
-      if (subKey !== stype && key !== 'total') {
-        if (Objective > 0) {
-          totalPercent = ((Frequency * 100) / Objective).toFixed(1);
-        }
-
-        if (structure[stype].TotalObjective > 0) {
-          objPercent = (
-            (TotalObjective * 100) /
-            structure[stype].TotalObjective
-          ).toFixed(1);
-
-          stypePercent = (
-            (Frequency * 100) /
-            structure[stype].TotalObjective
-          ).toFixed(1);
-        }
-
-        if (structure[stype].Frequency > 0) {
-          currentStypePercent = (
-            (Frequency * 100) /
-            structure[stype].Frequency
-          ).toFixed(1);
-        }
-      } else if (subKey !== stype) {
-        if (structure.total.TotalObjective > 0) {
-          objPercent = (
-            (TotalObjective * 100) /
-            structure.total.TotalObjective
-          ).toFixed(1);
-          totalPercent = (
-            (Frequency * 100) /
-            structure[subKey].TotalObjective
-          ).toFixed(1);
-          stypePercent = (
-            (Frequency * 100) /
-            structure.total.TotalObjective
-          ).toFixed(1);
-        }
-
-        if (structure.total.Frequency > 0) {
-          currentStypePercent = (
-            (Frequency * 100) /
-            structure.total.Frequency
-          ).toFixed(1);
-        }
-      }
-
-      structure[subKey]['To Do'] = toDo;
-      structure[subKey]['Obj%'] = objPercent;
-      structure[subKey]['%'] = totalPercent;
-      structure[subKey]['G%'] = globalPercent;
-      structure[subKey]['S%'] = stypePercent;
-      structure[subKey]['CG%'] = currentGlobalPercent;
-      structure[subKey]['Freq%'] = currentStypePercent;
-      dataStructure[key][subKey] = structure[subKey];
-    });
-  });
+    }
+  }
 };
 
-const restructureByQuota = (dataStructure, isInternalUser) => {
-  const result = {};
-  const skipRowsByCriterion = [
-    'TZONE',
-    'VTYPE',
-    'TFLAG',
-    'PREL',
-    'SOURCE',
-    'STYPE',
-    'LNREL',
-    'CNREL',
-    '>',
-  ];
-  const skipRowsByLabel = ['Sample'];
-
-  Object.entries(dataStructure).forEach(([type, quotas]) => {
-    if (typeof quotas !== 'object') return;
-
-    Object.entries(quotas).forEach(([quotaKey, data]) => {
-      if (!isInternalUser) {
-        const shouldSkip =
-          skipRowsByCriterion.some((criterion) =>
-            quotaKey.includes(criterion)
-          ) ||
-          (skipRowsByLabel.length &&
-            skipRowsByLabel.some((label) => data.Label.includes(label)));
-
-        if (shouldSkip) return;
-      }
-
-      if (!result[quotaKey]) {
-        result[quotaKey] = {};
-      }
-
-      result[quotaKey][type] = data;
-    });
-  });
-
-  return result;
+const filterForExternalUsers = (data) => {
+  const quotaKeys = Object.keys(data).filter(key => key !== 'totalRow');
+  
+  for (const quotaKey of quotaKeys) {
+    const hasPhoneCom = data[quotaKey].Phone?.com;
+    const hasWebCom = data[quotaKey].Web?.com;
+    
+    if (!hasPhoneCom && !hasWebCom) {
+      delete data[quotaKey];
+    }
+  }
 };
 
 const handleGetQuotas = handleAsync(async (req, res) => {
+  // Get token once at the beginning
   const apiUser = await VoxcoApi.refreshAccessToken();
-  const token = apiUser.Token;
-  const isInternalUser = req?.query?.isInternalUser === 'true';
+  const token = apiUser?.Token;
+
   if (!token) {
     return res
       .status(401)
@@ -371,56 +350,82 @@ const handleGetQuotas = handleAsync(async (req, res) => {
   }
 
   const { projectId } = req.query;
+  const isInternalUser = req?.query?.isInternalUser === 'true';
 
   if (!projectId) {
     return res.status(400).json({ message: 'Project ID required' });
   }
 
-  const phoneProjects = await ProjectInfo.getPhoneProjects(projectId);
-  let projectIds = {};
-  let dataStructure = {
-    total: {
-      total: {
-        Label: 'Total',
-        StratumId: 0,
-        Objective: 0,
-        Frequency: 0,
-        TotalObjective: 0,
+  try {
+    // Parallel data fetching
+    const [phoneProjects, webProject] = await Promise.all([
+      ProjectInfo.getPhoneProjects(projectId),
+      ProjectInfo.getWebProjects(projectId),
+    ]);
+
+    const data = {
+      totalRow: {
+        Total: {
+          Label: 'Total',
+          TotalObjective: 0,
+          Frequency: 0,
+        },
       },
-    },
-  };
+    };
+    const visibleStypes = {};
 
-  if (phoneProjects.length > 0) {
-    await Promise.all(
-      phoneProjects.map((project) =>
-        buildPhoneStructure(project, token, dataStructure)
-      )
-    );
-  }
-
-  const webProject = await ProjectInfo.getWebProjects(projectId);
-
-  if (webProject.length > 0) {
-    const webId = webProject[0]?.id;
-    const webStructure = await buildWebStructure(webId, dataStructure);
-    for (const type in webStructure) {
-      dataStructure[type] = webStructure[type];
+    // Process phone projects
+    if (phoneProjects.length > 0) {
+      data.totalRow.Phone = { Total: { Frequency: 0 } };
+      visibleStypes.Phone = [];
+      
+      await Promise.all(
+        phoneProjects.map((project) =>
+          buildPhoneStructure(project, token, data, visibleStypes)
+        )
+      );
     }
-  }
-  calculateData(dataStructure);
 
-  const mergedRows = restructureByQuota(dataStructure, isInternalUser);
-  const visibleStructures = Object.keys(dataStructure);
-  return res.status(200).json({ mergedRows, visibleStructures });
+    // Process web projects
+    if (webProject.length > 0) {
+      await buildWebStructure(webProject[0].id, data, visibleStypes);
+    }
+
+    if (!isInternalUser) {
+      filterForExternalUsers(data);
+    }
+
+    calculateData(data);
+
+    return res.status(200).json({
+      visibleStypes,
+      data,
+    });
+  } catch (error) {
+    console.error('Error in handleGetQuotas:', error);
+    return res.status(500).json({ 
+      message: 'Internal server error while processing quotas' 
+    });
+  }
 });
 
 const handleGetProjectList = handleAsync(async (req, res) => {
   const userId = cleanQueryParam(req?.query?.userId);
-  const projects = await QuotaServices.getProjectsList(userId);
-  if (!projects) {
-    return res.status(404).json({ message: 'Problem getting projects' });
+  
+  try {
+    const projects = await QuotaServices.getProjectsList(userId);
+
+    if (!projects) {
+      return res.status(404).json({ message: 'Problem getting projects' });
+    }
+
+    res.status(200).json(projects);
+  } catch (error) {
+    console.error('Error in handleGetProjectList:', error);
+    return res.status(500).json({ 
+      message: 'Internal server error while fetching projects' 
+    });
   }
-  res.status(200).json(projects);
 });
 
 module.exports = { handleGetQuotas, handleGetProjectList };

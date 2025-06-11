@@ -11,48 +11,50 @@ import QuotaManagementTable from './QuotaManagementTable';
 import Icon from '@mdi/react';
 import { mdiFilterMenu } from '@mdi/js';
 import ExportExcelButton from '../../../components/ExportExcelButton';
+// import HEADERS from './ExternalHeaders.json' assert { type: 'json' };
 
 type Props = {};
 
-let headers = ['Total Quotas', 'Landline', 'Cell', 'T2W', 'Panel'];
-let subHeaders: string[] = ['Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'];
+// let headers = ['Total', 'Landline', 'Cell', 'T2W', 'Panel'];
 
 const QuotaManagement = (props: Props) => {
   const {
     selectedProject,
     setSelectedProject,
-    visibleColumns,
-    setVisibleColumns,
-    isInternalUser,
+    // visibleColumns,
+    // setVisibleColumns,
+    // isInternalUser,
     quotas,
     quotaDataIsFetching,
-    showFilter,
-    setShowFilter,
-    toggleSubColumn,
-    showMainColumnGroups,
-    setShowMainColumnGroups,
-    showSubColumnGroups,
-    setShowSubColumnGroups,
+    // showFilter,
+    // setShowFilter,
+    // toggleSubColumn,
+    // showMainColumnGroups,
+    // setShowMainColumnGroups,
+    // showSubColumnGroups,
+    // setShowSubColumnGroups,
     projectListOptions,
-    filterRef,
+    visibleStypes,
+    // filterRef,
   } = useQuotaManagementLogic();
 
-  if (isInternalUser) {
-    subHeaders.push('Fresh', 'G%', '%', 'S%', 'CG%');
-  }
+// const baseSubHeaders = ['Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'];
+// const subHeaders = isInternalUser
+//   ? [...baseSubHeaders, 'Fresh', 'G%', '%', 'S%', 'CG%']
+//   : baseSubHeaders;
 
-  const columnGroups = [
-    { key: 'total', label: 'Total Quota' },
-    { key: 'landline', label: 'Landline' },
-    { key: 'cell', label: 'Cell' },
-    { key: 't2w', label: 'T2W' },
-    { key: 'panel', label: 'Panel' },
-  ];
+  // const columnGroups = [
+  //   { key: 'total', label: 'Total Quota' },
+  //   { key: 'landline', label: 'Landline' },
+  //   { key: 'cell', label: 'Cell' },
+  //   { key: 't2w', label: 'T2W' },
+  //   { key: 'panel', label: 'Panel' },
+  // ];
 
-  const allColumnsActive = Object.values(visibleColumns).every(
-    (col) =>
-      col.active && Object.values(col.subColumns).every((subVal) => subVal)
-  );
+  // const allColumnsActive = Object.values(visibleColumns).every(
+  //   (col) =>
+  //     col.active && Object.values(col.subColumns).every((subVal) => subVal)
+  // );
 
   return (
     <section className='quota-management section'>
@@ -78,7 +80,7 @@ const QuotaManagement = (props: Props) => {
             />
           </div>
 
-          <div
+          {/* <div
             className='filter-toggle-wrapper'
             style={{ position: 'relative' }}
             ref={filterRef}
@@ -209,7 +211,7 @@ const QuotaManagement = (props: Props) => {
                   ))}
               </div>
             )}
-          </div>
+          </div> */}
         </div>
         <div className='quota-table-data-container'>
           <div className='quota-table-header'>
@@ -227,10 +229,10 @@ const QuotaManagement = (props: Props) => {
             <QuotaManagementTable
               id={`${selectedProject}-quotas`}
               quotaData={quotas}
-              headers={headers}
-              subHeaders={subHeaders}
-              visibleColumns={visibleColumns}
-              isInternalUser={isInternalUser}
+              visibleStypes={visibleStypes}
+              // headers={headers}
+              // subHeaders={subHeaders}
+              // visibleColumns={visibleColumns}
             />
           )}
         </div>

@@ -34,87 +34,88 @@ const useQuotaManagementLogic = () => {
   const [userRoles, setUserRoles] = useState<[]>([]);
   const [isInternalUser, setIsInternalUser] = useState(false);
   const token = useSelector(selectCurrentToken);
-  const [showFilter, setShowFilter] = useState(false);
-  const [showMainColumnGroups, setShowMainColumnGroups] = useState(false);
-  const [showSubColumnGroups, setShowSubColumnGroups] = useState(false);
+  const [visibleStypes, setVisibleStypes] = useState<string[]>([]);
+  // const [showFilter, setShowFilter] = useState(false);
+  // const [showMainColumnGroups, setShowMainColumnGroups] = useState(false);
+  // const [showSubColumnGroups, setShowSubColumnGroups] = useState(false);
   const [quotas, setQuotas] = useState([]);
-  const filterRef = useRef<HTMLDivElement>(null);
+  // const filterRef = useRef<HTMLDivElement>(null);
   // const [emptyStructures, setEmptyStructures] = useState([]);
 
-  const columnGroups = [
-    { key: 'total', label: 'Total Quota' },
-    { key: 'landline', label: 'Landline' },
-    { key: 'cell', label: 'Cell' },
-    { key: 't2w', label: 'T2W' },
-    { key: 'panel', label: 'Panel' },
-  ];
+  // const columnGroups = [
+  //   { key: 'total', label: 'Total Quota' },
+  //   { key: 'landline', label: 'Landline' },
+  //   { key: 'cell', label: 'Cell' },
+  //   { key: 't2w', label: 'T2W' },
+  //   { key: 'panel', label: 'Panel' },
+  // ];
 
-  const defaultSubColumns = {
-    Obj: false,
-    'Obj%': false,
-    Freq: false,
-    'Freq%': false,
-    Fresh: false,
-    'G%': false,
-    '%': false,
-    'S%': false,
-    'CG%': false,
-    'To Do': false,
-  };
+  // const defaultSubColumns = {
+  //   Obj: false,
+  //   'Obj%': false,
+  //   Freq: false,
+  //   'Freq%': false,
+  //   Fresh: false,
+  //   'G%': false,
+  //   '%': false,
+  //   'S%': false,
+  //   'CG%': false,
+  //   'To Do': false,
+  // };
 
-  const [visibleColumns, setVisibleColumns] = useState(
-    Object.fromEntries(
-      columnGroups.map((group) => {
-        if (group.key === 'total') {
-          return [
-            group.key,
-            {
-              active: true,
-              subColumns: {
-                ...defaultSubColumns,
-                Obj: true,
-                'Obj%': true,
-                Freq: true,
-                'Freq%': true,
-                'To Do': true,
-              },
-            },
-          ];
-        } else {
-          return [
-            group.key,
-            {
-              active: true,
-              subColumns: {
-                ...defaultSubColumns,
-                Freq: true,
-                'Freq%': true,
-              },
-            },
-          ];
-        }
-      })
-    )
-  );
+  // const [visibleColumns, setVisibleColumns] = useState(
+  //   Object.fromEntries(
+  //     columnGroups.map((group) => {
+  //       if (group.key === 'total') {
+  //         return [
+  //           group.key,
+  //           {
+  //             active: true,
+  //             subColumns: {
+  //               ...defaultSubColumns,
+  //               Obj: true,
+  //               'Obj%': true,
+  //               Freq: true,
+  //               'Freq%': true,
+  //               'To Do': true,
+  //             },
+  //           },
+  //         ];
+  //       } else {
+  //         return [
+  //           group.key,
+  //           {
+  //             active: true,
+  //             subColumns: {
+  //               ...defaultSubColumns,
+  //               Freq: true,
+  //               'Freq%': true,
+  //             },
+  //           },
+  //         ];
+  //       }
+  //     })
+  //   )
+  // );
 
-  useEffect(() => {
-    if (!showFilter) return;
+  // useEffect(() => {
+  //   if (!showFilter) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        filterRef.current &&
-        !filterRef.current.contains(event.target as Node)
-      ) {
-        setShowFilter(false);
-      }
-    };
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     if (
+  //       filterRef.current &&
+  //       !filterRef.current.contains(event.target as Node)
+  //     ) {
+  //       setShowFilter(false);
+  //     }
+  //   };
 
-    document.addEventListener('mousedown', handleClickOutside);
+  //   document.addEventListener('mousedown', handleClickOutside);
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showFilter]);
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside);
+  //   };
+  // }, [showFilter]);
 
   useEffect(() => {
     // fetchData('13094');
@@ -157,21 +158,38 @@ const useQuotaManagementLogic = () => {
   useEffect(() => {
     if (!quotaData) return;
 
-    // console.log('Quotas data:', quotaData);
-    // console.log(typeof quotaData);
-
-    setQuotas(quotaData.mergedRows);
+    setQuotas(quotaData.data);
+    console.log('Quota Data:', quotaData);
+    // setQuotas(quotaData.mergedRows);
     // setEmptyStructures(quotaData.emptyStructures);
-    const visibleStructures = quotaData.visibleStructures;
-    const newVisibleColumns = Object.fromEntries(
-      columnGroups.map((group) => [
-        group.key,
-        {
-          ...visibleColumns[group.key],
-          active: visibleStructures.includes(group.key),
-        },
-      ])
-    );
+    // const types = structuredClone(quotaData.visibleStypes);
+    // const totalHeader = {"Total": };
+    const stypes = {
+      blankSpace_6: {
+        blankSpace_1: 'Label',
+        Total: ['Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
+      },
+    };
+
+    Object.keys(quotaData.visibleStypes).forEach((type) => {
+      stypes[type] = { Total: ['Freq', 'Freq%'] };
+      quotaData.visibleStypes[type].forEach((entry: string) => {
+        stypes[type][entry] = ['Status', 'Freq', 'Freq%'];
+      });
+    });
+
+    console.log(JSON.stringify(stypes, null, 2));
+    setVisibleStypes(stypes);
+
+    // const newVisibleColumns = Object.fromEntries(
+    //   columnGroups.map((group) => [
+    //     group.key,
+    //     {
+    //       ...visibleColumns[group.key],
+    //       active: visibleStructures.includes(group.key),
+    //     },
+    //   ])
+    // );
     // const newVisibleColumns = Object.fromEntries(
     // 	columnGroups.map((group) => [
     // 		group.key,
@@ -190,7 +208,7 @@ const useQuotaManagementLogic = () => {
     // 	])
     // );
 
-    setVisibleColumns(newVisibleColumns);
+    // setVisibleColumns(newVisibleColumns);
 
     // quotaData.map((item) => {
     // 	console.log('Item:', item);
@@ -206,25 +224,25 @@ const useQuotaManagementLogic = () => {
     }
   }, [selectedProject]);
 
-  const toggleSubColumn = (key: string, subKey: string) => {
-    setVisibleColumns((prev) => {
-      const updatedSubColumns = {
-        ...prev[key].subColumns,
-        [subKey]: !prev[key].subColumns[subKey],
-      };
+  // const toggleSubColumn = (key: string, subKey: string) => {
+  //   setVisibleColumns((prev) => {
+  //     const updatedSubColumns = {
+  //       ...prev[key].subColumns,
+  //       [subKey]: !prev[key].subColumns[subKey],
+  //     };
 
-      const anySubColumnActive = Object.values(updatedSubColumns).some(Boolean);
+  //     const anySubColumnActive = Object.values(updatedSubColumns).some(Boolean);
 
-      return {
-        ...prev,
-        [key]: {
-          ...prev[key],
-          active: anySubColumnActive ? true : prev[key].active,
-          subColumns: updatedSubColumns,
-        },
-      };
-    });
-  };
+  //     return {
+  //       ...prev,
+  //       [key]: {
+  //         ...prev[key],
+  //         active: anySubColumnActive ? true : prev[key].active,
+  //         subColumns: updatedSubColumns,
+  //       },
+  //     };
+  //   });
+  // };
 
   const fetchData = async (refetch: FetchFunction, params: Object) => {
     // const fetchData = async (projectId: string) => {
@@ -239,21 +257,22 @@ const useQuotaManagementLogic = () => {
   return {
     selectedProject,
     setSelectedProject,
-    visibleColumns,
-    setVisibleColumns,
+    // visibleColumns,
+    // setVisibleColumns,
     userRoles,
-    isInternalUser,
+    // isInternalUser,
     quotas,
     quotaDataIsFetching,
-    showFilter,
-    setShowFilter,
-    toggleSubColumn,
+    // showFilter,
+    // setShowFilter,
+    // toggleSubColumn,
     projectListOptions,
-    showMainColumnGroups,
-    setShowMainColumnGroups,
-    showSubColumnGroups,
-    setShowSubColumnGroups,
-    filterRef,
+    visibleStypes,
+    // showMainColumnGroups,
+    // setShowMainColumnGroups,
+    // showSubColumnGroups,
+    // setShowSubColumnGroups,
+    // filterRef,
   };
 };
 

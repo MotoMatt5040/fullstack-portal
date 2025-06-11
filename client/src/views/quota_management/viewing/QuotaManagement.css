@@ -8,6 +8,27 @@
   border-left: 3px solid var(--border-color-soft);
 }
 
+
+/* Medium thick borders between subgroups (second row groups) */
+.quota-management-table colgroup + colgroup {
+  border-left: 2px solid var(--border-color-soft);
+}
+
+/* Extra thick borders between main groups (first row groups) */
+/* You'll need to identify which colgroups start a new main group */
+.quota-management-table colgroup[data-main-group="Web"]:first-of-type,
+.quota-management-table colgroup[data-main-group="Mail"]:first-of-type,
+/* Add other main groups as needed */ {
+  border-left: 4px solid var(--border-color-soft);
+}
+
+/* Alternative approach using CSS nth-child if you know the pattern */
+/* This assumes you know which colgroup positions start new main groups */
+.quota-management-table colgroup:nth-child(3), /* First Web colgroup */
+.quota-management-table colgroup:nth-child(6)  /* First Mail colgroup */ {
+  border-left: 4px solid var(--border-color-half-soft);
+}
+
 .quota-management-table col {
   border-right: none; /* reset */
 }
@@ -18,6 +39,24 @@
 .quota-management-table col.col-label {
   border-left: 3px solid var(--border-color-soft);
   border-right: 3px solid var(--border-color-soft);
+}
+
+.quota-management-table td.O {
+  background-color: rgba(67, 177, 123, 0.7); /* #43b17b with 80% opacity */
+  color: white;
+  font-weight: bold;
+}
+
+.quota-management-table td.C {
+  background-color: rgba(237, 33, 28, 0.7); /* #ed211c with 80% opacity */
+  color: white;
+  font-weight: bold;
+}
+
+.quota-management-table td.H {
+  background-color: rgba(239, 163, 43, 0.7); /* #efa32b with 80% opacity */
+  color: black;
+  font-weight: bold;
 }
 
 .quota-management-table .label-cell {
@@ -36,9 +75,9 @@
   font-weight: bold;
 }
 
-.hidden-column {
+/* .hidden-column {
 	display: none;
-}
+} */
 /* 
 .quota-management-table th,
 .quota-management-table td {
