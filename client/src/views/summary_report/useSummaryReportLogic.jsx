@@ -89,7 +89,6 @@ const useProjectReportLogic = () => {
     const live = params.get('live');
     const start = params.get('startDate');
     const end = params.get('endDate');
-    console.log(live, start, end);
     dispatch(setSummaryIsLive(live === 'true'));
     dispatch(setSummaryStartDate(start));
     dispatch(setSummaryEndDate(end));

@@ -19,10 +19,11 @@ import UpdateUserRoles from './views/users/UpdateUserRoles';
 import SummaryReport from './views/summary_report/SummaryReport';
 import ProjectReport from './views/project_report/ProjectReport';
 import AddUser from './views/secure/AddUser';
-import QuotaManagement from './views/quota_management/QuotaManagement';
+import QuotaManagement from './views/quota_management/viewing/QuotaManagement';
 
 import ROLES from './ROLES_LIST.json';
 import ProductionReport from './views/production_report/ProductionReport';
+import QuotaPublishing from './views/quota_management/publishing/QuotaPublishing';
 
 function App() {
 	return (
@@ -51,7 +52,17 @@ function App() {
 
 				{/* protected routes */}
 				<Route
-					element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive, ROLES.Manager, ROLES.External, ROLES.Programmer]} />}
+					element={
+						<RequireAuth
+							allowedRoles={[
+								ROLES.Admin,
+								ROLES.Executive,
+								ROLES.Manager,
+								ROLES.External,
+								ROLES.Programmer,
+							]}
+						/>
+					}
 				>
 					<Route path='github' element={<IssueForm />} />
 					<Route path='welcome' element={<Welcome />} />
@@ -59,13 +70,21 @@ function App() {
 				</Route>
 
 				<Route
-					element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive, ROLES.Manager, ROLES.Programmer]} />}
+					element={
+						<RequireAuth
+							allowedRoles={[
+								ROLES.Admin,
+								ROLES.Executive,
+								ROLES.Manager,
+								ROLES.Programmer,
+							]}
+						/>
+					}
 				>
-					
-					
 					<Route path='summaryreport' element={<SummaryReport />} />
 					<Route path='projectreport' element={<ProjectReport />} />
 					<Route path='productionreport' element={<ProductionReport />} />
+					<Route path='publishquotas' element={<QuotaPublishing />} />
 				</Route>
 
 				<Route

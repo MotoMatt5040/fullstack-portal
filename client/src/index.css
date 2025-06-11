@@ -48,6 +48,7 @@
   --background-multi-select: #333;
   --background-multi-select-hover: #444;
   --border-color: #fff;
+  --border-color-half-soft: #888;
   --border-color-soft: #666;
 }
 
@@ -85,6 +86,7 @@
   --background-multi-select: #fff;
   --background-multi-select-hover: #f0f0f0;
   --border-color: #000;
+  --border-color-half-soft: #aaa;
   --border-color-soft: #ccc;
 }
 
@@ -121,6 +123,7 @@
   --background-multi-select: #333;
   --background-multi-select-hover: #444;
   --border-color: #fff;
+  --border-color-half-soft: #888;
   --border-color-soft: #666;
 }
 
