@@ -1,103 +1,86 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import ROLES_LIST from '../../ROLES_LIST.json';
 import MyToggle from '../../components/MyToggle';
 import {
   useAddUserMutation,
   useGetClientsQuery,
-  // useLazyGetPartnersQuery,
 } from '../../features/usersApiSlice';
 import './AddUser.css';
 import Select from 'react-select';
 
-type Role = {
+interface Role {
   id: number;
   name: string;
-};
+}
 
-type Props = {
-  onSubmit: (data: {
-    email: string;
-    password: string;
-    roles: number[];
+interface Client {
+  clientId: string;
+  clientName: string;
+}
 
-    external?: boolean;
-    // partner?: boolean;
-    // partnerId?: number | null;
-    // director?: boolean;
-    clientId?: number | null;
-  }) => void;
-};
+interface ClientOption {
+  value: string;
+  label: string;
+}
 
-const UserForm = ({ onSubmit }: Props) => {
-  const { data: clients, isFetching: fetchingClients } = useGetClientsQuery();
-  // const [getPartners, { data: partners, isFetching: fetchingPartners }] =
-  // 	useLazyGetPartnersQuery();
-  const [addUser, { isLoading: addUserIsLoading, error: addUserError }] =
-    useAddUserMutation();
+interface UserFormData {
+  email: string;
+  password: string;
+  external: boolean;
+  roles: number[];
+  clientId: string | null;
+}
 
-  const [clientOptions, setClientOptions] = useState([]);
-  // const [partnerOptions, setPartnerOptions] = useState([]);
-  const [selectedClientId, setSelectedClientId] = useState(null);
-  // const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
+const EXCLUSIVE_ROLES = ['Admin', 'External'] as const;
+
+const UserForm: React.FC = () => {
+  const { data: clients = [], isFetching: fetchingClients } = useGetClientsQuery();
+  const [addUser, { isLoading: addUserIsLoading, error: addUserError }] = useAddUserMutation();
+
+  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // const [exclusiveRole, setExclusiveRole] = useState<string | null>(null); //used for partner/director
-  const availableRoles: Role[] = Object.entries(ROLES_LIST).map(
-    ([name, id]) => ({
-      id: Number(id),
-      name,
-    })
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Memoized roles to avoid recreation on every render
+  const availableRoles = useMemo(
+    (): Role[] =>
+      Object.entries(ROLES_LIST).map(([name, id]) => ({
+        id: Number(id),
+        name,
+      })),
+    []
   );
-  const [toggleStates, setToggleStates] = useState<Record<string, boolean>>(
+
+  // Initialize toggle states
+  const [toggleStates, setToggleStates] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(availableRoles.map((role) => [role.name, false]))
   );
 
-  const EXCLUSIVE_ROLES = ['Admin', 'External'];
-
-  useEffect(() => {
-    if (fetchingClients) return;
-    const options = clients.map((client) => ({
+  // Memoized client options
+  const clientOptions = useMemo((): ClientOption[] => {
+    if (fetchingClients || !clients) return [];
+    return clients.map((client: Client) => ({
       value: client.clientId,
       label: client.clientName,
     }));
-    setClientOptions(options);
-  }, [clients]);
+  }, [clients, fetchingClients]);
 
-  // useEffect(() => {
-  // 	if (exclusiveRole !== 'Director') return;
-  // 	fetchPartners(selectedClientId);
-  // }, [exclusiveRole, selectedClientId]);
-
-  // useEffect(() => {
-  //   if (fetchingPartners) return;
-  //   if (!partners) return;
-
-  //   const mapped = partners.map((p) => ({
-  //     label: p.email,
-  //     value: p.partnerid,
-  //   }));
-  //   setPartnerOptions(mapped);
-  // }, [partners])
-
-  // const fetchPartners = async (clientId: number) => {
-  // 	try {
-  // 		const response = await getPartners(clientId).unwrap();
-  // 	} catch (error) {
-  // 		console.error('Error fetching partners:', error);
-  // 	}
-  // };
-
-  const handleToggleClick = (roleName: string) => {
+  // Optimized toggle handler with useCallback
+  const handleToggleClick = useCallback((roleName: string) => {
     setToggleStates((prev) => {
       const newState = { ...prev };
-      const isExclusive = EXCLUSIVE_ROLES.includes(roleName);
+      const isExclusive = EXCLUSIVE_ROLES.includes(roleName as any);
 
       if (isExclusive) {
+        // If clicking an exclusive role, turn off all others
         Object.keys(newState).forEach((key) => {
           newState[key] = false;
         });
         newState[roleName] = !prev[roleName];
       } else {
+        // If clicking a non-exclusive role, turn off exclusive roles
         EXCLUSIVE_ROLES.forEach((role) => {
           newState[role] = false;
         });
@@ -106,141 +89,167 @@ const UserForm = ({ onSubmit }: Props) => {
 
       return newState;
     });
-  };
+  }, []);
 
-  // const handleExclusiveToggle = (role: string) => {
-  // 	setExclusiveRole((prev) => (prev === role ? null : role));
-  // };
+  // Form validation
+  const validateForm = useCallback((): string | null => {
+    if (!email.trim()) return 'Email is required';
+    if (!password.trim()) return 'Password is required';
+    
+    const selectedRoles = availableRoles.filter((role) => toggleStates[role.name]);
+    if (selectedRoles.length === 0) return 'Please select at least one role';
+    
+    if (toggleStates['External'] && !selectedClientId) {
+      return 'Please select a client for external users';
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    return null;
+  }, [email, password, toggleStates, selectedClientId, availableRoles]);
+
+  // Reset form
+  const resetForm = useCallback(() => {
+    setEmail('');
+    setPassword('');
+    setSelectedClientId(null);
+    setToggleStates(
+      Object.fromEntries(availableRoles.map((role) => [role.name, false]))
+    );
+    setSuccessMessage('');
+  }, [availableRoles]);
+
+  // Handle form submission
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Collect roles from toggle states
+    const validationError = validateForm();
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     const roleIds = availableRoles
       .filter((role) => toggleStates[role.name])
       .map((role) => role.id);
 
-    // Collect data to submit
-    const data = {
-      email,
+    const userData: UserFormData = {
+      email: email.trim(),
       password,
       external: toggleStates['External'],
       roles: roleIds,
-      // partner: exclusiveRole === 'Partner',
-      // partnerId: exclusiveRole === 'Director' ? selectedPartnerId : null,
-      // director: exclusiveRole === 'Director',
       clientId: selectedClientId,
     };
 
-    // Pass data to onSubmit
     try {
-      await addUser(data).unwrap(); // Send data using the mutation
-      // Handle success (e.g., redirect, show success message)
+      await addUser(userData).unwrap();
+      setSuccessMessage('User added successfully!');
+      resetForm();
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('Error adding user:', err); // Handle error
+      console.error('Error adding user:', err);
+      // You might want to show the actual error message to the user
+      alert('Failed to add user. Please try again.');
     }
-  };
+  }, [validateForm, availableRoles, toggleStates, email, password, selectedClientId, addUser, resetForm]);
+
+  // Handle client selection
+  const handleClientChange = useCallback((selected: ClientOption | null) => {
+    setSelectedClientId(selected?.value || null);
+  }, []);
+
+  // Find selected client option for react-select
+  const selectedClientOption = useMemo(
+    () => clientOptions.find((opt) => opt.value === selectedClientId) || null,
+    [clientOptions, selectedClientId]
+  );
+
   return (
-    <form className='add-user-form' onSubmit={handleSubmit}>
-      <label className='add-user-label'>
-        Email:
+    <>
+      <form className="add-user-form" onSubmit={handleSubmit}>
+        <label className="add-user-label" htmlFor="email">
+          Email:
+        </label>
         <input
-          className='add-user-input'
-          type='email'
+          id="email"
+          className="add-user-input"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={addUserIsLoading}
         />
-      </label>
-      <br />
 
-      <label className='add-user-label'>
-        Roles:
-        <div className='role-toggle-group'>
+        <br />
+        <br />
+
+        <label className="add-user-label">Roles:</label>
+        <div className="role-toggle-group">
           {availableRoles.map((role) => (
             <MyToggle
               key={role.id}
               label={role.name}
               active={toggleStates[role.name]}
               onClick={() => handleToggleClick(role.name)}
+              disabled={addUserIsLoading}
             />
           ))}
         </div>
-      </label>
 
-      {toggleStates['External'] && (
-        <div>
-          <br />
-          Client:
-          <Select
-            className='client-select'
-            options={clientOptions}
-            value={
-              clientOptions.find((opt) => opt.value === selectedClientId) ||
-              null
-            }
-            onChange={(selected: any) => {
-              setSelectedClientId(selected.value);
-            }}
-            isDisabled={false}
-            placeholder='Select...'
-            isClearable
-            closeMenuOnSelect={true}
-          />
-        </div>
-      )}
+        {toggleStates['External'] && (
+          <div>
+            <br />
+            <label htmlFor="client-select">Client:</label>
+            <Select
+              inputId="client-select"
+              className="client-select"
+              options={clientOptions}
+              value={selectedClientOption}
+              onChange={handleClientChange}
+              isDisabled={addUserIsLoading || fetchingClients}
+              placeholder={fetchingClients ? "Loading clients..." : "Select..."}
+              isClearable
+              closeMenuOnSelect
+              isLoading={fetchingClients}
+            />
+          </div>
+        )}
 
-      {/* {selectedClientId && (
-				<div>
-					<br />
-					<MyToggle
-						label='Partner'
-						active={exclusiveRole === 'Partner'}
-						onClick={() => handleExclusiveToggle('Partner')}
-					/>
-
-					<MyToggle
-						label='Director'
-						active={exclusiveRole === 'Director'}
-						onClick={() => handleExclusiveToggle('Director')}
-					/>
-				</div>
-			)} */}
-
-      {/* {exclusiveRole === 'Director' && (
-				<div>
-					<br />
-           Partner
-      <Select
-        className='partner-select'
-        options={partnerOptions}
-        value={partnerOptions.find((opt) => opt.value === selectedPartnerId) || null}
-        onChange={(selected: any) => {
-          setSelectedPartnerId(selected?.value || null);
-        }}
-        isDisabled={false}
-        placeholder='Select...'
-        isClearable
-        closeMenuOnSelect={true}
-      />
-				</div>
-			)} */}
-      <br />
-      <label className='add-user-label'>
-        Password:
+        <br />
+        <label className="add-user-label" htmlFor="password">
+          Password:
+        </label>
         <input
-          className='add-user-input'
-          type='password'
+          id="password"
+          className="add-user-input"
+          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={addUserIsLoading}
         />
-      </label>
 
-      <button className='add-user-submit' type='submit'>
-        Submit
-      </button>
-    </form>
+        <button 
+          className="add-user-submit" 
+          type="submit"
+          disabled={addUserIsLoading}
+        >
+          {addUserIsLoading ? 'Adding User...' : 'Submit'}
+        </button>
+      </form>
+
+      {successMessage && (
+        <div className="success-message" role="alert">
+          {successMessage}
+        </div>
+      )}
+
+      {addUserError && (
+        <div className="error-message" role="alert">
+          Error: {addUserError?.data?.message || 'Failed to add user'}
+        </div>
+      )}
+    </>
   );
 };
 
