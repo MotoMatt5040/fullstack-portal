@@ -1,51 +1,195 @@
-form.issue-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%; 
+/* GitHub Issue Form Styles - Updated to match application color scheme */
+
+.issue-form {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--background-color-elevated);
+  border-radius: 1rem;
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.issue-form h2 {
+  text-align: center;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.issue-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--label-text-color);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.issue-form input[type="text"],
+.issue-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.issue-form input[type="text"]:focus,
+.issue-form textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  background-color: var(--input-focus-background);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.issue-form input.title {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.issue-form textarea {
+  resize: vertical;
+  min-height: 200px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.issue-form fieldset {
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background-color: var(--background-color-muted);
+  margin: 0;
+}
+
+.issue-form fieldset legend {
+  color: var(--text-color);
+  font-weight: 600;
+  padding: 0 0.5rem;
+  font-size: 1rem;
+}
+
+.issue-form fieldset label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: normal;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.issue-form fieldset label:hover {
+  color: var(--accent-color);
+}
+
+.issue-form fieldset label:last-child {
+  margin-bottom: 0;
+}
+
+.issue-form input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+}
+
+.issue-form button[type="submit"] {
+  padding: 0.875rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: var(--accent-color);
+  color: var(--button-text);
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  align-self: center;
+  min-width: 200px;
+}
+
+.issue-form button[type="submit"]:hover:not(:disabled) {
+  background-color: var(--accent-color-hover);
+  transform: translateY(-1px);
+}
+
+.issue-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.issue-form button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+.issue-form .back-link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  color: var(--link-color);
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: color 0.3s ease, background-color 0.3s ease;
+  align-self: center;
+}
+
+.issue-form .back-link:hover {
+  color: var(--link-hover-color);
+  background-color: var(--background-color-hover);
+}
+
+.issue-form p.error {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.issue-form p.success {
+  color: #28a745;
+  background-color: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .issue-form {
+    margin: 1rem;
+    padding: 1.5rem;
+    max-width: none;
   }
   
   .issue-form h2 {
-    margin-bottom: 10px;
-  }
-  
-  .issue-form label {
-    display: flex;
-    flex-direction: column;
+    font-size: 1.5rem;
   }
   
   .issue-form input[type="text"],
   .issue-form textarea {
-    width: 100%; 
-  }
-
-  .issue-form input.title {
-    width: 50%; /* Adjust the width of the title input field */
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
-  .issue-form textarea {
-    resize: none;
-    min-height: 200px;
-    overflow: hidden; /* Disable scrollbars */
+  .issue-form button[type="submit"] {
+    width: 100%;
+    min-width: auto;
   }
-  
-  .issue-form fieldset {
-    display: inline-block;
-  }
-  
-  .issue-form fieldset legend {
-    margin-left: 5px;
-  }
-  
-  .issue-form fieldset label {
-    display: block;
-  }
-  
-  .issue-form button {
-    margin-top: 10px;
-    width: 200px;
-  }
-  
-  .issue-form p.error {
-    color: red;
-  }
+}
