@@ -6,10 +6,21 @@ const auditLogger = async (req, res, next) => {
 	if (!['PUT', 'POST', 'DELETE'].includes(req.method)) return next();
 
 	res.on('finish', async () => {
+		// Skip audit for certain routes that don't need auditing
+		const skipAuditPaths = ['/reset/', '/auth/login', '/auth/logout', '/refresh'];
+		if (skipAuditPaths.some(path => req.path.startsWith(path))) {
+			console.log(`Skipping audit for path: ${req.path}`);
+			return;
+		}
+
 		const { userid, tableModified, columnModified, modifiedFrom, modifiedTo } =
 			req.auditData || {};
 
-		if (res.statusCode >= 400) return;
+		// Skip audit if no audit data is set or if response failed
+		if (res.statusCode >= 400 || !req.auditData) {
+			console.log(`Skipping audit - statusCode: ${res.statusCode}, hasAuditData: ${!!req.auditData}`);
+			return;
+		}
 
 		try {
 			await withDbConnection({
@@ -34,7 +45,7 @@ const auditLogger = async (req, res, next) => {
 				allowRetry: true,
 			});
 		} catch (err) {
-			console.error('Audit log failed:', err);
+			console.error('❌ Audit log failed:', err);
 		}
 	});
 

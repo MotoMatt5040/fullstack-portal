@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { handlePasswordResetRequest, handleResetPassword } = require('../controllers/resetPasswordController');
+const usersController = require('../controllers/usersController');
 
-router.post('/reset-password', handlePasswordResetRequest);
-router.post('/reset-password:email', handleResetPassword);
+router.post('/reset-password', (req, res) => {
+  usersController.handlePasswordReset(req, res);
+});
+
+router.get('/verify-reset-token', usersController.handleVerifyResetToken);
 
 module.exports = router;

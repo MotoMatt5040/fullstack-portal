@@ -25,7 +25,6 @@ interface ClientOption {
 
 interface UserFormData {
   email: string;
-  password: string;
   external: boolean;
   roles: number[];
   clientId: string | null;
@@ -39,7 +38,6 @@ const UserForm: React.FC = () => {
 
   // Form state
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -94,7 +92,6 @@ const UserForm: React.FC = () => {
   // Form validation
   const validateForm = useCallback((): string | null => {
     if (!email.trim()) return 'Email is required';
-    if (!password.trim()) return 'Password is required';
     
     const selectedRoles = availableRoles.filter((role) => toggleStates[role.name]);
     if (selectedRoles.length === 0) return 'Please select at least one role';
@@ -104,12 +101,11 @@ const UserForm: React.FC = () => {
     }
 
     return null;
-  }, [email, password, toggleStates, selectedClientId, availableRoles]);
+  }, [email, toggleStates, selectedClientId, availableRoles]);
 
   // Reset form
   const resetForm = useCallback(() => {
     setEmail('');
-    setPassword('');
     setSelectedClientId(null);
     setToggleStates(
       Object.fromEntries(availableRoles.map((role) => [role.name, false]))
@@ -133,7 +129,6 @@ const UserForm: React.FC = () => {
 
     const userData: UserFormData = {
       email: email.trim(),
-      password,
       external: toggleStates['External'],
       roles: roleIds,
       clientId: selectedClientId,
@@ -151,7 +146,7 @@ const UserForm: React.FC = () => {
       // You might want to show the actual error message to the user
       alert('Failed to add user. Please try again.');
     }
-  }, [validateForm, availableRoles, toggleStates, email, password, selectedClientId, addUser, resetForm]);
+  }, [validateForm, availableRoles, toggleStates, email, selectedClientId, addUser, resetForm]);
 
   // Handle client selection
   const handleClientChange = useCallback((selected: ClientOption | null) => {
@@ -181,6 +176,12 @@ const UserForm: React.FC = () => {
         />
 
         <br />
+        <br />
+
+        <div className="password-info">
+          <p><em>Note: A secure password will be automatically generated and sent via email.</em></p>
+        </div>
+
         <br />
 
         <label className="add-user-label">Roles:</label>
@@ -216,25 +217,14 @@ const UserForm: React.FC = () => {
         )}
 
         <br />
-        <label className="add-user-label" htmlFor="password">
-          Password:
-        </label>
-        <input
-          id="password"
-          className="add-user-input"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={addUserIsLoading}
-        />
+        <br />
 
         <button 
           className="add-user-submit" 
           type="submit"
           disabled={addUserIsLoading}
         >
-          {addUserIsLoading ? 'Adding User...' : 'Submit'}
+          {addUserIsLoading ? 'Creating User...' : 'Create User & Send Email'}
         </button>
       </form>
 

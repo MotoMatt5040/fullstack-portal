@@ -26,7 +26,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 //routes
-
+app.use(auditLogger);
 app.use("/", require("./routes/root"));
 app.use("/auth", require("./routes/auth"));
 app.use("/refresh", require("./routes/refresh"));
@@ -35,7 +35,7 @@ app.use("/reset" , require("./routes/resetPassword"));
 
 app.use(verifyJWT); //everything after this line requires a jwt
 
-app.use(auditLogger);
+
 app.use("/users", require("./routes/api/promarkEmployees"));
 app.use("/github", require("./routes/api/github"));
 app.use("/reports", require("./routes/api/reports"));
