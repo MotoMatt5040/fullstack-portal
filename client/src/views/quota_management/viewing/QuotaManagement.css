@@ -41,19 +41,19 @@
   border-right: 3px solid var(--border-color-soft);
 }
 
-.quota-management-table td.O {
+.quota-management-table td.cell-status.open {
   background-color: rgba(67, 177, 123, 0.7); /* #43b17b with 80% opacity */
   color: white;
   font-weight: bold;
 }
 
-.quota-management-table td.C {
+.quota-management-table td.cell-status.closed {
   background-color: rgba(237, 33, 28, 0.7); /* #ed211c with 80% opacity */
   color: white;
   font-weight: bold;
 }
 
-.quota-management-table td.H {
+.quota-management-table td.cell-status.half-open {
   background-color: rgba(239, 163, 43, 0.7); /* #efa32b with 80% opacity */
   color: black;
   font-weight: bold;

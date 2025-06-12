@@ -277,6 +277,13 @@ const calculateData = (data) => {
           ? calculatePercentages(groupData.Frequency, quotaData.Total.Frequency)
           : '0.0';
         groupData['Freq%'] = freqPercent;
+
+        // console.log(groupData)
+        const toDo = groupData.TotalObjective - groupData.Frequency;
+        groupData['To Do'] = toDo
+
+        // groupData['Status'] = toDo > 0 ? 'O' : 'C';
+        // console.log(todo)
         continue;
       }
 
@@ -284,16 +291,15 @@ const calculateData = (data) => {
         const stype = STYPE_REVERSE_MAP[type] || 'unknown';
 
         // Calculate "To Do"
-        if (type === 'Total') {
-          if (!quotaData.Total['To Do']) {
-            quotaData.Total['To Do'] = quotaData.Total.TotalObjective;
-          }
-          quotaData.Total['To Do'] -= typeData.Frequency;
-        } else {
-          typeData['To Do'] = typeData.TotalObjective > 0 
-            ? typeData.TotalObjective - typeData.Frequency 
-            : 0;
-        }
+        // if (type === 'Total') {
+        //   if (!quotaData.Total['To Do']) {
+        //     quotaData.Total['To Do'] = quotaData.Total.TotalObjective;
+        //   }
+        //   quotaData.Total['To Do'] -= typeData.Frequency;
+        // } else {
+        
+          // typeData['To Do'] = toDo
+        // }
 
         // Calculate Obj%
         let objPercent = '0.0';
@@ -312,9 +318,12 @@ const calculateData = (data) => {
             data[stype].Total.Frequency
           );
         } else if (type === 'Total' && typeData.Frequency > 0) {
+          const toDo = typeData.TotalObjective - typeData.Frequency 
+          typeData.Status = toDo > 0 ? 'O' : 'C';
           freqPercent = calculatePercentages(
             typeData.Frequency,
             data.totalRow[group].Total.Frequency
+
           );
         }
 

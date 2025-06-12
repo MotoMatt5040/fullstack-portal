@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import HoverableLabelCell from '../../../components/MyHoverableCell';
 
 type RowData = {
   Objective: number | string;
@@ -140,7 +139,6 @@ const QuotaManagementTable: React.FC<Props> = ({
                       let cellData;
 
                       if (group.startsWith('blankSpace')) {
-                        // Updated this condition too
                         // Handle special case for row labels - get from total.total or just total
                         cellData = rowData.Total?.Total || rowData.Total;
                         // console.log('BlankSpace cellData:', cellData, 'for col:', col);
@@ -202,7 +200,15 @@ const QuotaManagementTable: React.FC<Props> = ({
 
                       const className = `cell-${col
                         .toLowerCase()
-                        .replace(/\s+/g, '-')} ${value}`;
+                        .replace(/\s+/g, '-')} ${
+                          value === 'O'
+                            ? 'open'
+                            : value === 'C'
+                            ? 'closed'
+                            : value === 'H'
+                            ? 'half-open'
+                            : ''
+                        }`;
 
                       switch (value) {
                         case undefined:
