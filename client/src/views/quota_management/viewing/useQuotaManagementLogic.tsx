@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../../../features/auth/authSlice';
@@ -7,122 +7,201 @@ import {
   useLazyGetProjectListQuery,
 } from '../../../features/quotasApiSlice';
 
-type FetchFunction = (params: object) => Promise<any>;
+// Types
+interface DecodedToken {
+  UserInfo: {
+    username: string;
+    roles: number[];
+  };
+}
+
+interface ProjectOption {
+  value: string;
+  label: string;
+}
+
+interface VisibleStypes {
+  [key: string]: {
+    [subKey: string]: string | string[];
+  };
+}
+
+interface QuotaData {
+  [key: string]: any;
+}
+
+// Constants
+const EXTERNAL_ROLE_ID = 4;
 
 const useQuotaManagementLogic = () => {
+  // RTK Query hooks
   const [
     getQuotas,
     {
       data: quotaData,
       isFetching: quotaDataIsFetching,
-      refetch: refetchQuotas,
+      error: quotaDataError,
     },
   ] = useLazyGetQuotasQuery();
+  
   const [
     getProjectList,
     {
       data: projectList,
       isFetching: projectListIsFetching,
-      refetch: refetchProjectList,
+      error: projectListError,
     },
   ] = useLazyGetProjectListQuery();
-  // 	useGetProjectListQuery('');
-  const [projectListOptions, setProjectListOptions] = useState([]);
+
+  // State
   const [selectedProject, setSelectedProject] = useState<string>('');
-  const [userRoles, setUserRoles] = useState<[]>([]);
-  const [isInternalUser, setIsInternalUser] = useState(false);
+  const [quotas, setQuotas] = useState<QuotaData>({});
+  const [visibleStypes, setVisibleStypes] = useState<VisibleStypes>({});
+  
+  // Selectors
   const token = useSelector(selectCurrentToken);
-  const [visibleStypes, setVisibleStypes] = useState<string[]>([]);
-  // const [showMainColumnGroups, setShowMainColumnGroups] = useState(false);
-  // const [showSubColumnGroups, setShowSubColumnGroups] = useState(false);
-  const [quotas, setQuotas] = useState([]);
 
+  // Memoized user info extraction
+  const userInfo = useMemo(() => {
+    if (!token) return { roles: [], username: '', isInternalUser: true };
+
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      const roles = decoded?.UserInfo?.roles ?? [];
+      const username = decoded?.UserInfo?.username ?? '';
+      const isInternalUser = !roles.includes(EXTERNAL_ROLE_ID);
+
+      return { roles, username, isInternalUser };
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return { roles: [], username: '', isInternalUser: true };
+    }
+  }, [token]);
+
+  // Memoized project list options
+  const projectListOptions = useMemo((): ProjectOption[] => {
+    if (!projectList || projectListIsFetching) return [];
+    
+    return projectList.map((item: any) => ({
+      value: item.projectId,
+      label: item.projectName,
+    }));
+  }, [projectList, projectListIsFetching]);
+
+  // Fetch project list on mount
   useEffect(() => {
-    if (token) {
-      try {
-        const decoded: any = jwtDecode(token);
-        const roles = decoded?.UserInfo?.roles ?? [];
-        const username = decoded?.UserInfo?.username ?? '';
-        setUserRoles(roles);
+    const fetchParams = userInfo.isInternalUser 
+      ? {} 
+      : { userId: userInfo.username };
+    
+    if (userInfo.username || userInfo.isInternalUser) {
+      getProjectList(fetchParams).catch(console.error);
+    }
+  }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
 
-        if (roles.includes(4)) {
-          setIsInternalUser(false);
-          fetchData(getProjectList, { userId: username });
-          // console.log('User is not internal');
-        } else {
-          setIsInternalUser(true);
-          fetchData(getProjectList, {});
-          // console.log('User is internal');
+  // Process quota data when it changes
+  useEffect(() => {
+    if (!quotaData) {
+      setQuotas({});
+      setVisibleStypes({});
+      return;
+    }
+
+    try {
+      // Set main quota data
+      setQuotas(quotaData.data || {});
+
+      // Process visible stypes with better structure
+      const processedStypes: VisibleStypes = {
+        blankSpace_6: {
+          blankSpace_1: 'Label',
+          Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
+        },
+      };
+
+      // Process each survey type
+      Object.entries(quotaData.visibleStypes || {}).forEach(([type, entries]) => {
+        processedStypes[type] = { 
+          Total: ['Freq', 'Freq%'] 
+        };
+        
+        if (Array.isArray(entries)) {
+          entries.forEach((entry: string) => {
+            processedStypes[type][entry] = ['Status', 'Freq', 'Freq%'];
+          });
         }
-      } catch (err) {
-        console.error('Invalid token', err);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (projectListIsFetching) return;
-    if (projectList && projectList.length > 0) {
-      const options = projectList.map((item: any) => ({
-        value: item.projectId,
-        label: item.projectName,
-      }));
-      setProjectListOptions(options);
-    } else {
-      setProjectListOptions([]);
-    }
-  }, [projectList]);
-
-  useEffect(() => {
-    if (!quotaData) return;
-
-    setQuotas(quotaData.data);
-    console.log('Quota Data:', quotaData);
-    const stypes = {
-      blankSpace_6: {
-        blankSpace_1: 'Label',
-        Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
-      },
-    };
-
-    Object.keys(quotaData.visibleStypes).forEach((type) => {
-      stypes[type] = { Total: ['Freq', 'Freq%'] };
-      quotaData.visibleStypes[type].forEach((entry: string) => {
-        stypes[type][entry] = ['Status', 'Freq', 'Freq%'];
       });
-    });
 
-    console.log(JSON.stringify(stypes, null, 2));
-    setVisibleStypes(stypes);
+      setVisibleStypes(processedStypes);
+    } catch (error) {
+      console.error('Error processing quota data:', error);
+      setQuotas({});
+      setVisibleStypes({});
+    }
   }, [quotaData]);
 
+  // Fetch quotas when project is selected
   useEffect(() => {
-    if (selectedProject) {
-      fetchData(getQuotas, { projectId: selectedProject, isInternalUser });
-    } else {
-      setQuotas([]);
+    if (!selectedProject) {
+      setQuotas({});
+      return;
     }
-  }, [selectedProject]);
 
-  const fetchData = async (refetch: FetchFunction, params: Object) => {
-    try {
-      const res = await refetch(params);
-    } catch (error) {
-      console.error('Error fetching quotas:', error);
+    const fetchParams = {
+      projectId: selectedProject,
+      isInternalUser: userInfo.isInternalUser,
+    };
+
+    getQuotas(fetchParams).catch(console.error);
+  }, [selectedProject, userInfo.isInternalUser, getQuotas]);
+
+  // Callbacks
+  const handleProjectChange = useCallback((selected: ProjectOption | null) => {
+    setSelectedProject(selected?.value || '');
+  }, []);
+
+  const refreshData = useCallback(() => {
+    if (selectedProject) {
+      const fetchParams = {
+        projectId: selectedProject,
+        isInternalUser: userInfo.isInternalUser,
+      };
+      getQuotas(fetchParams).catch(console.error);
     }
-  };
+  }, [selectedProject, userInfo.isInternalUser, getQuotas]);
+
+  // Loading states
+  const isLoading = useMemo(() => {
+    return quotaDataIsFetching || projectListIsFetching;
+  }, [quotaDataIsFetching, projectListIsFetching]);
+
+  // Error handling
+  const error = useMemo(() => {
+    return quotaDataError || projectListError;
+  }, [quotaDataError, projectListError]);
 
   return {
+    // Data
     selectedProject,
-    setSelectedProject,
-    userRoles,
-    // isInternalUser,
     quotas,
-    quotaDataIsFetching,
-    // setShowFilter,
-    // toggleSubColumn,
-    projectListOptions,
     visibleStypes,
+    projectListOptions,
+    userInfo,
+    
+    // Loading states
+    isLoading,
+    quotaDataIsFetching,
+    projectListIsFetching,
+    
+    // Error states
+    error,
+    
+    // Actions
+    handleProjectChange,
+    refreshData,
+    
+    // Legacy support (can be removed after refactoring consumers)
+    setSelectedProject,
   };
 };
 

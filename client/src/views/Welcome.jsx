@@ -1,169 +1,134 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import {
-	selectCurrentUser,
-	selectCurrentToken,
-} from '../features/auth/authSlice';
 import { Link } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import {
+  FaTachometerAlt,
+  FaChartLine,
+  FaUsers,
+  FaCog,
+  FaGithub,
+  FaCodeBranch,
+  FaQuestionCircle,
+  FaInfoCircle,
+} from 'react-icons/fa'; // Ensure you have react-icons installed: npm install react-icons
 
-import './styles/Welcome.css';
+import '../views/Welcome.css'; // Make sure this import is correct
 
 const Welcome = () => {
-	const user = useSelector(selectCurrentUser);
-	const token = useSelector(selectCurrentToken);
+  return (
+    <section className="welcome-container">
+      {/* Hero Section */}
+      <div className="welcome-hero">
+        <h1>Welcome to the Fullstack Portal</h1>
+        <p>
+          Your central hub for managing projects, viewing reports, and accessing
+          essential tools. Streamline your workflow and gain insights into your
+          development and operations.
+        </p>
+        <Link to="/project-report" className="hero-button">
+          Get Started <FaTachometerAlt />
+        </Link>
+      </div>
 
-	let roles = [];
-	let userDisplayName = '';
-	
-	if (token) {
-		try {
-			const decodedToken = jwtDecode(token);
-			roles = decodedToken.UserInfo?.roles || [];
-			
-			// Extract and format user name from email
-			const email = decodedToken.UserInfo?.username || user || '';
-			if (email) {
-				const [localPart] = email.split('@');
-				// Convert matt.w to Matt W
-				userDisplayName = localPart
-					.split('.')
-					.map(part => part.charAt(0).toUpperCase() + part.slice(1))
-					.join(' ');
-			}
-		} catch (error) {
-			console.error('Error decoding token:', error);
-		}
-	}
+      {/* Feature Cards Section */}
+      <div className="welcome-grid">
+        <div className="welcome-card">
+          <div className="welcome-card-icon">
+            <FaChartLine />
+          </div>
+          <h3>Comprehensive Reporting</h3>
+          <p>
+            Access detailed project, production, and summary reports to track
+            progress and analyze performance metrics.
+          </p>
+          <Link to="/project-report" className="welcome-card-link">
+            View Reports <FaChartLine />
+          </Link>
+        </div>
 
-	const isExternalUser = roles.includes(4);
-	const isAdmin = roles.includes(1);
-	const isExecutive = roles.includes(2);
-	const isManager = roles.includes(3);
-	const isProgrammer = roles.includes(7);
+        <div className="welcome-card">
+          <div className="welcome-card-icon">
+            <FaGithub />
+          </div>
+          <h3>GitHub Integration</h3>
+          <p>
+            Seamlessly view your GitHub contributions, repository statistics,
+            and stay updated on your coding activity.
+          </p>
+          <Link to="/github" className="welcome-card-link">
+            Explore GitHub <FaGithub />
+          </Link>
+        </div>
 
-	const mainFeatures = [
-		{
-			icon: '📊',
-			title: 'Quota Management',
-			description: 'Monitor and manage project quotas in real-time. Track completion rates and make data-driven decisions.',
-			link: '/quotas',
-			available: true
-		},
-		...(!isExternalUser ? [{
-			icon: '📈',
-			title: 'Summary Reports',
-			description: 'Get comprehensive insights into project performance, team productivity, and key metrics.',
-			link: '/summaryreport',
-			available: true
-		}] : []),
-		{
-			icon: '🎯',
-			title: 'Project Analytics',
-			description: 'Deep dive into individual project performance with detailed analytics and trends.',
-			link: '/projectreport',
-			available: true
-		},
-		...((isAdmin || isExecutive || isManager || isProgrammer) ? [{
-			icon: '⚡',
-			title: 'Production Reports',
-			description: 'Monitor real-time production metrics and interviewer performance data.',
-			link: '/productionreport',
-			available: true
-		}] : [])
-	];
+        <div className="welcome-card">
+          <div className="welcome-card-icon">
+            <FaCodeBranch />
+          </div>
+          <h3>Live Projects</h3>
+          <p>
+            Monitor the status of live projects, track quotas, and manage
+            campaigns in real-time.
+          </p>
+          <Link to="/live-projects" className="welcome-card-link">
+            Manage Projects <FaCodeBranch />
+          </Link>
+        </div>
 
-	const quickActions = [
-		...(isAdmin ? [{
-			icon: '👥',
-			title: 'User Management',
-			link: '/userslist'
-		}, {
-			icon: '🔐',
-			title: 'User Roles',
-			link: '/updateuserroles'
-		}] : []),
-		...((isAdmin || isExecutive) ? [{
-			icon: '➕',
-			title: 'Add User',
-			link: '/adduser'
-		}] : []),
-		...((isAdmin || isExecutive || isManager || isProgrammer) ? [{
-			icon: '📋',
-			title: 'Publish Quotas',
-			link: '/publishquotas'
-		}] : []),
-		{
-			icon: '🐛',
-			title: 'Report Issue',
-			link: '/github'
-		}
-	];
+        <div className="welcome-card">
+          <div className="welcome-card-icon">
+            <FaUsers />
+          </div>
+          <h3>User Management</h3>
+          <p>
+            Administrators can manage user roles, add new users, and update
+            passwords for secure access control.
+          </p>
+          <Link to="/admin" className="welcome-card-link">
+            Manage Users <FaUsers />
+          </Link>
+        </div>
+      </div>
 
-	return (
-		<div className="welcome-container">
-			{/* Hero Section */}
-			<div className="welcome-hero">
-				<h1>Welcome{userDisplayName ? `, ${userDisplayName}` : ''}!</h1>
-				<p>
-					Access your dashboard to monitor projects, analyze performance, and manage operations 
-					with powerful real-time insights and comprehensive reporting tools.
-				</p>
-			</div>
+      {/* Quick Actions Section */}
+      <div className="welcome-quick-actions">
+        <h2>Quick Actions</h2>
+        <div className="quick-actions-grid">
+          <Link to="/project-report" className="quick-action-btn">
+            <div className="quick-action-icon"><FaChartLine /></div>
+            Project Report
+          </Link>
+          <Link to="/production-report" className="quick-action-btn">
+            <div className="quick-action-icon"><FaChartLine /></div>
+            Production Report
+          </Link>
+          <Link to="/quota-management" className="quick-action-btn">
+            <div className="quick-action-icon"><FaCodeBranch /></div>
+            Quota Management
+          </Link>
+          <Link to="/settings" className="quick-action-btn">
+            <div className="quick-action-icon"><FaCog /></div>
+            Settings
+          </Link>
+        </div>
+      </div>
 
-			{/* Development Notice */}
-			<div className="development-notice">
-				🚧 This platform is continuously evolving with new features and improvements
-			</div>
+      {/* Development Notice */}
+      <div className="development-notice">
+        <FaInfoCircle /> This portal is currently under active development. Features and design may change.
+      </div>
 
-			{/* Main Features Grid */}
-			<div className="welcome-grid">
-				{mainFeatures.map((feature, index) => (
-					<div key={index} className="welcome-card">
-						<div className="welcome-card-icon">
-							{feature.icon}
-						</div>
-						<h3>{feature.title}</h3>
-						<p>{feature.description}</p>
-						<Link to={feature.link} className="welcome-card-link">
-							Get Started
-							<span>→</span>
-						</Link>
-					</div>
-				))}
-			</div>
-
-			{/* Quick Actions */}
-			{quickActions.length > 0 && (
-				<div className="welcome-quick-actions">
-					<h2>Quick Actions</h2>
-					<div className="quick-actions-grid">
-						{quickActions.map((action, index) => (
-							<Link key={index} to={action.link} className="quick-action-btn">
-								<div className="quick-action-icon">
-									{action.icon}
-								</div>
-								{action.title}
-							</Link>
-						))}
-					</div>
-				</div>
-			)}
-
-			{/* Support Footer */}
-			<div className="welcome-footer">
-				<h3>Need Help?</h3>
-				<p>
-					If you encounter any issues or have suggestions for improvements, 
-					we're here to help make your experience better.
-				</p>
-				<Link to="/github" className="support-link">
-					<span>💬</span>
-					Submit Feedback
-				</Link>
-			</div>
-		</div>
-	);
+      {/* Footer Section */}
+      <div className="welcome-footer">
+        <h3>Need Help?</h3>
+        <p>
+          If you encounter any issues or have questions, please reach out to
+          our support team. We're here to help!
+        </p>
+        <Link to="/contact-support" className="support-link">
+          Contact Support <FaQuestionCircle />
+        </Link>
+      </div>
+    </section>
+  );
 };
 
 export default Welcome;
