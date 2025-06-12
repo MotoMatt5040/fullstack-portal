@@ -23,11 +23,13 @@
   text-align: center;
   color: var(--text-color);
   margin-bottom: 1rem;
+  font-size: 1.8rem;
 }
 
 .login label {
   font-size: 1.1rem;
   color: var(--label-text-color);
+  margin-bottom: 0.25rem;
 }
 
 .login input {
@@ -35,66 +37,273 @@
   font-size: 1rem;
   border: 1px solid var(--table-border-color);
   border-radius: 10px;
-  background-color: var(--input-background); /* Set a dedicated input background variable */
-  color: var(--text-color); /* Text color */
+  background-color: var(--input-background);
+  color: var(--text-color);
+  transition: border-color 0.3s, background-color 0.3s;
 }
 
 .login input:focus {
   outline: none;
   border-color: var(--link-color);
-  background-color: var(--input-focus-background); /* Focus background color */
+  background-color: var(--input-focus-background);
 }
 
-.login button {
+.login button[type="submit"] {
   padding: 0.75em;
   font-size: 1.1rem;
   border: none;
   border-radius: 10px;
-  background-color: var(--button-background); /* Dark background in dark theme, light in light theme */
-  color: var(--button-text); /* Dark text in dark theme, light in light theme */
+  background-color: var(--accent-color);
+  color: var(--button-text);
   cursor: pointer;
-  transition: background-color 0.3s, color 0.3s; /* Added color transition */
+  transition: background-color 0.3s, color 0.3s;
+  font-weight: 500;
 }
 
-.login button:hover {
-  background-color: var(--link-hover-color);
-  color: var(--text-color); /* Ensures button text changes color on hover */
+.login button[type="submit"]:hover {
+  background-color: var(--accent-color-hover);
 }
 
 .persistCheck {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin: 0.5rem 0;
 }
 
 .persistCheck input {
   transform: scale(1.2);
+  margin: 0;
+}
+
+.persistCheck label {
+  margin: 0;
+  font-size: 1rem;
+  cursor: pointer;
 }
 
 .forgot-password-link {
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
-.forgot-password-link a {
+.forgot-password-btn {
+  background: none;
+  border: none;
   color: var(--link-color);
   font-size: 0.9rem;
-  text-decoration: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.3s;
 }
 
-.forgot-password-link a:hover {
+.forgot-password-btn:hover {
   color: var(--link-hover-color);
 }
 
 .errmsg {
-  color: firebrick;
+  color: #dc3545;
   font-size: 0.9rem;
   text-align: center;
+  background-color: rgba(220, 53, 69, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
+.successmsg {
+  color: #28a745;
+  font-size: 0.9rem;
+  text-align: center;
+  background-color: rgba(40, 167, 69, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.loading-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--button-background);
+  padding: 0;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 400px;
+  color: var(--text-color);
+  z-index: 1000;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem 1rem 2rem;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.4rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.modal-close:hover {
+  background-color: var(--background-color-hover);
+}
+
+.modal-content form {
+  padding: 1.5rem 2rem 2rem 2rem;
+}
+
+.modal-content label {
+  font-size: 1rem;
+  color: var(--label-text-color);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 0.75em;
+  font-size: 1rem;
+  border: 1px solid var(--table-border-color);
+  border-radius: 10px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.3s, background-color 0.3s;
+}
+
+.modal-content input:focus {
+  outline: none;
+  border-color: var(--link-color);
+  background-color: var(--input-focus-background);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.modal-buttons button {
+  padding: 0.75em 1.5em;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: var(--button-text);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-color-hover);
+}
+
+.btn-secondary {
+  background-color: var(--background-color-muted);
+  color: var(--text-color);
+  border: 1px solid var(--table-border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--background-color-hover);
+}
+
+.modal-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-content .errmsg,
+.modal-content .successmsg {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+/* Responsive Design */
 @media (max-width: 500px) {
   .login form {
-    width: 90%;
+    width: 95%;
     max-width: 100%;
+    padding: 1.5rem;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-header {
+    padding: 1rem 1.5rem 0.75rem 1.5rem;
+  }
+  
+  .modal-content form {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+  }
+  
+  .modal-buttons {
+    flex-direction: column;
+  }
+  
+  .modal-buttons button {
+    width: 100%;
   }
 }

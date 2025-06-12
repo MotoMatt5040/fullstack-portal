@@ -285,7 +285,6 @@ const handleCreateUser = handleAsync(async (req, res) => {
 
   // Generate secure password
   const generatedPassword = generateSecurePassword();
-  console.log(`Generated password for ${email}: ${generatedPassword}`);
 
   // Set audit data
   req.auditData = {
@@ -306,7 +305,6 @@ const handleCreateUser = handleAsync(async (req, res) => {
 
     // Create user
     const created = await User.createUser(email, hashedPwd);
-    console.log('User created:', created);
 
     // Get the created user
     const newUser = await User.getUser(email);
@@ -493,10 +491,163 @@ const handleVerifyResetToken = handleAsync(async (req, res) => {
   }
 });
 
+// Add this function to your server/controllers/usersController.js
+
+const handleForgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    // Check if user exists
+    const existingUser = await User.getUser(email);
+    if (!existingUser) {
+      // For security, don't reveal if email exists or not
+      return res.status(200).json({ 
+        success: 'If an account with that email exists, a password reset link has been sent.' 
+      });
+    }
+
+    // Generate password reset token
+    const resetToken = generatePasswordResetToken();
+    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Store reset token
+    await User.setPasswordResetToken(existingUser.uuid, resetToken, resetTokenExpiry);
+
+    // Send reset email (reuse the email template from addUser but modify it)
+    const emailResult = await sendForgotPasswordEmail(email, resetToken);
+
+    if (!emailResult.success) {
+      console.warn(`Reset email failed to send: ${emailResult.error}`);
+      // Still return success for security reasons
+    }
+
+    res.status(200).json({ 
+      success: 'If an account with that email exists, a password reset link has been sent.' 
+    });
+
+  } catch (error) {
+    console.error('Error in forgot password:', error);
+    res.status(500).json({ 
+      message: 'Failed to process request' 
+    });
+  }
+};
+
+// Email template specifically for forgot password
+const sendForgotPasswordEmail = async (email, resetToken) => {
+  try {
+    // Check if email configuration is valid
+    if (!emailConfig.auth.user || !emailConfig.auth.pass) {
+      throw new Error(
+        'Email credentials not configured. Please set SMTP_USER and SMTP_PASS environment variables.'
+      );
+    }
+
+    // Test connection before sending
+    await transporter.verify();
+    console.log('✅ SMTP connection verified successfully');
+
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    const subject = 'Password Reset Request';
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          .email-container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; }
+          .header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #f8f9fa; }
+          .reset-button { 
+            display: inline-block; 
+            background-color: #28a745; 
+            color: white; 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold; 
+            margin: 15px 0;
+          }
+          .footer { background-color: #6c757d; color: white; padding: 15px; text-align: center; font-size: 12px; }
+          .warning { color: #dc3545; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <h1>Password Reset Request</h1>
+          </div>
+          <div class="content">
+            <h2>Hello!</h2>
+            <p>We received a request to reset your password. If you didn't make this request, you can safely ignore this email.</p>
+            
+            <p>Click the button below to reset your password:</p>
+            <p style="text-align: center;">
+              <a href="${resetLink}" class="reset-button">Reset My Password</a>
+            </p>
+            
+            <p><small>Or copy this link: <br><a href="${resetLink}">${resetLink}</a></small></p>
+            
+            <p class="warning">⚠️ Important:</p>
+            <ul>
+              <li>This link will expire in 24 hours</li>
+              <li>If you didn't request this reset, please contact support</li>
+              <li>Never share this link with anyone</li>
+            </ul>
+          </div>
+          <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>Link expires: ${new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleString()}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+      Password Reset Request
+      
+      We received a request to reset your password for your account.
+      
+      If you didn't make this request, you can safely ignore this email.
+      
+      Click this link to reset your password:
+      ${resetLink}
+      
+      This link will expire in 24 hours.
+      
+      If you have any questions, please contact support.
+    `;
+
+    const mailOptions = {
+      from: `"${process.env.FROM_NAME || 'System Administrator'}" <${
+        process.env.FROM_EMAIL || emailConfig.auth.user
+      }>`,
+      to: email,
+      subject,
+      text,
+      html,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Password reset email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Error sending password reset email:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   handleGetClients,
   handleCreateUser,
   handlePasswordReset,
   handleVerifyResetToken,
-  handleTestEmail, // Optional: for testing email configuration
+  handleForgotPassword, 
+  handleTestEmail,
 };
