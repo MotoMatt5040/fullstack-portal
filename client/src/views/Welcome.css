@@ -42,7 +42,7 @@
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, var(--accent-color), var(--link-color), #9c27b0);
+  background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color), #9c27b0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -62,7 +62,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 2.5rem;
-  background: linear-gradient(135deg, var(--accent-color), var(--link-color));
+  background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
   color: white;
   text-decoration: none;
   border-radius: 0.75rem;
@@ -113,7 +113,7 @@
   left: 0;
   right: 0;
   height: 5px; /* Thicker accent line */
-  background: linear-gradient(90deg, var(--accent-color), var(--link-color));
+  background: linear-gradient(90deg, var(--accent-color), var(--welcome-button-color));
   transform: scaleX(0);
   transition: transform 0.3s ease-out; /* Smoother transition */
   border-radius: 1.25rem 1.25rem 0 0;
@@ -137,7 +137,7 @@
   width: 4rem; /* Larger icon */
   height: 4rem; /* Larger icon */
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, var(--accent-color), var(--link-color));
+  background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
   border-radius: 1.25rem; /* Consistent border-radius */
   display: flex;
   align-items: center;
@@ -174,7 +174,7 @@
   justify-content: center; /* Center content in link */
   gap: 0.6rem; /* Slightly larger gap */
   padding: 0.875rem 2rem; /* Increased padding */
-  background: linear-gradient(135deg, var(--accent-color), var(--link-color));
+  background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
   color: white;
   text-decoration: none;
   border-radius: 0.75rem;
@@ -266,7 +266,7 @@
 .quick-action-icon {
   width: 2.5rem; /* Larger icon */
   height: 2.5rem; /* Larger icon */
-  background: linear-gradient(135deg, var(--accent-color), var(--link-color));
+  background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
   border-radius: 0.75rem; /* Consistent border-radius */
   display: flex;
   align-items: center;

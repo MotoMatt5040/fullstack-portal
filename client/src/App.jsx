@@ -20,6 +20,7 @@ import ProjectReport from './views/project_report/ProjectReport';
 import AddUser from './views/secure/AddUser';
 import QuotaManagement from './views/quota_management/viewing/QuotaManagement';
 import ResetPassword from './views/secure/ResetPassword';
+import UserManagement from './views/user_management/UserManagement';
 
 import ROLES from './ROLES_LIST.json';
 import ProductionReport from './views/production_report/ProductionReport';
@@ -76,7 +77,7 @@ function App() {
         >
           <Route path='github' element={<IssueForm />} />
           <Route path='welcome' element={<Welcome />} />
-          <Route path='quotas' element={<QuotaManagement />} />
+          <Route path='quota-management' element={<QuotaManagement />} />
         </Route>
 
         <Route
@@ -91,9 +92,9 @@ function App() {
             />
           }
         >
-          <Route path='summaryreport' element={<SummaryReport />} />
-          <Route path='projectreport' element={<ProjectReport />} />
-          <Route path='productionreport' element={<ProductionReport />} />
+          <Route path='summary-report' element={<SummaryReport />} />
+          <Route path='project-report' element={<ProjectReport />} />
+          <Route path='production-report' element={<ProductionReport />} />
           <Route path='publishquotas' element={<QuotaPublishing />} />
         </Route>
 
@@ -103,6 +104,7 @@ function App() {
           }
         >
           <Route path='adduser' element={<AddUser />} />
+          <Route path='user-management' element={<UserManagement />} />
         </Route>
 
         <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>

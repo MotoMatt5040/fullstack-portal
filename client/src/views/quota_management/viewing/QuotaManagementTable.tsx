@@ -81,9 +81,25 @@ const formatCellValue = (value: string): string => {
   return EMPTY_VALUE_INDICATORS.includes(value as any) ? '-' : value;
 };
 
-const getCellClassName = (col: string, value: string): string => {
-  const baseClass = `cell-${col.toLowerCase().replace(/\s+/g, '-')}`;
-  return `${baseClass} ${value}`;
+const getCellClassName = (header: string, value: string): string => {
+  let className = `cell-${header.toLowerCase().replace(/\s+/g, '-')}`;
+
+  // Add specific classes for the Status column
+  if (header === 'S') {
+    className += ' cell-status';
+    if (value === 'C') {
+      className += ' closed';
+    } else if (value === 'O') {
+      className += ' open';
+    } else if (value === 'H') {
+      className += ' half-open';
+    }
+  }
+
+  // Add the value as a class
+  className += ` ${value}`;
+
+  return className;
 };
 
 // Memoized cell component
@@ -101,7 +117,8 @@ const TableCell = memo<{
   }, [cellData, col]);
 
   const className = useMemo(() => {
-    return getCellClassName(col, value);
+    const headerName = getDisplayName(col);
+    return getCellClassName(headerName, value);
   }, [col, value]);
 
   return (

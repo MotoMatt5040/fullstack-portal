@@ -176,7 +176,7 @@ const ProjectReport = () => {
                   'al',
                   'mph',
                 ]}
-                linkTo={'/projectreport'}
+                linkTo={'/project-report'}
                 redirect={true}
                 dataIsReady={
                   summaryReportIsSuccess &&

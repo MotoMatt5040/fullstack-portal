@@ -39,7 +39,7 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getQuotas: builder.query<QuotasResponse, QuotaArgs>({
       query: ({ projectId, isInternalUser }) => {
-        const url = `/quotas/data?projectId=${projectId}&isInternalUser=${isInternalUser}`;
+        const url = `/quota-management/data?projectId=${projectId}&isInternalUser=${isInternalUser}`;
         // if (url.endsWith('&')) {
         //   url = url.slice(0, -1);
         // }
@@ -49,7 +49,7 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
     }),
     getProjectList: builder.query({
       query: ({ userId }) => ({
-        url: `/quotas/projects?userId=${userId}`,
+        url: `/quota-management/projects?userId=${userId}`,
         method: 'GET',
       }),
     })
@@ -57,3 +57,5 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
 });
 
 export const { useGetProjectListQuery, useLazyGetProjectListQuery, useLazyGetQuotasQuery } = ReportApiSlice;
+
+

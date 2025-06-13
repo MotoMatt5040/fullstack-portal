@@ -1,233 +1,213 @@
+/* =================================================================
+   Unified Quota Management Table Stylesheet
+   - Base: Mobile-first responsive sizing
+   - Enhancement: Specific visual styles merged from the second file
+   ================================================================= */
+
+/* Base styles for the component */
 .quota-management-table {
-  /* max-width: 100%; */
-  width: fit-content;
-  max-width: 100%;
+  /* MODIFIED: Table is now aligned to the left */
+  width: auto;
+  margin: 1rem 0; /* Was '1rem auto'; '0' removes centering */
+  max-width: 100%; /* Ensures it doesn't overflow the viewport */
+
   border-collapse: collapse;
-  /* table-layout: auto;  */
-  border-right: 3px solid var(--border-color-soft);
-  border-left: 3px solid var(--border-color-soft);
+  text-align: center;
+  font-size: 0.69rem; /* Base font size for mobile */
+  color: var(--text-color);
+  background-color: var(--background-color-elevated);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--box-shadow-elevated);
+}
+
+/* Base header styles */
+.quota-management-table thead {
+  background-color: var(--table-header-background, #444);
+  color: var(--table-header-color, #fff);
+}
+
+.quota-management-table thead th {
+  padding: 0.5rem 0.2rem; /* Base padding for mobile */
+  font-weight: 600;
+  white-space: normal; /* Allow headers to wrap on mobile */
+  border-bottom: 2px solid var(--border-color-soft);
+}
+
+/* Header hierarchy styles merged from the second file */
+.quota-management-table thead tr:first-of-type th {
+  font-size: 1.1em;
+  background-color: var(--background-color-muted);
+}
+
+.quota-management-table thead tr:nth-of-type(2) th {
+  font-weight: 500;
 }
 
 
-/* Medium thick borders between subgroups (second row groups) */
+/* Base body cell styles */
+.quota-management-table tbody td {
+  padding: 0.5rem 0.2rem; /* Base padding for mobile */
+  border-bottom: 1px solid var(--table-border-color, #666);
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.quota-management-table tbody td:last-child {
+  border-right: none;
+}
+
+/* Hover and active states */
+.quota-management-table tbody tr:hover td,
+tr.active td {
+  background-color: var(--table-row-hover-background, #999);
+}
+
+/* Zebra striping for readability */
+.quota-management-table tbody tr:nth-child(even) td {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.quota-management-table .cell-label {
+  text-align: left;
+  font-weight: 500;
+}
+
+
+/* =================================================================
+   Critical Status Cell Styling (Merged from second file)
+   ================================================================= */
+.quota-management-table td.cell-status {
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.quota-management-table td.cell-status.open {
+  background-color: rgba(67, 177, 123, 0.8);
+}
+
+.quota-management-table td.cell-status.closed {
+  background-color: rgba(237, 33, 28, 0.8);
+}
+
+.quota-management-table td.cell-status.half-open {
+  background-color: rgba(239, 163, 43, 0.8);
+  color: #000;
+}
+
+
+/* =================================================================
+   Column & Group Borders (Merged from second file)
+   ================================================================= */
 .quota-management-table colgroup + colgroup {
   border-left: 2px solid var(--border-color-soft);
 }
 
-/* Extra thick borders between main groups (first row groups) */
-/* You'll need to identify which colgroups start a new main group */
-.quota-management-table colgroup[data-main-group="Web"]:first-of-type,
-.quota-management-table colgroup[data-main-group="Mail"]:first-of-type,
-/* Add other main groups as needed */ {
-  border-left: 4px solid var(--border-color-soft);
+.quota-management-table colgroup[data-main-group="Web"]:first-of-type {
+  border-left: 4px solid var(--accent-color);
 }
 
-/* Alternative approach using CSS nth-child if you know the pattern */
-/* This assumes you know which colgroup positions start new main groups */
-.quota-management-table colgroup:nth-child(3), /* First Web colgroup */
-.quota-management-table colgroup:nth-child(6)  /* First Mail colgroup */ {
-  border-left: 4px solid var(--border-color-half-soft);
-}
-
-.quota-management-table col {
-  border-right: none; /* reset */
-}
-
-.quota-management-table col.last-col {
-  border-right: 3px solid var(--border-color-soft);
-}
 .quota-management-table col.col-label {
-  border-left: 3px solid var(--border-color-soft);
   border-right: 3px solid var(--border-color-soft);
 }
 
-.quota-management-table td.cell-status.open {
-  background-color: rgba(67, 177, 123, 0.7); /* #43b17b with 80% opacity */
-  color: white;
-  font-weight: bold;
-}
 
-.quota-management-table td.cell-status.closed {
-  background-color: rgba(237, 33, 28, 0.7); /* #ed211c with 80% opacity */
-  color: white;
-  font-weight: bold;
-}
-
-.quota-management-table td.cell-status.half-open {
-  background-color: rgba(239, 163, 43, 0.7); /* #efa32b with 80% opacity */
-  color: black;
-  font-weight: bold;
-}
-
-.quota-management-table .label-cell {
-  text-align: left;
-}
-
-.quota-management-table .text-align.right {
-  text-align: right;
-}
-
-.quota-management-table .text-align.center {
-  text-align: center;
-}
-
-.quota-management-table tr:nth-child(1) {
-  font-weight: bold;
-}
-
-/* .hidden-column {
-	display: none;
-} */
-/* 
-.quota-management-table th,
-.quota-management-table td {
-  white-space: nowrap; 
-}
-
-.quota-management-table tr:nth-child(1) th {
-  border-top: 3px solid var(--border-color-soft);
-  border-left: 3px solid var(--border-color-soft);
-  border-bottom: 1px solid var(--border-color-soft);
-}
-
-.quota-management-table tr:nth-child(2) th {
-  border-bottom: 1px solid var(--border-color-soft);
-}
-
-.quota-management-table tr:nth-child(2) th:first-child {
-   border-left: 3px solid var(--border-color); 
-}
-
-.quota-management-table tr:nth-child(2) th:nth-child(4n+1) {
-  border-right: 3px solid var(--border-color-soft);
-}
-
-.quota-management-table tr:nth-child(2) th:nth-child(4n + 3),
-.quota-management-table tr:nth-child(2) th:nth-child(4n + 4),
-.quota-management-table tr:nth-child(2) th:nth-child(4n + 5) {
-  border-left: 1px solid var(--border-color-soft);
-}
-
-.quota-management-table tr td:nth-child(1) {
-  border-left: 1px solid var(--border-color-soft);
-}
-
-.quota-management-table tr td:nth-child(2n+1) {
-  border-right: 3px solid var(--border-color-soft);
-} */
-
-/* .th-toggle.hidden {
-  width: 1%;
-} */
-
-/* .quota-management-table th:last-child,
-.quota-management-table td:last-child {
-  width: 1%;
-  white-space: nowrap;
-  border-right: 3px-solid var(--border-color);
-} */
-
-
-.multi-select {
-  width: 20%;
-  background-color: var(--background-multi-select);
-  color: var(--text-color);
-  border-radius: 1rem;
-}
-
-.css-13cymwt-control {
-  background-color: var(--background-multi-select) !important;
-  color: var(--text-color) !important;
-}
-
-.css-t3ipsp-control {
-  background-color: var(--background-multi-select) !important;
-  color: var(--text-color) !important;
-}
-
-.css-19bb58m {
-  color: var(--text-color) !important;
-}
-
-.css-1dimb5e-singleValue {
-  color: var(--text-color) !important;
-}
-
-.css-1nmdiq5-menu {
-  background-color: var(--background-multi-select) !important;
-}
-
-.css-qr46ko {
-  background-color: var(--background-multi-select) !important;
-}
-
-.css-d7l1ni-option {
-  background-color: var(--background-multi-select-hover) !important;
-}
-
-.css-1cfo1cf {
-  color: var(--text-color) !important;
-}
-
-.filter-popup {
-	position: absolute;
-  width: fit-content;;
-	top: 100%; 
-	right: 0; 
-	margin-top: 0.25rem;
-	background: var(--background-color);
-	border: 1px solid var(--border-color);
-	border-radius: 1rem;
-	padding: 1rem;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	animation: fadeInUp 0.25s ease-out;
-	z-index: 1000;
-  color: var(--text-color);
-}
-
-.filter-popup-arrow {
+/* =================================================================
+   Clickable/Interactive Styles & Animations (From first file)
+   ================================================================= */
+.clickable-cell {
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  user-select: none;
-  padding: 0.5rem;
-  gap: 0.5rem;
-  color: var(--text-color);
+  color: blue;
+  text-decoration: underline;
+}
+.clickable-cell:hover { color: darkblue; }
+.clickable-row:hover { cursor: pointer; }
+
+@keyframes flash-red { /* ... animation rules ... */ }
+@keyframes flashYellow { /* ... animation rules ... */ }
+.highlight-red.blinking { animation: flash-red 1s infinite; }
+.highlight-yellow.blinking { animation: flashYellow 3s infinite; }
+
+
+/* =================================================================
+   Responsive Sizing Adjustments (The core logic from the first file)
+   ================================================================= */
+
+/* Medium (tablets) */
+@media (min-width: 768px) {
+  .quota-management-table {
+    font-size: .6rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.3rem;
+  }
 }
 
-.filter-popup-arrow-line {
-  flex-grow: 1;
-  height: 1px;
-  background-color: var(--border-color);
+/* Large (small desktops & laptops) */
+@media (min-width: 1024px) {
+  .quota-management-table {
+    font-size: .65rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.4rem;
+  }
 }
 
-.filter-popup-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+/* X-Large (standard desktops) */
+@media (min-width: 1280px) {
+  .quota-management-table {
+    font-size: .7rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.5rem;
+  }
 }
 
-.filter-popup-subgroup {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color-soft);
-  padding-bottom: 1rem;
+/* Large Laptops */
+@media (min-width: 1440px) {
+  .quota-management-table {
+    font-size: .75rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.6rem;
+  }
 }
 
-.show-sub-groups-arrow {
-  white-space: nowrap;
-
+/* Standard Desktops (HD) */
+@media (min-width: 1600px) {
+  .quota-management-table {
+    font-size: .8rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.7rem;
+  }
 }
 
-@keyframes fadeInUp {
-	from {
-		opacity: 0;
-		transform: translateY(-10px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
+/* Ultra-wide HD (between HD and 2K) */
+@media (min-width: 1920px) {
+  .quota-management-table {
+    font-size: .85rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.6rem 0.8rem;
+  }
+}
+
+/* 2K+ (2560px and above) */
+@media (min-width: 2560px) {
+  .quota-management-table {
+    font-size: 1rem;
+  }
+  .quota-management-table thead th,
+  .quota-management-table tbody td {
+    padding: 0.7rem 1rem;
+  }
 }

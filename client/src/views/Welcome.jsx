@@ -49,13 +49,13 @@ const Welcome = () => {
           <div className="welcome-card-icon">
             <FaGithub />
           </div>
-          <h3>GitHub Integration</h3>
+          <h3>Portal Feedback</h3>
           <p>
-            Seamlessly view your GitHub contributions, repository statistics,
-            and stay updated on your coding activity.
+            Submit feedback and suggestions to help us improve the portal.
+            Your input is invaluable in shaping the future of this platform.
           </p>
           <Link to="/github" className="welcome-card-link">
-            Explore GitHub <FaGithub />
+            Submit Feedback <FaGithub />
           </Link>
         </div>
 
@@ -82,7 +82,7 @@ const Welcome = () => {
             Administrators can manage user roles, add new users, and update
             passwords for secure access control.
           </p>
-          <Link to="/admin" className="welcome-card-link">
+          <Link to="/user-management" className="welcome-card-link">
             Manage Users <FaUsers />
           </Link>
         </div>
@@ -92,14 +92,18 @@ const Welcome = () => {
       <div className="welcome-quick-actions">
         <h2>Quick Actions</h2>
         <div className="quick-actions-grid">
+          <Link to="/summary-report" className="quick-action-btn">
+            <div className="quick-action-icon"><FaChartLine /></div>
+            Summary Report
+          </Link>
           <Link to="/project-report" className="quick-action-btn">
             <div className="quick-action-icon"><FaChartLine /></div>
             Project Report
           </Link>
-          <Link to="/production-report" className="quick-action-btn">
+          {/* <Link to="/production-report" className="quick-action-btn">
             <div className="quick-action-icon"><FaChartLine /></div>
             Production Report
-          </Link>
+          </Link> */}
           <Link to="/quota-management" className="quick-action-btn">
             <div className="quick-action-icon"><FaCodeBranch /></div>
             Quota Management

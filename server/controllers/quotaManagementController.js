@@ -290,16 +290,6 @@ const calculateData = (data) => {
       for (const [type, typeData] of Object.entries(groupData)) {
         const stype = STYPE_REVERSE_MAP[type] || 'unknown';
 
-        // Calculate "To Do"
-        // if (type === 'Total') {
-        //   if (!quotaData.Total['To Do']) {
-        //     quotaData.Total['To Do'] = quotaData.Total.TotalObjective;
-        //   }
-        //   quotaData.Total['To Do'] -= typeData.Frequency;
-        // } else {
-        
-          // typeData['To Do'] = toDo
-        // }
 
         // Calculate Obj%
         let objPercent = '0.0';
