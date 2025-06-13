@@ -1,0 +1,131 @@
+/* Main container for the user management page */
+.user-management-container {
+    padding: 2rem;
+    background-color: #f4f7fa;
+    min-height: calc(100vh - 60px); /* Adjust based on your nav bar height */
+    width: 100%;
+}
+
+/* Header section with title and add button */
+.user-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.user-management-title {
+    font-size: 2rem;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* "Add New User" button */
+.add-user-button {
+    background-color: #3498db;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.add-user-button:hover {
+    background-color: #2980b9;
+}
+
+.add-user-button .fas {
+    font-size: 0.9rem;
+}
+
+/* Controls section with search bar */
+.user-management-controls {
+    margin-bottom: 2rem;
+}
+
+.search-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Styling for the table */
+.table-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow-x: auto; /* For responsiveness on smaller screens */
+    padding: 1rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table__thead {
+    background-color: #f8f9fa;
+}
+
+.table__th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.table__row {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.table__row:last-child {
+    border-bottom: none;
+}
+
+.table__row:hover {
+    background-color: #f9fafb;
+}
+
+.table__cell {
+    padding: 1rem;
+    vertical-align: middle;
+    color: #555;
+}
+
+/* Edit button in the table */
+.edit-button {
+    background-color: #2ecc71;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.edit-button:hover {
+    background-color: #27ae60;
+}
