@@ -1,5 +1,6 @@
-# Development stage
-FROM node:20-bookworm-slim AS development
+# Stage 1: Build the React application
+# RENAMED THIS STAGE FROM 'development' TO 'build'
+FROM node:20-bookworm-slim AS build
 
 # Create app directory
 WORKDIR /app
@@ -11,15 +12,13 @@ COPY . .
 
 EXPOSE 5173
 
-ARG VITE_DEV_API_URL
 ARG VITE_DOMAIN_NAME
 ARG VITE_ENV
-RUN VITE_DEV_API_URL=${VITE_DEV_API_URL} VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME} VITE_ENV=${VITE_ENV} npm run build
-RUN echo "VITE_DEV_API_URL=${VITE_DEV_API_URL}" \
-    && echo "VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}" \
-    && echo "VITE_ENV=${VITE_ENV}"
+RUN VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME} VITE_ENV=${VITE_ENV} npm run build
 
-#Production stage
+# Stage 2: Serve the built files with Caddy
 FROM caddy:2-alpine AS production
-COPY Caddyfile /etc/caddy/Caddyfile
-COPY --from=development /app/dist /srv
+COPY ./Caddyfile /etc/caddy/Caddyfile
+
+# This line now works because it correctly refers to the 'build' stage above
+COPY --from=build /app/build /srv

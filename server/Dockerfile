@@ -20,7 +20,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --only=production
 
-COPY --from=development /app /app
+COPY . .
+
+# COPY --from=development /app /app
 
 EXPOSE 5000
 

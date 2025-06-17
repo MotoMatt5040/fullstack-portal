@@ -26,21 +26,31 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 //routes
-app.use(auditLogger);
-app.use("/", require("./routes/root"));
-app.use("/auth", require("./routes/auth"));
-app.use("/refresh", require("./routes/refresh"));
-app.use("/logout", require("./routes/logout"));
-app.use("/reset" , require("./routes/resetPassword"));
 
-app.use(verifyJWT); //everything after this line requires a jwt
+// Public API routes (no JWT required)
+app.use('/api', require('./routes/publicRoutes'));
+
+// Everything after this line requires a JWT
+app.use(verifyJWT); 
+
+// Protected API routes (JWT required)
+app.use('/api', require('./routes/privateRoutes'));
+
+// app.use(auditLogger);
+// app.use("/", require("./routes/root"));
+// app.use("/auth", require("./routes/auth"));
+// app.use("/refresh", require("./routes/refresh"));
+// app.use("/logout", require("./routes/logout"));
+// app.use("/reset" , require("./routes/resetPassword"));
+
+// app.use(verifyJWT); //everything after this line requires a jwt
 
 
-app.use("/users", require("./routes/api/promarkEmployees"));
-app.use("/github", require("./routes/api/github"));
-app.use("/reports", require("./routes/api/reports"));
-app.use("/users", require("./routes/api/users"));
-app.use("/quota-management", require("./routes/api/quotaManagement"));
+// app.use("/users", require("./routes/api/promarkEmployees"));
+// app.use("/github", require("./routes/api/github"));
+// app.use("/reports", require("./routes/api/reports"));
+// app.use("/users", require("./routes/api/users"));
+// app.use("/quota-management", require("./routes/api/quotaManagement"));
 
 app.all("*", (req, res) => {
     res.status(404);

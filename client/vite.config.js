@@ -10,6 +10,13 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    proxy: {
+      // This forwards requests from `/api` to your backend
+      '/api': {
+        target: 'http://localhost:5000', // Your backend server
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

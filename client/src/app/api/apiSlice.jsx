@@ -1,13 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logOut } from '../../features/auth/authSlice';
 
-let BASE_URL;
+// let BASE_URL;
 
-if (import.meta.env.VITE_ENV === 'dev') {
-  BASE_URL = import.meta.env.VITE_DEV_API_URL;
-} else {
-  BASE_URL = `https://api.${import.meta.env.VITE_DOMAIN_NAME}`;
-}
+// if (import.meta.env.VITE_ENV === 'dev') {
+//   BASE_URL = import.meta.env.VITE_DEV_API_URL;
+// } else {
+//   BASE_URL = `https://api.${import.meta.env.VITE_DOMAIN_NAME}`;
+// }
+
+const BASE_URL = '/api';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,

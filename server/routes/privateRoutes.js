@@ -1,0 +1,12 @@
+const express = require('express');
+const router = express.Router();
+
+// Note: Your original server.js had a duplicate "/users" route.
+// I've given "/promark-employees" its own path here. Please adjust if needed.
+router.use('/users', require('./api/users'));
+router.use('/promark-employees', require('./api/promarkEmployees'));
+router.use('/github', require('./api/github'));
+router.use('/reports', require('./api/reports'));
+router.use('/quota-management', require('./api/quotaManagement'));
+
+module.exports = router;
