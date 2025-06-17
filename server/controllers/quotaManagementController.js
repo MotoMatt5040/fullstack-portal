@@ -109,22 +109,22 @@ const createWebDataStructure = (label) => ({
 
 const buildPhoneStructure = async (project, token, data, visibleStypes) => {
   const phone = await QuotaServices.getPhoneQuotas(project.k_Id, token);
-  
-  // Determine project type once
-  let type;
-  if (project.name.endsWith('C')) {
-    type = 'Cell';
-    visibleStypes.Phone.push(type);
-  } else if (project.name.endsWith('COM')) {
-    type = 'com';
-  } else {
-    type = 'Landline';
-    visibleStypes.Phone.push(type);
+
+  const projectTypeFallback = project.name.endsWith('C')
+    ? 'Cell'
+    : project.name.endsWith('COM')
+    ? 'com'
+    : 'Landline';
+
+  if (
+    projectTypeFallback !== 'com' &&
+    !visibleStypes.Phone.includes(projectTypeFallback)
+  ) {
+    visibleStypes.Phone.push(projectTypeFallback);
   }
 
   const structure = new Map();
 
-  // Process all phone items
   for (const item of phone) {
     const {
       Position: StratumId,
@@ -136,17 +136,35 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
       Status,
     } = item;
 
-    const newStatus = STATUS_MAP[Status] || 'Unknown';
+    const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
+    const subType = stypeMatch ? STYPE_MAP[stypeMatch[1]] : projectTypeFallback;
+
+    // --- FIX: Prevent web types from being processed in the phone structure ---
+    const webTypes = ['Panel', 'T2W', 'Email', 'Mailer'];
+    if (webTypes.includes(subType)) {
+      continue; // Skip this iteration if it's a web type
+    }
+    // --- END FIX ---
+
+    if (subType && !visibleStypes.Phone.includes(subType)) {
+      visibleStypes.Phone.push(subType);
+    }
+
     const newLabel = cleanLabel(Label);
+    const newStatus = STATUS_MAP[Status] || 'Unknown';
+
+    // let newStatus = STATUS_MAP[Status] || 'Unknown';
+    // if (newLabel.includes('*')) {
+    //   newStatus = '-'; // Force status to Closed if label contains '*'
+    // }
+
     const TotalObjective = extractTotalObjective(Label);
     const modifiedCriterion = cleanCriterion(Criterion);
 
-    // Initialize data structure if not exists
     if (!data[modifiedCriterion]) {
       data[modifiedCriterion] = createBaseDataStructure(Label, newLabel);
     }
 
-    // Create structure entry
     const structureEntry = {
       StratumId,
       Label: newLabel,
@@ -159,22 +177,19 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
 
     structure.set(modifiedCriterion, structureEntry);
 
-    // Update TotalObjective if needed
     if (data[modifiedCriterion].Total.TotalObjective === 0) {
       data[modifiedCriterion].Total.TotalObjective = TotalObjective;
       data[modifiedCriterion].Phone.Total.TotalObjective = TotalObjective;
     }
 
-    // Update frequency conditionally
-    if (!modifiedCriterion.includes('STYPE') && type !== 'com') {
+    if (!modifiedCriterion.includes('STYPE') && subType !== 'com') {
       data[modifiedCriterion].Total.Frequency += Frequency;
       data[modifiedCriterion].Phone.Total.Frequency += Frequency;
     }
 
-    data[modifiedCriterion].Phone[type] = structureEntry;
+    data[modifiedCriterion].Phone[subType] = structureEntry;
   }
 
-  // Update totals based on project type
   const updateTotals = (stypeKey, typeKey) => {
     const stypeData = structure.get(stypeKey);
     if (!stypeData) return;
@@ -190,9 +205,9 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
     };
   };
 
-  if (type === 'Cell') {
+  if (projectTypeFallback === 'Cell') {
     updateTotals('STYPE=2', 'Cell');
-  } else if (type === 'Landline') {
+  } else if (projectTypeFallback === 'Landline') {
     updateTotals('STYPE=1', 'Landline');
   }
 };
@@ -213,12 +228,19 @@ const buildWebStructure = async (projectId, data, visibleStypes) => {
       Status,
     } = item;
 
+    const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
+    const stypeId = stypeMatch ? stypeMatch[1] : null;
+
+    if (stypeId === '1' || stypeId === '2') {
+      continue;
+    }
+
     const newLabel = cleanLabel(Label);
+    const newStatus = STATUS_MAP[Status] || 'Unknown';
     const TotalObjective = extractTotalObjective(Label);
     const modifiedCriterion = cleanCriterion(Criterion);
-    const newStatus = STATUS_MAP[Status] || 'Unknown';
+    const type = stypeId ? STYPE_MAP[stypeId] : 'unknown';
 
-    // Initialize data structure if not exists
     if (!data[modifiedCriterion]) {
       data[modifiedCriterion] = createWebDataStructure(Label);
     } else if (!data[modifiedCriterion].Web) {
@@ -227,15 +249,8 @@ const buildWebStructure = async (projectId, data, visibleStypes) => {
       };
     }
 
-    if (modifiedCriterion === 'STYPE=2') continue;
-
-    const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
-    const stype = stypeMatch ? stypeMatch[1] : null;
-    const type = STYPE_MAP[stype] || 'unknown';
-
-    // Handle STYPE totals
     if (modifiedCriterion.includes('STYPE') && type !== 'unknown') {
-      visibleStypes.Web.push(type);
+      if (!visibleStypes.Web.includes(type)) visibleStypes.Web.push(type);
       data.totalRow.Total.TotalObjective += TotalObjective;
       data.totalRow.Total.Frequency += Frequency;
       data.totalRow.Web.Total.Frequency += Frequency;
@@ -246,7 +261,6 @@ const buildWebStructure = async (projectId, data, visibleStypes) => {
       };
     }
 
-    // Update data
     data[modifiedCriterion].Total.Frequency += Frequency;
     data[modifiedCriterion].Total.TotalObjective = TotalObjective;
     data[modifiedCriterion].Web.Total.Frequency += Frequency;
@@ -265,42 +279,53 @@ const buildWebStructure = async (projectId, data, visibleStypes) => {
 };
 
 const calculateData = (data) => {
-  const quotaKeys = Object.keys(data).filter(key => key !== 'totalRow');
-  
+  const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
+
   for (const quota of quotaKeys) {
     const quotaData = data[quota];
-    
+
     for (const [group, groupData] of Object.entries(quotaData)) {
       if (group === 'Total') {
-        // Calculate frequency percentage for Total group
-        const freqPercent = quotaData.Total.Frequency > 0 
-          ? calculatePercentages(groupData.Frequency, quotaData.Total.Frequency)
-          : '0.0';
+        const freqPercent =
+          quotaData.Total.Frequency > 0
+            ? calculatePercentages(
+                groupData.Frequency,
+                quotaData.Total.Frequency
+              )
+            : '0.0';
         groupData['Freq%'] = freqPercent;
-
-        // console.log(groupData)
         const toDo = groupData.TotalObjective - groupData.Frequency;
-        groupData['To Do'] = toDo
-
-        // groupData['Status'] = toDo > 0 ? 'O' : 'C';
-        // console.log(todo)
+        groupData['To Do'] = toDo;
+        groupData['Obj%'] = calculatePercentages(
+          groupData.TotalObjective,
+          data.totalRow.Total.TotalObjective
+        );
+        if (groupData.Label.includes('*')) {
+          groupData.Status = '-';
+        } else {
+          if (groupData.TotalObjective === 0) {
+            groupData.Status = 'C'; 
+          } else {
+            groupData.Status = toDo > 0 ? 'O' : 'C';
+          }
+        }
         continue;
       }
 
       for (const [type, typeData] of Object.entries(groupData)) {
         const stype = STYPE_REVERSE_MAP[type] || 'unknown';
 
-
-        // Calculate Obj%
         let objPercent = '0.0';
-        if (stype !== 'unknown' && data.totalRow[group]?.[type]?.TotalObjective > 0) {
+        if (
+          stype !== 'unknown' &&
+          data.totalRow[group]?.[type]?.TotalObjective > 0
+        ) {
           objPercent = calculatePercentages(
             typeData.Frequency,
             data.totalRow[group][type].TotalObjective
           );
         }
 
-        // Calculate Freq%
         let freqPercent = '0.0';
         if (stype !== 'unknown' && data[stype]?.Total?.Frequency > 0) {
           freqPercent = calculatePercentages(
@@ -308,12 +333,11 @@ const calculateData = (data) => {
             data[stype].Total.Frequency
           );
         } else if (type === 'Total' && typeData.Frequency > 0) {
-          const toDo = typeData.TotalObjective - typeData.Frequency 
+          const toDo = typeData.TotalObjective - typeData.Frequency;
           typeData.Status = toDo > 0 ? 'O' : 'C';
           freqPercent = calculatePercentages(
             typeData.Frequency,
             data.totalRow[group].Total.Frequency
-
           );
         }
 
@@ -325,20 +349,37 @@ const calculateData = (data) => {
 };
 
 const filterForExternalUsers = (data) => {
-  const quotaKeys = Object.keys(data).filter(key => key !== 'totalRow');
-  
+  const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
+
   for (const quotaKey of quotaKeys) {
     const hasPhoneCom = data[quotaKey].Phone?.com;
     const hasWebCom = data[quotaKey].Web?.com;
-    
+
     if (!hasPhoneCom && !hasWebCom) {
       delete data[quotaKey];
     }
   }
 };
 
+const sortPhoneProjectsUltraRobust = (projects) => {
+  return projects.sort((a, b) => {
+    const aEndsCOM = /com$/i.test(a.name);
+    const bEndsCOM = /com$/i.test(b.name);
+    
+    if (aEndsCOM && !bEndsCOM) return -1;
+    if (bEndsCOM && !aEndsCOM) return 1;
+    
+    const aContainsCOM = /com/i.test(a.name);
+    const bContainsCOM = /com/i.test(b.name);
+    
+    if (aContainsCOM && !bContainsCOM) return -1;
+    if (bContainsCOM && !aContainsCOM) return 1;
+    
+    return a.name.localeCompare(b.name);
+  });
+};
+
 const handleGetQuotas = handleAsync(async (req, res) => {
-  // Get token once at the beginning
   const apiUser = await VoxcoApi.refreshAccessToken();
   const token = apiUser?.Token;
 
@@ -356,7 +397,6 @@ const handleGetQuotas = handleAsync(async (req, res) => {
   }
 
   try {
-    // Parallel data fetching
     const [phoneProjects, webProject] = await Promise.all([
       ProjectInfo.getPhoneProjects(projectId),
       ProjectInfo.getWebProjects(projectId),
@@ -373,19 +413,29 @@ const handleGetQuotas = handleAsync(async (req, res) => {
     };
     const visibleStypes = {};
 
-    // Process phone projects
     if (phoneProjects.length > 0) {
+      // phoneProjects.sort((a, b) => {
+      //   if (a.name.endsWith('COM')) return -1;
+      //   if (b.name.endsWith('COM')) return 1;
+      //   return 0;
+      // });
+
+      const sortedPhoneProjects = sortPhoneProjectsUltraRobust(phoneProjects);
+
       data.totalRow.Phone = { Total: { Frequency: 0 } };
       visibleStypes.Phone = [];
-      
-      await Promise.all(
-        phoneProjects.map((project) =>
-          buildPhoneStructure(project, token, data, visibleStypes)
-        )
-      );
+
+       for (const project of sortedPhoneProjects) {
+        await buildPhoneStructure(project, token, data, visibleStypes);
+      }
+
+      // await Promise.all(
+      //   phoneProjects.map((project) =>
+      //     buildPhoneStructure(project, token, data, visibleStypes)
+      //   )
+      // );
     }
 
-    // Process web projects
     if (webProject.length > 0) {
       await buildWebStructure(webProject[0].id, data, visibleStypes);
     }
@@ -402,15 +452,15 @@ const handleGetQuotas = handleAsync(async (req, res) => {
     });
   } catch (error) {
     console.error('Error in handleGetQuotas:', error);
-    return res.status(500).json({ 
-      message: 'Internal server error while processing quotas' 
+    return res.status(500).json({
+      message: 'Internal server error while processing quotas',
     });
   }
 });
 
 const handleGetProjectList = handleAsync(async (req, res) => {
   const userId = cleanQueryParam(req?.query?.userId);
-  
+
   try {
     const projects = await QuotaServices.getProjectsList(userId);
 
@@ -421,8 +471,8 @@ const handleGetProjectList = handleAsync(async (req, res) => {
     res.status(200).json(projects);
   } catch (error) {
     console.error('Error in handleGetProjectList:', error);
-    return res.status(500).json({ 
-      message: 'Internal server error while fetching projects' 
+    return res.status(500).json({
+      message: 'Internal server error while fetching projects',
     });
   }
 });

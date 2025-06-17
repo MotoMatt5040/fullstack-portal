@@ -2,6 +2,13 @@ import { apiSlice } from '../app/api/apiSlice';
 
 export const resetPasswordApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    forgotPassword: builder.mutation({
+      query: ({ email }) => ({
+        url: '/reset/forgot-password',
+        method: 'POST',
+        body: { email },
+      }),
+    }),
     resetPassword: builder.mutation({
       query: ({ token, email, newPassword }) => ({
         url: '/reset/reset-password', // Updated to use /reset
@@ -18,4 +25,4 @@ export const resetPasswordApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useVerifyResetTokenQuery, useResetPasswordMutation } = resetPasswordApiSlice;
+export const { useForgotPasswordMutation, useVerifyResetTokenQuery, useResetPasswordMutation } = resetPasswordApiSlice;

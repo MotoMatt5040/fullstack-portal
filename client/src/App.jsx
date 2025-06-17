@@ -25,6 +25,7 @@ import UserManagement from './views/user_management/UserManagement';
 import ROLES from './ROLES_LIST.json';
 import ProductionReport from './views/production_report/ProductionReport';
 import QuotaPublishing from './views/quota_management/publishing/QuotaPublishing';
+import Unauthorized from './views/secure/Unauthorized';
 
 function App() {
   return (
@@ -49,17 +50,14 @@ function App() {
           }
         />
 
-{/* <Route
+        <Route path='unauthorized' element={<Unauthorized />} />
+
+        {/* <Route
   path='reset-password'
   element={<div>Reset password route works!</div>}
 /> */}
 
-        <Route
-  path='reset-password'
-  element={
-      <ResetPassword />
-  }
-/>
+        <Route path='reset-password' element={<ResetPassword />} />
 
         {/* protected routes */}
         <Route

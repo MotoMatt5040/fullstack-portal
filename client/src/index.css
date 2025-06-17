@@ -36,6 +36,8 @@
   --accent-color: #007bff;
   --accent-color-hover: #0056b3;
   --welcome-button-color: #6969be;
+  --transparent-background: rgba(255, 255, 255, .1);
+  --zebra-stripe-color: rgba(255, 255, 255, .05);
   
   --input-background: #333; 
   --input-focus-background: #555; 
@@ -78,6 +80,8 @@
   --accent-color: #007bff;
   --accent-color-hover: #0056b3;
   --welcome-button-color: #0000EE;
+  --transparent-background: rgba(0, 0, 0, .1);
+  --zebra-stripe-color: rgba(0, 0, 0, 0.05);
   
   --input-background: #fff;
   --input-focus-background: #f5f5f5;
@@ -118,6 +122,9 @@
   --accent-color: #007bff;
   --accent-color-hover: #0056b3;
   --welcome-button-color: #313182;
+  /* --welcome-button-color: whitesmoke; */
+  --transparent-background: rgba(255, 255, 255, .07);
+  --zebra-stripe-color: rgba(255, 255, 255, .05);
   
   --input-background: #333; 
   --input-focus-background: #555; 

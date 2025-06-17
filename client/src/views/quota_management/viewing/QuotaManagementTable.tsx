@@ -81,8 +81,12 @@ const formatCellValue = (value: string): string => {
   return EMPTY_VALUE_INDICATORS.includes(value as any) ? '-' : value;
 };
 
-const getCellClassName = (header: string, value: string): string => {
+const getCellClassName = (header: string, value: string, subGroup: string): string => {
   let className = `cell-${header.toLowerCase().replace(/\s+/g, '-')}`;
+
+  if (subGroup === 'Total') {
+    className += ' total-column';
+  }
 
   // Add specific classes for the Status column
   if (header === 'S') {
@@ -118,8 +122,8 @@ const TableCell = memo<{
 
   const className = useMemo(() => {
     const headerName = getDisplayName(col);
-    return getCellClassName(headerName, value);
-  }, [col, value]);
+    return getCellClassName(headerName, value, subGroup);
+  }, [col, value, subGroup]);
 
   return (
     <td

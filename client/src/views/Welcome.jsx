@@ -16,8 +16,40 @@ import '../views/Welcome.css'; // Make sure this import is correct
 const Welcome = () => {
   return (
     <section className="welcome-container">
+      {/* Development Notice */}
+      <div className="development-notice">
+        <FaInfoCircle /> This portal is currently under active development. Features and design may change.
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="welcome-quick-actions">
+        <h2>Quick Actions</h2>
+        <div className="quick-actions-grid">
+          <Link to="/summary-report" className="quick-action-btn">
+            <div className="quick-action-icon"><FaChartLine /></div>
+            Summary Report
+          </Link>
+          <Link to="/project-report" className="quick-action-btn">
+            <div className="quick-action-icon"><FaChartLine /></div>
+            Project Report
+          </Link>
+          {/* <Link to="/production-report" className="quick-action-btn">
+            <div className="quick-action-icon"><FaChartLine /></div>
+            Production Report
+          </Link> */}
+          <Link to="/quota-management" className="quick-action-btn">
+            <div className="quick-action-icon"><FaCodeBranch /></div>
+            Quota Management
+          </Link>
+          <Link to="/settings" className="quick-action-btn">
+            <div className="quick-action-icon"><FaCog /></div>
+            Settings
+          </Link>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <div className="welcome-hero">
+      {/* <div className="welcome-hero">
         <h1>Welcome to the Fullstack Portal</h1>
         <p>
           Your central hub for managing projects, viewing reports, and accessing
@@ -27,7 +59,7 @@ const Welcome = () => {
         <Link to="/project-report" className="hero-button">
           Get Started <FaTachometerAlt />
         </Link>
-      </div>
+      </div> */}
 
       {/* Feature Cards Section */}
       <div className="welcome-grid">
@@ -86,38 +118,6 @@ const Welcome = () => {
             Manage Users <FaUsers />
           </Link>
         </div>
-      </div>
-
-      {/* Quick Actions Section */}
-      <div className="welcome-quick-actions">
-        <h2>Quick Actions</h2>
-        <div className="quick-actions-grid">
-          <Link to="/summary-report" className="quick-action-btn">
-            <div className="quick-action-icon"><FaChartLine /></div>
-            Summary Report
-          </Link>
-          <Link to="/project-report" className="quick-action-btn">
-            <div className="quick-action-icon"><FaChartLine /></div>
-            Project Report
-          </Link>
-          {/* <Link to="/production-report" className="quick-action-btn">
-            <div className="quick-action-icon"><FaChartLine /></div>
-            Production Report
-          </Link> */}
-          <Link to="/quota-management" className="quick-action-btn">
-            <div className="quick-action-icon"><FaCodeBranch /></div>
-            Quota Management
-          </Link>
-          <Link to="/settings" className="quick-action-btn">
-            <div className="quick-action-icon"><FaCog /></div>
-            Settings
-          </Link>
-        </div>
-      </div>
-
-      {/* Development Notice */}
-      <div className="development-notice">
-        <FaInfoCircle /> This portal is currently under active development. Features and design may change.
       </div>
 
       {/* Footer Section */}

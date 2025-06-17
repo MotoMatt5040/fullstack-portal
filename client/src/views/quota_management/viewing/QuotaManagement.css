@@ -1,7 +1,7 @@
 /* =================================================================
    Unified Quota Management Table Stylesheet
-   - Base: Mobile-first responsive sizing
-   - Enhancement: Specific visual styles merged from the second file
+   - Base: Mobile-first responsive sizing with clamp() optimization
+   - Enhancement: All original visual styles preserved
    ================================================================= */
 
 /* Base styles for the component */
@@ -13,7 +13,10 @@
 
   border-collapse: collapse;
   text-align: center;
-  font-size: 0.69rem; /* Base font size for mobile */
+  
+  /* OPTIMIZED: Itsy bitsy teensy weensy spider bit bigger */
+  font-size: calc(0.35rem + 0.4vw);
+  
   color: var(--text-color);
   background-color: var(--background-color-elevated);
   border: 1px solid var(--border-color-soft);
@@ -29,7 +32,8 @@
 }
 
 .quota-management-table thead th {
-  padding: 0.5rem 0.2rem; /* Base padding for mobile */
+  /* OPTIMIZED: Itsy bitsy more padding */
+  padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
   font-weight: 600;
   white-space: normal; /* Allow headers to wrap on mobile */
   border-bottom: 2px solid var(--border-color-soft);
@@ -45,10 +49,10 @@
   font-weight: 500;
 }
 
-
 /* Base body cell styles */
 .quota-management-table tbody td {
-  padding: 0.5rem 0.2rem; /* Base padding for mobile */
+  /* OPTIMIZED: Itsy bitsy more padding */
+  padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
   border-bottom: 1px solid var(--table-border-color, #666);
   white-space: nowrap;
   transition: background-color 0.2s ease;
@@ -66,7 +70,7 @@ tr.active td {
 
 /* Zebra striping for readability */
 .quota-management-table tbody tr:nth-child(even) td {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--zebra-stripe-color);
 }
 
 .quota-management-table .cell-label {
@@ -74,9 +78,8 @@ tr.active td {
   font-weight: 500;
 }
 
-
 /* =================================================================
-   Critical Status Cell Styling (Merged from second file)
+   Critical Status Cell Styling (Preserved from original)
    ================================================================= */
 .quota-management-table td.cell-status {
   color: #fff;
@@ -85,21 +88,20 @@ tr.active td {
 }
 
 .quota-management-table td.cell-status.open {
-  background-color: rgba(67, 177, 123, 0.8);
+  background-color: rgba(67, 177, 123, 0.8) !important;
 }
 
 .quota-management-table td.cell-status.closed {
-  background-color: rgba(237, 33, 28, 0.8);
+  background-color: rgba(237, 33, 28, 0.8) !important;
 }
 
 .quota-management-table td.cell-status.half-open {
-  background-color: rgba(239, 163, 43, 0.8);
+  background-color: rgba(239, 163, 43, 0.8) !important;
   color: #000;
 }
 
-
 /* =================================================================
-   Column & Group Borders (Merged from second file)
+   Column & Group Borders (Preserved from original)
    ================================================================= */
 .quota-management-table colgroup + colgroup {
   border-left: 2px solid var(--border-color-soft);
@@ -113,9 +115,13 @@ tr.active td {
   border-right: 3px solid var(--border-color-soft);
 }
 
+.quota-management-table .total-column {
+  font-weight: bold;
+  background-color: var(--transparent-background) !important;
+}
 
 /* =================================================================
-   Clickable/Interactive Styles & Animations (From first file)
+   Clickable/Interactive Styles & Animations (Preserved from original)
    ================================================================= */
 .clickable-cell {
   cursor: pointer;
@@ -125,89 +131,33 @@ tr.active td {
 .clickable-cell:hover { color: darkblue; }
 .clickable-row:hover { cursor: pointer; }
 
-@keyframes flash-red { /* ... animation rules ... */ }
-@keyframes flashYellow { /* ... animation rules ... */ }
+@keyframes flash-red {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(255, 0, 0, 0.3); }
+}
+
+@keyframes flashYellow {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(255, 255, 0, 0.3); }
+}
+
 .highlight-red.blinking { animation: flash-red 1s infinite; }
 .highlight-yellow.blinking { animation: flashYellow 3s infinite; }
 
-
 /* =================================================================
-   Responsive Sizing Adjustments (The core logic from the first file)
+   Edge case responsive adjustments only
    ================================================================= */
 
-/* Medium (tablets) */
-@media (min-width: 768px) {
+/* Very small screens - override for mobile */
+@media (max-width: 480px) {
   .quota-management-table {
-    font-size: .6rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.5rem 0.3rem;
+    font-size: 0.5rem;
   }
 }
 
-/* Large (small desktops & laptops) */
-@media (min-width: 1024px) {
+/* Very large screens - cap the maximum size */
+@media (min-width: 3000px) {
   .quota-management-table {
-    font-size: .65rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.5rem 0.4rem;
-  }
-}
-
-/* X-Large (standard desktops) */
-@media (min-width: 1280px) {
-  .quota-management-table {
-    font-size: .7rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.5rem 0.5rem;
-  }
-}
-
-/* Large Laptops */
-@media (min-width: 1440px) {
-  .quota-management-table {
-    font-size: .75rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.5rem 0.6rem;
-  }
-}
-
-/* Standard Desktops (HD) */
-@media (min-width: 1600px) {
-  .quota-management-table {
-    font-size: .8rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.5rem 0.7rem;
-  }
-}
-
-/* Ultra-wide HD (between HD and 2K) */
-@media (min-width: 1920px) {
-  .quota-management-table {
-    font-size: .85rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.6rem 0.8rem;
-  }
-}
-
-/* 2K+ (2560px and above) */
-@media (min-width: 2560px) {
-  .quota-management-table {
-    font-size: 1rem;
-  }
-  .quota-management-table thead th,
-  .quota-management-table tbody td {
-    padding: 0.7rem 1rem;
+    font-size: 1.2rem;
   }
 }

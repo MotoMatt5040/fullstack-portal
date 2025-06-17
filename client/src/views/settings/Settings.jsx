@@ -6,7 +6,7 @@ import { toggleShowGraphs, toggleUseGpcph } from '../../features/settingsSlice';
 import MyToggle from '../../components/MyToggle';
 import MyRadioButton from '../../components/MyRadioButton';
 
-const settings = () => {
+const Settings = () => {
 	const dispatch = useDispatch();
 	const [logoutRequest] = useLogoutMutation();
 	const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
@@ -65,4 +65,4 @@ const settings = () => {
 	);
 };
 
-export default settings;
+export default Settings;
