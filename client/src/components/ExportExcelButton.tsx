@@ -47,15 +47,13 @@ const ExportExcelButton: React.FC<ExportExcelButtonProps> = ({ tableId }) => {
 
     const bodyRows = table.querySelectorAll('tbody tr');
     bodyRows.forEach((tr) => {
-      // --- MODIFICATION START ---
       // Get the first cell of the row
-      const firstCell = tr.querySelector('td');
+      // const firstCell = tr.querySelector('td');
 
-      // If the first cell exists and its text contains '*', skip this row
-      if (firstCell && firstCell.innerText.includes('*')) {
-        return;
-      }
-      // --- MODIFICATION END ---
+      // // If the first cell exists and its text contains '*', skip this row
+      // if (firstCell && firstCell.innerText.includes('*')) {
+      //   return;
+      // }
 
       const rowData = Array.from(tr.querySelectorAll('td')).map((td) => {
         const text = td.innerText.trim();

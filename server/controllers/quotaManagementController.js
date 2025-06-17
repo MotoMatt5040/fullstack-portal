@@ -280,6 +280,7 @@ const buildWebStructure = async (projectId, data, visibleStypes) => {
 
 const calculateData = (data) => {
   const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
+  data.totalRow.Total['To Do'] = data.totalRow.Total.TotalObjective - data.totalRow.Total.Frequency;
 
   for (const quota of quotaKeys) {
     const quotaData = data[quota];
@@ -301,7 +302,7 @@ const calculateData = (data) => {
           data.totalRow.Total.TotalObjective
         );
         if (groupData.Label.includes('*')) {
-          groupData.Status = '-';
+          groupData.Status = '';
         } else {
           if (groupData.TotalObjective === 0) {
             groupData.Status = 'C'; 

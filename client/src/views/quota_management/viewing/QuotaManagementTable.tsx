@@ -78,7 +78,7 @@ const getColumnValue = (cellData: RowData, col: string): string => {
 };
 
 const formatCellValue = (value: string): string => {
-  return EMPTY_VALUE_INDICATORS.includes(value as any) ? '-' : value;
+  return EMPTY_VALUE_INDICATORS.includes(value as any) ? '' : value;
 };
 
 const getCellClassName = (header: string, value: string, subGroup: string): string => {
@@ -115,7 +115,7 @@ const TableCell = memo<{
   cellData: RowData | null;
 }>(({ rowKey, group, subGroup, col, cellData }) => {
   const value = useMemo(() => {
-    if (!cellData) return '-';
+    if (!cellData) return '';
     const rawValue = getColumnValue(cellData, col);
     return formatCellValue(rawValue);
   }, [cellData, col]);
