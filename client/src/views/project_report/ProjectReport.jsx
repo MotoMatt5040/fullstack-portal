@@ -105,8 +105,8 @@ const ProjectReport = () => {
           to='Summary Report'
           url={
             summaryStartDate && summaryEndDate
-              ? `/summaryreport?live=${summaryIsLive}&startDate=${summaryStartDate}&endDate=${summaryEndDate}`
-              : '/summaryreport'
+              ? `/summary-report?live=${summaryIsLive}&startDate=${summaryStartDate}&endDate=${summaryEndDate}`
+              : '/summary-report'
           }
         />
         <h1>

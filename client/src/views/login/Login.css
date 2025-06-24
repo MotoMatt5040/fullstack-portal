@@ -5,35 +5,37 @@
   height: 100vh;
   background-color: var(--background-color);
   padding: 1rem;
+  flex-grow: 1;
 }
 
 .login form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.2rem; /* Increased gap for better spacing */
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   background: var(--button-background);
-  padding: 2rem;
-  border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem; /* Increased padding */
+  border-radius: 20px; /* Slightly more rounded corners */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); /* Softer shadow */
+  border: 1px solid var(--border-color-soft); /* Removed the hard border */
 }
 
 .login h1 {
   text-align: center;
   color: var(--text-color);
   margin-bottom: 1rem;
-  font-size: 1.8rem;
+  font-size: 2rem; /* Larger title */
 }
 
 .login label {
   font-size: 1.1rem;
   color: var(--label-text-color);
-  margin-bottom: 0.25rem;
+  margin-bottom: -0.5rem; /* Reduced margin */
 }
 
 .login input {
-  padding: 0.75em;
+  padding: 0.85em; /* Slightly more padding */
   font-size: 1rem;
   border: 1px solid var(--table-border-color);
   border-radius: 10px;
@@ -49,7 +51,7 @@
 }
 
 .login button[type="submit"] {
-  padding: 0.75em;
+  padding: 0.85em;
   font-size: 1.1rem;
   border: none;
   border-radius: 10px;
@@ -57,7 +59,8 @@
   color: var(--button-text);
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
-  font-weight: 500;
+  font-weight: 600; /* Bolder text */
+  margin-top: 0.5rem;
 }
 
 .login button[type="submit"]:hover {
@@ -132,9 +135,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Lighter overlay */
+  backdrop-filter: blur(5px); /* Glassmorphism effect */
   z-index: 999;
 }
 
@@ -143,21 +147,23 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+
   background: var(--button-background);
   padding: 0;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 400px;
+  border-radius: 20px; /* Matching the login form */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  width: 100%;
+  max-width: 450px;
   color: var(--text-color);
   z-index: 1000;
-  animation: modalSlideIn 0.3s ease-out;
+  animation: modalSlideIn 0.4s ease-out; /* Slower animation */
+  overflow: hidden;
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -60%);
+    transform: translate(-50%, -40%);
   }
   to {
     opacity: 1;
@@ -169,25 +175,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem 1rem 2rem;
+  padding: 1.5rem 2.5rem 1rem 2.5rem;
   border-bottom: 1px solid var(--table-border-color);
 }
 
 .modal-header h3 {
   margin: 0;
   color: var(--text-color);
-  font-size: 1.4rem;
+  font-size: 1.5rem;
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   color: var(--text-color);
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,7 +206,9 @@
 }
 
 .modal-content form {
-  padding: 1.5rem 2rem 2rem 2rem;
+  padding: 1.5rem 2.5rem 2.5rem 2.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-content label {
@@ -212,7 +220,7 @@
 
 .modal-content input {
   width: 100%;
-  padding: 0.75em;
+  padding: 0.85em;
   font-size: 1rem;
   border: 1px solid var(--table-border-color);
   border-radius: 10px;
@@ -232,18 +240,18 @@
 .modal-buttons {
   display: flex;
   gap: 1rem;
-  justify-content: center;
+  justify-content: flex-end;
   margin-top: 1.5rem;
 }
 
 .modal-buttons button {
-  padding: 0.75em 1.5em;
+  padding: 0.85em 1.5em;
   font-size: 1rem;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
-  font-weight: 500;
+  font-weight: 600;
   min-width: 120px;
 }
 
@@ -281,26 +289,26 @@
 /* Responsive Design */
 @media (max-width: 500px) {
   .login form {
-    width: 95%;
+    width: 100%;
     max-width: 100%;
-    padding: 1.5rem;
+    padding: 2rem;
   }
   
   .modal-content {
-    width: 95%;
-    margin: 1rem;
+    width: 90%;
+    margin: 0 auto;
   }
-  
+
   .modal-header {
-    padding: 1rem 1.5rem 0.75rem 1.5rem;
+    padding: 1rem 1.5rem;
   }
   
   .modal-content form {
-    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    padding: 1.5rem;
   }
   
   .modal-buttons {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
   
   .modal-buttons button {

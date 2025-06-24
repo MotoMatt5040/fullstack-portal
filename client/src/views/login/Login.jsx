@@ -73,48 +73,14 @@ const Login = () => {
       return;
     }
 
-    // setForgotLoading(true);
     setForgotMessage('');
-
-    // try {
-    //   const baseUrl =
-    //     import.meta.env.VITE_ENV === 'dev'
-    //       ? import.meta.env.VITE_DEV_API_URL
-    //       : `https://api.${import.meta.env.VITE_DOMAIN_NAME}`;
-
-    //   const response = await fetch(`${baseUrl}/reset/forgot-password`, {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ email: forgotEmail }),
-    //   });
-
-    //   const data = await response.json();
-
-    //   if (response.ok) {
-    //     setForgotMessage('Password reset link sent to your email!');
-    //     setSuccessMsg('Password reset link sent! Check your email.');
-    //     setTimeout(() => {
-    //       setShowForgotPassword(false);
-    //       setForgotEmail('');
-    //       setForgotMessage('');
-    //     }, 3000);
-    //   } else {
-    //     setForgotMessage(data.message || 'Failed to send reset link');
-    //   }
-    // } catch (error) {
-    //   setForgotMessage('Network error. Please try again.');
-    // } finally {
-    //   setForgotLoading(false);
-    // }
 
     try {
       const result = await forgotPassword({ email: forgotEmail }).unwrap();
 
       // Handle success
-      setForgotMessage('Password reset link sent to your email!');
-      setSuccessMsg('Password reset link sent! Check your email.');
+      setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+      setSuccessMsg('If an account with that email exists, a password reset link has been sent.');
       setTimeout(() => {
         setShowForgotPassword(false);
         setForgotEmail('');
@@ -222,7 +188,7 @@ const Login = () => {
               </button>
             </div>
 
-            <form onSubmit={handleForgotPassword}>
+            <form className='forgot-password-form' onSubmit={handleForgotPassword}>
               <label htmlFor='forgot-email'>Email Address:</label>
               <input
                 type='email'

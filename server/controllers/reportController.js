@@ -141,6 +141,10 @@ const handleGetReportData = handleAsync(async (req, res) => {
 	const useGpcph = cleanQueryParam(req.query?.useGpcph) === 'true';
 	const isLive = req.params?.type === 'live';
 
+	if (!isLive && (!startDate)) {
+		return res.status(400).json({ msg: 'Missing required fields' });
+	}
+	
 	const data = isLive
 		? await Reports.getLiveReportData(projectId)
 		: await Reports.getHistoricProjectReportData(projectId, startDate, endDate);

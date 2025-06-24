@@ -2,15 +2,17 @@
   max-height: 100%;
   max-width: 100%;
   height: auto;
-  font: 20px sans-serif;
+  font-family: sans-serif;
+  /* Font size is now dynamically set via JavaScript based on chart size */
 }
 
+/* Remove fixed font sizes - they're now calculated dynamically */
 tspan {
-  font-size: 1rem;
+  /* Font size will be set inline based on chart dimensions */
 }
 
 .spinner {
-  border: .25rem solid rgba(0, 0, 0, 0.1);
+  border: 0.25rem solid rgba(0, 0, 0, 0.1);
   border-top-color: #4f46e5; /* Indigo-600 or whatever color you want */
   border-radius: 50%;
   width: 2rem;
@@ -37,9 +39,7 @@ tspan {
 
 /* Medium (tablets) */
 @media (min-width: 768px) {
-  tspan {
-    font-size: 1.5rem;
-  }
+  /* Font scaling is now handled by JavaScript, not CSS */
 }
 
 /* Large (small desktops & laptops) */
@@ -70,4 +70,15 @@ tspan {
 /* 2K+ (2560px and above) */
 @media (min-width: 2560px) {
 
+}
+
+/* Ensure text remains readable at all sizes */
+.svg-pie-chart-container text {
+  pointer-events: none; /* Prevent text from interfering with interactions */
+  user-select: none;
+}
+
+/* Style for text that might be too small to read */
+.svg-pie-chart-container tspan[font-size] {
+  transition: font-size 0.3s ease;
 }

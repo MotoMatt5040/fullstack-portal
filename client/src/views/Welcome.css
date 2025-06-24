@@ -171,9 +171,9 @@
 .welcome-card-link {
   display: inline-flex;
   align-items: center;
-  justify-content: center; /* Center content in link */
-  gap: 0.6rem; /* Slightly larger gap */
-  padding: 0.875rem 2rem; /* Increased padding */
+  justify-content: center; 
+  gap: 0.6rem; 
+  padding: 0.875rem 2rem; 
   background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
   color: white;
   text-decoration: none;
@@ -181,11 +181,11 @@
   font-weight: 500;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
-  margin-top: auto; /* Pushes the link to the bottom of the card */
+  margin-top: auto; 
 }
 
 .welcome-card-link:hover {
-  transform: translateY(-3px); /* More noticeable lift */
+  transform: translateY(-3px); 
   box-shadow: 0 8px 25px rgba(74, 144, 226, 0.45);
 }
 
