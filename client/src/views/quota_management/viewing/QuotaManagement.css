@@ -13,12 +13,12 @@
 
   border-collapse: collapse;
   text-align: center;
-  
+
   /* OPTIMIZED: Itsy bitsy teensy weensy spider bit bigger */
   font-size: calc(0.35rem + 0.4vw);
-  
+
   color: var(--text-color);
-  background-color: var(--background-color-elevated);
+  background-color: var(--background-color-table);
   border: 1px solid var(--border-color-soft);
   border-radius: 8px;
   overflow: hidden;
@@ -34,19 +34,15 @@
 .quota-management-table thead th {
   /* OPTIMIZED: Itsy bitsy more padding */
   padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
-  font-weight: 600;
+  font-weight: bold;
   white-space: normal; /* Allow headers to wrap on mobile */
   border-bottom: 2px solid var(--border-color-soft);
-}
-
-/* Header hierarchy styles merged from the second file */
-.quota-management-table thead tr:first-of-type th {
-  font-size: 1.1em;
   background-color: var(--background-color-muted);
 }
 
-.quota-management-table thead tr:nth-of-type(2) th {
-  font-weight: 500;
+.quota-management-table thead tr:first-child th:is(:nth-child(2), :nth-child(3)),
+.quota-management-table thead tr:nth-child(2) th:is(:nth-child(3), :nth-child(6)) {
+  border-left: 3px solid var(--border-color);
 }
 
 /* Base body cell styles */
@@ -88,28 +84,28 @@ tr.active td {
 }
 
 .quota-management-table td.cell-status.open {
-  background-color: rgba(67, 177, 123, 0.8) !important;
+  background-color: rgba(67, 177, 123, 0.8);
 }
 
 .quota-management-table td.cell-status.closed {
-  background-color: rgba(237, 33, 28, 0.8) !important;
+  background-color: rgba(237, 33, 28, 0.8);
 }
 
 .quota-management-table td.cell-status.half-open {
-  background-color: rgba(239, 163, 43, 0.8) !important;
+  background-color: rgba(239, 163, 43, 0.8);
   color: #000;
 }
 
 /* =================================================================
    Column & Group Borders (Preserved from original)
    ================================================================= */
-.quota-management-table colgroup + colgroup {
+.quota-management-table colgroup {
   border-left: 2px solid var(--border-color-soft);
 }
 
-.quota-management-table colgroup[data-main-group="Web"]:first-of-type {
-  border-left: 4px solid var(--accent-color);
-}
+/* .quota-management-table colgroup[data-main-group="Web"]:first-of-type {
+  border-left: 10px solid var(--accent-color);
+} */
 
 .quota-management-table col.col-label {
   border-right: 3px solid var(--border-color-soft);
@@ -117,32 +113,16 @@ tr.active td {
 
 .quota-management-table .total-column {
   font-weight: bold;
-  background-color: var(--transparent-background) !important;
+  /* background-color: var(--transparent-background) !important; */
 }
 
-/* =================================================================
-   Clickable/Interactive Styles & Animations (Preserved from original)
-   ================================================================= */
-.clickable-cell {
-  cursor: pointer;
-  color: blue;
-  text-decoration: underline;
-}
-.clickable-cell:hover { color: darkblue; }
-.clickable-row:hover { cursor: pointer; }
-
-@keyframes flash-red {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(255, 0, 0, 0.3); }
+.quota-management-table .group-border-left {
+  border-left: 3px solid var(--border-color);
 }
 
-@keyframes flashYellow {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(255, 255, 0, 0.3); }
+.quota-management-table .bold {
+  font-weight: bold;
 }
-
-.highlight-red.blinking { animation: flash-red 1s infinite; }
-.highlight-yellow.blinking { animation: flashYellow 3s infinite; }
 
 /* =================================================================
    Edge case responsive adjustments only

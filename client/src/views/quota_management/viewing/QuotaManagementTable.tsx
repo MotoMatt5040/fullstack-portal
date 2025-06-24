@@ -100,20 +100,28 @@ const getCellClassName = (header: string, value: string, subGroup: string): stri
     }
   }
 
+  if (value.includes('*')) {
+    className += ' bold';
+  }
+
   // Add the value as a class
   className += ` ${value}`;
 
   return className;
 };
 
-// Memoized cell component
-const TableCell = memo<{
+// Types for TableCell props
+interface TableCellProps {
   rowKey: string;
   group: string;
   subGroup: string;
   col: string;
   cellData: RowData | null;
-}>(({ rowKey, group, subGroup, col, cellData }) => {
+  extraClassName?: string; // Added new prop
+}
+
+// Memoized cell component
+const TableCell = memo<TableCellProps>(({ rowKey, group, subGroup, col, cellData, extraClassName }) => { // Destructure the new prop
   const value = useMemo(() => {
     if (!cellData) return '';
     const rawValue = getColumnValue(cellData, col);
@@ -122,13 +130,14 @@ const TableCell = memo<{
 
   const className = useMemo(() => {
     const headerName = getDisplayName(col);
-    return getCellClassName(headerName, value, subGroup);
-  }, [col, value, subGroup]);
+    // Combine the dynamically generated class with the extra one
+    return `${getCellClassName(headerName, value, subGroup)} ${extraClassName || ''}`;
+  }, [col, value, subGroup, extraClassName]); // Add extraClassName to the dependency array
 
   return (
     <td
       key={`${rowKey}-${group}-${subGroup}-${col}`}
-      className={className}
+      className={className.trim()} // Use trim() to remove any trailing space
     >
       {value}
     </td>
@@ -144,17 +153,29 @@ const TableRow = memo<{
   visibleStypes: VisibleStypes;
 }>(({ rowKey, rowData, visibleStypes }) => {
   const cells = useMemo(() => {
+    // These flags will track if we've already added the border for a group in this row
+    let isFirstInPhoneGroup = true;
+    let isFirstInWebGroup = true;
+
     return Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
       Object.entries(subGroups).flatMap(([subGroup, cols]) => {
         const colsArray = Array.isArray(cols) ? cols : [cols];
         return colsArray.map((col) => {
           let cellData: RowData | null = null;
+          let extraClassName = '';
 
+          // Check if this is the first column for the 'Phone' or 'Web' group
+          if (group === 'Phone' && isFirstInPhoneGroup) {
+            extraClassName = 'group-border-left';
+            isFirstInPhoneGroup = false; // Ensure it's only applied once per group per row
+          } else if (group === 'Web' && isFirstInWebGroup) {
+            extraClassName = 'group-border-left';
+            isFirstInWebGroup = false; // Ensure it's only applied once per group per row
+          }
+          
           if (group.startsWith('blankSpace')) {
-            // Handle special case for row labels
             cellData = rowData.Total?.Total || rowData.Total || null;
           } else {
-            // Check if this group and subGroup exist in the row data
             if (rowData[group]?.[subGroup]) {
               cellData = rowData[group][subGroup];
             }
@@ -168,6 +189,7 @@ const TableRow = memo<{
               subGroup={subGroup}
               col={col}
               cellData={cellData}
+              extraClassName={extraClassName} // Pass the class to TableCell
             />
           );
         });
@@ -236,15 +258,26 @@ const QuotaManagementTable: React.FC<Props> = memo(({
     );
 
     // Third header row - individual columns
-    const thirdRow = Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
-      Object.entries(subGroups).flatMap(([subGroup, cols]) => {
+    const thirdRow = Object.entries(visibleStypes).flatMap(([group, subGroups]) => {
+      // Flag to track the first column within each main group
+      let isFirstInGroup = true;
+      return Object.entries(subGroups).flatMap(([subGroup, cols]) => {
         const colsArray = Array.isArray(cols) ? cols : [cols];
-        return colsArray.map((col) => ({
-          key: `r3-${group}-${subGroup}-${col}`,
-          label: getDisplayName(col),
-        }));
-      })
-    );
+        return colsArray.map((col) => {
+          let className = '';
+          // If it's the first column of 'Phone' or 'Web', assign the class
+          if ((group === 'Phone' || group === 'Web') && isFirstInGroup) {
+            className = 'group-border-left';
+            isFirstInGroup = false; // Unset the flag for subsequent columns in this group
+          }
+          return {
+            key: `r3-${group}-${subGroup}-${col}`,
+            label: getDisplayName(col),
+            className: className, // Add className to the returned object
+          };
+        });
+      });
+    });
 
     return { firstRow, secondRow, thirdRow };
   }, [visibleStypes]);
@@ -319,7 +352,7 @@ const QuotaManagementTable: React.FC<Props> = memo(({
         {/* Third header row - individual columns */}
         <tr>
           {headerRows.thirdRow.map((header) => (
-            <th key={header.key}>
+            <th key={header.key} className={header.className}> {/* Use the className here */}
               {header.label}
             </th>
           ))}

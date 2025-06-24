@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../../../features/auth/authSlice';
 import {
-  useLazyGetQuotasQuery, // Reverted to useLazyGetQuotasQuery
+  useLazyGetQuotasQuery,
   useLazyGetProjectListQuery,
 } from '../../../features/quotasApiSlice';
-import { useSearchParams } from 'react-router-dom'; // Import useSearchParams
+import { useSearchParams } from 'react-router-dom';
 
 // Types
 interface DecodedToken {
@@ -33,13 +33,17 @@ interface QuotaData {
 
 // Constants
 const EXTERNAL_ROLE_ID = 4;
-const PROJECT_ID_QUERY_PARAM = 'projectId'; // Constant for the query parameter name
+const PROJECT_ID_QUERY_PARAM = 'projectId';
 
 const useQuotaManagementLogic = () => {
   // State
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [quotas, setQuotas] = useState<QuotaData>({});
   const [visibleStypes, setVisibleStypes] = useState<VisibleStypes>({});
+
+  // Refs for polling
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchParamsRef = useRef<any>(null);
 
   // Routing hook to manage URL query parameters
   const [searchParams, setSearchParams] = useSearchParams();
@@ -55,7 +59,6 @@ const useQuotaManagementLogic = () => {
       const decoded = jwtDecode<DecodedToken>(token);
       const roles = decoded?.UserInfo?.roles ?? [];
       const username = decoded?.UserInfo?.username ?? '';
-      // Determine if the user is internal based on the presence of EXTERNAL_ROLE_ID
       const isInternalUser = !roles.includes(EXTERNAL_ROLE_ID);
 
       return { roles, username, isInternalUser };
@@ -68,11 +71,7 @@ const useQuotaManagementLogic = () => {
   // RTK Query hooks for fetching quota data and project list lazily
   const [
     getQuotas,
-    {
-      data: quotaData,
-      isFetching: quotaDataIsFetching,
-      error: quotaDataError,
-    },
+    { data: quotaData, isFetching: quotaDataIsFetching, error: quotaDataError },
   ] = useLazyGetQuotasQuery();
 
   const [
@@ -94,30 +93,32 @@ const useQuotaManagementLogic = () => {
     }));
   }, [projectList, projectListIsFetching]);
 
-  // Effect to initialize selectedProject state from the URL query parameter on component mount
+  // FIXED: Effect to initialize selectedProject state from URL - only on mount
   useEffect(() => {
     const projectIdFromUrl = searchParams.get(PROJECT_ID_QUERY_PARAM);
-    if (projectIdFromUrl) {
+    if (projectIdFromUrl && projectIdFromUrl !== selectedProject) {
       setSelectedProject(projectIdFromUrl);
     }
-  }, [searchParams]); // Re-run if searchParams object itself changes (e.g., external URL navigation)
+  }, []); // Only run on mount
 
   // Effect to fetch the list of projects when user info becomes available
   useEffect(() => {
     const fetchParams = userInfo.isInternalUser
-      ? {} // No specific user ID needed for internal users
-      : { userId: userInfo.username }; // Filter by username for external users
+      ? {}
+      : { userId: userInfo.username };
 
     if (userInfo.username || userInfo.isInternalUser) {
       getProjectList(fetchParams).catch(console.error);
     }
   }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
 
-  // Effect to process and set quota data and visible stypes when quotaData changes
+  // FIXED: Effect to process and set quota data when quotaData changes
   useEffect(() => {
     if (quotaData) {
+      console.log(quotaData);
       try {
-        setQuotas(quotaData.data || {});
+        // Use functional update to ensure we're always working with fresh state
+        setQuotas(() => quotaData.data || {});
 
         const processedStypes: VisibleStypes = {
           blankSpace_6: {
@@ -126,27 +127,33 @@ const useQuotaManagementLogic = () => {
           },
         };
 
-        // Logic to sort the stypes based on a predefined order
-        const subTypeOrder = ['Landline', 'Cell', 'T2W', 'Panel', 'Email', 'Mailer'];
+        const subTypeOrder = [
+          'Landline',
+          'Cell',
+          'T2W',
+          'Panel',
+          'Email',
+          'Mailer',
+        ];
 
-        // Iterate through API's visibleStypes to populate processedStypes
-        Object.entries(quotaData.visibleStypes || {}).forEach(([type, entries]) => {
-          processedStypes[type] = { Total: ['Freq', 'Freq%'] }; // Initialize Total for each type
+        Object.entries(quotaData.visibleStypes || {}).forEach(
+          ([type, entries]) => {
+            processedStypes[type] = { Total: ['Freq', 'Freq%'] };
 
-          if (Array.isArray(entries)) {
-            // Filter and sort entries based on subTypeOrder
-            const sortedEntries = subTypeOrder.filter(orderKey =>
-              (entries as string[]).includes(orderKey)
-            );
+            if (Array.isArray(entries)) {
+              const sortedEntries = subTypeOrder.filter((orderKey) =>
+                (entries as string[]).includes(orderKey)
+              );
 
-            // Add sorted entries to processedStypes
-            sortedEntries.forEach((entry: string) => {
-              processedStypes[type][entry] = ['Status', 'Freq', 'Freq%'];
-            });
+              sortedEntries.forEach((entry: string) => {
+                processedStypes[type][entry] = ['Status', 'Freq', 'Freq%'];
+              });
+            }
           }
-        });
+        );
 
-        setVisibleStypes(processedStypes);
+        // Use functional update here too
+        setVisibleStypes(() => processedStypes);
       } catch (error) {
         console.error('Error processing quota data:', error);
         setQuotas({});
@@ -155,74 +162,106 @@ const useQuotaManagementLogic = () => {
     }
   }, [quotaData]);
 
-  // Effect to fetch quotas and set up polling based on selectedProject and userInfo
+  // Separate effect for URL management
   useEffect(() => {
     if (!selectedProject) {
-      setQuotas({}); // Clear data when no project is selected
-      // If no project is selected, also remove the projectId from the URL
       if (searchParams.has(PROJECT_ID_QUERY_PARAM)) {
-        setSearchParams(prev => {
-          prev.delete(PROJECT_ID_QUERY_PARAM);
-          return prev;
-        }, { replace: true }); // Use replace to avoid adding to browser history
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete(PROJECT_ID_QUERY_PARAM);
+        setSearchParams(newSearchParams, { replace: true });
       }
-      return;
+    } else {
+      if (searchParams.get(PROJECT_ID_QUERY_PARAM) !== selectedProject) {
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.set(PROJECT_ID_QUERY_PARAM, selectedProject);
+        setSearchParams(newSearchParams, { replace: true });
+      }
+    }
+  }, [selectedProject, searchParams, setSearchParams]);
+
+  // Data fetching with proper cleanup
+  useEffect(() => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
-    // Update the URL with the selected project ID
-    setSearchParams(prev => {
-      prev.set(PROJECT_ID_QUERY_PARAM, selectedProject);
-      return prev;
-    }, { replace: true }); // Use replace to update the URL without pushing a new history entry
+    if (!selectedProject) {
+      setQuotas({});
+      setVisibleStypes({});
+      lastFetchParamsRef.current = null;
+      return;
+    }
 
     const fetchParams = {
       projectId: selectedProject,
       isInternalUser: userInfo.isInternalUser,
     };
 
-    // Trigger an immediate fetch for the selected project's quotas
-    getQuotas(fetchParams).catch(console.error);
+    // Store current fetch params
+    lastFetchParamsRef.current = fetchParams;
 
-    // Set up a polling interval to refetch quotas periodically
-    const intervalId = setInterval(() => {
-      // Only fetch if a previous fetch is not already in progress
-      if (!quotaDataIsFetching) {
+    // Create fetch function that uses current params
+    const fetchQuotas = () => {
+      // Only fetch if params haven't changed
+      if (
+        lastFetchParamsRef.current &&
+        lastFetchParamsRef.current.projectId === fetchParams.projectId &&
+        lastFetchParamsRef.current.isInternalUser === fetchParams.isInternalUser
+      ) {
         getQuotas(fetchParams).catch(console.error);
       }
-    }, 15000); // Poll every 15 seconds
+    };
 
-    // Cleanup function: clear the interval when the component unmounts or dependencies change
-    return () => clearInterval(intervalId);
+    // Initial fetch
+    fetchQuotas();
 
-    // Dependencies for this effect:
-    // selectedProject: to re-run when a new project is selected
-    // userInfo.isInternalUser: to re-run if user type changes (though unlikely during a session)
-    // getQuotas: RTK Query's lazy query trigger
-    // setSearchParams, searchParams: to interact with the URL query parameters
-  }, [selectedProject, userInfo.isInternalUser, getQuotas, setSearchParams, searchParams]);
+    // Set up polling
+    intervalRef.current = setInterval(fetchQuotas, 15000);
 
-  // Callback for handling project selection changes from a UI component (e.g., dropdown)
-  const handleProjectChange = useCallback((selected: ProjectOption | null) => {
-    // Update the local state; the useEffect above will react to this change and update the URL
-    setSelectedProject(selected?.value || '');
-  }, []);
+    // Cleanup
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [selectedProject, userInfo.isInternalUser, getQuotas]);
 
-  // Callback to manually refresh quota data (e.g., for a "Refresh" button)
+  // Callback for handling project selection changes
+  const handleProjectChange = useCallback(
+    (selected: ProjectOption | null) => {
+      const newValue = selected?.value || '';
+      if (newValue !== selectedProject) {
+        setSelectedProject(newValue);
+      }
+    },
+    [selectedProject]
+  );
+
+  // Callback to manually refresh quota data
   const refreshData = useCallback(() => {
-    if (selectedProject) {
+    if (selectedProject && !quotaDataIsFetching) {
       const fetchParams = {
         projectId: selectedProject,
         isInternalUser: userInfo.isInternalUser,
       };
       getQuotas(fetchParams).catch(console.error);
     }
-  }, [selectedProject, userInfo.isInternalUser, getQuotas]);
+  }, [
+    selectedProject,
+    userInfo.isInternalUser,
+    getQuotas,
+    quotaDataIsFetching,
+  ]);
 
   // Memoized boolean to indicate overall loading state (initial fetch)
   const isLoading = useMemo(() => {
-    // isLoading is true if project list is fetching, or if quota data is fetching
-    // AND no quotas have been loaded yet (distinguishing initial load from refetches)
-    return projectListIsFetching || (quotaDataIsFetching && !Object.keys(quotas).length);
+    return (
+      projectListIsFetching ||
+      (quotaDataIsFetching && Object.keys(quotas).length === 0)
+    );
   }, [quotaDataIsFetching, projectListIsFetching, quotas]);
 
   // Memoized boolean to indicate if data is currently being refetched (after initial load)
@@ -230,10 +269,19 @@ const useQuotaManagementLogic = () => {
     return quotaDataIsFetching && Object.keys(quotas).length > 0;
   }, [quotaDataIsFetching, quotas]);
 
-  // Memoized error state (combines errors from both RTK Query hooks)
+  // Memoized error state
   const error = useMemo(() => {
     return quotaDataError || projectListError;
   }, [quotaDataError, projectListError]);
+
+  // FIXED: Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
 
   return {
     // Data
@@ -245,13 +293,13 @@ const useQuotaManagementLogic = () => {
 
     // Loading states
     isLoading,
-    isRefetching, // New flag for refetching state
+    isRefetching,
 
     // Error states
     error,
 
     // Actions
-    handleProjectChange,
+    handleProjectChange, // Use optimized callback
     refreshData,
 
     // Legacy support (can be removed after refactoring consumers)

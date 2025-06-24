@@ -11,50 +11,46 @@ import QuotaManagementTable from './QuotaManagementTable';
 import Icon from '@mdi/react';
 import { mdiFilterMenu } from '@mdi/js';
 import ExportExcelButton from '../../../components/ExportExcelButton';
-// import HEADERS from './ExternalHeaders.json' assert { type: 'json' };
 
 type Props = {};
-
-// let headers = ['Total', 'Landline', 'Cell', 'T2W', 'Panel'];
 
 const QuotaManagement = (props: Props) => {
   const {
     selectedProject,
-    setSelectedProject,
-    // visibleColumns,
-    // setVisibleColumns,
-    // isInternalUser,
+    handleProjectChange, // Use the callback from the hook
     quotas,
-    quotaDataIsFetching,
-    // showFilter,
-    // setShowFilter,
-    // toggleSubColumn,
-    // showMainColumnGroups,
-    // setShowMainColumnGroups,
-    // showSubColumnGroups,
-    // setShowSubColumnGroups,
+    isLoading,
+    isRefetching,
     projectListOptions,
     visibleStypes,
-    // filterRef,
+    error,
   } = useQuotaManagementLogic();
 
-// const baseSubHeaders = ['Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'];
-// const subHeaders = isInternalUser
-//   ? [...baseSubHeaders, 'Fresh', 'G%', '%', 'S%', 'CG%']
-//   : baseSubHeaders;
+  // Show loading indicator only on initial load, not during refreshes
+  if (isLoading) {
+    return (
+      <section className='quota-management section'>
+        <h1>Quota Management Module</h1>
+        <div className='quota-management-container'>
+          <div className="loading-indicator">Loading...</div>
+        </div>
+      </section>
+    );
+  }
 
-  // const columnGroups = [
-  //   { key: 'total', label: 'Total Quota' },
-  //   { key: 'landline', label: 'Landline' },
-  //   { key: 'cell', label: 'Cell' },
-  //   { key: 't2w', label: 'T2W' },
-  //   { key: 'panel', label: 'Panel' },
-  // ];
-
-  // const allColumnsActive = Object.values(visibleColumns).every(
-  //   (col) =>
-  //     col.active && Object.values(col.subColumns).every((subVal) => subVal)
-  // );
+  // Show error state
+  if (error) {
+    return (
+      <section className='quota-management section'>
+        <h1>Quota Management Module</h1>
+        <div className='quota-management-container'>
+          <div className="error-indicator">
+            Error loading data. Please try again.
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className='quota-management section'>
@@ -70,170 +66,41 @@ const QuotaManagement = (props: Props) => {
                   (opt) => opt.value === selectedProject
                 ) || null
               }
-              onChange={(selected: any) => {
-                setSelectedProject(selected ? selected.value : null);
-              }}
+              onChange={handleProjectChange} // Use the optimized callback
               isDisabled={false}
               placeholder='Select...'
               isClearable
               closeMenuOnSelect={true}
             />
           </div>
-
-          {/* <div
-            className='filter-toggle-wrapper'
-            style={{ position: 'relative' }}
-            ref={filterRef}
-          >
-            <span
-              className='view-toggle-span'
-              onClick={() => setShowFilter((prev) => !prev)}
-            >
-              <Icon path={mdiFilterMenu} size={1} title='Options' />
-            </span>
-
-            {showFilter && (
-              <div className='filter-popup'>
-                <div className='filter-popup-group'>
-                  <strong>Toggle Everything</strong>
-                  <MyToggle
-                    label='All Columns'
-                    active={allColumnsActive}
-                    onClick={() => {
-                      setVisibleColumns((prev) => {
-                        const newState = {};
-                        for (const key in prev) {
-                          newState[key] = {
-                            active: !allColumnsActive,
-                            subColumns: {},
-                          };
-                          for (const subKey in prev[key].subColumns) {
-                            newState[key].subColumns[subKey] =
-                              !allColumnsActive;
-                          }
-                        }
-                        return newState;
-                      });
-                    }}
-                  />
-                </div>
-                <div className='filter-popup-group all-subcolumns-toggle'>
-                  <strong>Toggle All Sub Columns</strong>
-                  <div className='filter-popup-subgroup'>
-                    {subHeaders.map((subKey) => (
-                      <MyToggle
-                        key={subKey}
-                        label={subKey}
-                        // Check if all are active for this subKey to toggle on/off all at once
-                        active={Object.values(visibleColumns).every(
-                          (col) => col.subColumns[subKey]
-                        )}
-                        onClick={() => {
-                          // Determine if we need to activate or deactivate this subKey for all
-                          const allActive = Object.values(visibleColumns).every(
-                            (col) => col.subColumns[subKey]
-                          );
-
-                          setVisibleColumns((prev) => {
-                            const newState = {};
-                            for (const key in prev) {
-                              newState[key] = {
-                                ...prev[key],
-                                subColumns: {
-                                  ...prev[key].subColumns,
-                                  [subKey]: !allActive, // toggle opposite of current allActive state
-                                },
-                              };
-                            }
-                            return newState;
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div
-                  className='filter-popup-arrow'
-                  onClick={() => setShowMainColumnGroups((prev) => !prev)}
-                >
-                  <div className='filter-popup-arrow-line' />
-                  <div className='show-sub-groups-arrow'>
-                    {showMainColumnGroups ? '▼' : 'Main Groups ►'}
-                  </div>
-                </div>
-
-                {showMainColumnGroups &&
-                  columnGroups.map(({ key, label }) => (
-                    <div key={key} className='filter-popup-group'>
-                      <MyToggle
-                        label={label}
-                        active={visibleColumns[key].active}
-                        onClick={() =>
-                          setVisibleColumns((prev) => ({
-                            ...prev,
-                            [key]: {
-                              ...prev[key],
-                              active: !prev[key].active,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                  ))}
-
-                <div
-                  className='filter-popup-arrow'
-                  onClick={() => setShowSubColumnGroups((prev) => !prev)}
-                >
-                  <div className='filter-popup-arrow-line' />
-                  <div className='show-sub-groups-arrow'>
-                    {showSubColumnGroups ? '▼' : 'Sub Groups ►'}
-                  </div>
-                </div>
-
-                {showSubColumnGroups &&
-                  columnGroups.map(({ key, label }) => (
-                    <div key={key} className='filter-popup-group'>
-                      <div>
-                        <strong>{label}</strong>
-                      </div>
-                      <div className='filter-popup-subgroup'>
-                        {subHeaders.map((subKey) => (
-                          <MyToggle
-                            key={subKey}
-                            label={subKey}
-                            active={visibleColumns[key].subColumns[subKey]}
-                            onClick={() => toggleSubColumn(key, subKey)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div> */}
+          
+          {/* Optional: Show refresh indicator */}
+          {isRefetching && (
+            <div className="refresh-indicator">
+              <span>Updating...</span>
+            </div>
+          )}
         </div>
+        
         <div className='quota-table-data-container'>
           <div className='quota-table-header'>
             <ExportExcelButton tableId={`${selectedProject}-quotas`} />
-            {/* <table className='quota-table-legend'>
-							<tbody>
-								<tr>
-									<td></td>
-								</tr>
-							</tbody>
-						</table> */}
           </div>
 
-          {quotas && !quotaDataIsFetching && (
+          {/* FIXED: Always show table when we have data, regardless of fetching state */}
+          {selectedProject && Object.keys(quotas).length > 0 && (
             <QuotaManagementTable
               id={`${selectedProject}-quotas`}
               quotaData={quotas}
               visibleStypes={visibleStypes}
-              // headers={headers}
-              // subHeaders={subHeaders}
-              // visibleColumns={visibleColumns}
             />
+          )}
+          
+          {/* Show message when no project is selected */}
+          {!selectedProject && (
+            <div className="no-selection-message">
+              <p>Please select a project to view quota data.</p>
+            </div>
           )}
         </div>
       </div>

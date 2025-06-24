@@ -2,7 +2,6 @@ const handleAsync = require('./asyncController');
 const ProjectInfo = require('../services/ProjectInfo');
 const QuotaServices = require('../services/QuotaServices');
 const VoxcoApi = require('../services/VoxcoApi');
-const { cleanQueryParam } = require('../utils/CleanQueryParam');
 
 // Constants
 const STATUS_MAP = {
@@ -60,7 +59,6 @@ const calculatePercentages = (frequency, total, decimals = 1) => {
   return total > 0 ? ((frequency / total) * 100).toFixed(decimals) : '0.0';
 };
 
-// Create base data structure
 const createBaseDataStructure = (label, newLabel) => ({
   Total: {
     Label: label,
@@ -139,12 +137,10 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
     const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
     const subType = stypeMatch ? STYPE_MAP[stypeMatch[1]] : projectTypeFallback;
 
-    // --- FIX: Prevent web types from being processed in the phone structure ---
     const webTypes = ['Panel', 'T2W', 'Email', 'Mailer'];
     if (webTypes.includes(subType)) {
-      continue; // Skip this iteration if it's a web type
+      continue;
     }
-    // --- END FIX ---
 
     if (subType && !visibleStypes.Phone.includes(subType)) {
       visibleStypes.Phone.push(subType);
@@ -152,11 +148,6 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
 
     const newLabel = cleanLabel(Label);
     const newStatus = STATUS_MAP[Status] || 'Unknown';
-
-    // let newStatus = STATUS_MAP[Status] || 'Unknown';
-    // if (newLabel.includes('*')) {
-    //   newStatus = '-'; // Force status to Closed if label contains '*'
-    // }
 
     const TotalObjective = extractTotalObjective(Label);
     const modifiedCriterion = cleanCriterion(Criterion);
@@ -278,22 +269,74 @@ const buildWebStructure = async (projectId, data, visibleStypes) => {
   }
 };
 
+const calculateTotalRowPercentages = (data) => {
+  if (data.totalRow.Phone) {
+    const phoneTotalFreq = data.totalRow.Phone.Total.Frequency;
+
+    for (const [typeKey, typeData] of Object.entries(data.totalRow.Phone)) {
+      if (typeKey !== 'Total' && typeData.Frequency !== undefined) {
+        typeData['Freq%'] = calculatePercentages(
+          typeData.Frequency,
+          phoneTotalFreq
+        );
+      } else if (typeKey === 'Total') {
+        typeData['Freq%'] = calculatePercentages(
+          phoneTotalFreq,
+          data.totalRow.Total.Frequency
+        );
+      }
+    }
+  }
+
+  if (data.totalRow.Web) {
+    const webTotalFreq = data.totalRow.Web.Total.Frequency;
+
+    for (const [typeKey, typeData] of Object.entries(data.totalRow.Web)) {
+      if (typeKey !== 'Total' && typeData.Frequency !== undefined) {
+        typeData['Freq%'] = calculatePercentages(
+          typeData.Frequency,
+          webTotalFreq
+        );
+      } else if (typeKey === 'Total') {
+        typeData['Freq%'] = calculatePercentages(
+          webTotalFreq,
+          data.totalRow.Total.Frequency
+        );
+      }
+    }
+  }
+
+  data.totalRow.Total['Freq%'] = calculatePercentages(
+    data.totalRow.Total.Frequency,
+    data.totalRow.Total.TotalObjective
+  );
+};
+
 const calculateData = (data) => {
   const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
-  data.totalRow.Total['To Do'] = data.totalRow.Total.TotalObjective - data.totalRow.Total.Frequency;
+  calculateTotalRowPercentages(data);
+
+  data.totalRow.Total['To Do'] =
+    data.totalRow.Total.TotalObjective - data.totalRow.Total.Frequency;
 
   for (const quota of quotaKeys) {
     const quotaData = data[quota];
 
     for (const [group, groupData] of Object.entries(quotaData)) {
       if (group === 'Total') {
+        // Remove text in parentheses from the Label
+        if (groupData.Label) {
+          groupData.Label = groupData.Label.replace(/ *\([^)]*\) */g, '');
+        }
+
         const freqPercent =
           quotaData.Total.Frequency > 0
             ? calculatePercentages(
-                groupData.Frequency,
-                quotaData.Total.Frequency
+                quotaData.Total.Frequency,
+                data.totalRow.Total.Frequency
               )
             : '0.0';
+
         groupData['Freq%'] = freqPercent;
         const toDo = groupData.TotalObjective - groupData.Frequency;
         groupData['To Do'] = toDo;
@@ -305,7 +348,7 @@ const calculateData = (data) => {
           groupData.Status = '';
         } else {
           if (groupData.TotalObjective === 0) {
-            groupData.Status = 'C'; 
+            groupData.Status = 'C';
           } else {
             groupData.Status = toDo > 0 ? 'O' : 'C';
           }
@@ -314,6 +357,12 @@ const calculateData = (data) => {
       }
 
       for (const [type, typeData] of Object.entries(groupData)) {
+        // This check is likely redundant if all labels are at the 'Total' level,
+        // but is included for completeness.
+        if (typeData.Label) {
+          typeData.Label = typeData.Label.replace(/ *\([^)]*\) */g, '');
+        }
+
         const stype = STYPE_REVERSE_MAP[type] || 'unknown';
 
         let objPercent = '0.0';
@@ -341,7 +390,6 @@ const calculateData = (data) => {
             data.totalRow[group].Total.Frequency
           );
         }
-
         typeData['Obj%'] = objPercent;
         typeData['Freq%'] = freqPercent;
       }
@@ -350,13 +398,19 @@ const calculateData = (data) => {
 };
 
 const filterForExternalUsers = (data) => {
+
+  const trackerKey = Object.keys(data).find((key) => key === 'STYPE>0');
+
+  if (trackerKey) {
+    delete data[trackerKey];
+  }
+
   const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
 
   for (const quotaKey of quotaKeys) {
     const hasPhoneCom = data[quotaKey].Phone?.com;
-    const hasWebCom = data[quotaKey].Web?.com;
 
-    if (!hasPhoneCom && !hasWebCom) {
+    if (!hasPhoneCom) {
       delete data[quotaKey];
     }
   }
@@ -366,16 +420,16 @@ const sortPhoneProjectsUltraRobust = (projects) => {
   return projects.sort((a, b) => {
     const aEndsCOM = /com$/i.test(a.name);
     const bEndsCOM = /com$/i.test(b.name);
-    
+
     if (aEndsCOM && !bEndsCOM) return -1;
     if (bEndsCOM && !aEndsCOM) return 1;
-    
+
     const aContainsCOM = /com/i.test(a.name);
     const bContainsCOM = /com/i.test(b.name);
-    
+
     if (aContainsCOM && !bContainsCOM) return -1;
     if (bContainsCOM && !aContainsCOM) return 1;
-    
+
     return a.name.localeCompare(b.name);
   });
 };
@@ -415,37 +469,25 @@ const handleGetQuotas = handleAsync(async (req, res) => {
     const visibleStypes = {};
 
     if (phoneProjects.length > 0) {
-      // phoneProjects.sort((a, b) => {
-      //   if (a.name.endsWith('COM')) return -1;
-      //   if (b.name.endsWith('COM')) return 1;
-      //   return 0;
-      // });
-
       const sortedPhoneProjects = sortPhoneProjectsUltraRobust(phoneProjects);
 
       data.totalRow.Phone = { Total: { Frequency: 0 } };
       visibleStypes.Phone = [];
 
-       for (const project of sortedPhoneProjects) {
+      for (const project of sortedPhoneProjects) {
         await buildPhoneStructure(project, token, data, visibleStypes);
       }
-
-      // await Promise.all(
-      //   phoneProjects.map((project) =>
-      //     buildPhoneStructure(project, token, data, visibleStypes)
-      //   )
-      // );
     }
 
     if (webProject.length > 0) {
       await buildWebStructure(webProject[0].id, data, visibleStypes);
     }
 
+    calculateData(data);
+
     if (!isInternalUser) {
       filterForExternalUsers(data);
     }
-
-    calculateData(data);
 
     return res.status(200).json({
       visibleStypes,
@@ -459,23 +501,4 @@ const handleGetQuotas = handleAsync(async (req, res) => {
   }
 });
 
-const handleGetProjectList = handleAsync(async (req, res) => {
-  const userId = cleanQueryParam(req?.query?.userId);
-
-  try {
-    const projects = await QuotaServices.getProjectsList(userId);
-
-    if (!projects) {
-      return res.status(404).json({ message: 'Problem getting projects' });
-    }
-
-    res.status(200).json(projects);
-  } catch (error) {
-    console.error('Error in handleGetProjectList:', error);
-    return res.status(500).json({
-      message: 'Internal server error while fetching projects',
-    });
-  }
-});
-
-module.exports = { handleGetQuotas, handleGetProjectList };
+module.exports = { handleGetQuotas };
