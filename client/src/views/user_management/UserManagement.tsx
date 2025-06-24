@@ -1,119 +1,131 @@
 import React, { useState } from 'react';
-import { useGetUsersQuery } from '../../features/usersApiSlice';
-import { Link } from 'react-router-dom';
-import ROLES_LIST from '../../ROLES_LIST.json';
+// Note: We remove <Link> if it's no longer used elsewhere
+// import { Link } from 'react-router-dom';
+import { useUserManagementLogic } from './useUserManagementLogic'; // Your custom hook
+import { Modal } from '../../components/Modal';
+import UserForm from '../secure/AddUser';
+import UpdateUserRoles from '../users/UpdateUserRoles'; // Import the update form
 import './UserManagement.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+
+// Define the shape of a user object if not already defined
+interface User {
+  email: string;
+  roles: string[];
+}
 
 const UserManagement = () => {
-    const {
-        data: users,
-        isLoading,
-        isSuccess,
-        isError,
-        error
-    } = useGetUsersQuery('usersList', {
-        pollingInterval: 60000,
-        refetchOnFocus: true,
-        refetchOnMountOrArgChange: true
-    });
+  const {
+    isLoading,
+    isSuccess,
+    isError,
+    error,
+    searchTerm,
+    setSearchTerm,
+    filteredUsers,
+  } = useUserManagementLogic();
 
-    const [searchTerm, setSearchTerm] = useState('');
+  // State for the "Add User" modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    let content;
+  // --- NEW: State for the "Update User" modal ---
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
-    if (isLoading) {
-        content = <p>Loading users...</p>;
-    }
+  // Handler to open the update modal with the selected user's data
+  const handleOpenUpdateModal = (user: User) => {
+    setEditingUser(user);
+    setIsUpdateModalOpen(true);
+  };
 
-    if (isError) {
-        content = <p className="errmsg">{error?.data?.message || 'An error occurred'}</p>;
-    }
+  const handleModalClose = () => {
+    setIsAddModalOpen(false);
+    setIsUpdateModalOpen(false);
+    setEditingUser(null); // Clear the user being edited
+  };
 
-    if (isSuccess) {
-        // FIX: Ensure users and users.ids exist before trying to filter.
-        // This prevents the "Cannot read properties of undefined (reading 'filter')" error.
-        const allUserIds = users?.ids || [];
+  let content;
 
-        const filteredIds = allUserIds.filter(userId => {
-            const user = users.entities[userId];
-            if (!user) return false;
-            const fullName = `${user.firstname} ${user.lastname}`;
-            return user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                   fullName.toLowerCase().includes(searchTerm.toLowerCase());
-        });
+  if (isLoading) content = <p>Loading users...</p>;
+  // @ts-ignore
+  if (isError) content = <p className="errmsg">{error?.data?.message || 'An error occurred'}</p>;
 
-        const tableContent = filteredIds.length > 0
-            ? filteredIds.map(userId => {
-                const user = users.entities[userId];
-                if (!user) return null;
+  if (isSuccess) {
+    const tableContent =
+      filteredUsers.length > 0 ? (
+        filteredUsers.map((user: User) => (
+          <tr key={user.email} className="table__row user">
+            <td className="table__cell">{user.email}</td>
+            <td className="table__cell">{user.roles.join(', ')}</td>
+            <td className="table__cell">
+              {/* --- MODIFIED: Changed from Link to a button --- */}
+              <button onClick={() => handleOpenUpdateModal(user)} className="edit-button">
+                <FontAwesomeIcon icon={faPencilAlt} /> Edit
+              </button>
+            </td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td className="table__cell" colSpan={3} style={{ textAlign: 'center' }}>
+            No users found.
+          </td>
+        </tr>
+      );
 
-                const userRoles = user.roles.map(roleId => {
-                    const role = Object.entries(ROLES_LIST).find(([key, value]) => value === roleId);
-                    return role ? role[0] : 'Unknown';
-                }).join(', ');
-
-                return (
-                    <tr key={userId} className="table__row user">
-                        <td className="table__cell">{user.username}</td>
-                        <td className="table__cell">{`${user.firstname} ${user.lastname}`}</td>
-                        <td className="table__cell">{userRoles}</td>
-                        <td className="table__cell">
-                            <Link to={`/users/${userId}`} className="edit-button">
-                                <i className="fas fa-pencil-alt"></i> Edit
-                            </Link>
-                        </td>
-                    </tr>
-                );
-              })
-            : (
-                <tr>
-                    <td className="table__cell" colSpan="4" style={{ textAlign: 'center' }}>
-                        No users found.
-                    </td>
-                </tr>
-            );
-
-        content = (
-            <>
-                <div className="user-management-header">
-                    <h1 className="user-management-title">User Management</h1>
-                    <Link to="/adduser" className="add-user-button">
-                        <i className="fas fa-plus"></i> Add New User
-                    </Link>
-                </div>
-                <div className="user-management-controls">
-                    <input
-                        type="text"
-                        placeholder="Search for a user..."
-                        className="search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="table-container">
-                    <table className="table table--users">
-                        <thead className="table__thead">
-                            <tr>
-                                <th scope="col" className="table__th user__username">Username</th>
-                                <th scope="col" className="table__th user__fullname">Full Name</th>
-                                <th scope="col" className="table__th user__roles">Roles</th>
-                                <th scope="col" className="table__th user__actions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {tableContent}
-                        </tbody>
-                    </table>
-                </div>
-            </>
-        );
-    }
-
-    return (
-        <section className="user-management-container">
-            {content}
-        </section>
+    content = (
+      <>
+        <div className="user-management-header">
+          <h1 className="user-management-title">User Management</h1>
+          <button onClick={() => setIsAddModalOpen(true)} className="add-user-button">
+            <FontAwesomeIcon icon={faPlus} /> Add New User
+          </button>
+        </div>
+        <div className="user-management-controls">
+          <input
+            type="text"
+            placeholder="Search by email..."
+            className="search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="new-password" // Keep the autofill fix
+          />
+        </div>
+        <div className="table-container">
+          <table className="table table--users">
+            <thead className="table__thead">
+              <tr>
+                <th scope="col" className="table__th user__email">Email</th>
+                <th scope="col" className="table__th user__roles">Roles</th>
+                <th scope="col" className="table__th user__actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>{tableContent}</tbody>
+          </table>
+        </div>
+      </>
     );
+  }
+
+  return (
+    <section className="user-management-container">
+      {content}
+
+      {/* --- MODAL 1: Add User --- */}
+      <Modal isOpen={isAddModalOpen} onClose={handleModalClose}>
+        <UserForm onSuccess={handleModalClose} />
+      </Modal>
+
+      {/* --- MODAL 2: Update User Roles --- */}
+      {/* Ensure editingUser is not null before rendering */}
+      {editingUser && (
+        <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>
+          <UpdateUserRoles userToUpdate={editingUser} onSuccess={handleModalClose} />
+        </Modal>
+      )}
+    </section>
+  );
 };
 
 export default UserManagement;

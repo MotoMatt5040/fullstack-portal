@@ -36,21 +36,6 @@ const getClients = async () => {
   });
 };
 
-const addUserRoles = async (uuid, roles) => {
-  return withDbConnection({
-    database: promark,
-    queryFn: async (pool) => {
-      for (const role of roles) {
-        await pool
-          .request()
-          .input('uuid', sql.UniqueIdentifier, uuid)
-          .input('role', sql.SmallInt, role)
-          .query('INSERT INTO tblUserRoles (uuid, role) VALUES (@uuid, @role)');
-      }
-    },
-  });
-};
-
 const getUser = async (email) => {
   return withDbConnection({
     database: promark,
@@ -150,14 +135,177 @@ const clearPasswordResetToken = async (uuid) => {
   });
 };
 
+const getAllUsers = async () => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .query(`
+          SELECT 
+            a.email, 
+            STRING_AGG(r.roleName, ', ') AS roles 
+          FROM tblAuthentication a
+          INNER JOIN tblUserRoles ur ON a.uuid = ur.uuid
+          INNER JOIN tblRoles r ON ur.role = r.roleid
+          GROUP BY a.uuid, a.email
+          ORDER BY email asc
+        `);
+      return result.recordset;
+    },
+    fnName: 'getAllUsers',
+  });
+};
+
+const addUserRoles = async (uuid, roles) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      // Prepare the roles array to be passed as a comma-separated string to the query
+      const rolesString = roles.join(',');
+
+      const request = pool.request();
+      request.input('uuid', sql.UniqueIdentifier, uuid);
+      request.input('roles', sql.VarChar, rolesString);
+
+      // This query inserts roles only if the user does not already have them
+      const query = `
+        INSERT INTO tblUserRoles (uuid, role)
+        SELECT @uuid, value
+        FROM STRING_SPLIT(@roles, ',')
+        WHERE CAST(value AS INT) NOT IN (
+          SELECT role FROM tblUserRoles WHERE uuid = @uuid
+        )
+      `;
+
+      const result = await request.query(query);
+      return result;
+    },
+    fnName: 'addUserRoles',
+  });
+};
+
+/**
+ * Removes an array of roles from a user.
+ * @param {string} uuid - The user's unique identifier.
+ * @param {number[]} roles - An array of role IDs to remove.
+ * @returns {Promise<object>} The result from the database operation.
+ */
+const removeUserRoles = async (uuid, roles) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const rolesString = roles.join(',');
+
+      const request = pool.request();
+      request.input('uuid', sql.UniqueIdentifier, uuid);
+      request.input('roles', sql.VarChar, rolesString);
+
+      // This query deletes roles that are in the provided list
+      const query = `
+        DELETE FROM tblUserRoles
+        WHERE uuid = @uuid AND role IN (
+          SELECT CAST(value AS INT) FROM STRING_SPLIT(@roles, ',')
+        )
+      `;
+
+      const result = await request.query(query);
+      return result;
+    },
+    fnName: 'removeUserRoles',
+  });
+};
+
+/**
+ * Updates the client ID for a user in their profile table.
+ * @param {string} uuid - The user's unique identifier.
+ * @param {string} clientId - The new client ID to assign to the user.
+ * @returns {Promise<object>} The result from the database operation.
+ */
+const updateUserProfileClient = async (uuid, clientId) => {
+  // console.log('clientid', clientId)
+  return
+    return withDbConnection({
+        database: promark,
+        queryFn: async (pool) => {
+            const request = pool.request();
+            request.input('uuid', sql.UniqueIdentifier, uuid);
+            
+            // THE FIX: Explicitly handle the null case for clientId.
+            // If clientId has a value, we use sql.VarChar.
+            // If clientId is null or undefined, we explicitly tell the DB to use NULL.
+            if (clientId) {
+                request.input('clientId', sql.VarChar, clientId);
+            } else {
+                request.input('clientId', sql.VarChar, null);
+            }
+
+            const query = `
+                UPDATE tblUserProfiles
+                SET clientId = @clientId
+                WHERE uuid = @uuid
+            `;
+            
+            const result = await request.query(query);
+            return result;
+        },
+        fnName: 'updateUserProfileClient',
+    });
+};
+
+const updateUserRoles = async (uuid, roles) => {
+    return withDbConnection({
+        database: promark,
+        queryFn: async (pool) => {
+            const transaction = new sql.Transaction(pool);
+            try {
+                // Start the transaction
+                await transaction.begin();
+
+                // 1. Delete all existing roles for the user
+                const deleteRequest = new sql.Request(transaction);
+                deleteRequest.input('uuid', sql.UniqueIdentifier, uuid);
+                await deleteRequest.query('DELETE FROM tblUserRoles WHERE uuid = @uuid');
+
+                // 2. If the new roles list is not empty, insert the new roles one-by-one.
+                // This is more reliable than a bulk insert for this scenario.
+                if (roles && roles.length > 0) {
+                    for (const roleId of roles) {
+                        const insertRequest = new sql.Request(transaction);
+                        insertRequest.input('uuid_param', sql.UniqueIdentifier, uuid);
+                        insertRequest.input('role_param', sql.Int, roleId);
+                        await insertRequest.query('INSERT INTO tblUserRoles (uuid, role) VALUES (@uuid_param, @role_param)');
+                    }
+                }
+
+                // 3. If everything was successful, commit the transaction
+                await transaction.commit();
+                
+            } catch (err) {
+                // If any step fails, roll back all changes
+                await transaction.rollback();
+                console.error('SQL Transaction Error in updateUserRoles:', err);
+                // Re-throw the error so the controller's async handler can catch it
+                throw new Error('Failed to update user roles in the database.');
+            }
+        },
+        fnName: 'updateUserRoles',
+    });
+};
+
+
 module.exports = {
   createUser,
   getClients,
   addUserRoles,
+  removeUserRoles,
   addUserProfile,
   getUser,
   setPasswordResetToken,
   getUserByResetToken,
   updatePassword,
   clearPasswordResetToken,
+  getAllUsers,
+  updateUserProfileClient,
+  updateUserRoles,
 };

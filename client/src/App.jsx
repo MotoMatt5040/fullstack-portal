@@ -1,5 +1,13 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+
+// --- Redux Imports ---
+// 1. Import the RTK Query hook to trigger the fetch
+import { useGetRolesQuery } from './features/config/configApiSlice';
+// 2. Import the selectors to read data from the Redux state
+import { selectRoles, selectIsRolesLoading } from './features/roles/rolesSlice';
+
 // Compnents
 import Layout from './components/Layout';
 
@@ -9,7 +17,6 @@ import RequireAuth from './features/auth/RequireAuth';
 import RedirectIfAuthenticated from './features/auth/RedirectIfAuthenticated';
 
 // Views
-import Public from './views/Public';
 import Welcome from './views/Welcome';
 import UsersList from './views/users/UsersList';
 import Missing from './views/Missing';
@@ -21,13 +28,21 @@ import AddUser from './views/secure/AddUser';
 import QuotaManagement from './views/quota_management/viewing/QuotaManagement';
 import ResetPassword from './views/secure/ResetPassword';
 import UserManagement from './views/user_management/UserManagement';
-
-import ROLES from './ROLES_LIST.json';
 import ProductionReport from './views/production_report/ProductionReport';
 import QuotaPublishing from './views/quota_management/publishing/QuotaPublishing';
 import Unauthorized from './views/secure/Unauthorized';
+import Reports from './views/Reports';
 
 function App() {
+  useGetRolesQuery();
+
+  const roles = useSelector(selectRoles);
+  const isRolesLoading = useSelector(selectIsRolesLoading);
+
+  if (isRolesLoading) {
+    return <p>Loading application...</p>; 
+  }
+
   return (
     <Routes>
       <Route path='/' element={<Layout />}>
@@ -51,24 +66,20 @@ function App() {
         />
 
         <Route path='unauthorized' element={<Unauthorized />} />
-
-        {/* <Route
-  path='reset-password'
-  element={<div>Reset password route works!</div>}
-/> */}
-
         <Route path='reset-password' element={<ResetPassword />} />
 
         {/* protected routes */}
+        {/* This JSX does not need to change, as it uses the 'roles' variable */}
+        {/* which is now populated from the Redux store. */}
         <Route
           element={
             <RequireAuth
               allowedRoles={[
-                ROLES.Admin,
-                ROLES.Executive,
-                ROLES.Manager,
-                ROLES.External,
-                ROLES.Programmer,
+                roles.Admin,
+                roles.Executive,
+                roles.Manager,
+                roles.External,
+                roles.Programmer,
               ]}
             />
           }
@@ -76,16 +87,17 @@ function App() {
           <Route path='github' element={<IssueForm />} />
           <Route path='welcome' element={<Welcome />} />
           <Route path='quota-management' element={<QuotaManagement />} />
+          <Route path='reports' element={<Reports />} />
         </Route>
 
         <Route
           element={
             <RequireAuth
               allowedRoles={[
-                ROLES.Admin,
-                ROLES.Executive,
-                ROLES.Manager,
-                ROLES.Programmer,
+                roles.Admin,
+                roles.Executive,
+                roles.Manager,
+                roles.Programmer,
               ]}
             />
           }
@@ -98,17 +110,19 @@ function App() {
 
         <Route
           element={
-            <RequireAuth allowedRoles={[ROLES.Admin, ROLES.Executive]} />
+            <RequireAuth allowedRoles={[roles.Admin, roles.Executive]} />
           }
         >
           <Route path='adduser' element={<AddUser />} />
           <Route path='user-management' element={<UserManagement />} />
         </Route>
 
-        <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
-          <Route path='userslist' element={<UsersList />} />
-          <Route path='updateuserroles' element={<UpdateUserRoles />} />
+        <Route element={<RequireAuth allowedRoles={[roles.Admin]} />}>
+          <Route path='users' element={<UsersList />} />
+          <Route path='users/new' element={<AddUser />} />
+          <Route path='users/:id' element={<UpdateUserRoles />} />
         </Route>
+        <Route path='usermanagement' element={<UserManagement />} />
 
         {/* catch all route */}
         <Route path='*' element={<Missing />} />

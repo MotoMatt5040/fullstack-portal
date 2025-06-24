@@ -1,0 +1,121 @@
+.update-roles-container {
+  padding: 2rem;
+  max-width: 600px;
+  margin: 2rem auto;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.update-roles-container h2 {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.update-roles-container p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.update-roles-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.update-roles-label {
+  font-weight: bold;
+  margin-bottom: -1rem; /* Pull closer to the element below */
+}
+
+.update-roles-input {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.role-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+/* Added container for client dropdown for consistent spacing */
+.client-dropdown-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* --- Action Button Styles (Updated & Improved) --- */
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.action-button {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold; /* Added for better visibility */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+/* UPDATED: Improved disabled state */
+.action-button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Styles for Add button */
+.action-button.add {
+  background-color: #28a745; /* Green */
+}
+
+/* UPDATED: Hover effect won't apply when disabled */
+.action-button.add:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+/* Styles for Remove button */
+.action-button.remove {
+  background-color: #dc3545; /* Red */
+}
+
+/* UPDATED: Hover effect won't apply when disabled */
+.action-button.remove:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+/* --- NEW: Styles for the Update/Save Button --- */
+/* This is the new section you needed to add */
+.action-button.update {
+  background-color: #007bff; /* Blue */
+}
+
+.action-button.update:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+
+/* --- Success and Error message styles --- */
+.success-message {
+  text-align: center;
+  margin-top: 1rem;
+  color: green;
+  font-weight: bold;
+}

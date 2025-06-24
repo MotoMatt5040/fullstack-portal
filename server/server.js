@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const { initializeRoles } = require('./config/rolesConfig'); 
 const path = require("path");
 const cors = require("cors");
 const corsOptions = require("./config/corsOptions");
@@ -36,21 +37,6 @@ app.use(verifyJWT);
 // Protected API routes (JWT required)
 app.use('/api', require('./routes/privateRoutes'));
 
-// app.use(auditLogger);
-// app.use("/", require("./routes/root"));
-// app.use("/auth", require("./routes/auth"));
-// app.use("/refresh", require("./routes/refresh"));
-// app.use("/logout", require("./routes/logout"));
-// app.use("/reset" , require("./routes/resetPassword"));
-
-// app.use(verifyJWT); //everything after this line requires a jwt
-
-
-// app.use("/users", require("./routes/api/promarkEmployees"));
-// app.use("/github", require("./routes/api/github"));
-// app.use("/reports", require("./routes/api/reports"));
-// app.use("/users", require("./routes/api/users"));
-// app.use("/quota-management", require("./routes/api/quotaManagement"));
 
 app.all("*", (req, res) => {
     res.status(404);
@@ -64,6 +50,24 @@ app.all("*", (req, res) => {
 });
 
 app.use(errorHandler);
-app.listen(PORT, () =>
-    console.log(`Server running on port ${PORT}`)
-);
+// We create an async function to handle startup tasks.
+const startServer = async () => {
+  try {
+    // 1. Wait for our roles to be loaded from the database.
+    //    The initializeRoles function will log its own success or failure.
+    await initializeRoles();
+
+    // 2. Once roles are loaded, we can safely start the server.
+    app.listen(PORT, () =>
+      console.log(`Server running on port ${PORT}`)
+    );
+  } catch (error) {
+    // This will catch any unexpected error during startup.
+    // Note: initializeRoles handles its own fatal error logging and process.exit()
+    console.error("A critical error occurred during server startup:", error);
+    process.exit(1);
+  }
+};
+
+// Call the function to start the application.
+startServer();

@@ -4,23 +4,34 @@ const ROLES_LIST = require('../../config/rolesList');
 const verifyRoles = require('../../middleware/verifyRoles');
 const usersController = require('../../controllers/usersController');
 
-// router
-// 	.route('/')
-// 	.get(verifyRoles(ROLES_LIST.Admin), usersController.getAllUsers)
-// 	.delete(verifyRoles(ROLES_LIST.Admin), usersController.deleteUser);
+console.log('--- Loading /routes/api/users.js ---');
+console.log('Value of ROLES_LIST at the moment route is defined:', ROLES_LIST);
+console.log('Value of ROLES_LIST.Admin:', ROLES_LIST.Admin);
 
-// router.route('/:id').get(usersController.getUser);
-
+// GET all users
 router
-	.route('/adduser')
-	.post(verifyRoles(ROLES_LIST.Admin), usersController.handleCreateUser);
+  .route('/')
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), usersController.handleGetAllUsers);
 
+// POST to create a new user
 router
-	.route('/getclients')
-	.get(verifyRoles(ROLES_LIST.Admin), usersController.handleGetClients);
+  .route('/adduser')
+  .post(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), usersController.handleCreateUser);
 
-// router
-//     .route('/getpartners')
-//     .get(verifyRoles(ROLES_LIST.Admin), usersController.handleGetPartners);
+// GET all clients
+router
+  .route('/getclients')
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), usersController.handleGetClients);
+
+// PUT to synchronize a user's roles
+router
+  .route('/roles')
+  .put(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), usersController.handleUpdateUserRoles);
+
+// PUT to update a user's profile information (like their client)
+router
+  .route('/profile')
+  .put(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), usersController.handleUpdateUserProfile);
+
 
 module.exports = router;

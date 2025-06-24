@@ -1,9 +1,10 @@
 /* Main container for the user management page */
 .user-management-container {
     padding: 2rem;
-    background-color: #f4f7fa;
-    min-height: calc(100vh - 60px); /* Adjust based on your nav bar height */
+    background-color: var(--background-color);
+    min-height: calc(100vh - 60px); 
     width: 100%;
+    color: var(--text-color);
 }
 
 /* Header section with title and add button */
@@ -18,13 +19,13 @@
 
 .user-management-title {
     font-size: 2rem;
-    color: #2c3e50;
+    color: var(--text-color);
     font-weight: 600;
 }
 
 /* "Add New User" button */
 .add-user-button {
-    background-color: #3498db;
+    background-color: var(--accent-color);
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
@@ -39,7 +40,7 @@
 }
 
 .add-user-button:hover {
-    background-color: #2980b9;
+    background-color: var(--accent-color-hover);
 }
 
 .add-user-button .fas {
@@ -55,7 +56,9 @@
     width: 100%;
     max-width: 400px;
     padding: 0.75rem 1rem;
-    border: 1px solid #dcdcdc;
+    border: 1px solid var(--border-color-soft);
+    background-color: var(--input-background);
+    color: var(--text-color);
     border-radius: 8px;
     font-size: 1rem;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -63,16 +66,16 @@
 
 .search-input:focus {
     outline: none;
-    border-color: #3498db;
+    border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
 /* Styling for the table */
 .table-container {
-    background-color: #ffffff;
+    background-color: var(--background-color-elevated);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    overflow-x: auto; /* For responsiveness on smaller screens */
+    box-shadow: var(--box-shadow-elevated);
+    overflow-x: auto;
     padding: 1rem;
 }
 
@@ -82,34 +85,38 @@
 }
 
 .table__thead {
-    background-color: #f8f9fa;
+    background-color: var(--table-header-background);
 }
 
 .table__th {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
-    color: #34495e;
-    border-bottom: 2px solid #e0e0e0;
+    color: var(--table-header-color);
+    border-bottom: 2px solid var(--border-color-half-soft);
 }
 
 .table__row {
-    border-bottom: 1px solid #f0f0f0;
+    /* REMOVED: border-bottom property is moved to the cell */
     transition: background-color 0.2s ease;
 }
 
-.table__row:last-child {
-    border-bottom: none;
-}
-
 .table__row:hover {
-    background-color: #f9fafb;
+    background-color: var(--table-row-hover-background);
 }
 
 .table__cell {
     padding: 1rem;
     vertical-align: middle;
-    color: #555;
+    color: var(--text-color);
+    text-align: left; 
+    /* ADDED: Apply the border to the cell instead of the row */
+    border-bottom: 1px solid var(--border-color-soft);
+}
+
+/* ADDED: A rule to remove the border from the cells of the very last row */
+.table tbody tr:last-child .table__cell {
+    border-bottom: none;
 }
 
 /* Edit button in the table */

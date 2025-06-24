@@ -94,7 +94,7 @@ const createWelcomeEmailTemplate = (
   isExternal,
   clientName
 ) => {
-  const subject = 'Welcome - Your Account Has Been Created';
+  const subject = 'Promark Portal - Your Account Has Been Created';
   const resetLink = `${
     process.env.FRONTEND_URL || 'http://localhost:5173'
   }/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
@@ -129,7 +129,7 @@ const createWelcomeEmailTemplate = (
           <h1>Welcome to Our Platform</h1>
         </div>
         <div class="content">
-          <h2>Hello!</h2>
+          <h2>Welcome to the Promark Portal!</h2>
           <p>Your account has been successfully created. Here are your temporary login credentials:</p>
           
           <div class="credentials">
@@ -169,7 +169,7 @@ const createWelcomeEmailTemplate = (
   `;
 
   const text = `
-    Welcome to Our Platform!
+    Welcome to the Promark Portal!
     
     Your account has been successfully created.
     
@@ -369,7 +369,6 @@ const handleCreateUser = handleAsync(async (req, res) => {
   }
 });
 
-// Test email configuration (optional endpoint for testing)
 const handleTestEmail = handleAsync(async (req, res) => {
   const { email } = req.body;
 
@@ -398,7 +397,6 @@ const handleTestEmail = handleAsync(async (req, res) => {
   }
 });
 
-// Add this debug version to your usersController.js
 const handlePasswordReset = handleAsync(async (req, res) => {
   const { token, email, newPassword } = req.body;
 
@@ -553,8 +551,8 @@ const sendForgotPasswordEmail = async (email, resetToken) => {
 
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    const subject = 'Password Reset Request';
-    
+    const subject = 'Promark Portal - Password Reset Request';
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -643,6 +641,65 @@ const sendForgotPasswordEmail = async (email, resetToken) => {
   }
 };
 
+handleGetAllUsers = async (req, res) => {
+  try {
+    const usersFromDb = await User.getAllUsers();
+    if (!usersFromDb || usersFromDb.length === 0) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+
+    // Convert the comma-separated roles string into an array for each user
+    const users = usersFromDb.map(user => ({
+      ...user,
+      roles: user.roles ? user.roles.split(', ') : []
+    }));
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+  }
+}
+
+const handleUpdateUserRoles = handleAsync(async (req, res) => {
+    const { email, roles } = req.body;
+
+    // Validate that roles is an array, even if it's empty
+    if (!email || !Array.isArray(roles)) {
+        return res.status(400).json({ message: 'Email and an array of roles are required.' });
+    }
+
+    const user = await User.getUser(email);
+    if (!user) {
+        return res.status(404).json({ message: `User with email ${email} not found.` });
+    }
+
+    // Call the "sync" function in the database service
+    await User.updateUserRoles(user.uuid, roles);
+
+    res.status(200).json({ success: `Roles for ${email} have been updated successfully.` });
+});
+
+
+const handleUpdateUserProfile = handleAsync(async (req, res) => {
+    const { email, clientId } = req.body;
+
+    if (!email || !clientId) {
+        return res.status(400).json({ message: 'Email and clientId are required.' });
+    }
+
+    const user = await User.getUser(email);
+    if (!user) {
+        return res.status(404).json({ message: `User with email ${email} not found.` });
+    }
+
+    await User.updateUserProfileClient(user.uuid, clientId);
+
+    res.status(200).json({ success: `Profile for ${email} has been updated successfully.` });
+});
+
+
+
 module.exports = {
   handleGetClients,
   handleCreateUser,
@@ -650,4 +707,8 @@ module.exports = {
   handleVerifyResetToken,
   handleForgotPassword, 
   handleTestEmail,
+  handleGetAllUsers,
+  handleUpdateUserProfile,
+  handleUpdateUserRoles
+  
 };
