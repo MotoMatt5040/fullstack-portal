@@ -67,6 +67,7 @@
 	margin: 0;
 	position: sticky;
 	top: 5rem;
+	z-index: 20;
 }
 
 @media (min-width: 768px) {
