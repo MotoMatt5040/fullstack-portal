@@ -29,7 +29,7 @@
   --button-background: #333;
   --button-background-hover: #444;
   --button-text: #fff;
-  --table-header-background: #444;
+  --table-header-background: #222;
   --table-header-color: #fff;
   --table-row-hover-background: #555;
   --table-border-color: #666;
@@ -117,7 +117,7 @@
   --button-background: #333;
   --button-background-hover: #444;
   --button-text: #fff;
-  --table-header-background: #444;
+  --table-header-background: #111;
   --table-header-color: #fff;
   --table-row-hover-background: #555;
   --table-border-color: #666;
