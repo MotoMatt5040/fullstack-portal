@@ -489,8 +489,6 @@ const handleVerifyResetToken = handleAsync(async (req, res) => {
   }
 });
 
-// Add this function to your server/controllers/usersController.js
-
 const handleForgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -680,7 +678,6 @@ const handleUpdateUserRoles = handleAsync(async (req, res) => {
     res.status(200).json({ success: `Roles for ${email} have been updated successfully.` });
 });
 
-
 const handleUpdateUserProfile = handleAsync(async (req, res) => {
     const { email, clientId } = req.body;
 
@@ -697,8 +694,6 @@ const handleUpdateUserProfile = handleAsync(async (req, res) => {
 
     res.status(200).json({ success: `Profile for ${email} has been updated successfully.` });
 });
-
-
 
 module.exports = {
   handleGetClients,

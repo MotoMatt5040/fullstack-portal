@@ -1,23 +1,25 @@
-const sql = require('mssql');
-const withDbConnection = require('../config/dbConn'); // Adjust path to your db connection utility
-const { promark } = require('../utils/databaseTypes'); // Adjust path to your database types
+// server/services/rolesService.js
+
+// Import the tblRoles model from your central model loader
+const { tblRoles } = require('../models');
 
 /**
- * Fetches all possible roles from the tblRoles table in the database.
- * This is intended for system-wide use, such as application initialization.
+ * Fetches all possible roles from the tblRoles table using Sequelize.
  * @returns {Promise<Array<{RoleID: number, RoleName: string}>>} A promise that resolves to an array of role objects.
  */
 const getAllRoles = async () => {
-    return withDbConnection({
-        database: promark,
-        queryFn: async (pool) => {
-            const result = await pool
-                .request()
-                .query('SELECT RoleID, RoleName FROM tblRoles'); 
-            return result.recordset;
-        },
-        fnName: 'getAllRoles', // Add a name for clear logging in your db connection wrapper
-    })
+    try {
+        // Use the Sequelize findAll method to get all roles
+        const roles = await tblRoles.findAll({
+            // Specify which columns to return
+            attributes: ['RoleID', 'RoleName']
+        });
+        return roles;
+    } catch (error) {
+        // Log the error and re-throw it to be handled by your async error wrapper
+        console.error("Error in getAllRoles service:", error);
+        throw error;
+    }
 };
 
 module.exports = {

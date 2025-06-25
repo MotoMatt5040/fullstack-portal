@@ -216,12 +216,6 @@ const removeUserRoles = async (uuid, roles) => {
   });
 };
 
-/**
- * Updates the client ID for a user in their profile table.
- * @param {string} uuid - The user's unique identifier.
- * @param {string} clientId - The new client ID to assign to the user.
- * @returns {Promise<object>} The result from the database operation.
- */
 const updateUserProfileClient = async (uuid, clientId) => {
   // console.log('clientid', clientId)
   return

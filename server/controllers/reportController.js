@@ -4,6 +4,7 @@ const {
 	STATE_ABBREVIATIONS,
 	OTHER_ABBREVIATIONS,
 } = require('../config/abbreviations');
+const path = require('path');
 
 const cleanQueryParam = (value) => {
 	if (value === 'undefined' || value === 'null' || value === '')
@@ -307,9 +308,25 @@ const handleUpdateTargetMph = handleAsync(async (req, res) => {
 	res.status(200).json({ msg: 'Target MPH updated successfully' });
 });
 
+const handleGetToplineReport = handleAsync(async (req, res) => {
+    // This is a placeholder. In a real application, you would generate
+    // or fetch a specific PDF based on request parameters.
+		console.log(__dirname)
+    const pdfPath = path.join(__dirname, 'topline.pdf');
+    res.sendFile(pdfPath, (err) => {
+        if (err) {
+            console.error("Error sending file:", err);
+            if (!res.headersSent) {
+                res.status(500).send("Error sending file");
+            }
+        }
+    });
+});
+
 module.exports = {
 	handleGetReportData,
 	handleGetLiveInterviewerData,
 	handleGetInterviewerProductionReportData,
-	handleUpdateTargetMph
+	handleUpdateTargetMph,
+	handleGetToplineReport
 };
