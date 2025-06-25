@@ -32,6 +32,7 @@ import ProductionReport from './views/production_report/ProductionReport';
 import QuotaPublishing from './views/quota_management/publishing/QuotaPublishing';
 import Unauthorized from './views/secure/Unauthorized';
 import Reports from './views/Reports';
+import Toplines from './views/toplines/Toplines';
 
 function App() {
   useGetRolesQuery();
@@ -88,6 +89,7 @@ function App() {
           <Route path='welcome' element={<Welcome />} />
           <Route path='quota-management' element={<QuotaManagement />} />
           <Route path='reports' element={<Reports />} />
+          <Route path='topline-report' element={<Toplines />} />
         </Route>
 
         <Route

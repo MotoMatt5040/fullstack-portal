@@ -31,3 +31,4 @@ yarn-error.log*
 #Vite
 .vite
 dist
+server/controllers/topline.pdf

@@ -18,7 +18,7 @@
   padding: 2.5rem; /* Increased padding */
   border-radius: 20px; /* Slightly more rounded corners */
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); /* Softer shadow */
-  border: 1px solid var(--border-color-soft); /* Removed the hard border */
+  border: none; /* Removed the border */
 }
 
 .login h1 {
@@ -140,14 +140,13 @@
   background-color: rgba(0, 0, 0, 0.5); /* Lighter overlay */
   backdrop-filter: blur(5px); /* Glassmorphism effect */
   z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
 
 .modal-content {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-
   background: var(--button-background);
   padding: 0;
   border-radius: 20px; /* Matching the login form */
@@ -163,11 +162,11 @@
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -40%);
+    transform: translateY(-20px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translateY(0);
   }
 }
 

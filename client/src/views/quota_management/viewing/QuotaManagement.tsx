@@ -59,6 +59,7 @@ const QuotaManagement = (props: Props) => {
         <div className='quota-management-header header'>
           <div className='multi-select'>
             <Select
+              classNamePrefix="my-select"
               className='quota-management-select'
               options={projectListOptions}
               value={

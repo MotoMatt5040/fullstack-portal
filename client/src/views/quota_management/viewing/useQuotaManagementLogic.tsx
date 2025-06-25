@@ -130,8 +130,8 @@ const useQuotaManagementLogic = () => {
         const subTypeOrder = [
           'Landline',
           'Cell',
-          'T2W',
           'Panel',
+          'T2W',
           'Email',
           'Mailer',
         ];

@@ -206,6 +206,7 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
             <br />
             <label htmlFor="client-select">Client:</label>
             <Select
+              classNamePrefix="my-select"
               inputId="client-select"
               className="client-select"
               options={clientOptions}

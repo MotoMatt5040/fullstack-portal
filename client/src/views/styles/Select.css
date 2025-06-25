@@ -1,0 +1,40 @@
+/* This targets the main container of the select input */
+.my-select__control {
+  background-color: var(--background-multi-select) !important;
+}
+
+/* This keeps the background color when the component is focused */
+.my-select__control--is-focused {
+  box-shadow: 0 0 0 1px var(--color-primary) !important; /* Optional: adds a focus ring */
+}
+
+.my-select__input-container {
+  color: var(--text-color) !important;
+}
+
+/* This targets the text for the selected value shown in the box */
+.my-select__single-value {
+  color: var(--text-color) !important;
+}
+
+/* This targets the placeholder text */
+.my-select__placeholder {
+    color: var(--text-color) !important;
+    opacity: 0.7;
+}
+
+/* This targets the dropdown menu container */
+.my-select__menu {
+  background-color: var(--background-multi-select) !important;
+}
+
+/* This targets an individual option in the dropdown on hover/focus */
+.my-select__option--is-focused {
+  background-color: var(--background-multi-select-hover) !important;
+}
+
+/* This targets the currently selected option in the dropdown list */
+.my-select__option--is-selected {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+}

@@ -85,7 +85,14 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
         body: { projectId, recDate: removeTimeZone(recDate), targetMph, prevTargetMph },//removeTimeZone is required
       }),
     }),
+    getToplineReport: builder.query<Blob, void>({
+      query: () => ({
+        url: '/reports/topline-report',
+        method: 'GET',
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 });
 
-export const { useGetReportQuery, useGetProductionReportQuery, useUpdateTargetMphMutation } = ReportApiSlice;
+export const { useGetReportQuery, useGetProductionReportQuery, useUpdateTargetMphMutation, useGetToplineReportQuery, useLazyGetToplineReportQuery } = ReportApiSlice;

@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fa';
 
 import '../views/Welcome.css';
+import './styles/Select.css'
 
 const EXTERNAL_ROLE_ID = 4;
 
