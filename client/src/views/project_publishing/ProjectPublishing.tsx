@@ -12,6 +12,7 @@ import {
 import { Modal } from '../../components/Modal';
 import Select from 'react-select';
 import './ProjectPublishing.css';
+import { useLazyGetUsersByClientQuery } from '../../features/projectPublishingApiSlice';
 
 // Define the shape of a published project
 interface PublishedProject {
@@ -48,34 +49,61 @@ const ProjectPublishing: React.FC = () => {
   } = useProjectPublishingLogic();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null
+  );
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [getUsersByClient, { data: usersForClient }] =
+    useLazyGetUsersByClientQuery();
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
 
-  // Create memoized options for better performance
-  const projectOptions = useMemo(() => 
-    projects.map((p) => ({
-      value: p.projectId,
-      label: `${p.projectId} - ${p.projectName}`,
-    })), [projects]
+  const projectOptions = useMemo(
+    () =>
+      projects.map((p) => ({
+        value: p.projectId,
+        label: `${p.projectId} - ${p.projectName}`,
+      })),
+    [projects]
   );
 
-  const clientOptions = useMemo(() => 
-    clients.map((c) => ({
-      value: c.clientId,
-      label: c.clientName,
-    })), [clients]
+  const clientOptions = useMemo(
+    () =>
+      clients.map((c) => ({
+        value: c.clientId,
+        label: c.clientName,
+      })),
+    [clients]
   );
 
   // Find the selected option objects
-  const selectedProjectOption = useMemo(() => 
-    projectOptions.find(option => option.value === selectedProjectId) || null, 
+  const selectedProjectOption = useMemo(
+    () =>
+      projectOptions.find((option) => option.value === selectedProjectId) ||
+      null,
     [projectOptions, selectedProjectId]
   );
 
-  const selectedClientOption = useMemo(() => 
-    clientOptions.find(option => option.value === selectedClientId) || null, 
+  const selectedClientOption = useMemo(
+    () =>
+      clientOptions.find((option) => option.value === selectedClientId) || null,
     [clientOptions, selectedClientId]
   );
+
+  const handleClientChange = (option: any) => {
+    const clientId = option ? option.value : null;
+    setSelectedClientId(clientId);
+    if (clientId) {
+      getUsersByClient(clientId);
+    }
+  };
+
+  const userOptions = useMemo(() => {
+    if (!usersForClient) return [];
+    return usersForClient.map((user: any) => ({
+      value: user.email,
+      label: user.email,
+    }));
+  }, [usersForClient]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -90,12 +118,12 @@ const ProjectPublishing: React.FC = () => {
 
   const handlePublishProject = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedProjectId || !selectedClientId) {
       alert('Please select both a project and a client');
       return;
     }
-    
+
     // Logic to publish the project will go here
     console.log(
       'Publishing project with ID:',
@@ -272,10 +300,10 @@ const ProjectPublishing: React.FC = () => {
                 isClearable
                 menuPortalTarget={document.body}
                 styles={{
-                  menuPortal: (base) => ({ 
-                    ...base, 
-                    zIndex: 9999999 
-                  })
+                  menuPortal: (base) => ({
+                    ...base,
+                    zIndex: 999,
+                  }),
                 }}
               />
             </div>
@@ -293,10 +321,10 @@ const ProjectPublishing: React.FC = () => {
                 isClearable
                 menuPortalTarget={document.body}
                 styles={{
-                  menuPortal: (base) => ({ 
-                    ...base, 
-                    zIndex: 9999999 
-                  })
+                  menuPortal: (base) => ({
+                    ...base,
+                    zIndex: 9999999,
+                  }),
                 }}
               />
             </div>
@@ -314,8 +342,8 @@ const ProjectPublishing: React.FC = () => {
               </div>
             )}
           </div>
-          <button 
-            type='submit' 
+          <button
+            type='submit'
             className='submit-button'
             disabled={!selectedProjectId || !selectedClientId}
           >

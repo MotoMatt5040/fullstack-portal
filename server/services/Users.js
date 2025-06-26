@@ -289,6 +289,25 @@ const updateUserRoles = async (uuid, roles) => {
     });
 };
 
+const getUsersByClientId = async (clientId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .input('clientId', sql.Int, clientId)
+        .query(`
+          SELECT a.email
+          FROM tblAuthentication a
+          INNER JOIN tblUserProfiles up ON a.uuid = up.uuid
+          WHERE up.clientId = @clientId
+        `);
+      return result.recordset;
+    },
+    fnName: 'getUsersByClientId',
+  });
+};
+
 
 module.exports = {
   createUser,
@@ -304,4 +323,5 @@ module.exports = {
   getAllUsers,
   updateUserProfileClient,
   updateUserRoles,
+  getUsersByClientId,
 };

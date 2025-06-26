@@ -695,6 +695,18 @@ const handleUpdateUserProfile = handleAsync(async (req, res) => {
     res.status(200).json({ success: `Profile for ${email} has been updated successfully.` });
 });
 
+const handleGetUsersByClientId = handleAsync(async (req, res) => {
+  const { clientId } = req.params;
+  if (!clientId) {
+    return res.status(400).json({ message: 'Client ID is required' });
+  }
+  const users = await User.getUsersByClientId(clientId);
+  if (!users) {
+    return res.status(404).json({ message: 'No users found for this client' });
+  }
+  res.status(200).json(users);
+});
+
 module.exports = {
   handleGetClients,
   handleCreateUser,
@@ -704,6 +716,7 @@ module.exports = {
   handleTestEmail,
   handleGetAllUsers,
   handleUpdateUserProfile,
+  handleGetUsersByClientId,
   handleUpdateUserRoles
   
 };

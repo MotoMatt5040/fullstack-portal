@@ -14,14 +14,13 @@ interface Project {
 }
 
 interface Client {
-    clientId: string;
-    clientName: string;
+  clientId: string;
+  clientName: string;
 }
 
 type PublishedProjectsResponse = PublishedProject[];
 type ProjectsResponse = Project[];
 type ClientsResponse = Client[];
-
 
 export const projectPublishingApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -32,18 +31,26 @@ export const projectPublishingApiSlice = apiSlice.injectEndpoints({
       }),
     }),
     getProjects: builder.query<ProjectsResponse, void>({
-        query: () => ({
-            url: '/project-publishing/projects',
-            method: 'GET',
-        }),
+      query: () => ({
+        url: '/project-publishing/projects',
+        method: 'GET',
+      }),
     }),
     getClients: builder.query<ClientsResponse, void>({
-        query: () => ({
-            url: '/project-publishing/clients',
-            method: 'GET',
-        }),
+      query: () => ({
+        url: '/project-publishing/clients',
+        method: 'GET',
+      }),
+    }),
+    getUsersByClient: builder.query<any, string>({
+      query: (clientId) => `/users/client/${clientId}`,
     }),
   }),
 });
 
-export const { useGetPublishedProjectsQuery, useGetProjectsQuery, useGetClientsQuery } = projectPublishingApiSlice;
+export const {
+  useGetPublishedProjectsQuery,
+  useGetProjectsQuery,
+  useGetClientsQuery,
+  useLazyGetUsersByClientQuery,
+} = projectPublishingApiSlice;
