@@ -1,5 +1,5 @@
 /* ProjectPublishing.css - Matching UserManagement.css patterns */
-
+@import '../styles/Select.css';
 /* Main container for the project publishing page */
 .project-publishing-container {
     padding: 2rem;

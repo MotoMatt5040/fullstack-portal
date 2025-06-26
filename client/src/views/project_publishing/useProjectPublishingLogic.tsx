@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useGetPublishedProjectsQuery } from '../../features/projectPublishingApiSlice';
+import { useGetPublishedProjectsQuery, useGetProjectsQuery, useGetClientsQuery } from '../../features/projectPublishingApiSlice';
 
 // Types
 interface PublishedProject {
@@ -31,6 +31,9 @@ const useProjectPublishingLogic = () => {
     error,
     refetch,
   } = useGetPublishedProjectsQuery();
+
+  const { data: projects = [] } = useGetProjectsQuery();
+  const { data: clients = [] } = useGetClientsQuery();
 
   // Group projects by projectid and clientname
   const groupedProjects = useMemo(() => {
@@ -118,6 +121,8 @@ const useProjectPublishingLogic = () => {
     publishedProjects,
     groupedProjects,
     filteredProjects,
+    projects,
+    clients,
     
     // Loading states
     isLoading,

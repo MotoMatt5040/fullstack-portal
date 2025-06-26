@@ -33,4 +33,19 @@ const publishProject = async (email, projectId) => {
   });
 };
 
-module.exports = { getPublishedProjects, publishProject };
+const getProjects = async () => {
+    const [projects, metadata] = await sequelize.query(`
+        SELECT projectId, projectName FROM dbo.tblCC3ProjectHeader WHERE
+  FieldStart >= DATEADD(day, -30, GETDATE()) ORDER BY FieldStart DESC
+    `);
+    return projects;
+}
+
+const getClients = async () => {
+    const [clients, metadata] = await sequelize.query(`
+        SELECT clientId, clientName FROM dbo.tblClients
+    `);
+    return clients;
+}
+
+module.exports = { getPublishedProjects, publishProject, getProjects, getClients };

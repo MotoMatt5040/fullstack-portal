@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import useProjectPublishingLogic from './useProjectPublishingLogic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSync, faChevronDown, faChevronRight, faExpandArrowsAlt, faCompressArrowsAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSync, faChevronDown, faChevronRight, faExpandArrowsAlt, faCompressArrowsAlt, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { Modal } from '../../components/Modal';
+// import MyDropdown from '../../components/MyDropdown';
+import Select from 'react-select';
 import './ProjectPublishing.css';
 
 // Define the shape of a published project
@@ -34,7 +37,29 @@ const ProjectPublishing: React.FC = () => {
     isProjectExpanded,
     expandAll,
     collapseAll,
+    projects,
+    clients
   } = useProjectPublishingLogic();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handlePublishProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Logic to publish the project will go here
+    console.log("Publishing project with ID:", selectedProjectId, "and client ID:", selectedClientId);
+    handleCloseModal();
+  };
+
 
   let content;
 
@@ -108,6 +133,9 @@ const ProjectPublishing: React.FC = () => {
         <div className="project-publishing-header">
           <h1 className="project-publishing-title">Project Publishing</h1>
           <div className="header-actions">
+            <button onClick={handleOpenModal} className="add-user-button">
+              <FontAwesomeIcon icon={faPlus} /> Publish Project
+            </button>
             <button onClick={expandAll} className="expand-button" title="Expand All">
               <FontAwesomeIcon icon={faExpandArrowsAlt} /> Expand All
             </button>
@@ -155,6 +183,47 @@ const ProjectPublishing: React.FC = () => {
   return (
     <section className="project-publishing-container">
       {content}
+      {/* --- START OF MODAL CODE TO UPDATE --- */}
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+        <form onSubmit={handlePublishProject} noValidate>
+            <h2>Publish Project</h2>
+            <div className="form-grid">
+                <div className="form-group">
+                    <label htmlFor="project-id">Project ID</label>
+                    <Select
+                    classNamePrefix="my-select" 
+                        inputId="project-id"
+                        options={projects.map(p => ({ value: p.projectId, label: `${p.projectId} - ${p.projectName}` }))}
+                        value={selectedProjectId}
+                        onChange={(option) => setSelectedProjectId(option ? option.value : null)}
+                        placeholder="Select a Project"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="client">Client</label>
+                    <Select
+                        classNamePrefix="my-select"
+                        inputId="client"
+                        options={clients.map(c => ({ value: c.clientId, label: c.clientName }))}
+                        value={selectedClientId}
+                        onChange={(option) => setSelectedClientId(option ? option.value : null)}
+                        placeholder="Select a Client"
+                    />
+                </div>
+
+                {selectedClientId && (
+                <div className="form-group">
+                    <label htmlFor="client-specific-field">Client Specific Field:</label>
+                    <input id="client-specific-field" type="text" className="form-input" />
+                </div>
+                )}
+            </div>
+            <button type="submit" className="submit-button">
+                Publish Project
+            </button>
+        </form>
+      </Modal>
+      {/* --- END OF MODAL CODE TO UPDATE --- */}
     </section>
   );
 };

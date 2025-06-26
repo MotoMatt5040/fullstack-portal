@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+// Modal.tsx - Simplified with Instant Close
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import './css/Modal.css'; // Your original CSS path
+import './css/Modal.css';
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,63 +10,66 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
-  // State to control whether the modal is in the DOM
-  const [isRendered, setIsRendered] = useState(isOpen);
-  // State to control the animation CSS class (e.g., 'enter-active')
-  const [animationClass, setAnimationClass] = useState('');
-  
-  // A ref to hold the timer ID to prevent memory leaks
-  const closeTimer = useRef<NodeJS.Timeout | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Always clear any pending close timers when isOpen changes
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-    }
-
     if (isOpen) {
-      // 1. If opening, add the modal to the DOM immediately
-      setIsRendered(true);
-      // 2. Then, in the very next browser paint, add the 'enter-active' class to trigger the fade-in animation
+      // Ensure modal-root exists
+      let modalRoot = document.getElementById('modal-root');
+      if (!modalRoot) {
+        modalRoot = document.createElement('div');
+        modalRoot.id = 'modal-root';
+        document.body.appendChild(modalRoot);
+      }
+
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Start enter animation
       requestAnimationFrame(() => {
-        setAnimationClass('enter-active');
+        setIsVisible(true);
       });
     } else {
-      // 1. If closing, trigger the 'exit-active' class to start the fade-out animation
-      setAnimationClass('exit-active');
-      // 2. Wait for the animation to finish (300ms) before removing the modal from the DOM
-      closeTimer.current = setTimeout(() => {
-        setIsRendered(false);
-      }, 300); // This duration MUST match your CSS transition time
+      // Immediately hide and restore body scroll
+      setIsVisible(false);
+      document.body.style.overflow = '';
     }
 
-    // Cleanup function: If the component unmounts for any reason, clear the timer
     return () => {
-      if (closeTimer.current) {
-        clearTimeout(closeTimer.current);
-      }
+      // Cleanup: restore body scroll if component unmounts
+      document.body.style.overflow = '';
     };
-  }, [isOpen]); // This effect re-runs whenever the 'isOpen' prop changes
+  }, [isOpen]);
 
-  // Don't render anything if the modal is closed and the exit animation has finished
-  if (!isRendered) {
+  // Don't render if modal is closed
+  if (!isOpen) {
     return null;
   }
 
-  // Use a Portal to render the modal at the root, now with dynamic animation classes
+  // Ensure we have a modal root
+  const modalRoot = document.getElementById('modal-root') || document.body;
+
   return ReactDOM.createPortal(
-    <>
+    <div 
+      className={`modal-backdrop ${isVisible ? 'modal-backdrop--visible' : ''}`}
+      onClick={onClose} // Click anywhere to close
+    >
       <div 
-        className={`modal-overlay modal-overlay-${animationClass}`} 
-        onClick={onClose} 
-      />
-      <div className={`modal-content modal-content-${animationClass}`}>
-        <button className="modal-close-button" onClick={onClose}>
-          &times;
+        className={`modal-container ${isVisible ? 'modal-container--visible' : ''}`}
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+      >
+        <button 
+          className="modal-close-button" 
+          onClick={onClose}
+          aria-label="Close modal"
+        >
+          ×
         </button>
-        {children}
+        <div className="modal-content-wrapper">
+          {children}
+        </div>
       </div>
-    </>,
-    document.getElementById('portal-root') as HTMLElement
+    </div>,
+    modalRoot
   );
 };

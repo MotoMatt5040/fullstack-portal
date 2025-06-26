@@ -40,7 +40,7 @@ if (!emailConfig.auth.user || !emailConfig.auth.pass) {
   });
 }
 
-// Alternative Gmail OAuth2 configuration (uncomment to use)
+// Alternative Gmail OAuth2 configuration
 /*
 const emailConfig = {
   service: 'gmail',
