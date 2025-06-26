@@ -15,7 +15,7 @@
   padding: 1rem;
   
   /* Very high z-index to escape stacking contexts */
-  z-index: 999999;
+  z-index: 200;
   
   /* Default state: hidden */
   background-color: rgba(0, 0, 0, 0);

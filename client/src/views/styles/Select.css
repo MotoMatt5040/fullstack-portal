@@ -26,13 +26,13 @@
 /* This targets the dropdown menu container */
 .my-select__menu {
   background-color: var(--background-multi-select) !important;
-  z-index: 200 !important;
+  z-index: 9999 !important;
 }
 
 /* This targets an individual option in the dropdown on hover/focus */
 .my-select__option--is-focused {
   background-color: var(--background-multi-select-hover) !important;
-  z-index: 200 !important;
+  z-index: 9999 !important;
 }
 
 /* This targets the currently selected option in the dropdown list */
