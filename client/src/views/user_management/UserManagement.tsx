@@ -122,20 +122,16 @@ const UserManagement = () => {
                       <span className='user-indent'>└─ {user.email}</span>
                     </td>
                     <td className='table__cell'>{user.roles.join(', ')}</td>
-                    <td className='table__cell actions-cell'>
-                      <button
-                        onClick={() => handleOpenUpdateModal(user)}
-                        className='edit-button'
-                      >
-                        <FontAwesomeIcon icon={faPencilAlt} /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleOpenDeleteModal(user)}
-                        className='delete-button'
-                      >
-                        <FontAwesomeIcon icon={faTrashAlt} /> Delete
-                      </button>
-                    </td>
+                    <td className="table__cell actions-cell">
+  <div className="actions-cell-content"> {/* Add this wrapper div */}
+    <button onClick={() => handleOpenUpdateModal(user)} className="edit-button">
+      <FontAwesomeIcon icon={faPencilAlt} />
+    </button>
+    <button onClick={() => handleOpenDeleteModal(user)} className="delete-button">
+      <FontAwesomeIcon icon={faTrashAlt} />
+    </button>
+  </div>
+</td>
                   </tr>
                 ))}
             </React.Fragment>

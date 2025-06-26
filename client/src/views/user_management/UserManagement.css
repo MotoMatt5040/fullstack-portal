@@ -183,10 +183,51 @@
     overflow-wrap: break-word;
 }
 
+/* --- ACTION CELL STYLING --- */
 .actions-cell {
-    text-align: center; /* Center align the action buttons */
+    /* Vertical align is useful for table cells */
+    vertical-align: middle;
 }
 
+/* Apply flexbox to the new inner div */
+.actions-cell-content {
+    display: flex;
+    gap: 0.5rem; /* This creates space between the buttons */
+    justify-content: center; /* This horizontally centers the buttons */
+    align-items: center; /* This vertically centers the buttons */
+}
+
+
+/* You might already have these, but ensure they are present */
+.edit-button, .delete-button {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.edit-button {
+    background-color: var(--accent-color);
+}
+
+.edit-button:hover {
+    background-color: var(--accent-color-hover);
+}
+
+.delete-button {
+    background-color: #dc3545;
+}
+
+.delete-button:hover {
+    background-color: #c82333;
+}
+/* --- END ACTION CELL STYLING --- */
 
 .table tbody tr:last-child .table__cell {
     border-bottom: none;
@@ -213,10 +254,6 @@
 }
 
 /* --- STYLES FOR ROLE TOGGLE MODAL --- */
-
-.update-roles-container {
-    background-color: var(--background-color);
-}
 
 .update-roles-title {
     font-size: 1.5rem;
