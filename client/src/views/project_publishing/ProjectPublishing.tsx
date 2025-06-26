@@ -92,9 +92,14 @@ const ProjectPublishing: React.FC = () => {
   const handleClientChange = (option: any) => {
     const clientId = option ? option.value : null;
     setSelectedClientId(clientId);
+    setSelectedUsers([]);
     if (clientId) {
       getUsersByClient(clientId);
     }
+  };
+
+  const handleUserChange = (selectedOptions: any) => {
+    setSelectedUsers(selectedOptions || []);
   };
 
   const userOptions = useMemo(() => {
@@ -111,7 +116,7 @@ const ProjectPublishing: React.FC = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    // Reset form when closing
+    setSelectedUsers([]);
     setSelectedProjectId(null);
     setSelectedClientId(null);
   };
@@ -313,10 +318,8 @@ const ProjectPublishing: React.FC = () => {
                 classNamePrefix='my-select'
                 inputId='client'
                 options={clientOptions}
-                value={selectedClientOption} // Pass the full option object
-                onChange={(option) =>
-                  setSelectedClientId(option ? option.value : null)
-                }
+                value={selectedClientOption}
+                onChange={handleClientChange}
                 placeholder='Select a Client'
                 isClearable
                 menuPortalTarget={document.body}
@@ -329,15 +332,25 @@ const ProjectPublishing: React.FC = () => {
               />
             </div>
 
-            {selectedClientId && (
+            {selectedClientId && usersForClient && (
               <div className='form-group'>
-                <label htmlFor='client-specific-field'>
-                  Client Specific Field:
-                </label>
-                <input
-                  id='client-specific-field'
-                  type='text'
-                  className='form-input'
+                <label htmlFor='users'>Users</label>
+                <Select
+                  classNamePrefix='my-select'
+                  inputId='users'
+                  options={userOptions}
+                  value={selectedUsers}
+                  onChange={handleUserChange}
+                  placeholder='Select users'
+                  isMulti
+                  closeMenuOnSelect={false}
+                  menuPortalTarget={document.body}
+                  styles={{
+                    menuPortal: (base) => ({
+                      ...base,
+                      zIndex: 9999999,
+                    }),
+                  }}
                 />
               </div>
             )}

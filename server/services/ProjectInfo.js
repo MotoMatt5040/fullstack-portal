@@ -3,18 +3,6 @@ const withDbConnection = require('../config/dbConn');
 const { promark, voxco } = require('../utils/databaseTypes');
 
 const getPhoneProjects = async (projectId) => {
-  // SELECT k_Id, * FROM [VoxcoSystem].[dbo].[tblObjects] where tblobjects.Type = 1 and name LIKE '<projectid>%'
-  // this usuall returns in this order [13028, 13028C, 13028COM] but it may be good to check
-  /*
-    for item in items:
-      if item.length = 5:
-        ll = item
-      elif item.endswith('C'):
-        cc = item
-      elif item.endswith('COM'):
-        com = item
-  */
-
   return withDbConnection({
     database: voxco,
     queryFn: async (pool) => {
@@ -67,8 +55,8 @@ const getProjectsList = async (userId) => {
     joinClause = `
 INNER JOIN tblUserProjects up ON ph.projectId = up.projectId
 INNER JOIN tblAuthentication a ON a.uuid = up.uuid`;
-//This adds the condition for the email to the beginning of the whereConditions array, making sure it appears first in the SQL WHERE clause.
-    whereConditions.unshift(`a.email = @userId`); 
+    //This adds the condition for the email to the beginning of the whereConditions array, making sure it appears first in the SQL WHERE clause.
+    whereConditions.unshift(`a.email = @userId`);
   }
 
   const qry = `
@@ -100,8 +88,43 @@ ORDER BY
   });
 };
 
+const unrestrictedGetProjectsList = async () => {
+  const whereConditions = [
+    "ph.projectId NOT LIKE '%c'",
+    "ph.projectId NOT LIKE '%w'",
+    'ph.fieldStart >= DATEADD(DAY, -180, GETDATE())',
+  ];
+
+  const qry = `
+SELECT DISTINCT 
+    ph.projectId, 
+    ph.projectName, 
+    ph.fieldStart 
+FROM 
+    tblcc3projectheader ph
+WHERE 
+    ${whereConditions.join(' AND ')}
+ORDER BY 
+    ph.fieldStart DESC;
+`;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const request = pool.request();
+      const result = await request.query(qry);
+      return result.recordset;
+    },
+    attempts: 5,
+    fnName: 'unrestrictedGetProjectsList',
+    allowAbort: true,
+    allowRetry: true,
+  });
+};
+
 module.exports = {
   getPhoneProjects,
   getWebProjects,
   getProjectsList,
+  unrestrictedGetProjectsList,
 };
