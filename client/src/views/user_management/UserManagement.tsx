@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
-// Note: We remove <Link> if it's no longer used elsewhere
-// import { Link } from 'react-router-dom';
-import { useUserManagementLogic } from './useUserManagementLogic'; // Your custom hook
+import { useUserManagementLogic } from './useUserManagementLogic';
 import { Modal } from '../../components/Modal';
 import UserForm from '../secure/AddUser';
-import UpdateUserRoles from '../users/UpdateUserRoles'; // Import the update form
+import UpdateUserRoles from '../users/UpdateUserRoles';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import './UserManagement.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import {
+  faPlus,
+  faPencilAlt,
+  faChevronDown,
+  faChevronRight,
+  faExpandArrowsAlt,
+  faCompressArrowsAlt,
+  faSync,
+  faTrashAlt,
+} from '@fortawesome/free-solid-svg-icons';
 
-// Define the shape of a user object if not already defined
 interface User {
   email: string;
   roles: string[];
+  clientname: string;
 }
 
 const UserManagement = () => {
@@ -23,17 +31,38 @@ const UserManagement = () => {
     error,
     searchTerm,
     setSearchTerm,
-    filteredUsers,
+    filteredClients,
+    toggleClientExpansion,
+    isClientExpanded,
+    expandAll,
+    collapseAll,
+    isDeleting,
+    handleDeleteUser,
   } = useUserManagementLogic();
 
-  // State for the "Add User" modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  // --- NEW: State for the "Update User" modal ---
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Handler to open the update modal with the selected user's data
+  const handleOpenDeleteModal = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setUserToDelete(null);
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      await handleDeleteUser(userToDelete.email);
+      handleCloseDeleteModal();
+    }
+  };
+
   const handleOpenUpdateModal = (user: User) => {
     setEditingUser(user);
     setIsUpdateModalOpen(true);
@@ -42,63 +71,141 @@ const UserManagement = () => {
   const handleModalClose = () => {
     setIsAddModalOpen(false);
     setIsUpdateModalOpen(false);
-    setEditingUser(null); // Clear the user being edited
+    setEditingUser(null);
+  };
+
+  const handleRefresh = () => {
+    // This would typically be a function from your logic hook to refetch data
+    window.location.reload();
   };
 
   let content;
 
   if (isLoading) content = <p>Loading users...</p>;
-  // @ts-ignore
-  if (isError) content = <p className="errmsg">{error?.data?.message || 'An error occurred'}</p>;
+
+  if (isError) {
+    content = (
+      <div className='error-container'>
+        {/* @ts-ignore */}
+        <p className='errmsg'>{error?.data?.message || 'An error occurred'}</p>
+      </div>
+    );
+  }
 
   if (isSuccess) {
     const tableContent =
-      filteredUsers.length > 0 ? (
-        filteredUsers.map((user: User) => (
-          <tr key={user.email} className="table__row user">
-            <td className="table__cell">{user.email}</td>
-            <td className="table__cell">{user.roles.join(', ')}</td>
-            <td className="table__cell">
-              {/* --- MODIFIED: Changed from Link to a button --- */}
-              <button onClick={() => handleOpenUpdateModal(user)} className="edit-button">
-                <FontAwesomeIcon icon={faPencilAlt} /> Edit
-              </button>
-            </td>
-          </tr>
-        ))
+      filteredClients.length > 0 ? (
+        filteredClients.map((client) => {
+          const isExpanded = isClientExpanded(client.clientname);
+          return (
+            <React.Fragment key={client.clientname}>
+              <tr
+                className='table__row client-row'
+                onClick={() => toggleClientExpansion(client.clientname)}
+              >
+                <td className='table__cell client-name'>
+                  <FontAwesomeIcon
+                    icon={isExpanded ? faChevronDown : faChevronRight}
+                    className='toggle-icon'
+                  />
+                  {client.clientname}
+                </td>
+                <td className='table__cell user-count'>
+                  {client.userCount} user{client.userCount !== 1 ? 's' : ''}
+                </td>
+                <td className='table__cell actions-cell'></td>
+              </tr>
+              {isExpanded &&
+                client.users.map((user) => (
+                  <tr key={user.email} className='table__row user-row'>
+                    <td className='table__cell user-email'>
+                      <span className='user-indent'>└─ {user.email}</span>
+                    </td>
+                    <td className='table__cell'>{user.roles.join(', ')}</td>
+                    <td className='table__cell actions-cell'>
+                      <button
+                        onClick={() => handleOpenUpdateModal(user)}
+                        className='edit-button'
+                      >
+                        <FontAwesomeIcon icon={faPencilAlt} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleOpenDeleteModal(user)}
+                        className='delete-button'
+                      >
+                        <FontAwesomeIcon icon={faTrashAlt} /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </React.Fragment>
+          );
+        })
       ) : (
         <tr>
-          <td className="table__cell" colSpan={3} style={{ textAlign: 'center' }}>
-            No users found.
+          <td
+            className='table__cell'
+            colSpan={3}
+            style={{ textAlign: 'center' }}
+          >
+            No clients or users found.
           </td>
         </tr>
       );
 
     content = (
       <>
-        <div className="user-management-header">
-          <h1 className="user-management-title">User Management</h1>
-          <button onClick={() => setIsAddModalOpen(true)} className="add-user-button">
-            <FontAwesomeIcon icon={faPlus} /> Add New User
-          </button>
+        <div className='user-management-header'>
+          <h1 className='user-management-title'>User Management</h1>
+          <div className='header-actions'>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className='add-user-button'
+            >
+              <FontAwesomeIcon icon={faPlus} /> Add New User
+            </button>
+            <button
+              onClick={expandAll}
+              className='expand-button'
+              title='Expand All'
+            >
+              <FontAwesomeIcon icon={faExpandArrowsAlt} />
+            </button>
+            <button
+              onClick={collapseAll}
+              className='collapse-button'
+              title='Collapse All'
+            >
+              <FontAwesomeIcon icon={faCompressArrowsAlt} />
+            </button>
+            <button onClick={handleRefresh} className='refresh-button'>
+              <FontAwesomeIcon icon={faSync} />
+            </button>
+          </div>
         </div>
-        <div className="user-management-controls">
+        <div className='user-management-controls'>
           <input
-            type="text"
-            placeholder="Search by email..."
-            className="search-input"
+            type='text'
+            placeholder='Search by client or email...'
+            className='search-input'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            autoComplete="new-password" // Keep the autofill fix
+            autoComplete='new-password'
           />
         </div>
-        <div className="table-container">
-          <table className="table table--users">
-            <thead className="table__thead">
+        <div className='table-container'>
+          <table className='table table--users'>
+            <thead className='table__thead'>
               <tr>
-                <th scope="col" className="table__th user__email">Email</th>
-                <th scope="col" className="table__th user__roles">Roles</th>
-                <th scope="col" className="table__th user__actions">Actions</th>
+                <th scope='col' className='table__th client__name_header'>
+                  Client
+                </th>
+                <th scope='col' className='table__th user__roles_header'>
+                  Users / Roles
+                </th>
+                <th scope='col' className='table__th user__actions_header'>
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>{tableContent}</tbody>
@@ -109,20 +216,40 @@ const UserManagement = () => {
   }
 
   return (
-    <section className="user-management-container">
+    <section className='user-management-container'>
       {content}
 
-      {/* --- MODAL 1: Add User --- */}
       <Modal isOpen={isAddModalOpen} onClose={handleModalClose}>
         <UserForm onSuccess={handleModalClose} />
       </Modal>
 
-      {/* --- MODAL 2: Update User Roles --- */}
-      {/* Ensure editingUser is not null before rendering */}
       {editingUser && (
         <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>
-          <UpdateUserRoles userToUpdate={editingUser} onSuccess={handleModalClose} />
+          {/* @ts-ignore */}
+          <UpdateUserRoles
+            userToUpdate={editingUser}
+            onSuccess={handleModalClose}
+          />
         </Modal>
+      )}
+
+      {userToDelete && (
+        <ConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          title='Confirm User Deletion'
+          message={
+            <>
+              Are you sure you want to permanently delete the user{' '}
+              <strong>{userToDelete.email}</strong>?
+              <br />
+              This action cannot be undone.
+            </>
+          }
+          confirmButtonText='Delete User'
+          isConfirming={isDeleting}
+        />
       )}
     </section>
   );

@@ -135,6 +135,33 @@ const clearPasswordResetToken = async (uuid) => {
   });
 };
 
+const getAllUsersWithClient = async () => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .query(`
+          SELECT 
+            a.email, 
+            STRING_AGG(r.roleName, ', ') AS roles,
+            c.clientname
+          FROM tblAuthentication a
+          LEFT JOIN tblUserRoles ur ON a.uuid = ur.uuid
+          LEFT JOIN tblRoles r ON ur.role = r.roleid
+          LEFT JOIN tblUserProfiles up ON a.uuid = up.uuid
+          LEFT JOIN tblClients c ON up.clientid = c.clientid
+          GROUP BY a.uuid, a.email, c.clientname
+          ORDER BY 
+            CASE WHEN STRING_AGG(r.roleName, ', ') IS NULL THEN 1 ELSE 0 END,
+            a.email ASC
+        `);
+      return result.recordset;
+    },
+    fnName: 'getAllUsersWithClient',
+  });
+};
+
 const getAllUsers = async () => {
   return withDbConnection({
     database: promark,
@@ -308,6 +335,20 @@ const getUsersByClientId = async (clientId) => {
   });
 };
 
+const deleteUserByEmail = async (email) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .input('email', sql.NVarChar, email)
+        .query('DELETE FROM tblAuthentication WHERE email = @email');
+      return result.rowsAffected;
+    },
+    fnName: 'deleteUserByEmail',
+  });
+};
+
 
 module.exports = {
   createUser,
@@ -324,4 +365,6 @@ module.exports = {
   updateUserProfileClient,
   updateUserRoles,
   getUsersByClientId,
+  getAllUsersWithClient,
+  deleteUserByEmail,
 };

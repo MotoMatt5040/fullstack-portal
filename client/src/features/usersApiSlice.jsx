@@ -23,6 +23,14 @@ export const usersApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Users', id: 'LIST' }],
     }),
 
+    deleteUser: builder.mutation({
+      query: (email) => ({
+        url: `/users/${email}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, email) => [{ type: 'User', id: email }],
+    }),
+
     // GET all clients (no change needed here)
     getClients: builder.query({
       query: () => ({
@@ -62,4 +70,5 @@ export const {
   useGetClientsQuery,
   useUpdateUserRolesMutation, 
   useUpdateUserProfileMutation,
+  useDeleteUserMutation
 } = usersApiSlice;

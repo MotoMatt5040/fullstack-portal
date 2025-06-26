@@ -641,7 +641,7 @@ const sendForgotPasswordEmail = async (email, resetToken) => {
 
 const handleGetAllUsers = async (req, res) => {
   try {
-    const usersFromDb = await User.getAllUsers();
+    const usersFromDb = await User.getAllUsersWithClient();
     if (!usersFromDb || usersFromDb.length === 0) {
       return res.status(404).json({ message: 'No users found' });
     }
@@ -707,6 +707,27 @@ const handleGetUsersByClientId = handleAsync(async (req, res) => {
   res.status(200).json(users);
 });
 
+const handleDeleteUser = async (req, res) => {
+  const { email } = req.params;
+
+  if (!email) {
+    return res.status(400).json({ message: 'User email is required for deletion' });
+  }
+
+  try {
+    const rowsAffected = await User.deleteUserByEmail(email);
+
+    if (rowsAffected[0] === 0) {
+      return res.status(404).json({ message: `User with email '${email}' not found` });
+    }
+
+    res.status(200).json({ message: `User '${email}' deleted successfully` });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Failed to delete user', error: error.message });
+  }
+};
+
 module.exports = {
   handleGetClients,
   handleCreateUser,
@@ -717,6 +738,6 @@ module.exports = {
   handleGetAllUsers,
   handleUpdateUserProfile,
   handleGetUsersByClientId,
-  handleUpdateUserRoles
-  
+  handleUpdateUserRoles,
+  handleDeleteUser
 };

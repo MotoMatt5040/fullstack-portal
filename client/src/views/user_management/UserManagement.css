@@ -1,9 +1,10 @@
 @import '../styles/Buttons.css';
+
 /* Main container for the user management page */
 .user-management-container {
     padding: 2rem;
     background-color: var(--background-color);
-    min-height: calc(100vh - 60px); 
+    min-height: calc(100vh - 60px);
     width: 100%;
     color: var(--text-color);
 }
@@ -24,9 +25,58 @@
     font-weight: 600;
 }
 
+/* Header actions container */
+.user-management-container .header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Button base styles */
+.user-management-container .refresh-button,
+.user-management-container .expand-button,
+.user-management-container .collapse-button {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.user-management-container .refresh-button:hover,
+.user-management-container .expand-button:hover,
+.user-management-container .collapse-button:hover {
+    background-color: var(--accent-color-hover);
+}
+
+/* Specific button colors */
+.user-management-container .expand-button {
+    background-color: #28a745;
+}
+.user-management-container .expand-button:hover {
+    background-color: #218838;
+}
+.user-management-container .collapse-button {
+    background-color: #6c757d;
+}
+.user-management-container .collapse-button:hover {
+    background-color: #5a6268;
+}
+.user-management-container .refresh-button .fas {
+    font-size: 0.9rem;
+}
+
 /* "Add New User" button */
 .add-user-button {
-    background-color: var(--accent-color);
+    background-color: #28a745;
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
@@ -41,11 +91,7 @@
 }
 
 .add-user-button:hover {
-    background-color: var(--accent-color-hover);
-}
-
-.add-user-button .fas {
-    font-size: 0.9rem;
+    background-color: #218838;
 }
 
 /* Controls section with search bar */
@@ -78,11 +124,15 @@
     box-shadow: var(--box-shadow-elevated);
     overflow-x: auto;
     padding: 1rem;
+    max-height: calc(100vh - 280px); /* Adjust as needed */
+    overflow-y: auto;
+    position: relative;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed; /* Ensures the width settings are respected */
 }
 
 .table__thead {
@@ -95,10 +145,29 @@
     font-weight: 600;
     color: var(--table-header-color);
     border-bottom: 2px solid var(--border-color-half-soft);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--table-header-background);
 }
 
+/* --- NEW STYLES FOR COLUMN WIDTHS --- */
+.client__name_header {
+    width: 45%;
+}
+
+.user__roles_header {
+    width: 35%;
+}
+
+.user__actions_header {
+    width: 20%;
+    text-align: center; /* Center align the actions header text */
+}
+/* --- END NEW STYLES --- */
+
+
 .table__row {
-    /* REMOVED: border-bottom property is moved to the cell */
     transition: background-color 0.2s ease;
 }
 
@@ -110,12 +179,38 @@
     padding: 1rem;
     vertical-align: middle;
     color: var(--text-color);
-    text-align: left; 
-    /* ADDED: Apply the border to the cell instead of the row */
+    text-align: left;
     border-bottom: 1px solid var(--border-color-soft);
+    /* Allow long text to wrap */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* ADDED: A rule to remove the border from the cells of the very last row */
+.actions-cell {
+    text-align: center; /* Center align the action buttons */
+}
+
+
 .table tbody tr:last-child .table__cell {
     border-bottom: none;
+}
+
+.client-row {
+    cursor: pointer;
+    background-color: var(--background-color-elevated);
+    font-weight: 600;
+}
+
+.toggle-icon {
+    color: var(--accent-color);
+    margin-right: 0.5rem;
+}
+
+.user-row {
+    background-color: var(--background-color);
+    border-left: 3px solid var(--accent-color);
+}
+
+.user-indent {
+    margin-left: 1.5rem;
 }

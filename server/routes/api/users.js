@@ -20,6 +20,12 @@ router
     usersController.handleCreateUser
   );
 
+router.route('/:email')
+  .delete(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive),
+    usersController.handleDeleteUser
+  );
+
 // GET all clients
 router
   .route('/getclients')

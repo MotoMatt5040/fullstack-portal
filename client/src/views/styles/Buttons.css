@@ -37,3 +37,26 @@
   outline: 2px solid #dc3545;
   outline-offset: 2px;
 }
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+}
+
+.delete-button:focus {
+  outline: 2px solid #dc3545;
+  outline-offset: 2px;
+}
