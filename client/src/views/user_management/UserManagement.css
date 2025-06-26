@@ -1,3 +1,4 @@
+@import '../styles/Buttons.css';
 /* Main container for the user management page */
 .user-management-container {
     padding: 2rem;
@@ -117,22 +118,4 @@
 /* ADDED: A rule to remove the border from the cells of the very last row */
 .table tbody tr:last-child .table__cell {
     border-bottom: none;
-}
-
-/* Edit button in the table */
-.edit-button {
-    background-color: #2ecc71;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: background-color 0.3s ease;
-}
-
-.edit-button:hover {
-    background-color: #27ae60;
 }

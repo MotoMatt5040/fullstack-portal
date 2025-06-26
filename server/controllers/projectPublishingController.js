@@ -7,13 +7,13 @@ const handleGetPublishedProjects = handleAsync(async (req, res) => {
 });
 
 const handlePublishProject = handleAsync(async (req, res) => {
-  const { email, projectId } = req.body;
-  if (!email || !projectId) {
+  const { emails, projectId } = req.body; // Changed from email to emails
+  if (!emails || !Array.isArray(emails) || emails.length === 0 || !projectId) {
     return res
       .status(400)
-      .json({ message: 'Email and projectId are required.' });
+      .json({ message: 'An array of emails and a projectId are required.' });
   }
-  await ProjectPublishingServices.publishProject(email, projectId);
+  await ProjectPublishingServices.publishProject(emails, projectId); // Pass the array
   res.status(201).json({ message: 'Project published successfully.' });
 });
 
@@ -27,4 +27,15 @@ const handleGetClients = handleAsync(async (req, res) => {
     res.status(200).json(clients);
 });
 
-module.exports = { handleGetPublishedProjects, handlePublishProject, handleGetProjects, handleGetClients };
+const handleUnpublishProject = handleAsync(async (req, res) => {
+  const { emails, projectId } = req.body;
+  if (!emails || !Array.isArray(emails) || emails.length === 0 || !projectId) {
+    return res
+      .status(400)
+      .json({ message: 'An array of emails and a projectId are required for removal.' });
+  }
+  await ProjectPublishingServices.unpublishProject(emails, projectId);
+  res.status(200).json({ message: 'Project access removed successfully.' });
+});
+
+module.exports = { handleGetPublishedProjects, handlePublishProject, handleGetProjects, handleGetClients, handleUnpublishProject };

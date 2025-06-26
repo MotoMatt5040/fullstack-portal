@@ -1,5 +1,6 @@
 /* ProjectPublishing.css - Matching UserManagement.css patterns */
 @import '../styles/Select.css';
+@import '../styles/Buttons.css';
 /* Main container for the project publishing page */
 .project-publishing-container {
     padding: 2rem;
@@ -118,7 +119,8 @@
 .project-publishing-container .table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Prevents headers from shifting */
+  table-layout: auto; /* Changed from fixed to auto to allow natural sizing */
+  min-width: 600px; /* Ensure minimum width for smaller screens */
 }
 
 .project-publishing-container .table__thead {
@@ -131,17 +133,22 @@
   font-weight: 600;
   color: var(--table-header-color);
   border-bottom: 2px solid var(--border-color-half-soft);
+  white-space: nowrap; /* Prevent header text wrapping */
 }
 
-/* Set explicit widths on header columns to ensure layout stability */
+/* Updated column widths to total 100% with the new Actions column */
 .project-publishing-container .table__th.project__id {
-  width: 25%;
+  width: 30%;
 }
 .project-publishing-container .table__th.project__client {
-  width: 50%;
+  width: 30%;
 }
 .project-publishing-container .table__th.project__users {
   width: 25%;
+}
+.project-publishing-container .table__th.project__actions {
+  width: 15%;
+  text-align: center;
 }
 
 .project-publishing-container .table__row {
@@ -158,8 +165,72 @@
   color: var(--text-color);
   text-align: left;
   border-bottom: 1px solid var(--border-color-soft);
-  /* Helps prevent long text from breaking the fixed layout */
   word-wrap: break-word;
+  overflow-wrap: break-word; /* Added for better text wrapping */
+}
+
+/* Actions cell specific styling */
+.project-publishing-container .actions-cell {
+  text-align: center;
+  width: 15%;
+  padding: 0.5rem;
+}
+
+.project-publishing-container .action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Edit button styling */
+/* .project-publishing-container .edit-button {
+  background: none;
+  border: none;
+  color: #28a745;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-publishing-container .edit-button:hover {
+  background-color: var(--table-row-hover-background, #f8f9fa);
+  color: #218838;
+  transform: scale(1.05);
+}
+
+.project-publishing-container .edit-button:focus {
+  outline: 2px solid #28a745;
+  outline-offset: 2px;
+} */
+
+/* Inline unpublish button styling */
+.project-publishing-container .unpublish-button-inline {
+  background-color: #dc3545;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.project-publishing-container .unpublish-button-inline:hover {
+  background-color: #c82333;
+}
+
+.project-publishing-container .unpublish-button-inline:focus {
+  outline: 2px solid #dc3545;
+  outline-offset: 2px;
 }
 
 /* Remove the border from the cells of the very last row */
@@ -214,12 +285,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
 }
 
 .project-publishing-container .toggle-icon {
   color: var(--accent-color);
   font-size: 0.8rem;
   transition: transform 0.2s ease;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 
 .project-publishing-container .user-count {
@@ -254,4 +327,122 @@
   font-size: 0.85rem;
   color: var(--text-color);
   opacity: 0.7;
+}
+
+.project-publishing-container .user-count-placeholder {
+  /* Empty placeholder for user rows to maintain alignment */
+}
+
+/* Modal styling for edit functionality */
+.project-publishing-container .project-info {
+  background: var(--background-color-elevated, #f8f9fa);
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color-soft);
+}
+
+.project-publishing-container .project-info p {
+  margin: 5px 0;
+  color: var(--text-color);
+}
+
+.project-publishing-container .modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.project-publishing-container .submit-button {
+  background-color: var(--accent-color, #007bff);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.project-publishing-container .submit-button:hover {
+  background-color: var(--accent-color-hover, #0056b3);
+}
+
+.project-publishing-container .submit-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.project-publishing-container .unpublish-button {
+  background-color: #dc3545;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.project-publishing-container .unpublish-button:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.project-publishing-container .unpublish-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Add project button styling */
+.project-publishing-container .add-user-button {
+  background-color: #28a745;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.project-publishing-container .add-user-button:hover {
+  background-color: #218838;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .project-publishing-container .table__th.project__id,
+  .project-publishing-container .table__th.project__client {
+    width: 35%;
+  }
+  
+  .project-publishing-container .table__th.project__users {
+    width: 20%;
+  }
+  
+  .project-publishing-container .table__th.project__actions {
+    width: 10%;
+  }
+  
+  .project-publishing-container .table__th,
+  .project-publishing-container .table__cell {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .project-publishing-container .user-indent {
+    margin-left: 0.5rem;
+  }
 }

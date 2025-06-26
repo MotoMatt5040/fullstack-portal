@@ -45,6 +45,32 @@ export const projectPublishingApiSlice = apiSlice.injectEndpoints({
     getUsersByClient: builder.query<any, string>({
       query: (clientId) => `/users/client/${clientId}`,
     }),
+    publishProjectToUsers: builder.mutation({
+      query: ({
+        projectId,
+        emails,
+      }: {
+        projectId: string;
+        emails: string[];
+      }) => ({
+        url: '/project-publishing',
+        method: 'POST',
+        body: { projectId, emails },
+      }),
+    }),
+    unpublishProjectFromUsers: builder.mutation({
+      query: ({
+        projectId,
+        emails,
+      }: {
+        projectId: string;
+        emails: string[];
+      }) => ({
+        url: '/project-publishing',
+        method: 'DELETE',
+        body: { projectId, emails },
+      }),
+    }),
   }),
 });
 
@@ -53,4 +79,6 @@ export const {
   useGetProjectsQuery,
   useGetClientsQuery,
   useLazyGetUsersByClientQuery,
+  usePublishProjectToUsersMutation,
+  useUnpublishProjectFromUsersMutation
 } = projectPublishingApiSlice;

@@ -14,16 +14,24 @@ router
   .post(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
     projectPublishingController.handlePublishProject
+  )
+  .delete(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    projectPublishingController.handleUnpublishProject
   );
 
-router.route('/projects').get(
+router
+  .route('/projects')
+  .get(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
     projectInfoController.handleUnrestrictedGetProjectList
-);
+  );
 
-router.route('/clients').get(
+router
+  .route('/clients')
+  .get(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
     projectPublishingController.handleGetClients
-);
+  );
 
 module.exports = router;

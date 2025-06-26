@@ -1,0 +1,39 @@
+.edit-button {
+    background-color: #2ecc71;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.edit-button:hover {
+    background-color: #27ae60;
+}
+
+.project-publishing-container .unpublish-button-inline {
+  background-color: #dc3545;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.project-publishing-container .unpublish-button-inline:hover {
+  background-color: #c82333;
+}
+
+.project-publishing-container .unpublish-button-inline:focus {
+  outline: 2px solid #dc3545;
+  outline-offset: 2px;
+}
