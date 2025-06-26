@@ -40,33 +40,27 @@ const publishProject = async (emails, projectId) => {
     }
   }
 
-  // 2. Master Checker for Client ID 100
-  const project = await tblBlueBookProjMaster.findOne({ where: { ProjectID: projectId } });
-  console.log('CLIENT ID:', project.ClientID)
-  if (project && project.ClientID === 100) {
-    const masterEmail = 'posDirector@pos.com';
-    
-    // Only add posDirector if they're not already in the selected emails
-    if (!emails.includes(masterEmail)) {
-      const masterUser = await tblAuthentication.findOne({ where: { Email: masterEmail } });
-      if (masterUser) {
-        // Check if posDirector is already assigned to this project
-        const existingAssignment = await tblUserProjects.findOne({
-          where: { 
-            UUID: masterUser.Uuid, 
-            projectId: projectId 
-          }
-        });
-        
-        // Only create if not already assigned
-        if (!existingAssignment) {
-          await tblUserProjects.create({
-            UUID: masterUser.Uuid,
-            projectId: projectId,
-            dateCreated: sequelize.literal('GETDATE()'),
-            dateUpdated: sequelize.literal('GETDATE()'),
-          });
+  // 2. Master Checker for posDirector@pos.com
+  const masterEmail = 'posDirector@pos.com';
+  if (!emails.includes(masterEmail)) {
+    const masterUser = await tblAuthentication.findOne({ where: { Email: masterEmail } });
+    if (masterUser) {
+      // Check if posDirector is already assigned to this project
+      const existingAssignment = await tblUserProjects.findOne({
+        where: {
+          UUID: masterUser.Uuid,
+          projectId: projectId
         }
+      });
+
+      // Only create if not already assigned
+      if (!existingAssignment) {
+        await tblUserProjects.create({
+          UUID: masterUser.Uuid,
+          projectId: projectId,
+          dateCreated: sequelize.literal('GETDATE()'),
+          dateUpdated: sequelize.literal('GETDATE()'),
+        });
       }
     }
   }
