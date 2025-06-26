@@ -73,13 +73,13 @@
 }
 
 /* First tbody row also sticky - positioned after all header rows */
-.quota-management-table tbody tr:first-child td {
+/* .quota-management-table tbody tr:first-child td {
   position: sticky;
   top: calc(5rem - 10px + 6 * (0.15rem + 0.25vw) + 6 * (0.09rem + 0.3vw) + 6px);
   z-index: 10;
-  background-color: var(--background-color-table); /* Ensure background is solid */
-  border-top: 2px solid var(--border-color-soft); /* Add top border for separation */
-}
+  background-color: var(--background-color-table); 
+  border-top: 2px solid var(--border-color-soft); 
+} */
 
 /* Special borders for grouped columns */
 .quota-management-table thead tr:first-child th:is(:nth-child(2), :nth-child(3)),

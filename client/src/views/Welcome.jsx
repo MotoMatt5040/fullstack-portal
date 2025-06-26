@@ -69,21 +69,21 @@ const Welcome = () => {
           <div className='quick-action-icon'>
             <FaChartLine />
           </div>
-          Topline Report
+          Topline Report (FUTURE)
         </Link>
 
         <Link to='/disposition-report' className='quick-action-btn'>
           <div className='quick-action-icon'>
             <FaChartLine />
           </div>
-          Disposition Report
+          Disposition Report (FUTURE)
         </Link>
 
         <Link to='/settings' className='quick-action-btn'>
           <div className='quick-action-icon'>
             <FaCog />
           </div>
-          Settings
+          Settings (FUTURE)
         </Link>
       </div>
     </div>
@@ -124,13 +124,13 @@ const Welcome = () => {
           <div className='welcome-card-icon'>
             <FaCodeBranch />
           </div>
-          <h3>Quota Publishing</h3>
+          <h3>Project Publishing</h3>
           <p>
             Publish quota reports to individuals by giving them access to view
             projects.
           </p>
-          <Link to='/quota-publishing' className='welcome-card-link'>
-            Publish Quotas <FaCodeBranch />
+          <Link to='/project-publishing' className='welcome-card-link'>
+            Publish Projects <FaCodeBranch />
           </Link>
         </div>
       )}

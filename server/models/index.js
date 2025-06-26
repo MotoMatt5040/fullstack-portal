@@ -9,7 +9,6 @@ const sequelize = new Sequelize('CaligulaD', process.env.PROMARK_DB_USER, proces
 });
 
 const models = initModels(sequelize);
-console.log('Initialized Sequelize models:', Object.keys(models));
 
 module.exports = {
   sequelize,

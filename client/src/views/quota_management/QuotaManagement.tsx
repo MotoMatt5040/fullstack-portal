@@ -1,16 +1,16 @@
 import React from 'react';
 import Select from 'react-select';
-import MyToggle from '../../../components/MyToggle';
+import MyToggle from '../../components/MyToggle';
 
 import './QuotaManagement.css';
-import '../../styles/Sections.css';
-import '../../styles/ViewToggles.css';
-import '../../styles/Containers.css';
+import '../styles/Sections.css';
+import '../styles/ViewToggles.css';
+import '../styles/Containers.css';
 import useQuotaManagementLogic from './useQuotaManagementLogic';
 import QuotaManagementTable from './QuotaManagementTable';
 import Icon from '@mdi/react';
 import { mdiFilterMenu } from '@mdi/js';
-import ExportExcelButton from '../../../components/ExportExcelButton';
+import ExportExcelButton from '../../components/ExportExcelButton';
 
 type Props = {};
 

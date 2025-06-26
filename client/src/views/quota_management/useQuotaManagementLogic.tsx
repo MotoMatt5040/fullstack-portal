@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
-import { selectCurrentToken } from '../../../features/auth/authSlice';
+import { selectCurrentToken } from '../../features/auth/authSlice';
 import {
   useLazyGetQuotasQuery,
   useLazyGetProjectListQuery,
-} from '../../../features/quotasApiSlice';
+} from '../../features/quotasApiSlice';
 import { useSearchParams } from 'react-router-dom';
 
 // Types

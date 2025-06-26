@@ -94,7 +94,7 @@ const createWelcomeEmailTemplate = (
   isExternal,
   clientName
 ) => {
-  const subject = 'Promark Portal - Your Account Has Been Created';
+  const subject = 'Promark Client Portal - Your Account Has Been Created';
   const resetLink = `${
     process.env.FRONTEND_URL || 'http://localhost:5173'
   }/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
@@ -129,7 +129,7 @@ const createWelcomeEmailTemplate = (
           <h1>Welcome to Our Platform</h1>
         </div>
         <div class="content">
-          <h2>Welcome to the Promark Portal!</h2>
+          <h2>Welcome to the Promark Client Portal!</h2>
           <p>Your account has been successfully created. Here are your temporary login credentials:</p>
           
           <div class="credentials">
@@ -169,7 +169,7 @@ const createWelcomeEmailTemplate = (
   `;
 
   const text = `
-    Welcome to the Promark Portal!
+    Welcome to the Promark Client Portal!
     
     Your account has been successfully created.
     
@@ -549,7 +549,7 @@ const sendForgotPasswordEmail = async (email, resetToken) => {
 
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    const subject = 'Promark Portal - Password Reset Request';
+    const subject = 'Promark Client Portal - Password Reset Request';
 
     const html = `
       <!DOCTYPE html>
@@ -639,7 +639,7 @@ const sendForgotPasswordEmail = async (email, resetToken) => {
   }
 };
 
-handleGetAllUsers = async (req, res) => {
+const handleGetAllUsers = async (req, res) => {
   try {
     const usersFromDb = await User.getAllUsers();
     if (!usersFromDb || usersFromDb.length === 0) {

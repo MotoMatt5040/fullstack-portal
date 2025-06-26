@@ -25,14 +25,14 @@ import UpdateUserRoles from './views/users/UpdateUserRoles';
 import SummaryReport from './views/summary_report/SummaryReport';
 import ProjectReport from './views/project_report/ProjectReport';
 import AddUser from './views/secure/AddUser';
-import QuotaManagement from './views/quota_management/viewing/QuotaManagement';
+import QuotaManagement from './views/quota_management/QuotaManagement';
 import ResetPassword from './views/secure/ResetPassword';
 import UserManagement from './views/user_management/UserManagement';
 import ProductionReport from './views/production_report/ProductionReport';
-import QuotaPublishing from './views/quota_management/publishing/QuotaPublishing';
 import Unauthorized from './views/secure/Unauthorized';
 import Reports from './views/Reports';
 import Toplines from './views/toplines/Toplines';
+import ProjectPublishing from './views/project_publishing/ProjectPublishing';
 
 function App() {
   useGetRolesQuery();
@@ -107,7 +107,10 @@ function App() {
           <Route path='summary-report' element={<SummaryReport />} />
           <Route path='project-report' element={<ProjectReport />} />
           <Route path='production-report' element={<ProductionReport />} />
-          <Route path='publishquotas' element={<QuotaPublishing />} />
+          {/* <Route path='publishquotas' element={<QuotaPublishing />} /> */}
+        </Route>
+        <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>
+          <Route path='project-publishing' element={<ProjectPublishing />} />
         </Route>
 
         <Route

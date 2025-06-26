@@ -4,10 +4,6 @@ const ROLES_LIST = require('../../config/rolesList');
 const verifyRoles = require('../../middleware/verifyRoles');
 const usersController = require('../../controllers/usersController');
 
-console.log('--- Loading /routes/api/users.js ---');
-console.log('Value of ROLES_LIST at the moment route is defined:', ROLES_LIST);
-console.log('Value of ROLES_LIST.Admin:', ROLES_LIST.Admin);
-
 // GET all users
 router
   .route('/')

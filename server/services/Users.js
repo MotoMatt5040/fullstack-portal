@@ -146,10 +146,12 @@ const getAllUsers = async () => {
             a.email, 
             STRING_AGG(r.roleName, ', ') AS roles 
           FROM tblAuthentication a
-          INNER JOIN tblUserRoles ur ON a.uuid = ur.uuid
-          INNER JOIN tblRoles r ON ur.role = r.roleid
+          LEFT JOIN tblUserRoles ur ON a.uuid = ur.uuid
+          LEFT JOIN tblRoles r ON ur.role = r.roleid
           GROUP BY a.uuid, a.email
-          ORDER BY email asc
+          ORDER BY 
+            CASE WHEN STRING_AGG(r.roleName, ', ') IS NULL THEN 1 ELSE 0 END,
+            a.email ASC
         `);
       return result.recordset;
     },

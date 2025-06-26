@@ -8,5 +8,6 @@ router.use('/promark-employees', require('./api/promarkEmployees'));
 router.use('/github', require('./api/github'));
 router.use('/reports', require('./api/reports'));
 router.use('/quota-management', require('./api/quotaManagement'));
+router.use('/project-publishing', require('./api/projectPublishing'));
 
 module.exports = router;
