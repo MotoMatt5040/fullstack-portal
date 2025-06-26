@@ -10,12 +10,14 @@ const getPublishedProjects = async () => {
       a.email,
       uproj.projectid,
       c.clientid,
-      c.clientname
+      c.clientname,
+      projectname
     FROM
       dbo.tblClients AS c
     INNER JOIN dbo.tblUserProfiles AS up ON c.ClientID = up.ClientID
     INNER JOIN dbo.tblAuthentication AS a ON a.Uuid = up.UUID
     INNER JOIN dbo.tblUserProjects AS uproj ON uproj.UUID = a.Uuid
+	INNER JOIN dbo.tblCC3ProjectHeader AS cc3 ON cc3.ProjectID = uproj.projectId
     ORDER BY
       uproj.projectid DESC;
   `);
@@ -40,12 +42,12 @@ const publishProject = async (emails, projectId) => {
     }
   }
 
-  // 2. Master Checker for posDirector@pos.com
-  const masterEmail = 'posDirector@pos.com';
+  // 2. Master Checker for luke@pos.org
+  const masterEmail = 'luke@pos.org';
   if (!emails.includes(masterEmail)) {
     const masterUser = await tblAuthentication.findOne({ where: { Email: masterEmail } });
     if (masterUser) {
-      // Check if posDirector is already assigned to this project
+      // Check if luke is already assigned to this project
       const existingAssignment = await tblUserProjects.findOne({
         where: {
           UUID: masterUser.Uuid,
@@ -94,7 +96,7 @@ const unpublishProject = async (emails, projectId) => {
 const getProjects = async () => {
   const [projects, metadata] = await sequelize.query(`
         SELECT projectId, projectName FROM dbo.tblCC3ProjectHeader WHERE
-  FieldStart >= DATEADD(day, -30, GETDATE()) ORDER BY FieldStart DESC
+  FieldStart >= DATEADD(day, -30, GETDATE()) ORDER BY projectId DESC
     `);
   return projects;
 };

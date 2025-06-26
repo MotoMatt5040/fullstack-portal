@@ -24,7 +24,7 @@ router
 router
   .route('/getclients')
   .get(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
     usersController.handleGetClients
   );
 
