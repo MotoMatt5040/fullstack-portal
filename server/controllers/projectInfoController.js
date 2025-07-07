@@ -23,7 +23,6 @@ const handleGetProjectList = handleAsync(async (req, res) => {
 });
 
 const handleUnrestrictedGetProjectList = handleAsync(async (req, res) => {
-  console.log('test')
   try {
     const projects = await ProjectInfoServices.unrestrictedGetProjectsList();
 

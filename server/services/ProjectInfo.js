@@ -117,7 +117,7 @@ ORDER BY
     },
     attempts: 5,
     fnName: 'unrestrictedGetProjectsList',
-    allowAbort: true,
+    allowAbort: false,
     allowRetry: true,
   });
 };
