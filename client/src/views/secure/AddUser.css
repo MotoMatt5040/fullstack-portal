@@ -68,3 +68,9 @@
   color: var(--text-color);
   border-radius: 5px;
 }
+
+.user-type-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}

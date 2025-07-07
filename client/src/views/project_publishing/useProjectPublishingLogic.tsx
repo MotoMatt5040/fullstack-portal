@@ -7,6 +7,7 @@ import {
   usePublishProjectToUsersMutation,
   useUnpublishProjectFromUsersMutation 
 } from '../../features/projectPublishingApiSlice';
+import { useGetUsersQuery } from '../../features/usersApiSlice';
 
 // Types
 interface PublishedProject {
@@ -49,6 +50,7 @@ const useProjectPublishingLogic = () => {
 
   const { data: projects = [] } = useGetProjectsQuery();
   const { data: clients = [] } = useGetClientsQuery();
+  const { data: allUsers = [] } = useGetUsersQuery(); // Add this to get all users
   const [getUsersByClient, { data: usersForClient }] = useLazyGetUsersByClientQuery();
   const [publishProjectToUsers, { isLoading: isPublishing }] = usePublishProjectToUsersMutation();
   const [unpublishProjectFromUsers, { isLoading: isUnpublishing }] = useUnpublishProjectFromUsersMutation();
@@ -72,6 +74,16 @@ const useProjectPublishingLogic = () => {
     [clients]
   );
 
+  // All users options (not filtered by client)
+  const allUserOptions = useMemo(() => {
+    if (!allUsers) return [];
+    return allUsers.map((user: any) => ({
+      value: user.email,
+      label: `${user.email}${user.clientname ? ` (${user.clientname})` : ''}`,
+    }));
+  }, [allUsers]);
+
+  // Client-filtered user options (existing functionality)
   const userOptions = useMemo(() => {
     if (!usersForClient) return [];
     return usersForClient.map((user: any) => ({
@@ -316,6 +328,7 @@ const useProjectPublishingLogic = () => {
     filteredProjects,
     projects,
     clients,
+    allUsers, // Add this to return
     
     // Loading states
     isLoading,
@@ -346,6 +359,7 @@ const useProjectPublishingLogic = () => {
     projectOptions,
     clientOptions,
     userOptions,
+    allUserOptions, // Add this to return
     selectedProjectOption,
     selectedClientOption,
     selectedUsers,

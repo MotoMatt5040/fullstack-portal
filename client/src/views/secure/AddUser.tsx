@@ -1,13 +1,12 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useSelector } from 'react-redux'; // 1. IMPORT useSelector
-// import ROLES_LIST from '../../ROLES_LIST.json'; // 2. REMOVE the static JSON import
-
+import { useSelector } from 'react-redux';
 import MyToggle from '../../components/MyToggle';
 import {
   useAddUserMutation,
   useGetClientsQuery,
 } from '../../features/usersApiSlice';
 import { selectRoles } from '../../features/roles/rolesSlice';
+import { selectUser } from '../../features/auth/authSlice';
 import './AddUser.css';
 import Select from 'react-select';
 
@@ -19,6 +18,7 @@ const EXCLUSIVE_ROLES = ['Admin', 'External'] as const;
 
 const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
   const rolesFromStore = useSelector(selectRoles);
+  const currentUser = useSelector(selectUser); // Get current user from the store
 
   const { data: clients = [], isFetching: fetchingClients } = useGetClientsQuery();
   const [addUser, { isLoading: addUserIsLoading, error: addUserError }] = useAddUserMutation();
@@ -26,21 +26,35 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
   const [email, setEmail] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [userType, setUserType] = useState('internal'); // 'internal' or 'external'
 
-  const availableRoles = useMemo(
-    (): Role[] =>
-      // Use rolesFromStore instead of ROLES_LIST
-      Object.entries(rolesFromStore).map(([name, id]) => ({
+  const availableRoles = useMemo((): Role[] => {
+    const allRoles: Role[] = Object.entries(rolesFromStore).map(([name, id]) => ({
         id: Number(id),
         name,
-      })),
-    [rolesFromStore] // Add dependency on rolesFromStore
-  );
+    }));
+
+    if (!currentUser) return [];
+
+    // Check if current user has Admin role
+    const currentUserRoleIds = currentUser.roles || [];
+    const adminRoleId = rolesFromStore['Admin'];
+    const isAdmin = currentUserRoleIds.includes(adminRoleId);
+    
+    if (isAdmin) {
+        return allRoles; // Admins can see all roles
+    }
+
+    // Get the highest role ID of the current user
+    const highestUserRoleId = currentUserRoleIds.length > 0 ? Math.max(...currentUserRoleIds) : -1;
+
+    // Filter roles to only show roles with a higher ID (lower priority)
+    return allRoles.filter(role => role.id > highestUserRoleId);
+
+  }, [rolesFromStore, currentUser]);
 
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
 
-  // useEffect to initialize toggleStates when roles are loaded.
-  // This is crucial because rolesFromStore is initially empty.
   useEffect(() => {
     if (availableRoles.length > 0) {
       setToggleStates(
@@ -49,8 +63,6 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
     }
   }, [availableRoles]);
 
-
-  // Memoized client options 
   const clientOptions = useMemo((): ClientOption[] => {
     if (fetchingClients || !clients) return [];
     return clients.map((client: Client) => ({
@@ -59,8 +71,6 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
     }));
   }, [clients, fetchingClients]);
 
-
-  // Reset form - update dependency array
   const resetForm = useCallback(() => {
     setEmail('');
     setSelectedClientId(null);
@@ -69,20 +79,8 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
             Object.fromEntries(availableRoles.map((role) => [role.name, false]))
         );
     }
-  }, [availableRoles]); // Add availableRoles dependency
+  }, [availableRoles]);
 
-
-  // The rest of your component logic (handleToggleClick, validateForm, handleSubmit, etc.)
-  // does not need to be changed. Just ensure their useCallback dependency arrays
-  // are correct if they rely on `availableRoles`. `validateForm` and `handleSubmit` already look correct.
-  // ... (handleToggleClick)
-  // ... (validateForm)
-  // ... (handleSubmit)
-  // ... (handleClientChange, selectedClientOption)
-  // ... (JSX for the form)
-
-  // NOTE: The rest of the file is included below for completeness but contains no other changes.
-  
   const handleToggleClick = useCallback((roleName: string) => {
     setToggleStates((prev) => {
       const newState = { ...prev };
@@ -106,16 +104,17 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
 
   const validateForm = useCallback((): string | null => {
     if (!email.trim()) return 'Email is required';
-    
-    const selectedRoles = availableRoles.filter((role) => toggleStates[role.name]);
-    if (selectedRoles.length === 0) return 'Please select at least one role';
-    
-    if (toggleStates['External'] && !selectedClientId) {
-      return 'Please select a client for external users';
-    }
 
+    if (userType === 'internal') {
+        const selectedRoles = availableRoles.filter((role) => toggleStates[role.name]);
+        if (selectedRoles.length === 0) return 'Please select at least one role';
+    } else { // external
+        if (!selectedClientId) {
+            return 'Please select a client for external users';
+        }
+    }
     return null;
-  }, [email, toggleStates, selectedClientId, availableRoles]);
+  }, [email, toggleStates, selectedClientId, availableRoles, userType]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,15 +125,19 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    const roleIds = availableRoles
-      .filter((role) => toggleStates[role.name])
-      .map((role) => role.id);
+    const isExternal = userType === 'external';
+    
+    const roleIds = isExternal 
+        ? [rolesFromStore['External']] 
+        : availableRoles
+            .filter((role) => toggleStates[role.name])
+            .map((role) => role.id);
 
     const userData: UserFormData = {
       email: email.trim(),
-      external: toggleStates['External'],
+      external: isExternal,
       roles: roleIds,
-      clientId: selectedClientId,
+      clientId: isExternal ? selectedClientId : null,
     };
 
     try {
@@ -152,7 +155,7 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
       console.error('Error adding user:', err);
       alert(err?.data?.message || 'Failed to add user. Please try again.');
     }
-  }, [validateForm, availableRoles, toggleStates, email, selectedClientId, addUser, resetForm, onSuccess]);
+  }, [validateForm, availableRoles, toggleStates, email, selectedClientId, addUser, resetForm, onSuccess, userType, rolesFromStore]);
 
   const handleClientChange = useCallback((selected: ClientOption | null) => {
     setSelectedClientId(selected?.value || null);
@@ -166,6 +169,19 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
   return (
     <>
       <form className="add-user-form" onSubmit={handleSubmit}>
+        <div className="user-type-toggle">
+            <MyToggle
+                label="Internal"
+                active={userType === 'internal'}
+                onClick={() => setUserType('internal')}
+            />
+            <MyToggle
+                label="External"
+                active={userType === 'external'}
+                onClick={() => setUserType('external')}
+            />
+        </div>
+
         <label className="add-user-label" htmlFor="email">
           Email:
         </label>
@@ -188,20 +204,22 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
 
         <br />
 
-        <label className="add-user-label">Roles:</label>
-        <div className="role-toggle-group">
-          {availableRoles.map((role) => (
-            <MyToggle
-              key={role.id}
-              label={role.name}
-              active={toggleStates[role.name]}
-              onClick={() => handleToggleClick(role.name)}
-              disabled={addUserIsLoading}
-            />
-          ))}
-        </div>
-
-        {toggleStates['External'] && (
+        {userType === 'internal' ? (
+            <div>
+                <label className="add-user-label">Roles:</label>
+                <div className="role-toggle-group">
+                {availableRoles.map((role) => (
+                    <MyToggle
+                    key={role.id}
+                    label={role.name}
+                    active={toggleStates[role.name]}
+                    onClick={() => handleToggleClick(role.name)}
+                    disabled={addUserIsLoading}
+                    />
+                ))}
+                </div>
+            </div>
+        ) : (
           <div>
             <br />
             <label htmlFor="client-select">Client:</label>

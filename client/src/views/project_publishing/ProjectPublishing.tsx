@@ -19,6 +19,7 @@ const ProjectPublishing: React.FC = () => {
   const {
     // Data
     filteredProjects,
+    allUsers,
     
     // Loading states
     isLoading,
@@ -46,6 +47,7 @@ const ProjectPublishing: React.FC = () => {
     projectOptions,
     clientOptions,
     userOptions,
+    allUserOptions,
     selectedProjectOption,
     selectedClientOption,
     selectedUsers,
@@ -246,6 +248,14 @@ const ProjectPublishing: React.FC = () => {
     );
   }
 
+  // Determine which user options to show based on client selection
+  const getCurrentUserOptions = () => {
+    if (selectedClientOption && usersForClient) {
+      return userOptions; // Client-filtered users
+    }
+    return allUserOptions; // All users
+  };
+
   return (
     <section className='project-publishing-container'>
       {content}
@@ -275,14 +285,14 @@ const ProjectPublishing: React.FC = () => {
               />
             </div>
             <div className='form-group'>
-              <label htmlFor='client'>Client</label>
+              <label htmlFor='client'>Client (Optional Filter)</label>
               <Select
                 classNamePrefix='my-select'
                 inputId='client'
                 options={clientOptions}
                 value={selectedClientOption}
                 onChange={handleClientChange}
-                placeholder='Select a Client'
+                placeholder='Select a Client to Filter Users (Optional)'
                 isClearable
                 menuPortalTarget={document.body}
                 styles={{
@@ -292,30 +302,35 @@ const ProjectPublishing: React.FC = () => {
                   }),
                 }}
               />
+              <small className="form-help-text">
+                {selectedClientOption 
+                  ? 'Showing users for selected client only' 
+                  : 'Showing all users - select a client above to filter'}
+              </small>
             </div>
 
-            {usersForClient && (
-              <div className='form-group'>
-                <label htmlFor='users'>Users</label>
-                <Select
-                  classNamePrefix='my-select'
-                  inputId='users'
-                  options={userOptions}
-                  value={selectedUsers}
-                  onChange={handleUserChange}
-                  placeholder='Select users'
-                  isMulti
-                  closeMenuOnSelect={false}
-                  menuPortalTarget={document.body}
-                  styles={{
-                    menuPortal: (base) => ({
-                      ...base,
-                      zIndex: 9999999,
-                    }),
-                  }}
-                />
-              </div>
-            )}
+            <div className='form-group'>
+              <label htmlFor='users'>
+                Users {selectedClientOption ? `(${selectedClientOption.label})` : '(All)'}
+              </label>
+              <Select
+                classNamePrefix='my-select'
+                inputId='users'
+                options={getCurrentUserOptions()}
+                value={selectedUsers}
+                onChange={handleUserChange}
+                placeholder={selectedClientOption ? 'Select users from client' : 'Select users (all available)'}
+                isMulti
+                closeMenuOnSelect={false}
+                menuPortalTarget={document.body}
+                styles={{
+                  menuPortal: (base) => ({
+                    ...base,
+                    zIndex: 9999999,
+                  }),
+                }}
+              />
+            </div>
           </div>
           <button
             type='submit'
