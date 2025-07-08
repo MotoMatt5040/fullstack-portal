@@ -75,7 +75,7 @@ const UserManagement = () => {
   };
 
   const handleRefresh = () => {
-    // This would typically be a function from your logic hook to refetch data
+    // This would typically be a function from the logic hook to refetch data
     window.location.reload();
   };
 
@@ -122,16 +122,22 @@ const UserManagement = () => {
                       <span className='user-indent'>└─ {user.email}</span>
                     </td>
                     <td className='table__cell'>{user.roles.join(', ')}</td>
-                    <td className="table__cell actions-cell">
-  <div className="actions-cell-content"> {/* Add this wrapper div */}
-    <button onClick={() => handleOpenUpdateModal(user)} className="edit-button">
-      <FontAwesomeIcon icon={faPencilAlt} />
-    </button>
-    <button onClick={() => handleOpenDeleteModal(user)} className="delete-button">
-      <FontAwesomeIcon icon={faTrashAlt} />
-    </button>
-  </div>
-</td>
+                    <td className='table__cell actions-cell'>
+                      <div className='actions-cell-content'>
+                        <button
+                          onClick={() => handleOpenUpdateModal(user)}
+                          className='edit-button'
+                        >
+                          <FontAwesomeIcon icon={faPencilAlt} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenDeleteModal(user)}
+                          className='delete-button'
+                        >
+                          <FontAwesomeIcon icon={faTrashAlt} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
             </React.Fragment>
@@ -190,7 +196,7 @@ const UserManagement = () => {
           />
         </div>
         <div className='table-container'>
-          <table className='table table--users'>
+          <table className='table table__users'>
             <thead className='table__thead'>
               <tr>
                 <th scope='col' className='table__th client__name_header'>

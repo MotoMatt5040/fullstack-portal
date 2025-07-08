@@ -124,8 +124,8 @@
     box-shadow: var(--box-shadow-elevated);
     overflow-x: auto;
     padding: 1rem;
-    max-height: calc(100vh - 280px); /* Adjust as needed */
-    overflow-y: auto;
+    /* max-height: calc(100vh - 280px);  */
+    overflow-y: hidden;
     position: relative;
 }
 
