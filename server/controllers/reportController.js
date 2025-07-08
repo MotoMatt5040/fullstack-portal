@@ -279,14 +279,15 @@ const handleGetInterviewerProductionReportData = handleAsync(
   }
 );
 
-const handleUpdateTargetMph = handleAsync(async (req, res) => {
+const handleUpdateTargetMphAndCph = handleAsync(async (req, res) => {
   const projectId = cleanQueryParam(req.body?.projectId);
   const recDate = cleanQueryParam(req.body?.recDate);
   const targetMph = cleanQueryParam(req.body?.targetMph);
   const prevTargetMph = cleanQueryParam(req.body?.prevTargetMph);
+  const gpcph = cleanQueryParam(req.body?.gpcph);
   const user = cleanQueryParam(req.user);
-  console.log(user, projectId, recDate, targetMph, prevTargetMph);
-  console.log(typeof targetMph, typeof prevTargetMph);
+  console.log(user, projectId, recDate, targetMph, prevTargetMph, gpcph);
+  console.log(typeof targetMph, typeof prevTargetMph, typeof gpcph);
 
   req.auditData = {
     userid: user,
@@ -296,14 +297,15 @@ const handleUpdateTargetMph = handleAsync(async (req, res) => {
     modifiedTo: targetMph,
   };
 
-  if (!projectId || !recDate || !targetMph) {
+  if (!projectId || !recDate || !targetMph || !gpcph) {
     return res.status(400).json({ msg: 'Missing required fields' });
   }
 
-  const result = await Reports.updateTargetMph(
+  const result = await Reports.updateTargetMphAndCph(
     projectId,
     recDate,
     targetMph,
+    gpcph,
     user
   );
 
@@ -333,6 +335,6 @@ module.exports = {
   handleGetReportData,
   handleGetLiveInterviewerData,
   handleGetInterviewerProductionReportData,
-  handleUpdateTargetMph,
+  handleUpdateTargetMphAndCph,
   handleGetToplineReport,
 };

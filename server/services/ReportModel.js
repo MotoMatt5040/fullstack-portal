@@ -272,8 +272,6 @@ GROUP BY
 	projName
 	`;
 
-	console.log(recDate);
-
 	return withDbConnection({
 		database: promark,
 		queryFn: async (pool) => {
@@ -292,10 +290,11 @@ GROUP BY
 	});
 };
 
-const updateTargetMph = async (projectId, recDate, targetMph, user) => {
+const updateTargetMphAndCph = async (projectId, recDate, targetMph, gpcph, user) => {
 	const qry = `
 	UPDATE tblGPCPHDaily 
 	SET targetmph = @targetMph,
+		gpcph = @gpcph,
 		dateupdated = @dateupdated,
 		updatedby = @updatedby
 	WHERE projectId = @projectId 
@@ -311,6 +310,7 @@ const updateTargetMph = async (projectId, recDate, targetMph, user) => {
 			request.input('updatedby', sql.NVarChar, user);
 			request.input('recDate', sql.NVarChar, recDate);
 			request.input('targetMph', sql.Float, targetMph);
+			request.input('gpcph', sql.Float, gpcph);
 
 			const result = await request.query(qry);
 			return result.rowsAffected;
@@ -328,5 +328,5 @@ module.exports = {
 	getHistoricInterviewerData,
 	getHistoricProjectReportData,
 	getInterviewerProductionReportData,
-	updateTargetMph,
+	updateTargetMphAndCph,
 };

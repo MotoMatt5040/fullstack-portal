@@ -34,6 +34,19 @@ const ProductionReport = () => {
     handleConfirm,
     mphIsUpdated,
     handleMphChange,
+    // Calculated values
+    todaysCmsGoal,
+    todaysCmsDiff,
+    expectedCphInverse,
+    actualCphPercentage,
+    amphPercentage,
+    targetMph80Cutoff,
+    expectedCph80Cutoff,
+    expectedCph60Cutoff,
+    top20Count,
+    todaysCmsDiffIsPositive,
+    actualCphMeetsExpected,
+    amphMeetsTarget,
   } = useProductionReportLogic();
 
   const columnKeyMap = {
@@ -108,13 +121,11 @@ const ProductionReport = () => {
                   <td className='todays-data justify-right'>
                     <b>TODAY'S CMS GOAL:</b>
                   </td>
-                  <td>{(totalHours * expectedCph).toFixed(0)}</td>
+                  <td>{todaysCmsGoal.toFixed(0)}</td>
                   <td className='justify-right'>Daily Incidence:</td>
                   <td>{incidence.toFixed(2)}%</td>
                   <td colSpan={2} />
-                  <td>
-                    {expectedCph > 0 ? (1 / expectedCph).toFixed(2) : 'div/0'}
-                  </td>
+                  <td>{expectedCphInverse}</td>
                 </tr>
 
                 <tr>
@@ -146,40 +157,38 @@ const ProductionReport = () => {
                   <td>A.CPH</td>
                   <td
                     className={
-                      actualCph >= expectedCph
+                      actualCphMeetsExpected
                         ? 'highlight-green'
                         : 'highlight-red'
                     }
                   >
                     {actualCph}
                   </td>
-                  <td>{((actualCph / expectedCph) * 100).toFixed(0)}%</td>
+                  <td>{actualCphPercentage.toFixed(0)}%</td>
                 </tr>
 
                 <tr>
                   <th>80% Cutoff</th>
                   <td className='highlight-yellow'>
-                    {(targetMph * 0.8).toFixed(2)}
+                    {targetMph80Cutoff.toFixed(2)}
                   </td>
                   <td className='highlight-yellow'>
-                    {(expectedCph * 0.8).toFixed(2)}
+                    {expectedCph80Cutoff.toFixed(2)}
                   </td>
                   <td></td>
                   <td colSpan={2}># Top 20%</td>
-                  <td>{(data.length * 0.2).toFixed(0)}</td>
+                  <td>{top20Count.toFixed(0)}</td>
                   <td className='justify-right'>
                     <b>TODAY'S CMS DIFF:</b>
                   </td>
                   <td
                     className={
-                      totalCms - (totalHours * expectedCph).toFixed(0) >= 0
+                      todaysCmsDiffIsPositive
                         ? 'highlight-rich-green'
                         : 'highlight-red'
                     }
                   >
-                    {(
-                      totalCms - (totalHours * expectedCph).toFixed(0)
-                    ).toString()}
+                    {todaysCmsDiff.toString()}
                   </td>
                   <td className='justify-right'>Avg. Overall LOI:</td>
                   <td>{expectedLoi}</td>
@@ -187,18 +196,18 @@ const ProductionReport = () => {
                   <td>A.MPH</td>
                   <td
                     className={
-                      amph >= targetMph ? 'highlight-green' : 'highlight-red'
+                      amphMeetsTarget ? 'highlight-green' : 'highlight-red'
                     }
                   >
                     {amph}
                   </td>
-                  <td>{((amph / targetMph) * 100).toFixed(0)}%</td>
+                  <td>{amphPercentage.toFixed(0)}%</td>
                 </tr>
 
                 <tr>
                   <th>60% Cutoff</th>
                   <td> </td>
-                  <td>{(expectedCph * 0.6).toFixed(2)}</td>
+                  <td>{expectedCph60Cutoff.toFixed(2)}</td>
                   <td colSpan={4}></td>
                   <td className='justify-right'>
                     <b>TODAY'S HOURS:</b>

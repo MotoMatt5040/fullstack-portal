@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   useGetProductionReportQuery,
-  useUpdateTargetMphMutation,
+  useUpdateTargetMphAndCphMutation,
 } from '../../features/reportsApiSlice';
 import QueryHelper from '../../utils/QueryHelper';
 import { useSelector } from 'react-redux';
@@ -28,13 +28,26 @@ type ProductionReportLogic = {
   handleConfirm?: (e: React.KeyboardEvent) => void;
   mphIsUpdated?: boolean;
   handleMphChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  // Calculated values
+  todaysCmsGoal?: number;
+  todaysCmsDiff?: number;
+  expectedCphInverse?: string;
+  actualCphPercentage?: number;
+  amphPercentage?: number;
+  targetMph80Cutoff?: number;
+  expectedCph80Cutoff?: number;
+  expectedCph60Cutoff?: number;
+  top20Count?: number;
+  todaysCmsDiffIsPositive?: boolean;
+  actualCphMeetsExpected?: boolean;
+  amphMeetsTarget?: boolean;
 };
 
 const useProductionReportLogic = (): ProductionReportLogic => {
   const [searchParams] = useSearchParams();
   const [timestamp, setTimestamp] = useState<number>(Date.now());
   const useGpcph = useSelector((state: any) => state.settings.useGpcph);
-  const [updateTargetMph] = useUpdateTargetMphMutation();
+  const [updateTargetMphAndCph] = useUpdateTargetMphAndCphMutation();
 
   const initProjectId: string = searchParams.get('projectId') || '';
   const initRecDate: string = searchParams.get('recDate') || '';
@@ -90,9 +103,34 @@ const useProductionReportLogic = (): ProductionReportLogic => {
   }, [productionReport.data]);
 
   useEffect(() => {
-    setExpectedCph(targetMph / expectedLoi);
+    // Add safety checks before calculating
+    if (targetMph > 0 && expectedLoi > 0) {
+      setExpectedCph(targetMph / expectedLoi);
+    } else {
+      setExpectedCph(0); // Set to 0 instead of NaN
+    }
     if (targetMph == prevTargetMph) setMphIsUpdated(true);
-  }, [targetMph]);
+  }, [targetMph, expectedLoi]); // Add expectedLoi as dependency
+
+  // Calculated values with safety checks
+  const todaysCmsGoal = totalHours * expectedCph;
+  const todaysCmsDiff = (totalCms - todaysCmsGoal).toFixed(2);
+  const expectedCphInverse =
+    expectedCph > 0 && isFinite(expectedCph)
+      ? (1 / expectedCph).toFixed(2)
+      : 'div/0';
+  const actualCphPercentage =
+    expectedCph > 0 ? (actualCph / expectedCph) * 100 : 0;
+  const amphPercentage = targetMph > 0 ? (amph / targetMph) * 100 : 0;
+  const targetMph80Cutoff = targetMph * 0.8;
+  const expectedCph80Cutoff = expectedCph * 0.8;
+  const expectedCph60Cutoff = expectedCph * 0.6;
+  const top20Count = data.length * 0.2;
+
+  // Boolean conditions for styling
+  const todaysCmsDiffIsPositive = todaysCmsDiff >= 0;
+  const actualCphMeetsExpected = actualCph >= expectedCph;
+  const amphMeetsTarget = amph >= targetMph;
 
   const resetVariables = () => {
     setProjectId('');
@@ -109,13 +147,14 @@ const useProductionReportLogic = (): ProductionReportLogic => {
   const handleConfirm = async (e) => {
     if (targetMph === prevTargetMph) return;
     if (e.key !== 'Enter') return;
-    if (window.confirm(`Update Target MPH from to ${targetMph}`)) {
+    if (window.confirm(`Update Target MPH to ${targetMph} and GPCPH to ${expectedCph.toFixed(2)}?`)) {
       try {
-        await updateTargetMph({
+        await updateTargetMphAndCph({
           projectId,
           recDate,
           targetMph,
           prevTargetMph,
+          gpcph: expectedCph.toFixed(2),
         }).unwrap();
         setMphIsUpdated(true);
         setPrevTargetMph(targetMph);
@@ -166,6 +205,19 @@ const useProductionReportLogic = (): ProductionReportLogic => {
     handleConfirm,
     mphIsUpdated,
     handleMphChange,
+    // Calculated values
+    todaysCmsGoal,
+    todaysCmsDiff,
+    expectedCphInverse,
+    actualCphPercentage,
+    amphPercentage,
+    targetMph80Cutoff,
+    expectedCph80Cutoff,
+    expectedCph60Cutoff,
+    top20Count,
+    todaysCmsDiffIsPositive,
+    actualCphMeetsExpected,
+    amphMeetsTarget,
   };
 };
 

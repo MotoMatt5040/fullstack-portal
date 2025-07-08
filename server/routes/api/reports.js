@@ -33,9 +33,9 @@ router
   );
 
 router
-  .route('/data/update/targetmph')
+  .route('/data/update/targetmphandcph')
   .put(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive), (req, res) => {
-    ReportController.handleUpdateTargetMph(req, res);
+    ReportController.handleUpdateTargetMphAndCph(req, res);
   });
 
 router

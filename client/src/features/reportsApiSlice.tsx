@@ -75,14 +75,14 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
       }
     }),
 
-    updateTargetMph: builder.mutation<void, { projectId: number; recDate: string | Date; targetMph: number, prevTargetMph: number }>({
-      query: ({ projectId, recDate, targetMph, prevTargetMph }) => ({
-        url: '/reports/data/update/targetmph',
+    updateTargetMphAndCph: builder.mutation<void, { projectId: number; recDate: string | Date; targetMph: number, prevTargetMph: number, gpcph: number }>({
+      query: ({ projectId, recDate, targetMph, prevTargetMph, gpcph }) => ({
+        url: '/reports/data/update/targetmphandcph',
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: { projectId, recDate: removeTimeZone(recDate), targetMph, prevTargetMph },//removeTimeZone is required
+        body: { projectId, recDate: removeTimeZone(recDate), targetMph, prevTargetMph, gpcph },//removeTimeZone is required
       }),
     }),
     getToplineReport: builder.query<Blob, void>({
@@ -95,4 +95,4 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useGetReportQuery, useGetProductionReportQuery, useUpdateTargetMphMutation, useGetToplineReportQuery, useLazyGetToplineReportQuery } = ReportApiSlice;
+export const { useGetReportQuery, useGetProductionReportQuery, useUpdateTargetMphAndCphMutation, useGetToplineReportQuery, useLazyGetToplineReportQuery } = ReportApiSlice;
