@@ -142,7 +142,7 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
       continue;
     }
 
-    if (subType && !visibleStypes.Phone.includes(subType)) {
+    if (subType && !visibleStypes.Phone.includes(subType) && subType !== 'com') {
       visibleStypes.Phone.push(subType);
     }
 

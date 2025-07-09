@@ -1,95 +1,75 @@
 /* =================================================================
    Unified Quota Management Table Stylesheet
-   - Base: Mobile-first responsive sizing with clamp() optimization
-   - Enhancement: All original visual styles preserved
-   - NEW: Sticky headers with dynamic height management
    ================================================================= */
 
-/* Container for the table with controlled height */
 .quota-table-container {
   position: relative;
-  max-height: 80vh; /* Default height, will be overridden by JS */
+  max-height: 80vh;
   overflow: auto;
   border: 1px solid var(--border-color-soft);
   border-radius: 8px;
   box-shadow: var(--box-shadow-elevated);
 }
 
-/* Base styles for the component */
 .quota-management-table {
-  /* MODIFIED: Table is now aligned to the left */
   width: auto;
-  margin: 0; /* Removed margin since container handles spacing */
-  max-width: 100%; /* Ensures it doesn't overflow the viewport */
+  margin: 0;
+  max-width: 100%;
 
-  border-collapse: separate; /* Changed from collapse to separate for sticky headers */
-  border-spacing: 0; /* Remove default spacing */
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: center;
 
-  /* OPTIMIZED: Itsy bitsy teensy weensy spider bit bigger */
   font-size: calc(0.35rem + 0.4vw);
 
   color: var(--text-color);
   background-color: var(--background-color-table);
-  border-radius: 0; /* Container handles border radius */
-  overflow: visible; /* Allow sticky elements to show */
+  border-radius: 0;
+  overflow: visible;
 }
 
-/* STICKY HEADER STYLES - FIXED TO STICK AT NATURAL POSITION */
 .quota-management-table thead {
   background-color: var(--table-header-background, #444);
   color: var(--table-header-color, #fff);
-  /* Remove position sticky from thead - let individual th elements handle it */
 }
 
 .quota-management-table thead th {
-  /* OPTIMIZED: Itsy bitsy more padding */
   padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
   font-weight: bold;
-  white-space: normal; /* Allow headers to wrap on mobile */
+  white-space: normal;
   border-bottom: 2px solid var(--border-color-soft);
-  background-color: var(--table-header-background, #444); /* Ensure background is solid */
+  background-color: var(--table-header-background, #444);
   position: sticky;
-  z-index: 11; /* Base z-index for all header cells */
+  z-index: 11;
 }
 
-/* Multi-level sticky headers - Offset to stick below the quota management header */
 .quota-management-table thead tr:first-child th {
-  /* Calculate: page header (5rem) - reduced to touch the header */
-  top: calc(5rem - 10px); /* Reduced by 2px to eliminate gap */
+  top: calc(5rem - 10px);
   z-index: 13;
 }
 
 .quota-management-table thead tr:nth-child(2) th {
-  /* First row height + offset from top */
   top: calc(5rem - 10px + 2 * (0.15rem + 0.25vw) + 2 * (0.09rem + 0.3vw) + 2px);
   z-index: 12;
 }
 
 .quota-management-table thead tr:nth-child(3) th {
-  /* First two rows height + offset from top */
   top: calc(5rem - 10px + 4 * (0.15rem + 0.25vw) + 4 * (0.09rem + 0.3vw) + 4px);
   z-index: 11;
 }
 
-/* First tbody row also sticky - positioned after all header rows */
-/* .quota-management-table tbody tr:first-child td {
-  position: sticky;
-  top: calc(5rem - 10px + 6 * (0.15rem + 0.25vw) + 6 * (0.09rem + 0.3vw) + 6px);
-  z-index: 10;
-  background-color: var(--background-color-table); 
-  border-top: 2px solid var(--border-color-soft); 
-} */
-
-/* Special borders for grouped columns */
-.quota-management-table thead tr:first-child th:is(:nth-child(2), :nth-child(3)),
-.quota-management-table thead tr:nth-child(2) th:is(:nth-child(3), :nth-child(6)) {
+.quota-management-table
+  thead
+  tr:first-child
+  th:is(:nth-child(2), :nth-child(3)),
+.quota-management-table
+  thead
+  tr:nth-child(2)
+  th:is(:nth-child(3), :nth-child(6)) {
   border-left: 3px solid var(--border-color);
 }
 
-/* Base body cell styles */
 .quota-management-table tbody td {
-  /* OPTIMIZED: Itsy bitsy more padding */
   padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
   border-bottom: 1px solid var(--table-border-color, #666);
   white-space: nowrap;
@@ -101,28 +81,27 @@
 }
 
 .quota-management-select .my-select__control {
-  width: 100% !important;
-  min-width: 300px !important;
+  min-width: 70vw;
 }
 
 .quota-management-select .my-select__container {
-  width: 100% !important;
-  min-width: 300px !important;
+  min-width: 70vw;
 }
 
 .quota-management-select .my-select__menu {
-  width: 100% !important;
-  min-width: 300px !important;
+  min-width: 70vw;
 }
 
+/* .quota-management-select .my-select__option--is-selected {
+  background-color: var(--background-color-elevated) !important;
+  color: var(--text-color) !important;
+} */
 
-/* Hover and active states */
 .quota-management-table tbody tr:hover td,
 tr.active td {
   background-color: var(--table-row-hover-background, #999);
 }
 
-/* Zebra striping for readability */
 .quota-management-table tbody tr:nth-child(even) td {
   background-color: var(--zebra-stripe-color);
 }
@@ -180,7 +159,7 @@ tr.active td {
 /* =================================================================
    JavaScript-controlled dynamic heights
    ================================================================= */
-.quota-table-container[data-dynamic-height="true"] {
+.quota-table-container[data-dynamic-height='true'] {
   max-height: var(--dynamic-table-height, 80vh);
 }
 
@@ -193,27 +172,25 @@ tr.active td {
   .quota-management-table {
     font-size: 0.5rem;
   }
-  
-  /* Adjust sticky positions for smaller screens */
+
   .quota-management-table thead tr:first-child th {
-    top: calc(4rem - 2px); /* Reduced gap for mobile too */
+    top: calc(4rem - 2px); 
   }
-  
+
   .quota-management-table thead tr:nth-child(2) th {
     top: calc(4rem - 2px + 2 * 0.5rem + 4px);
   }
-  
+
   .quota-management-table thead tr:nth-child(3) th {
     top: calc(4rem - 2px + 4 * 0.5rem + 8px);
   }
-  
-  /* First tbody row for mobile */
+
   .quota-management-table tbody tr:first-child td {
     top: calc(4rem - 2px + 6 * 0.5rem + 12px);
   }
-  
+
   .quota-table-container {
-    max-height: 70vh; /* Smaller height on mobile */
+    max-height: 70vh;
   }
 }
 
@@ -221,6 +198,18 @@ tr.active td {
 @media (min-width: 768px) {
   .quota-table-container {
     max-height: 85vh;
+  }
+
+  .quota-management-select .my-select__control {
+    min-width: 500px;
+  }
+
+  .quota-management-select .my-select__container {
+    min-width: 500px;
+  }
+
+  .quota-management-select .my-select__menu {
+    min-width: 500px;
   }
 }
 

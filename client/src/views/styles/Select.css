@@ -40,3 +40,8 @@
   background-color: var(--color-primary) !important;
   color: white !important;
 }
+
+.my-select__option--is-selected {
+  background-color: var(--background-color-elevated) !important;
+  color: var(--text-color) !important;
+}
