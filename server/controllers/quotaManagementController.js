@@ -486,7 +486,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 
     calculateData(data);
 
-    if (!isInternalUser) {
+    if (!isInternalUser && data?.Phone?.com) {
       filterForExternalUsers(data);
     }
 
