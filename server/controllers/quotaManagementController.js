@@ -366,6 +366,7 @@ const calculateData = (data) => {
         const stype = STYPE_REVERSE_MAP[type] || 'unknown';
 
         let objPercent = '0.0';
+        // console.log(stype, group, type, data.totalRow[group]?.[type].TotalObjective);
         if (
           stype !== 'unknown' &&
           data.totalRow[group]?.[type]?.TotalObjective > 0

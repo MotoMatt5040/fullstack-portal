@@ -31,24 +31,19 @@ interface QuotaData {
   [key: string]: any;
 }
 
-// Constants
 const EXTERNAL_ROLE_ID = 4;
 const PROJECT_ID_QUERY_PARAM = 'projectId';
 
 const useQuotaManagementLogic = () => {
-  // State
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [quotas, setQuotas] = useState<QuotaData>({});
   const [visibleStypes, setVisibleStypes] = useState<VisibleStypes>({});
 
-  // Refs for polling
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchParamsRef = useRef<any>(null);
 
-  // Routing hook to manage URL query parameters
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Selectors
   const token = useSelector(selectCurrentToken);
 
   // Memoized user info extraction from the JWT token
@@ -93,15 +88,13 @@ const useQuotaManagementLogic = () => {
     }));
   }, [projectList, projectListIsFetching]);
 
-  // FIXED: Effect to initialize selectedProject state from URL - only on mount
   useEffect(() => {
     const projectIdFromUrl = searchParams.get(PROJECT_ID_QUERY_PARAM);
     if (projectIdFromUrl && projectIdFromUrl !== selectedProject) {
       setSelectedProject(projectIdFromUrl);
     }
-  }, []); // Only run on mount
+  }, []); 
 
-  // Effect to fetch the list of projects when user info becomes available
   useEffect(() => {
     const fetchParams = userInfo.isInternalUser
       ? {}
@@ -112,13 +105,18 @@ const useQuotaManagementLogic = () => {
     }
   }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
 
-  // FIXED: Effect to process and set quota data when quotaData changes
   useEffect(() => {
     if (quotaData) {
       console.log(quotaData);
       try {
-        // Use functional update to ensure we're always working with fresh state
         setQuotas(() => quotaData.data || {});
+
+        const baseStypes = {
+          blankSpace_6: {
+            blankSpace_1: 'Label',
+            Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
+          },
+        };
 
         const processedStypes: VisibleStypes = {
           blankSpace_6: {
@@ -136,8 +134,11 @@ const useQuotaManagementLogic = () => {
           'Mailer',
         ];
 
+        console.log(quotaData.visibleStypes)
+        let count = 0
         Object.entries(quotaData.visibleStypes || {}).forEach(
           ([type, entries]) => {
+            count++;
             processedStypes[type] = { Total: ['Freq', 'Freq%'] };
 
             if (Array.isArray(entries)) {
@@ -152,8 +153,7 @@ const useQuotaManagementLogic = () => {
           }
         );
 
-        // Use functional update here too
-        setVisibleStypes(() => processedStypes);
+        count === 1 ? setVisibleStypes(baseStypes) : setVisibleStypes(processedStypes);
       } catch (error) {
         console.error('Error processing quota data:', error);
         setQuotas({});

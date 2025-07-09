@@ -100,6 +100,22 @@
   border-right: none;
 }
 
+.quota-management-select .my-select__control {
+  width: 100% !important;
+  min-width: 300px !important;
+}
+
+.quota-management-select .my-select__container {
+  width: 100% !important;
+  min-width: 300px !important;
+}
+
+.quota-management-select .my-select__menu {
+  width: 100% !important;
+  min-width: 300px !important;
+}
+
+
 /* Hover and active states */
 .quota-management-table tbody tr:hover td,
 tr.active td {

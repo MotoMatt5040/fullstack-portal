@@ -13,9 +13,13 @@ const getWebQuotas = async (sid) => {
   //sid is a voxco project id
   try {
     const res = await axios.get(`/api/quotas/${sid}`);
+    // const test = await axios.get('/api/analyze/participation/summary/748');
+    // const test = await axios.get('/api/survey/variables/748');
+    // console.log(test.data)
     return res.data;
   } catch (error) {
     console.error('Error fetching web quotas:');
+    // console.error(error);
   }
 };
 
@@ -37,38 +41,6 @@ const getPhoneQuotas = async (sid, token) => {
   }
 };
 
-// const getPublishedProjects = async () => {
-//   const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';
-//   const qry = `
-// SELECT
-//     uproj.projectid,
-//     c.clientid,
-//     c.clientname
-// FROM
-//     dbo.tblClients AS c
-// INNER JOIN
-//     dbo.tblUserProfiles AS up ON c.ClientID = up.ClientID
-// INNER JOIN
-//     dbo.tblUserProjects AS uproj ON uproj.UUID = up.Uuid
-// ORDER BY
-//     uproj.projectID DESC;`;
-
-//   const res = withDbConnection({
-//     database: promark,
-//     queryFn: async (pool) => {
-//       const request = pool.request();
-
-//       const result = await request.query(qry);
-//       return result.recordset;
-//     },
-//     attempts: 5,
-//     fnName: 'getPublishedProjects',
-//     allowAbort: true,
-//     allowRetry: true,
-//   });
-//   return res;
-// };
-
 const getPublishedProjects = async () => {
   try {
     const results = await tblUserProjects.findAll({
@@ -78,19 +50,19 @@ const getPublishedProjects = async () => {
       include: [
         {
           model: tblAuthentication,
-          as: 'UU', // Alias from your init-models.js
+          as: 'UU', // Alias from init-models.js
           required: true, // INNER JOIN
-          attributes: [], // We don't need columns from this table
+          attributes: [], 
           include: [
             {
               model: tblUserProfiles,
-              as: 'tblUserProfile', // Alias from your init-models.js
+              as: 'tblUserProfile', // Alias from init-models.js
               required: true, // INNER JOIN
               attributes: [],
               include: [
                 {
                   model: tblClients,
-                  as: 'Client', // Alias from your init-models.js
+                  as: 'Client', // Alias from init-models.js
                   required: true, // INNER JOIN
                   attributes: ['ClientID', 'ClientName'], // Select the client info
                 },
