@@ -1,6 +1,7 @@
 const handleAsync = require('./asyncController');
 const ProjectInfo = require('../services/ProjectInfo');
 const QuotaServices = require('../services/QuotaServices');
+const DispositionServices = require('../services/DispositionServices');
 const VoxcoApi = require('../services/VoxcoApi');
 
 // Constants
@@ -203,8 +204,8 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
   }
 };
 
-const buildWebStructure = async (projectId, data, visibleStypes) => {
-  const web = await QuotaServices.getWebQuotas(projectId);
+const buildWebStructure = async (sid, data, visibleStypes) => {
+  const web = await QuotaServices.getWebQuotas(sid);
   data.totalRow.Web = { Total: { Frequency: 0 } };
   visibleStypes.Web = [];
 
@@ -438,6 +439,7 @@ const sortPhoneProjectsUltraRobust = (projects) => {
 const handleGetQuotas = handleAsync(async (req, res) => {
   const apiUser = await VoxcoApi.refreshAccessToken();
   const token = apiUser?.Token;
+  // let webDispositionData;
 
   if (!token) {
     return res
@@ -481,7 +483,11 @@ const handleGetQuotas = handleAsync(async (req, res) => {
     }
 
     if (webProject.length > 0) {
-      await buildWebStructure(webProject[0].id, data, visibleStypes);
+      const sid = webProject[0].id;
+      await buildWebStructure(sid, data, visibleStypes);
+      // webDispositionData = await DispositionServices.getWebDisposition(
+      //   sid
+      // );
     }
 
     calculateData(data);
@@ -493,6 +499,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
     return res.status(200).json({
       visibleStypes,
       data,
+      // webDispositionData
     });
   } catch (error) {
     console.error('Error in handleGetQuotas:', error);

@@ -83,7 +83,7 @@ ORDER BY
     },
     attempts: 5,
     fnName: 'getProjectsList',
-    allowAbort: true,
+    allowAbort: false,
     allowRetry: true,
   });
 };

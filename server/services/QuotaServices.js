@@ -13,9 +13,6 @@ const getWebQuotas = async (sid) => {
   //sid is a voxco project id
   try {
     const res = await axios.get(`/api/quotas/${sid}`);
-    // const test = await axios.get('/api/analyze/participation/summary/748');
-    // const test = await axios.get('/api/survey/variables/748');
-    // console.log(test.data)
     return res.data;
   } catch (error) {
     console.error('Error fetching web quotas:');

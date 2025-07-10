@@ -1,12 +1,16 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
-import { selectCurrentToken } from '../../features/auth/authSlice';
+// import { selectCurrentToken } from '../../features/auth/authSlice';
+import { selectUser } from '../../features/auth/authSlice';
 import {
-  useLazyGetQuotasQuery,
-  useLazyGetProjectListQuery,
+  useLazyGetQuotasQuery
 } from '../../features/quotasApiSlice';
+import {
+  useLazyGetProjectListQuery
+} from '../../features/projectInfoApiSlice';
 import { useSearchParams } from 'react-router-dom';
+import { mdiPhoneReturnOutline } from '@mdi/js';
 
 // Types
 interface DecodedToken {
@@ -38,30 +42,29 @@ const useQuotaManagementLogic = () => {
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [quotas, setQuotas] = useState<QuotaData>({});
   const [visibleStypes, setVisibleStypes] = useState<VisibleStypes>({});
+  // const [webDispositionData, setWebDispositionData] = useState();
+  // const [chartData, setChartData] = useState<any>([{ field: '', value: 0 }]);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchParamsRef = useRef<any>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const token = useSelector(selectCurrentToken);
+  // const token = useSelector(selectCurrentToken);
+  const currentUser = useSelector(selectUser);
 
   // Memoized user info extraction from the JWT token
   const userInfo = useMemo(() => {
-    if (!token) return { roles: [], username: '', isInternalUser: true };
-
-    try {
-      const decoded = jwtDecode<DecodedToken>(token);
-      const roles = decoded?.UserInfo?.roles ?? [];
-      const username = decoded?.UserInfo?.username ?? '';
-      const isInternalUser = !roles.includes(EXTERNAL_ROLE_ID);
-
-      return { roles, username, isInternalUser };
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return { roles: [], username: '', isInternalUser: true };
-    }
-  }, [token]);
+    if (!currentUser) return { roles: [], username: '', isInternalUser: true };
+    
+    const isInternalUser = !currentUser.roles.includes(EXTERNAL_ROLE_ID);
+    
+    return { 
+      roles: currentUser.roles,
+      username: currentUser.username,
+      isInternalUser 
+    };
+  }, [currentUser]);
 
   // RTK Query hooks for fetching quota data and project list lazily
   const [
@@ -84,7 +87,7 @@ const useQuotaManagementLogic = () => {
 
     return projectList.map((item: any) => ({
       value: item.projectId,
-      label: item.projectName,
+      label: `${item.projectId} - ${item.projectName}`,
     }));
   }, [projectList, projectListIsFetching]);
 
@@ -93,7 +96,7 @@ const useQuotaManagementLogic = () => {
     if (projectIdFromUrl && projectIdFromUrl !== selectedProject) {
       setSelectedProject(projectIdFromUrl);
     }
-  }, []); 
+  }, []);
 
   useEffect(() => {
     const fetchParams = userInfo.isInternalUser
@@ -105,14 +108,29 @@ const useQuotaManagementLogic = () => {
     }
   }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
 
+  // useEffect(() => {
+  //   if (!webDispositionData) return;
+  //   const excludeKeys = ['Sample', 'Objective', 'Responses', 'AvgCompletionSeconds', 'AvgCompletionTime','CompletionRate']
+  //   const transformedData = Object.entries(webDispositionData)
+  //   .filter(([key, value]) => !excludeKeys.includes(key))
+  //   .map(([key, value]) => ({
+  //     field: key,
+  //     value: value,
+  //   }));
+
+  //   setChartData(transformedData);
+  //   console.log(transformedData)
+  // }, [webDispositionData]);
+
   useEffect(() => {
     if (quotaData) {
-      console.log(quotaData);
       try {
         setQuotas(() => quotaData.data || {});
+        // setWebDispositionData(quotaData.webDispositionData || {});
+        // console.log(quotaData.webDispositionData);
 
         const baseStypes = {
-          blankSpace_6: {
+          Project: {
             blankSpace_1: 'Label',
             Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
           },
@@ -134,8 +152,7 @@ const useQuotaManagementLogic = () => {
           'Mailer',
         ];
 
-        console.log(quotaData.visibleStypes)
-        let count = 0
+        let count = 0;
         Object.entries(quotaData.visibleStypes || {}).forEach(
           ([type, entries]) => {
             count++;
@@ -153,7 +170,11 @@ const useQuotaManagementLogic = () => {
           }
         );
 
-        count === 1 ? setVisibleStypes(baseStypes) : setVisibleStypes(processedStypes);
+        console.log(processedStypes)
+
+        count === 1
+          ? setVisibleStypes(baseStypes)
+          : setVisibleStypes(processedStypes);
       } catch (error) {
         console.error('Error processing quota data:', error);
         setQuotas({});
@@ -190,6 +211,7 @@ const useQuotaManagementLogic = () => {
     if (!selectedProject) {
       setQuotas({});
       setVisibleStypes({});
+      // setChartData([]);
       lastFetchParamsRef.current = null;
       return;
     }
@@ -290,6 +312,8 @@ const useQuotaManagementLogic = () => {
     visibleStypes,
     projectListOptions,
     userInfo,
+    // webDispositionData,
+    // chartData,
 
     // Loading states
     isLoading,

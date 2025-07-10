@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const verifyRoles = require('../../middleware/verifyRoles');
-const ROLES_LIST = require('../../config/rolesList');
+const {ROLES_LIST} = require('../../config/rolesConfig');
 const quotaManagementController = require('../../controllers/quotaManagementController');
-const projectInfoController = require('../../controllers/projectInfoController');
+// const projectInfoController = require('../../controllers/projectInfoController');
 
 router
   .route('/data')
@@ -18,18 +18,18 @@ router
     quotaManagementController.handleGetQuotas
   );
 
-router
-  .route('/projects')
-  .get(
-    verifyRoles(
-      ROLES_LIST.Admin,
-      ROLES_LIST.Executive,
-      ROLES_LIST.Programmer,
-      ROLES_LIST.Manager,
-      ROLES_LIST.External
-    ),
-    projectInfoController.handleGetProjectList
-  );
+// router
+//   .route('/projects')
+//   .get(
+//     verifyRoles(
+//       ROLES_LIST.Admin,
+//       ROLES_LIST.Executive,
+//       ROLES_LIST.Programmer,
+//       ROLES_LIST.Manager,
+//       ROLES_LIST.External
+//     ),
+//     projectInfoController.handleGetProjectList
+//   );
 
 router.route('/publish').get().post();
 

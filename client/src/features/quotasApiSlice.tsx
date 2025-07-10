@@ -1,5 +1,4 @@
 import { apiSlice } from '../app/api/apiSlice';
-import { removeTimeZone } from '../utils/DateFormat';
 
 interface QuotaArgs {
   projectId: string;
@@ -35,7 +34,7 @@ interface Quotas {
 
 type QuotasResponse = Quotas[];
 
-export const ReportApiSlice = apiSlice.injectEndpoints({
+export const QuotasApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getQuotas: builder.query<QuotasResponse, QuotaArgs>({
       query: ({ projectId, isInternalUser }) => {
@@ -47,15 +46,15 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
         return { url, method: 'GET' };
       },
     }),
-    getProjectList: builder.query({
-      query: ({ userId }) => ({
-        url: `/quota-management/projects?userId=${userId}`,
-        method: 'GET',
-      }),
-    })
+    // getProjectList: builder.query({
+    //   query: ({ userId }) => ({
+    //     url: `/quota-management/projects?userId=${userId}`,
+    //     method: 'GET',
+    //   }),
+    // })
   }),
 });
 
-export const { useGetProjectListQuery, useLazyGetProjectListQuery, useLazyGetQuotasQuery } = ReportApiSlice;
+export const { useLazyGetQuotasQuery } = QuotasApiSlice;
 
 

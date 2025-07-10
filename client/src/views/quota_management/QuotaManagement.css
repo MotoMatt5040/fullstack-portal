@@ -76,22 +76,6 @@
   transition: background-color 0.2s ease;
 }
 
-.quota-management-table tbody td:last-child {
-  border-right: none;
-}
-
-.quota-management-select .my-select__control {
-  min-width: 70vw;
-}
-
-.quota-management-select .my-select__container {
-  min-width: 70vw;
-}
-
-.quota-management-select .my-select__menu {
-  min-width: 70vw;
-}
-
 /* .quota-management-select .my-select__option--is-selected {
   background-color: var(--background-color-elevated) !important;
   color: var(--text-color) !important;
@@ -109,6 +93,22 @@ tr.active td {
 .quota-management-table .cell-label {
   text-align: left;
   font-weight: 500;
+}
+
+.quota-management-table tbody td:last-child {
+  border-right: none;
+}
+
+.quota-management-select .my-select__control {
+  min-width: 70vw;
+}
+
+.quota-management-select .my-select__container {
+  min-width: 70vw;
+}
+
+.quota-management-select .my-select__menu {
+  min-width: 70vw;
 }
 
 /* =================================================================

@@ -173,7 +173,7 @@ const TableRow = memo<{
             isFirstInWebGroup = false; // Ensure it's only applied once per group per row
           }
           
-          if (group.startsWith('blankSpace')) {
+          if (group.startsWith('blankSpace') || group.startsWith('Project')) {
             cellData = rowData.Total?.Total || rowData.Total || null;
           } else {
             if (rowData[group]?.[subGroup]) {
