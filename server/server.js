@@ -26,7 +26,20 @@ app.use(cookieParser());
 //styling
 app.use(express.static(path.join(__dirname, "public")));
 
-//routes
+
+
+
+
+
+
+
+// We create an async function to handle startup tasks.
+const startServer = async () => {
+  try {
+    // 1. Wait for our roles to be loaded from the database.
+    //    The initializeRoles function will log its own success or failure.
+    //routes
+await initializeRoles();
 
 // Public API routes (no JWT required)
 app.use('/api', require('./routes/publicRoutes'));
@@ -36,7 +49,6 @@ app.use(verifyJWT);
 
 // Protected API routes (JWT required)
 app.use('/api', require('./routes/privateRoutes'));
-
 
 app.all("*", (req, res) => {
     res.status(404);
@@ -50,12 +62,9 @@ app.all("*", (req, res) => {
 });
 
 app.use(errorHandler);
-// We create an async function to handle startup tasks.
-const startServer = async () => {
-  try {
-    // 1. Wait for our roles to be loaded from the database.
-    //    The initializeRoles function will log its own success or failure.
-    await initializeRoles();
+
+    
+
 
     // 2. Once roles are loaded, we can safely start the server.
     app.listen(PORT, () =>

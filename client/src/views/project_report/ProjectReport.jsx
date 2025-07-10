@@ -138,6 +138,12 @@ const ProjectReport = () => {
                     !projectReportIsLoading &&
                     !projectReportIsFetching
                   }
+                  colorMap={{
+                    'ON-CPH': '#4CAF50',
+                    'ON-VAR': '#2196F3',
+                    'OFF-CPH': '#FF9800',
+                    'ZERO-CMS': '#F44336',
+                  }}
                 />
               )}
               <MyTable
@@ -240,6 +246,12 @@ const ProjectReport = () => {
                       domainColumn='field'
                       valueColumn='value'
                       dataIsReady={true}
+                      colorMap={{
+                        'ON-CPH': '#4CAF50',
+                        'ON-VAR': '#2196F3',
+                        'OFF-CPH': '#FF9800',
+                        'ZERO-CMS': '#F44336',
+                      }}
                     />
                   }
                 />

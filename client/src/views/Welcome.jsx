@@ -76,7 +76,7 @@ const Welcome = () => {
           <div className='quick-action-icon'>
             <FaChartLine />
           </div>
-          Disposition Report (FUTURE)
+          Disposition Report (WEB overview now available)
         </Link>
 
         <Link to='/settings' className='quick-action-btn'>
