@@ -9,5 +9,7 @@ router.use('/github', require('./api/github'));
 router.use('/reports', require('./api/reports'));
 router.use('/quota-management', require('./api/quotaManagement'));
 router.use('/project-publishing', require('./api/projectPublishing'));
+router.use('/project-info', require('./api/projectInfo'));
+router.use('/disposition-report', require('./api/dispositions'));
 
 module.exports = router;

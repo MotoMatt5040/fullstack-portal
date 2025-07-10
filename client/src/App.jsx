@@ -33,6 +33,7 @@ import Unauthorized from './views/secure/Unauthorized';
 import Reports from './views/Reports';
 import Toplines from './views/toplines/Toplines';
 import ProjectPublishing from './views/project_publishing/ProjectPublishing';
+import DispositionReport from './views/disposition_report/DispositionReport';
 
 function App() {
   useGetRolesQuery();
@@ -90,6 +91,7 @@ function App() {
           <Route path='quota-management' element={<QuotaManagement />} />
           <Route path='reports' element={<Reports />} />
           <Route path='topline-report' element={<Toplines />} />
+          <Route path='disposition-report' element={<DispositionReport />} />
         </Route>
 
         <Route
