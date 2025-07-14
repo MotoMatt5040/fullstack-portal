@@ -220,6 +220,10 @@ const buildWebStructure = async (sid, data, visibleStypes) => {
       Status,
     } = item;
 
+    if (Criterion.includes('STYPE>2') || Criterion.includes('TFLAG')) {
+      continue;
+    }
+
     const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
     const stypeId = stypeMatch ? stypeMatch[1] : null;
 
@@ -254,7 +258,9 @@ const buildWebStructure = async (sid, data, visibleStypes) => {
     }
 
     data[modifiedCriterion].Total.Frequency += Frequency;
-    data[modifiedCriterion].Total.TotalObjective = TotalObjective;
+    if (!data[modifiedCriterion].Total.TotalObjective) {
+      data[modifiedCriterion].Total.TotalObjective = TotalObjective;
+    }
     data[modifiedCriterion].Web.Total.Frequency += Frequency;
     data[modifiedCriterion].Web.Total.TotalObjective = TotalObjective;
 

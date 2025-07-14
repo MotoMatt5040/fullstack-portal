@@ -3,12 +3,8 @@ import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
 // import { selectCurrentToken } from '../../features/auth/authSlice';
 import { selectUser } from '../../features/auth/authSlice';
-import {
-  useLazyGetQuotasQuery
-} from '../../features/quotasApiSlice';
-import {
-  useLazyGetProjectListQuery
-} from '../../features/projectInfoApiSlice';
+import { useLazyGetQuotasQuery } from '../../features/quotasApiSlice';
+import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSearchParams } from 'react-router-dom';
 import { mdiPhoneReturnOutline } from '@mdi/js';
 
@@ -56,13 +52,13 @@ const useQuotaManagementLogic = () => {
   // Memoized user info extraction from the JWT token
   const userInfo = useMemo(() => {
     if (!currentUser) return { roles: [], username: '', isInternalUser: true };
-    
+
     const isInternalUser = !currentUser.roles.includes(EXTERNAL_ROLE_ID);
-    
-    return { 
+
+    return {
       roles: currentUser.roles,
       username: currentUser.username,
-      isInternalUser 
+      isInternalUser,
     };
   }, [currentUser]);
 
@@ -128,6 +124,7 @@ const useQuotaManagementLogic = () => {
         setQuotas(() => quotaData.data || {});
         // setWebDispositionData(quotaData.webDispositionData || {});
         // console.log(quotaData.webDispositionData);
+        console.log(visibleStypes);
 
         const baseStypes = {
           Project: {
@@ -155,7 +152,6 @@ const useQuotaManagementLogic = () => {
         let count = 0;
         Object.entries(quotaData.visibleStypes || {}).forEach(
           ([type, entries]) => {
-            count++;
             processedStypes[type] = { Total: ['Freq', 'Freq%'] };
 
             if (Array.isArray(entries)) {
@@ -164,13 +160,15 @@ const useQuotaManagementLogic = () => {
               );
 
               sortedEntries.forEach((entry: string) => {
+                count++;
                 processedStypes[type][entry] = ['Status', 'Freq', 'Freq%'];
               });
             }
           }
         );
 
-        console.log(processedStypes)
+        console.log(processedStypes);
+        console.log(quotaData)
 
         count === 1
           ? setVisibleStypes(baseStypes)

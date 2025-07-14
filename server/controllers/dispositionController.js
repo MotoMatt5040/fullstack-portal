@@ -6,8 +6,6 @@ const VoxcoApi = require('../services/VoxcoApi');
 
 const handleGetWebDisposition = handleAsync(async (req, res) => {
   const projectId = req.params?.projectId;
-
-  console.log('handleGetWebDisposition called with projectId:', projectId);
   
   if (!projectId) {
     return res.status(400).json({ error: 'Project ID is required' });

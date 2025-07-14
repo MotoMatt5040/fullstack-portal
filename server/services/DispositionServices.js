@@ -9,10 +9,8 @@ const getWebDisposition = async (projectId) => {
     console.error('No project ID found for web disposition');
     return {};
   }
-  console.log('sid', sid)
   try {
     const res = await axios.get(`/api/analyze/participation/summary/${sid}`);
-    console.log(res);
     return res.data;
   } catch (error) {
     console.error('Error fetching web dispositions:');
