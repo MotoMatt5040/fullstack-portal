@@ -65,6 +65,15 @@ const Welcome = () => {
           Quota Report
         </Link>
 
+        {userInfo.isInternalUser && (
+          <Link to='/ai-prompting' className='quick-action-btn'>
+            <div className='quick-action-icon'>
+              <FaChartLine />
+            </div>
+            AI Prompting
+          </Link>
+        )}
+
         <Link to='/topline-report' className='quick-action-btn'>
           <div className='quick-action-icon'>
             <FaChartLine />

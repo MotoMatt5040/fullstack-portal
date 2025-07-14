@@ -1,0 +1,143 @@
+.ai-prompting-container {
+  padding: 2rem;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  min-height: calc(100vh - 60px);
+  width: 100%;
+}
+
+.ai-prompting-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.ai-prompting-header h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.ai-prompting-header p {
+  color: var(--label-text-color);
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.ai-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  background-color: var(--background-color-elevated);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--box-shadow-elevated);
+}
+
+.ai-controls .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-controls label {
+  font-weight: 600;
+  color: var(--label-text-color);
+  font-size: 1rem;
+}
+
+.ai-controls .my-select {
+  max-width: 400px;
+}
+
+.ai-controls textarea.grow-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  resize: vertical;
+  min-height: 120px;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ai-controls textarea.grow-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  background-color: var(--input-focus-background);
+}
+
+.ai-controls .action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.ai-controls .action-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  color: white;
+}
+
+.ai-controls .action-button.primary {
+  background-color: var(--accent-color);
+}
+
+.ai-controls .action-button.primary:hover:not(:disabled) {
+  background-color: var(--accent-color-hover);
+}
+
+.ai-controls .action-button.secondary {
+  background-color: #6c757d;
+}
+
+.ai-controls .action-button.secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.ai-controls .action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-prompt-pairs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ai-prompt-output {
+  background-color: var(--background-color-elevated);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--box-shadow-elevated);
+  white-space: pre-wrap; /* Preserves whitespace and wraps text */
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color-soft);
+}
+
+.loading-indicator, .error-indicator {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color);
+}
+
+.error-indicator {
+  color: #dc3545;
+}
