@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useGetChatModelsQuery, useGetAiResponseMutation  } from '../../features/aiPromptingApiSlice';
+import {
+  useGetChatModelsQuery,
+  useGetAiResponseMutation,
+} from '../../features/aiPromptingApiSlice';
 
 interface PromptExchange {
   user: string;
@@ -23,9 +26,10 @@ export const useAIPromptingLogic = () => {
     error: modelsError,
   } = useGetChatModelsQuery();
 
-  const [getAiResponse, { isLoading: isGenerating }] = useGetAiResponseMutation();
+  const [getAiResponse, { isLoading: isGenerating }] =
+    useGetAiResponseMutation();
 
-
+  const [originalQuestion, setOriginalQuestion] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [promptExchanges, setPromptExchanges] = useState<PromptExchange[]>([
@@ -44,7 +48,7 @@ export const useAIPromptingLogic = () => {
 
   useEffect(() => {
     if (models && models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].id); 
+      setSelectedModel(models[0].id);
     }
   }, [models, selectedModel]);
 
@@ -58,6 +62,13 @@ export const useAIPromptingLogic = () => {
   const handleModelChange = useCallback(
     (option: { value: string; label: string } | null) => {
       setSelectedModel(option ? option.value : null);
+    },
+    []
+  );
+
+  const handleOriginalQuestionChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setOriginalQuestion(e.target.value);
     },
     []
   );
@@ -109,14 +120,21 @@ export const useAIPromptingLogic = () => {
       messages.push({ role: 'system', content: systemPrompt.trim() });
     }
 
-    promptExchanges.forEach(exchange => {
+    promptExchanges.forEach((exchange) => {
       if (exchange.user.trim()) {
         messages.push({ role: 'user', content: exchange.user.trim() });
       }
       if (exchange.assistant.trim()) {
-        messages.push({ role: 'assistant', content: exchange.assistant.trim() });
+        messages.push({
+          role: 'assistant',
+          content: exchange.assistant.trim(),
+        });
       }
     });
+
+    if (originalQuestion.trim()) {
+      messages.push({ role: 'user', content: originalQuestion.trim() });
+    }
 
     const outputObject = {
       model: selectedModel,
@@ -125,17 +143,25 @@ export const useAIPromptingLogic = () => {
 
     try {
       const payload = await getAiResponse(outputObject).unwrap();
-      // console.log(payload)
-      setOutput(payload); 
+      setOutput(payload);
     } catch (error) {
       console.error('Failed to get AI response:', error);
-      setOutput('Error: Could not generate a response. Please check the console for details.');
+      setOutput(
+        'Error: Could not generate a response. Please check the console for details.'
+      );
     }
-  }, [systemPrompt, promptExchanges, selectedModel, getAiResponse]);
+  }, [
+    systemPrompt,
+    promptExchanges,
+    selectedModel,
+    getAiResponse,
+    originalQuestion,
+  ]);
 
   const clearAll = useCallback(() => {
     setSelectedModel(models && models.length > 0 ? models[0].id : null);
     setSystemPrompt('');
+    setOriginalQuestion('');
     setPromptExchanges([{ user: '', assistant: '' }]);
     setOutput('');
   }, [models]);
@@ -150,6 +176,8 @@ export const useAIPromptingLogic = () => {
     systemPrompt,
     handleSystemPromptChange,
     systemPromptRef,
+    originalQuestion,
+    handleOriginalQuestionChange,
     promptExchanges,
     handleUserPromptChange,
     handleAssistantResponseChange,

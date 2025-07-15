@@ -20,11 +20,12 @@ export const aiPromptingApiSlice = apiSlice.injectEndpoints({
       query: (promptData) => ({
         url: '/ai-prompting/response',
         method: 'POST',
-        body: promptData, 
+        body: promptData,
         responseHandler: (response) => response.text(),
       }),
     }),
   }),
 });
 
-export const { useGetChatModelsQuery, useGetAiResponseMutation } = aiPromptingApiSlice;
+export const { useGetChatModelsQuery, useGetAiResponseMutation } =
+  aiPromptingApiSlice;

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import Select from 'react-select';
 import { useAIPromptingLogic } from './useAIPromptingLogic';
 import PromptInputPair from '../../components/PromptInputPair';
@@ -15,11 +15,14 @@ const AIPrompting: React.FC = () => {
     systemPrompt,
     handleSystemPromptChange,
     systemPromptRef,
+    originalQuestion,
+    handleOriginalQuestionChange,
     promptExchanges,
     handleUserPromptChange,
     handleAssistantResponseChange,
     addPromptExchange,
     removePromptExchange,
+    isGenerating,
     output,
     generateOutput,
     clearAll,
@@ -44,7 +47,9 @@ const AIPrompting: React.FC = () => {
           <h1>AI Prompting Tool</h1>
           <p>Craft and test AI prompts with ease.</p>
         </div>
-        <div className='error-indicator'>Error loading models. Please try again later.</div>
+        <div className='error-indicator'>
+          Error loading models. Please try again later.
+        </div>
       </section>
     );
   }
@@ -54,7 +59,8 @@ const AIPrompting: React.FC = () => {
       <div className='ai-prompting-header'>
         <h1>AI Prompting Tool</h1>
         <p>
-          Select an AI model, define a system prompt, and add user/assistant exchanges to craft and test your prompts.
+          Select an AI model, define a system prompt, and add user/assistant
+          exchanges to craft and test your prompts.
         </p>
       </div>
 
@@ -65,7 +71,9 @@ const AIPrompting: React.FC = () => {
             classNamePrefix='my-select'
             inputId='model-select'
             options={modelOptions}
-            value={modelOptions.find(option => option.value === selectedModel)}
+            value={modelOptions.find(
+              (option) => option.value === selectedModel
+            )}
             onChange={handleModelChange}
             placeholder='Select an AI model...'
             isClearable={false}
@@ -94,7 +102,9 @@ const AIPrompting: React.FC = () => {
                 userContent={exchange.user}
                 assistantContent={exchange.assistant}
                 onUserChange={(e) => handleUserPromptChange(index, e)}
-                onAssistantChange={(e) => handleAssistantResponseChange(index, e)}
+                onAssistantChange={(e) =>
+                  handleAssistantResponseChange(index, e)
+                }
               />
               {promptExchanges.length > 1 && (
                 <button
@@ -108,25 +118,59 @@ const AIPrompting: React.FC = () => {
               )}
             </div>
           ))}
-          <button type='button' onClick={addPromptExchange} className='action-button primary'>
+          <button
+            type='button'
+            onClick={addPromptExchange}
+            className='action-button primary'
+          >
             <FaPlus /> Add Exchange
           </button>
         </div>
 
+        <div className='form-group'>
+            <label htmlFor='original-question'>Original Question:</label>
+            <textarea
+                id='original-question'
+                className='grow-textarea'
+                value={originalQuestion}
+                onChange={handleOriginalQuestionChange}
+                placeholder='Enter the final user question here. This will be appended as the last message in the request.'
+                rows={3}
+            />
+        </div>
+
         <div className='action-buttons'>
-          <button type='button' onClick={clearAll} className='action-button secondary'>
+          <button
+            type='button'
+            onClick={clearAll}
+            className='action-button secondary'
+          >
             <FaRedo /> Clear All
           </button>
-          <button type='button' onClick={generateOutput} className='action-button primary'>
-            <FaPlay /> Generate Prompt Output
+          <button
+            type='button'
+            onClick={generateOutput}
+            className='action-button primary'
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Generating...' : <><FaPlay /> Generate Response</>}
           </button>
         </div>
       </div>
 
       {output && (
         <div className='ai-prompt-output'>
-          <h2>Generated Prompt:</h2>
-          <pre>{output}</pre>
+          <h2>Response:</h2>
+          <div
+            style={{
+              whiteSpace: 'pre-wrap',
+              background: '#f5f5f5',
+              padding: '10px',
+              borderRadius: '5px',
+            }}
+          >
+            {output}
+          </div>
         </div>
       )}
     </section>
@@ -134,19 +178,3 @@ const AIPrompting: React.FC = () => {
 };
 
 export default AIPrompting;
-
-// query {
-//   model: str,
-//   systemContent: str,
-//   context: [
-//     {
-//       userContent: str,
-//       assistantContent: str
-//     },
-//     {
-//       userContent: str,
-//       assistantContent: str
-//     },
-//     ...
-//   ]
-// }
