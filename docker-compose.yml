@@ -4,7 +4,18 @@ services:
       context: ./server
       target: production
     restart: unless-stopped
-    env_file: ./server/.env
+    env_file: 
+      - .env.${COMPOSE_ENV:-production}
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - JWT_SECRET=${JWT_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
     volumes:
       - ./server_logs:/logs
     networks:
@@ -15,10 +26,13 @@ services:
       context: ./client
       target: production
       args:
-        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
-        VITE_ENV: ${VITE_ENV}
+        - VITE_DEV_API_URL=${VITE_DEV_API_URL:-}
+        - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+        - VITE_ENV=${VITE_ENV}
+        - API_URL=${API_URL}
     restart: unless-stopped
+    env_file:
+      - .env.${COMPOSE_ENV:-production}
     networks:
       - mern-app
     depends_on:
@@ -32,7 +46,9 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+      - API_URL=${API_URL}
+      - CLIENT_URL=${CLIENT_URL}
     volumes:
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config

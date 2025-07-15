@@ -1,0 +1,67 @@
+# docker-compose.testing.yml
+# This would be a copy of your docker-compose.yml but configured for testing domain
+
+name: mern-app-testing
+
+services:
+  api:
+    build:
+      context: ./server
+      # For production-like build, remove 'target: development'
+      # target: production # if you have a production stage in your Dockerfile
+    restart: unless-stopped
+    env_file: ./server/.env.testing # Point to the new .env file
+    volumes:
+      # Consider removing development volumes for production builds
+      # - ./server:/app
+      # - /app/node_modules
+    networks:
+      - mern-app
+    expose: # Use expose instead of ports for internal communication
+      - "5000"
+
+  client:
+    build:
+      context: ./client
+      # For production-like build, remove 'target: development'
+      # target: production # if you have a production stage in your Dockerfile
+      args:
+        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+        VITE_ENV: ${VITE_ENV}
+    restart: unless-stopped
+    env_file: ./client/.env.testing # Point to the new .env file
+    environment:
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+      - VITE_ENV=${VITE_ENV}
+    volumes:
+      # Consider removing development volumes for production builds
+      # - ./client:/app
+      # - /app/node_modules
+    networks:
+      - mern-app
+    expose:
+      - "5173"
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile # Reference the new Caddyfile
+      - caddy_data:/data # Standard Caddy data volume
+      - caddy_config:/config # Standard Caddy config volume
+    networks:
+      - mern-app
+    depends_on:
+      - api
+      - client
+
+volumes:
+  caddy_data:
+  caddy_config:
+networks:
+  mern-app:
+    driver: bridge

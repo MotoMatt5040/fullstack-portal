@@ -1,0 +1,128 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for Client
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.15.1'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Client Dependencies
+        run: npm ci
+        working-directory: ./client
+
+      - name: Run Client Tests
+        run: npm test -- --watchAll=false
+        working-directory: ./client
+
+      - name: Build Client
+        run: npm run build
+        working-directory: ./client
+
+      - name: Set up Node.js for Server
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.15.1'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install Server Dependencies
+        run: npm ci
+        working-directory: ./server
+
+      - name: Run Server Tests
+        run: npm test
+        working-directory: ./server
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and Push Docker Images
+        run: |
+          docker build -t your-dockerhub-username/fullstack-portal-client:latest ./client
+          docker push your-dockerhub-username/fullstack-portal-client:latest
+          docker build -t your-dockerhub-username/fullstack-portal-api:latest ./server
+          docker push your-dockerhub-username/fullstack-portal-api:latest
+
+  # New job for deploying to your testing domain
+  deploy-to-testing-domain:
+    needs: build-and-test # This job runs after build-and-test completes
+    runs-on: ubuntu-latest
+    environment: # Define an environment for this specific deployment
+      name: Testing-Domain # You'll set this up in GitHub Settings > Environments
+      url: https://portaldevelopment1.promarkresearch.com # Link to your testing URL
+    steps:
+      - name: Deploy Application to Testing Domain Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.TESTING_SSH_HOST }} # Use a different SSH host/credentials for testing server
+          username: ${{ secrets.TESTING_SSH_USERNAME }}
+          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
+          script: |
+            # Navigate to the correct directory on your testing server
+            cd /path/to/your/fullstack-portal-testing-instance # This might be different from production
+
+            # Pull the latest Docker images that were pushed by the build-and-test job
+            docker pull your-dockerhub-username/fullstack-portal-client:latest
+            docker pull your-dockerhub-username/fullstack-portal-api:latest
+
+            # Use your specific Docker Compose file and environment variables for testing
+            # This assumes you've created 'docker-compose.testing.yml' and '.env.testing' as discussed
+            docker compose -f docker-compose.testing.yml --env-file .env.testing down
+            docker compose -f docker-compose.testing.yml --env-file .env.testing up -d --build
+
+            docker image prune -f # Clean up old images
+
+      - name: Notify Testing Deployment Status
+        run: |
+          echo "Deployment to testing domain https://portaldevelopment1.promarkresearch.com is complete."
+          echo "Please manually verify functionality."
+
+  # # Your existing production deployment job (potentially with manual approval)
+  # deploy-to-production:
+  #   needs: build-and-test # This job also runs after build-and-test
+  #   # You might want to make this job depend on 'deploy-to-testing-domain' if you
+  #   # want to ensure testing deployment is done before production is even considered.
+  #   # needs: [build-and-test, deploy-to-testing-domain] # Example of chained dependency
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: Production
+  #     url: https://dashboard.promarkresearch.com # Your main production URL
+  #   steps:
+  #     - name: Deploy Application to Production Server
+  #       uses: appleboy/ssh-action@v1.0.0
+  #       with:
+  #         host: ${{ secrets.SSH_HOST }}
+  #         username: ${{ secrets.SSH_USERNAME }}
+  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         script: |
+  #           cd /path/to/your/fullstack-portal
+  #           docker pull your-dockerhub-username/fullstack-portal-client:latest
+  #           docker pull your-dockerhub-username/fullstack-portal-api:latest
+  #           docker-compose down
+  #           docker-compose up -d --build
+  #           docker image prune -f
+
+  #     - name: Notify for DNS Update (Manual Step for Production)
+  #       run: |
+  #         echo "Deployment to main production server is complete."
+  #         echo "Please manually update DNS records for https://dashboard.promarkresearch.com if necessary."
+  #         echo "Verify the application after DNS propagation."
