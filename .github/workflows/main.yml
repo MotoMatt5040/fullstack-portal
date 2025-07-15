@@ -24,31 +24,23 @@ jobs:
           script: |
             echo "🚀 Starting deployment at $(date)"
             
-            # Navigate to deployment directory
-            DEPLOY_PATH="/opt/fullstack-portal"
+            # Use home directory for deployment (no sudo needed)
+            DEPLOY_PATH="$HOME/fullstack-portal"
             echo "📁 Deploy path: $DEPLOY_PATH"
             
-            # Remove old directory if it exists but isn't a git repo
-            if [ -d "$DEPLOY_PATH" ] && [ ! -d "$DEPLOY_PATH/.git" ]; then
-              echo "🗑️ Removing non-git directory..."
-              sudo rm -rf $DEPLOY_PATH
+            # Remove old directory if it exists
+            if [ -d "$DEPLOY_PATH" ]; then
+              echo "🗑️ Removing existing directory..."
+              rm -rf $DEPLOY_PATH
             fi
             
-            # Create directory if it doesn't exist
-            sudo mkdir -p $DEPLOY_PATH
-            sudo chown $(whoami):$(whoami) $DEPLOY_PATH
+            # Create fresh directory
+            mkdir -p $DEPLOY_PATH
             cd $DEPLOY_PATH
             
-            # Clone or pull latest code
-            if [ -d ".git" ]; then
-              echo "📦 Updating existing repository..."
-              git fetch origin
-              git reset --hard origin/main
-              git clean -fd
-            else
-              echo "📦 Cloning repository..."
-              git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
-            fi
+            # Clone repository
+            echo "📦 Cloning repository..."
+            git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
             
             echo "🔧 Current directory: $(pwd)"
             echo "📋 Files in repository:"
@@ -57,7 +49,7 @@ jobs:
             # Verify docker-compose.yml exists
             if [ ! -f "docker-compose.yml" ]; then
               echo "❌ docker-compose.yml not found! Listing all files:"
-              find . -name "*.yml" -o -name "*.yaml"
+              find . -name "*.yml" -o -name "*.yaml" 2>/dev/null || true
               exit 1
             else
               echo "✅ docker-compose.yml found"
@@ -196,12 +188,12 @@ jobs:
         if: always()  # Run even if previous step failed
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.TESTING_SSH_HOST }}
+          username: ${{ secrets.TESTING_SSH_USERNAME }}
+          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
           script: |
             echo "📊 Final deployment status:"
-            cd /opt/fullstack-portal
+            cd $HOME/fullstack-portal
             
             echo "🐳 Running containers:"
             docker compose ps
