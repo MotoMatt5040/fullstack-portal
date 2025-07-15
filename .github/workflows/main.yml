@@ -158,7 +158,7 @@ jobs:
                 break
               else
                 echo "⏳ Attempt $i: Server API not responding yet, waiting..."
-                sleep 10
+                sleep 30
               fi
             done
             
@@ -169,7 +169,7 @@ jobs:
                 break
               else
                 echo "⏳ Attempt $i: Client not responding yet, waiting..."
-                sleep 10
+                sleep 30
               fi
             done
             
