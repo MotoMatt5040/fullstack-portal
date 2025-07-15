@@ -15,12 +15,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy and Build on Server
+      - name: Deploy and Build on Test Server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.TESTING_SSH_HOST }}
+          username: ${{ secrets.TESTING_SSH_USERNAME }}
+          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
           script: |
             echo "🚀 Starting deployment at $(date)"
             
@@ -73,10 +73,6 @@ jobs:
             REPO_NAME=${{ vars.REPO_NAME }}
             
             # Email Configuration
-            EMAIL_HOST=${{ secrets.EMAIL_HOST }}
-            EMAIL_PORT=${{ secrets.EMAIL_PORT }}
-            EMAIL_USER=${{ secrets.EMAIL_USER }}
-            EMAIL_API_KEY=${{ secrets.EMAIL_API_KEY }}
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
