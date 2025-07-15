@@ -1,39 +1,16 @@
-const { getAIResponse } = require('../services/OpenAIPromptingServices');
-const { getGPTModels } = require('../services/OpenAIPromptingServices');
-
-const buildMessages = (req) => {
-  const messages = [];
-  // System message
-  if (req?.query?.systemContent) {
-    messages.push({ role: 'system', content: req.query.systemContent });
-  }
-  // Few shots from context array
-  const contextArr = req?.query?.context;
-  if (Array.isArray(contextArr)) {
-    contextArr.forEach(item => {
-      if (item.userContent) {
-        messages.push({ role: 'user', content: item.userContent });
-      }
-      if (item.assistantContent) {
-        messages.push({ role: 'assistant', content: item.assistantContent });
-      }
-    });
-  }
-  return messages;
-};
+const { getAIResponse, getGPTModels } = require('../services/OpenAIPromptingServices');
 
 const handleGetOpenAIResponse = async (req, res) => {
+  const model = req?.body?.model;
+  if (!model) return res.status(400).json({ message: 'Model is required' });
+
+  const message = req?.body?.messages;
+  // console.log(req.body)
+  if (!message) return res.status(400).json({ message: 'Message is required' });
   try {
-    const messages = buildMessages(req);
-    const models = req?.query?.model;
-    if (!models) {
-      return res.status(400).json({ message: 'Model is required' });
-    }
-    if (!messages.length) {
-      return res.status(400).json({ message: 'Messages are required' });
-    }
-    await getAIResponse(models, messages);
-    return res.status(200).json(response.data);
+    const response = await getAIResponse(model, message);
+    const content = response.choices[0].message.content
+    return res.status(200).json(content);
   } catch (error) {
     console.error('Error in handleGetOpenAIResponse:', error);
     res

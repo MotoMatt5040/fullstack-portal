@@ -5,7 +5,7 @@ const { ROLES_LIST } = require('../../config/rolesConfig');
 const OpenAIPromptingController = require('../../controllers/openAIPromptingController');
 
 router.route('/response')
-  .get(
+  .post(
     verifyRoles(
       ROLES_LIST.Admin,
       ROLES_LIST.Executive,

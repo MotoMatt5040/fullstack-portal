@@ -11,7 +11,7 @@ const getAIResponse = async (model, messages) => {
       messages: messages,
       store: false
     });
-    return response.data;
+    return response;
   } catch (error) {
     console.error('Error fetching AI prompt:', error);
     res.status(500).json({ message: 'Failed to fetch AI prompt' });
