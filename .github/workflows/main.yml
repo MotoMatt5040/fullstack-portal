@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy and Build on Test Server
+      - name: Deploy and Build on Server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.TESTING_SSH_HOST }}
@@ -27,6 +27,12 @@ jobs:
             # Navigate to deployment directory
             DEPLOY_PATH="/opt/fullstack-portal"
             echo "📁 Deploy path: $DEPLOY_PATH"
+            
+            # Remove old directory if it exists but isn't a git repo
+            if [ -d "$DEPLOY_PATH" ] && [ ! -d "$DEPLOY_PATH/.git" ]; then
+              echo "🗑️ Removing non-git directory..."
+              sudo rm -rf $DEPLOY_PATH
+            fi
             
             # Create directory if it doesn't exist
             sudo mkdir -p $DEPLOY_PATH
@@ -47,6 +53,15 @@ jobs:
             echo "🔧 Current directory: $(pwd)"
             echo "📋 Files in repository:"
             ls -la
+            
+            # Verify docker-compose.yml exists
+            if [ ! -f "docker-compose.yml" ]; then
+              echo "❌ docker-compose.yml not found! Listing all files:"
+              find . -name "*.yml" -o -name "*.yaml"
+              exit 1
+            else
+              echo "✅ docker-compose.yml found"
+            fi
             
             # Create comprehensive environment file from secrets
             echo "🔧 Creating environment file from secrets..."
@@ -178,6 +193,7 @@ jobs:
             echo "🌐 Access your app at: ${{ secrets.FRONTEND_URL }}"
 
       - name: Show Deployment Status
+        if: always()  # Run even if previous step failed
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
