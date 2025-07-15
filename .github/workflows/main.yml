@@ -1,4 +1,4 @@
-name: Simple Deploy Test
+name: SSH Debug Test
 
 on:
   push:
@@ -7,64 +7,56 @@ on:
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
-  deploy:
+  debug-ssh:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Portal Development Server
+      - name: Debug SSH Connection
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.TESTING_SSH_HOST }}
           username: ${{ secrets.TESTING_SSH_USERNAME }}
           key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
+          debug: true
           script: |
-            echo "🚀 Starting deployment at $(date)"
-            echo "📁 Current user: $(whoami)"
+            echo "🎉 SSH connection successful!"
+            echo "📅 Current time: $(date)"
+            echo "👤 Current user: $(whoami)"
             echo "📁 Current directory: $(pwd)"
-            
-            # Navigate to deployment directory
-            DEPLOY_PATH="/opt/fullstack-portal"
-            echo "📁 Deploy path: $DEPLOY_PATH"
-            
-            # Create directory if it doesn't exist
-            sudo mkdir -p $DEPLOY_PATH
-            sudo chown $(whoami):$(whoami) $DEPLOY_PATH
-            cd $DEPLOY_PATH
-            
-            # Clone or pull latest code
-            if [ -d ".git" ]; then
-              echo "📦 Updating existing repository..."
-              git fetch origin
-              git reset --hard origin/main
-            else
-              echo "📦 Cloning repository..."
-              git clone https://github.com/${{ github.repository }}.git .
-            fi
-            
-            echo "🔧 Current directory: $(pwd)"
-            echo "📋 Files in directory:"
-            ls -la
-            
-            # Check if Docker is available
-            if command -v docker >/dev/null 2>&1; then
-              echo "🐳 Docker is available"
-              docker --version
-              
-              # Check if docker-compose is available
-              if command -v docker-compose >/dev/null 2>&1; then
-                echo "🐳 Docker Compose is available"
-                docker-compose --version
-              elif docker compose version >/dev/null 2>&1; then
-                echo "🐳 Docker Compose (plugin) is available"
-                docker compose version
-              else
-                echo "❌ Docker Compose not found"
-              fi
-            else
-              echo "❌ Docker not found"
-            fi
-            
-            echo "✅ Basic deployment test completed at $(date)"
+            echo "🏠 Home directory: $HOME"
+            echo "🔑 SSH agent info:"
+            ssh-add -l 2>/dev/null || echo "No SSH agent or keys loaded"
+            echo "🌐 Network info:"
+            hostname -I
+            echo "✅ Basic connection test complete"
+
+  manual-ssh-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Manual SSH Test with Verbose Output
+        run: |
+          echo "🔍 Testing SSH connection manually with verbose output..."
+          
+          # Create temporary key file
+          echo "${{ secrets.TESTING_SSH_PRIVATE_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          
+          echo "🔑 Key file created, testing connection..."
+          echo "📋 Key file info:"
+          ls -la /tmp/ssh_key
+          
+          echo "🔍 Key file first/last lines:"
+          head -1 /tmp/ssh_key
+          tail -1 /tmp/ssh_key
+          
+          echo "🌐 Testing SSH connection with maximum verbosity..."
+          ssh -vvv -i /tmp/ssh_key \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
+              -o BatchMode=yes \
+              ${{ secrets.TESTING_SSH_USERNAME }}@${{ secrets.TESTING_SSH_HOST }} \
+              "echo 'Connection successful'" || echo "SSH connection failed"
+          
+          # Clean up
+          rm /tmp/ssh_key
