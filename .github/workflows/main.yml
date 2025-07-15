@@ -160,12 +160,12 @@ jobs:
             
             # Test API health endpoint with retries
             for i in {1..5}; do
-              if curl -f http://localhost:5000/api/health 2>/dev/null; then
+              if curl -f http://localhost:5000/health 2>/dev/null; then
                 echo "✅ Server API is responding"
                 break
               else
                 echo "⏳ Attempt $i: Server API not responding yet, waiting..."
-                sleep 10
+                sleep 30
               fi
             done
             
@@ -176,7 +176,7 @@ jobs:
                 break
               else
                 echo "⏳ Attempt $i: Client not responding yet, waiting..."
-                sleep 10
+                sleep 30
               fi
             done
             
@@ -208,5 +208,5 @@ jobs:
             netstat -tulpn | grep -E ":(80|443|5000|5173)" || echo "No services on expected ports"
             
             echo "🔍 Service Health Checks:"
-            curl -s http://localhost:5000/api/health || echo "❌ API health check failed"
+            curl -s http://localhost:5000/health || echo "❌ API health check failed"
             curl -s -I http://localhost:5173 | head -1 || echo "❌ Client health check failed"

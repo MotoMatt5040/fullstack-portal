@@ -81,3 +81,46 @@
 www.{$VITE_DOMAIN_NAME:invalid} {
     redir https://dashboard.promarkresearch.com{uri} permanent
 }
+
+# api.{$VITE_DOMAIN_NAME:invalid} {
+#     reverse_proxy api:5000
+
+#     header {
+#         -X-Powered-By
+#         -Server
+
+#         # enable HSTS
+#         Strict-Transport-Security max-age=31536000;
+
+#         # disable clients from sniffing the media type
+#         X-Content-Type-Options nosniff
+
+#         # clickjacking protection
+#         X-Frame-Options DENY
+
+#         # XSS Protection
+#         X-XSS-Protection "1; mode=block"
+#     }
+
+#     rate_limit {
+#         # limit requests based on OP address
+#         zone api_limit {
+#             key {remote_host}
+#             # if using Cloudflare proxy, use the following key:
+#             # key {http.request.header.CF-Connecting-IP}
+#             events 100
+#             window 1m
+#         }
+
+#         zone burst_limit {
+#             key {remote_host}
+#             # if using Cloudflare proxy, use the following key:
+#             # key {http.request.header.CF-Connecting-IP}
+#             events 20
+#             window 1s
+#         }
+
+#         @ratelimited expression `{rate_limit.burst_limit.remaining} == 0`
+#         respond @ratelimited "Too many requests. Please slow down." 429
+#     }
+# }
