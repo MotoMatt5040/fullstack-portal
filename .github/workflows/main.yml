@@ -1,4 +1,4 @@
-name: Deploy to Portal Development
+name: Simple Deploy Test
 
 on:
   push:
@@ -22,14 +22,16 @@ jobs:
           key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
           script: |
             echo "🚀 Starting deployment at $(date)"
+            echo "📁 Current user: $(whoami)"
+            echo "📁 Current directory: $(pwd)"
             
             # Navigate to deployment directory
             DEPLOY_PATH="/opt/fullstack-portal"
-            
             echo "📁 Deploy path: $DEPLOY_PATH"
             
             # Create directory if it doesn't exist
             sudo mkdir -p $DEPLOY_PATH
+            sudo chown $(whoami):$(whoami) $DEPLOY_PATH
             cd $DEPLOY_PATH
             
             # Clone or pull latest code
@@ -65,54 +67,4 @@ jobs:
               echo "❌ Docker not found"
             fi
             
-            # Check for environment files
-            echo "🔍 Looking for environment files..."
-            ls -la | grep env || echo "No .env files found"
-            
-            # Try to build and start containers
-            echo "🏗️ Attempting to build and start containers..."
-            
-            # Use docker compose if available, otherwise try docker-compose
-            if docker compose version >/dev/null 2>&1; then
-              echo "Using docker compose (plugin)"
-              docker compose down || echo "No existing containers to stop"
-              docker compose build --no-cache
-              docker compose up -d
-            elif command -v docker-compose >/dev/null 2>&1; then
-              echo "Using docker-compose"
-              docker-compose down || echo "No existing containers to stop"
-              docker-compose build --no-cache
-              docker-compose up -d
-            else
-              echo "❌ Neither docker compose nor docker-compose available"
-              exit 1
-            fi
-            
-            # Show container status
-            echo "📊 Container status:"
-            if docker compose version >/dev/null 2>&1; then
-              docker compose ps
-            else
-              docker-compose ps
-            fi
-            
-            echo "✅ Deployment completed at $(date)"
-
-      - name: Show Deployment Logs
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.TESTING_SSH_HOST }}
-          username: ${{ secrets.TESTING_SSH_USERNAME }}
-          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
-          script: |
-            echo "📋 Showing recent container logs..."
-            cd /opt/fullstack-portal
-            
-            # Show logs for all services
-            if docker compose version >/dev/null 2>&1; then
-              echo "🔍 Container logs (last 50 lines):"
-              docker compose logs --tail=50
-            else
-              echo "🔍 Container logs (last 50 lines):"
-              docker-compose logs --tail=50
-            fi
+            echo "✅ Basic deployment test completed at $(date)"
