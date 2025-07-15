@@ -1,37 +1,57 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useGetChatModelsQuery } from '../../features/aiPromptingApiSlice';
+import {
+  useGetChatModelsQuery,
+  useGetAiResponseMutation,
+} from '../../features/aiPromptingApiSlice';
 
 interface PromptExchange {
   user: string;
   assistant: string;
 }
 
-export const useAIPromptingLogic = () => {
-  const { data: models, isLoading: modelsLoading, error: modelsError } = useGetChatModelsQuery();
+interface ChatModel {
+  id: string;
+  object: string;
+}
 
+interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export const useAIPromptingLogic = () => {
+  const {
+    data: models,
+    isLoading: modelsLoading,
+    error: modelsError,
+  } = useGetChatModelsQuery();
+
+  const [getAiResponse, { isLoading: isGenerating }] =
+    useGetAiResponseMutation();
+
+  const [originalQuestion, setOriginalQuestion] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
-  const [promptExchanges, setPromptExchanges] = useState<PromptExchange[]>([{ user: '', assistant: '' }]);
+  const [promptExchanges, setPromptExchanges] = useState<PromptExchange[]>([
+    { user: '', assistant: '' },
+  ]);
   const [output, setOutput] = useState<string>('');
   const systemPromptRef = useRef<HTMLTextAreaElement>(null);
 
-  // Memoized model options for the dropdown
   const modelOptions = useMemo(() => {
     if (!models) return [];
-    return models.map(model => ({
-      value: model,
-      label: model,
+    return models.map((model: ChatModel) => ({
+      value: model.id,
+      label: model.id,
     }));
   }, [models]);
 
-  // Set initial selected model once models are loaded
   useEffect(() => {
     if (models && models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0]);
+      setSelectedModel(models[0].id);
     }
   }, [models, selectedModel]);
 
-  // Auto-resize system prompt textarea
   useEffect(() => {
     if (systemPromptRef.current) {
       systemPromptRef.current.style.height = 'auto';
@@ -39,63 +59,109 @@ export const useAIPromptingLogic = () => {
     }
   }, [systemPrompt]);
 
-  const handleModelChange = useCallback((option: { value: string; label: string } | null) => {
-    setSelectedModel(option ? option.value : null);
-  }, []);
+  const handleModelChange = useCallback(
+    (option: { value: string; label: string } | null) => {
+      setSelectedModel(option ? option.value : null);
+    },
+    []
+  );
 
-  const handleSystemPromptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setSystemPrompt(e.target.value);
-  }, []);
+  const handleOriginalQuestionChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setOriginalQuestion(e.target.value);
+    },
+    []
+  );
 
-  const handleUserPromptChange = useCallback((index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setPromptExchanges(prev => {
-      const newExchanges = [...prev];
-      newExchanges[index] = { ...newExchanges[index], user: e.target.value };
-      return newExchanges;
-    });
-  }, []);
+  const handleSystemPromptChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setSystemPrompt(e.target.value);
+    },
+    []
+  );
 
-  const handleAssistantResponseChange = useCallback((index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setPromptExchanges(prev => {
-      const newExchanges = [...prev];
-      newExchanges[index] = { ...newExchanges[index], assistant: e.target.value };
-      return newExchanges;
-    });
-  }, []);
+  const handleUserPromptChange = useCallback(
+    (index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setPromptExchanges((prev) => {
+        const newExchanges = [...prev];
+        newExchanges[index] = { ...newExchanges[index], user: e.target.value };
+        return newExchanges;
+      });
+    },
+    []
+  );
+
+  const handleAssistantResponseChange = useCallback(
+    (index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setPromptExchanges((prev) => {
+        const newExchanges = [...prev];
+        newExchanges[index] = {
+          ...newExchanges[index],
+          assistant: e.target.value,
+        };
+        return newExchanges;
+      });
+    },
+    []
+  );
 
   const addPromptExchange = useCallback(() => {
-    setPromptExchanges(prev => [...prev, { user: '', assistant: '' }]);
+    setPromptExchanges((prev) => [...prev, { user: '', assistant: '' }]);
   }, []);
 
   const removePromptExchange = useCallback((index: number) => {
-    setPromptExchanges(prev => prev.filter((_, i) => i !== index));
+    setPromptExchanges((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const generateOutput = useCallback(() => {
-    let generatedOutput = '';
+  const generateOutput = useCallback(async () => {
+    const messages: Message[] = [];
 
     if (systemPrompt.trim()) {
-      generatedOutput += `SYSTEM: ${systemPrompt.trim()}\n\n`;
+      messages.push({ role: 'system', content: systemPrompt.trim() });
     }
 
-    promptExchanges.forEach((exchange, index) => {
+    promptExchanges.forEach((exchange) => {
       if (exchange.user.trim()) {
-        generatedOutput += `USER: ${exchange.user.trim()}\n`;
+        messages.push({ role: 'user', content: exchange.user.trim() });
       }
       if (exchange.assistant.trim()) {
-        generatedOutput += `ASSISTANT: ${exchange.assistant.trim()}\n`;
-      }
-      if (exchange.user.trim() || exchange.assistant.trim()) {
-        generatedOutput += '\n'; // Add a newline after each exchange if it contains content
+        messages.push({
+          role: 'assistant',
+          content: exchange.assistant.trim(),
+        });
       }
     });
 
-    setOutput(generatedOutput.trim());
-  }, [systemPrompt, promptExchanges]);
+    if (originalQuestion.trim()) {
+      messages.push({ role: 'user', content: originalQuestion.trim() });
+    }
+
+    const outputObject = {
+      model: selectedModel,
+      messages: messages,
+    };
+
+    try {
+      const payload = await getAiResponse(outputObject).unwrap();
+      setOutput(payload);
+    } catch (error) {
+      console.error('Failed to get AI response:', error);
+      setOutput(
+        'Error: Could not generate a response. Please check the console for details.'
+      );
+    }
+  }, [
+    systemPrompt,
+    promptExchanges,
+    selectedModel,
+    getAiResponse,
+    originalQuestion,
+  ]);
 
   const clearAll = useCallback(() => {
-    setSelectedModel(models && models.length > 0 ? models[0] : null);
+    setSelectedModel(models && models.length > 0 ? models[0].id : null);
     setSystemPrompt('');
+    setOriginalQuestion('');
     setPromptExchanges([{ user: '', assistant: '' }]);
     setOutput('');
   }, [models]);
@@ -105,10 +171,13 @@ export const useAIPromptingLogic = () => {
     modelsError,
     modelOptions,
     selectedModel,
+    isGenerating,
     handleModelChange,
     systemPrompt,
     handleSystemPromptChange,
     systemPromptRef,
+    originalQuestion,
+    handleOriginalQuestionChange,
     promptExchanges,
     handleUserPromptChange,
     handleAssistantResponseChange,
