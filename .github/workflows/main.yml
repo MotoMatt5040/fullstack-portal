@@ -127,8 +127,8 @@ jobs:
             
             # Stop any existing containers
             echo "🛑 Stopping existing containers..."
-            if docker compose ps | grep -q "Up"; then
-              docker compose down
+            if docker compose -f docker-compose.testing.yml ps 2>/dev/null | grep -q "Up"; then
+              docker compose -f docker-compose.testing.yml down
             else
               echo "No running containers to stop"
             fi
@@ -140,8 +140,8 @@ jobs:
             # Build and start containers using the testing environment
             echo "🏗️ Building and starting containers..."
             export COMPOSE_ENV=testing
-            docker compose --env-file .env.testing build --no-cache
-            docker compose --env-file .env.testing up -d
+            docker compose -f docker-compose.testing.yml --env-file .env.testing build --no-cache
+            docker compose -f docker-compose.testing.yml --env-file .env.testing up -d
             
             # Wait a moment for containers to start
             echo "⏳ Waiting for containers to start..."
@@ -149,11 +149,11 @@ jobs:
             
             # Show container status
             echo "📊 Container status:"
-            docker compose ps
+            docker compose -f docker-compose.testing.yml ps
             
             # Show logs
             echo "📋 Container logs (last 20 lines):"
-            docker compose logs --tail=20
+            docker compose -f docker-compose.testing.yml logs --tail=20
             
             # Test if services are responding
             echo "🔍 Testing services..."
@@ -196,13 +196,13 @@ jobs:
             cd $HOME/fullstack-portal
             
             echo "🐳 Running containers:"
-            docker compose ps
+            docker compose -f docker-compose.testing.yml ps
             
             echo "💾 Disk usage:"
             df -h
             
             echo "🔍 Recent logs:"
-            docker compose logs --tail=15 --timestamps
+            docker compose -f docker-compose.testing.yml logs --tail=15 --timestamps
             
             echo "🌐 Port status:"
             netstat -tulpn | grep -E ":(80|443|5000|5173)" || echo "No services on expected ports"

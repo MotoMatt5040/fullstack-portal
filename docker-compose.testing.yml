@@ -1,12 +1,19 @@
-name: mern-app-testing
-
 services:
   api:
     build:
       context: ./server
       target: production
     restart: unless-stopped
-    env_file: .env.testing  # Fixed: Use root env file
+    env_file: 
+      - .env.${COMPOSE_ENV:-testing}
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DATABASE_URI=${DATABASE_URI}
+      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
     volumes:
       - ./server_logs:/logs
     networks:
@@ -19,17 +26,13 @@ services:
       context: ./client
       target: production
       args:
-        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-        VITE_DOCKER_API_URL: ${VITE_DOCKER_API_URL}
-        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
-        VITE_ENV: ${VITE_ENV}
+        - VITE_DEV_API_URL=${VITE_DEV_API_URL:-}
+        - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+        - VITE_ENV=${VITE_ENV}
+        - VITE_DOCKER_API_URL=${VITE_DOCKER_API_URL}
     restart: unless-stopped
-    env_file: .env.testing  # Fixed: Use root env file
-    environment:
-      - VITE_DEV_API_URL=${VITE_DEV_API_URL}
-      - VITE_DOCKER_API_URL=${VITE_DOCKER_API_URL}
-      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
-      - VITE_ENV=${VITE_ENV}
+    env_file:
+      - .env.${COMPOSE_ENV:-testing}
     networks:
       - mern-app
     expose:
@@ -38,18 +41,17 @@ services:
       - api
 
   caddy:
-    build:
-      context: ./caddy
-      dockerfile: Dockerfile
+    image: caddy:2-alpine
     ports:
       - "80:80"
       - "443:443"
     environment:
-      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}  # Fixed: Added environment variable
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
     volumes:
-      - caddy_data:/caddy_data
-      - caddy_config:/caddy_config
-      - /var/log/caddy_logs:/var/log/caddy
+      - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - /var/log/caddy:/var/log/caddy
     networks:
       - mern-app
     depends_on:

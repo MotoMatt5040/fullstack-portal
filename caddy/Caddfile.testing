@@ -1,0 +1,43 @@
+{
+    email matt.w@promarkresearch.com
+    # For testing, use Let's Encrypt staging to avoid rate limits during development
+    # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$VITE_DOMAIN_NAME:portaldevelopment1.promarkresearch.com} {
+    encode gzip
+    
+    # Route API requests to your backend
+    handle /api/* {
+        reverse_proxy api:5000
+        
+        header {
+            # Remove server identifying headers
+            -Server
+            -X-Powered-By
+        }
+    }
+    
+    # All other requests go to your client (running on port 5173 in production container)
+    handle {
+        reverse_proxy client:5173
+    }
+    
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        -Server
+        -X-Powered-By
+    }
+    
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 10mb
+            roll_keep 3
+        }
+        format json
+    }
+}
