@@ -1,5 +1,5 @@
-const { getAIResponse } = require('../services/OpenAIPromptingService');
-const { getGPTModelList } = require('../services/OpenAIPromptingServices');
+const { getAIResponse } = require('../services/OpenAIPromptingServices');
+const { getGPTModels } = require('../services/OpenAIPromptingServices');
 
 const buildMessages = (req) => {
   const messages = [];
@@ -44,7 +44,7 @@ const handleGetOpenAIResponse = async (req, res) => {
 
 const handleGetOpenAIModels = async (req, res) => {
   try {
-    const models = await getGPTModelList();
+    const models = await getGPTModels();
     return res.status(200).json(models);
   } catch (error) {
     console.error('Error in handleGetOpenAIModels:', error);

@@ -6,7 +6,16 @@ interface PromptExchange {
   assistant: string;
 }
 
+// Define an interface for the model data structure based on your sample
+interface ChatModel {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+
 export const useAIPromptingLogic = () => {
+  // Update the query type to expect an array of ChatModel objects
   const { data: models, isLoading: modelsLoading, error: modelsError } = useGetChatModelsQuery();
 
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
@@ -18,16 +27,17 @@ export const useAIPromptingLogic = () => {
   // Memoized model options for the dropdown
   const modelOptions = useMemo(() => {
     if (!models) return [];
-    return models.map(model => ({
-      value: model,
-      label: model,
+    // Map each model object to an option with 'id' as both value and label
+    return models.map((model: ChatModel) => ({
+      value: model.id,
+      label: model.id,
     }));
   }, [models]);
 
   // Set initial selected model once models are loaded
   useEffect(() => {
     if (models && models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0]);
+      setSelectedModel(models[0].id); // Set the ID of the first model
     }
   }, [models, selectedModel]);
 
@@ -94,7 +104,7 @@ export const useAIPromptingLogic = () => {
   }, [systemPrompt, promptExchanges]);
 
   const clearAll = useCallback(() => {
-    setSelectedModel(models && models.length > 0 ? models[0] : null);
+    setSelectedModel(models && models.length > 0 ? models[0].id : null); // Clear to the first model's ID
     setSystemPrompt('');
     setPromptExchanges([{ user: '', assistant: '' }]);
     setOutput('');

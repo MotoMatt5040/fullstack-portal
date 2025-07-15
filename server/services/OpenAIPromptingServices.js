@@ -1,4 +1,4 @@
-const { OpenAI } = require('../utils/openAI');
+const OpenAI = require('openai');
 
 const openAI = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -9,6 +9,7 @@ const getAIResponse = async (model, messages) => {
     const response = await openAI.chat.completions.create({
       model: model,
       messages: messages,
+      store: false
     });
     return response.data;
   } catch (error) {

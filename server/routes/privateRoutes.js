@@ -11,6 +11,6 @@ router.use('/quota-management', require('./api/quotaManagement'));
 router.use('/project-publishing', require('./api/projectPublishing'));
 router.use('/project-info', require('./api/projectInfo'));
 router.use('/disposition-report', require('./api/dispositions'));
-router.use('/openai-prompting', require('./api/openAIPrompting'));
+router.use('/ai-prompting', require('./api/openAIPrompting'));
 
 module.exports = router;
