@@ -1,42 +1,35 @@
-# docker-compose.testing.yml
-# This would be a copy of your docker-compose.yml but configured for testing domain
-
 name: mern-app-testing
 
 services:
   api:
     build:
       context: ./server
-      # For production-like build, remove 'target: development'
-      # target: production # if you have a production stage in your Dockerfile
+      target: production
     restart: unless-stopped
-    env_file: ./server/.env.testing # Point to the new .env file
+    env_file: .env.testing  # Fixed: Use root env file
     volumes:
-      # Consider removing development volumes for production builds
-      # - ./server:/app
-      # - /app/node_modules
+      - ./server_logs:/logs
     networks:
       - mern-app
-    expose: # Use expose instead of ports for internal communication
+    expose:
       - "5000"
 
   client:
-    build:
+    build: 
       context: ./client
-      # For production-like build, remove 'target: development'
-      # target: production # if you have a production stage in your Dockerfile
+      target: production
       args:
+        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
+        VITE_DOCKER_API_URL: ${VITE_DOCKER_API_URL}
         VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
         VITE_ENV: ${VITE_ENV}
     restart: unless-stopped
-    env_file: ./client/.env.testing # Point to the new .env file
+    env_file: .env.testing  # Fixed: Use root env file
     environment:
+      - VITE_DEV_API_URL=${VITE_DEV_API_URL}
+      - VITE_DOCKER_API_URL=${VITE_DOCKER_API_URL}
       - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
       - VITE_ENV=${VITE_ENV}
-    volumes:
-      # Consider removing development volumes for production builds
-      # - ./client:/app
-      # - /app/node_modules
     networks:
       - mern-app
     expose:
@@ -45,14 +38,18 @@ services:
       - api
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: ./caddy
+      dockerfile: Dockerfile
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}  # Fixed: Added environment variable
     volumes:
-      - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile # Reference the new Caddyfile
-      - caddy_data:/data # Standard Caddy data volume
-      - caddy_config:/config # Standard Caddy config volume
+      - caddy_data:/caddy_data
+      - caddy_config:/caddy_config
+      - /var/log/caddy_logs:/var/log/caddy
     networks:
       - mern-app
     depends_on:
