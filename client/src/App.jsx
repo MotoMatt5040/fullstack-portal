@@ -34,6 +34,7 @@ import Reports from './views/Reports';
 import Toplines from './views/toplines/Toplines';
 import ProjectPublishing from './views/project_publishing/ProjectPublishing';
 import DispositionReport from './views/disposition_report/DispositionReport';
+import AIPrompting from './views/ai_prompting/AIPrompting';
 
 function App() {
   useGetRolesQuery();
@@ -42,7 +43,7 @@ function App() {
   const isRolesLoading = useSelector(selectIsRolesLoading);
 
   if (isRolesLoading) {
-    return <p>Loading application...</p>; 
+    return <p>Loading application...</p>;
   }
 
   return (
@@ -113,6 +114,10 @@ function App() {
         </Route>
         <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>
           <Route path='project-publishing' element={<ProjectPublishing />} />
+        </Route>
+
+        <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>
+          <Route path='ai-prompting' element={<AIPrompting />} />
         </Route>
 
         <Route
