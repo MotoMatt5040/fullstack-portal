@@ -158,25 +158,25 @@ jobs:
             # Test if services are responding
             echo "🔍 Testing services..."
             
-            # Test API health endpoint with retries
+            # Test the actual domain through Caddy
             for i in {1..5}; do
-              if curl -f http://localhost:5000/health 2>/dev/null; then
-                echo "✅ Server API is responding"
+              if curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" 2>/dev/null; then
+                echo "✅ API is accessible through domain"
                 break
               else
-                echo "⏳ Attempt $i: Server API not responding yet, waiting..."
-                sleep 30
+                echo "⏳ Attempt $i: API not responding through domain yet, waiting..."
+                sleep 10
               fi
             done
             
-            # Test client with retries
+            # Test if the main site loads
             for i in {1..3}; do
-              if curl -f http://localhost:5173 2>/dev/null; then
-                echo "✅ Client is responding"
+              if curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}" 2>/dev/null; then
+                echo "✅ Website is accessible"
                 break
               else
-                echo "⏳ Attempt $i: Client not responding yet, waiting..."
-                sleep 30
+                echo "⏳ Attempt $i: Website not responding yet, waiting..."
+                sleep 10
               fi
             done
             
@@ -208,5 +208,5 @@ jobs:
             netstat -tulpn | grep -E ":(80|443|5000|5173)" || echo "No services on expected ports"
             
             echo "🔍 Service Health Checks:"
-            curl -s http://localhost:5000/health || echo "❌ API health check failed"
-            curl -s -I http://localhost:5173 | head -1 || echo "❌ Client health check failed"
+            curl -s "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" || echo "❌ API health check failed"
+            curl -s "https://${{ secrets.VITE_DOMAIN_NAME }}" | head -1 || echo "❌ Website health check failed"

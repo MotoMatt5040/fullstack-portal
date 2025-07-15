@@ -1,42 +1,42 @@
+name: mern-app
+
 services:
   api:
     build:
       context: ./server
       target: production
     restart: unless-stopped
-    env_file: 
-      - .env.${COMPOSE_ENV:-testing}
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - DATABASE_URI=${DATABASE_URI}
-      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
+    env_file: ./server/.env
     volumes:
-      - ./server_logs:/logs
+      - ./server:/app
+      - /app/node_modules
     networks:
       - mern-app
-    expose:
-      - "5000"
+    ports:
+      - "5000:5000"
 
   client:
     build: 
       context: ./client
       target: production
       args:
-        - VITE_DEV_API_URL=${VITE_DEV_API_URL:-}
-        - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
-        - VITE_ENV=${VITE_ENV}
-        - VITE_DOCKER_API_URL=${VITE_DOCKER_API_URL}
+        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
+        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+        VITE_ENV: ${VITE_ENV}
     restart: unless-stopped
-    env_file:
-      - .env.${COMPOSE_ENV:-testing}
+    env_file: ./client/.env
+    environment:
+      - VITE_DEV_API_URL=${VITE_DEV_API_URL}
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+      - VITE_ENV=${VITE_ENV}
+    volumes:
+      - ./client:/app
+      - /app/node_modules
     networks:
       - mern-app
-    expose:
-      - "5173"
+    ports:
+      - "5173:5173"
+    command: npm start -- --host
     depends_on:
       - api
 
@@ -45,13 +45,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
     volumes:
       - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-      - /var/log/caddy:/var/log/caddy
+      - caddy_data:/caddy_data
+      - caddy_config:/caddy_config
     networks:
       - mern-app
     depends_on:
