@@ -1,4 +1,4 @@
-name: SSH Debug Test
+name: Build and Deploy to Testing
 
 on:
   push:
@@ -7,56 +7,125 @@ on:
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
-  debug-ssh:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Debug SSH Connection
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy and Build on Server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.TESTING_SSH_HOST }}
           username: ${{ secrets.TESTING_SSH_USERNAME }}
           key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
-          debug: true
           script: |
-            echo "🎉 SSH connection successful!"
-            echo "📅 Current time: $(date)"
-            echo "👤 Current user: $(whoami)"
-            echo "📁 Current directory: $(pwd)"
-            echo "🏠 Home directory: $HOME"
-            echo "🔑 SSH agent info:"
-            ssh-add -l 2>/dev/null || echo "No SSH agent or keys loaded"
-            echo "🌐 Network info:"
-            hostname -I
-            echo "✅ Basic connection test complete"
+            echo "🚀 Starting deployment at $(date)"
+            
+            # Navigate to deployment directory
+            DEPLOY_PATH="/opt/fullstack-portal"
+            echo "📁 Deploy path: $DEPLOY_PATH"
+            
+            # Create directory if it doesn't exist
+            sudo mkdir -p $DEPLOY_PATH
+            sudo chown $(whoami):$(whoami) $DEPLOY_PATH
+            cd $DEPLOY_PATH
+            
+            # Clone or pull latest code
+            if [ -d ".git" ]; then
+              echo "📦 Updating existing repository..."
+              git fetch origin
+              git reset --hard origin/main
+              git clean -fd
+            else
+              echo "📦 Cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            echo "🔧 Current directory: $(pwd)"
+            echo "📋 Files in repository:"
+            ls -la
+            
+            # Create basic environment file for testing
+            echo "🔧 Creating environment file..."
+            cat > .env << 'EOF'
+            VITE_DEV_API_URL=http://localhost:5000
+            VITE_DOCKER_API_URL=https://portaldevelopment1.promarkresearch.com/api
+            VITE_DOMAIN_NAME=portaldevelopment1.promarkresearch.com
+            VITE_ENV=testing
+            NODE_ENV=testing
+            FRONTEND_URL=https://portaldevelopment1.promarkresearch.com
+            EOF
+            
+            echo "📋 Environment file created:"
+            cat .env
+            
+            # Stop any existing containers
+            echo "🛑 Stopping existing containers..."
+            if docker compose ps | grep -q "Up"; then
+              docker compose down
+            else
+              echo "No running containers to stop"
+            fi
+            
+            # Clean up old images
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+            
+            # Build and start containers
+            echo "🏗️ Building and starting containers..."
+            docker compose build --no-cache
+            docker compose up -d
+            
+            # Wait a moment for containers to start
+            echo "⏳ Waiting for containers to start..."
+            sleep 15
+            
+            # Show container status
+            echo "📊 Container status:"
+            docker compose ps
+            
+            # Show logs
+            echo "📋 Container logs (last 20 lines):"
+            docker compose logs --tail=20
+            
+            # Test if services are responding
+            echo "🔍 Testing services..."
+            if curl -f http://localhost:5000/health 2>/dev/null; then
+              echo "✅ Server API is responding"
+            else
+              echo "❌ Server API not responding on port 5000"
+            fi
+            
+            if curl -f http://localhost:5173 2>/dev/null; then
+              echo "✅ Client is responding"
+            else
+              echo "❌ Client not responding on port 5173"
+            fi
+            
+            # Show final status
+            echo "✅ Deployment completed at $(date)"
+            echo "🌐 Access your app at: https://portaldevelopment1.promarkresearch.com"
 
-  manual-ssh-test:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Manual SSH Test with Verbose Output
-        run: |
-          echo "🔍 Testing SSH connection manually with verbose output..."
-          
-          # Create temporary key file
-          echo "${{ secrets.TESTING_SSH_PRIVATE_KEY }}" > /tmp/ssh_key
-          chmod 600 /tmp/ssh_key
-          
-          echo "🔑 Key file created, testing connection..."
-          echo "📋 Key file info:"
-          ls -la /tmp/ssh_key
-          
-          echo "🔍 Key file first/last lines:"
-          head -1 /tmp/ssh_key
-          tail -1 /tmp/ssh_key
-          
-          echo "🌐 Testing SSH connection with maximum verbosity..."
-          ssh -vvv -i /tmp/ssh_key \
-              -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=10 \
-              -o BatchMode=yes \
-              ${{ secrets.TESTING_SSH_USERNAME }}@${{ secrets.TESTING_SSH_HOST }} \
-              "echo 'Connection successful'" || echo "SSH connection failed"
-          
-          # Clean up
-          rm /tmp/ssh_key
+      - name: Show Deployment Status
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.TESTING_SSH_HOST }}
+          username: ${{ secrets.TESTING_SSH_USERNAME }}
+          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
+          script: |
+            echo "📊 Final deployment status:"
+            cd /opt/fullstack-portal
+            
+            echo "🐳 Running containers:"
+            docker compose ps
+            
+            echo "💾 Disk usage:"
+            df -h
+            
+            echo "🔍 Recent logs:"
+            docker compose logs --tail=10 --timestamps
+            
+            echo "🌐 Port status:"
+            netstat -tulpn | grep -E ":(80|443|5000|5173)" || echo "No services on expected ports"
