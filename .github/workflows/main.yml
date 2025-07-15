@@ -46,13 +46,13 @@ jobs:
             echo "📋 Files in repository:"
             ls -la
             
-            # Verify docker-compose.yml exists
-            if [ ! -f "docker-compose.yml" ]; then
-              echo "❌ docker-compose.yml not found! Listing all files:"
+            # Verify docker-compose.testing.yml exists
+            if [ ! -f "docker-compose.testing.yml" ]; then
+              echo "❌ docker-compose.testing.yml not found! Listing all files:"
               find . -name "*.yml" -o -name "*.yaml" 2>/dev/null || true
               exit 1
             else
-              echo "✅ docker-compose.yml found"
+              echo "✅ docker-compose.testing.yml found"
             fi
             
             # Create comprehensive environment file from secrets
