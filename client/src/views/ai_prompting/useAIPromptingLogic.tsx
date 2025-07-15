@@ -30,11 +30,13 @@ export const useAIPromptingLogic = () => {
     useGetAiResponseMutation();
 
   const [originalQuestion, setOriginalQuestion] = useState<string>('');
+  const [testQuestion, setTestQuestion] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [promptExchanges, setPromptExchanges] = useState<PromptExchange[]>([
     { user: '', assistant: '' },
   ]);
+  const [requestJson, setRequestJson] = useState<string>('');
   const [output, setOutput] = useState<string>('');
   const systemPromptRef = useRef<HTMLTextAreaElement>(null);
 
@@ -48,7 +50,7 @@ export const useAIPromptingLogic = () => {
 
   useEffect(() => {
     if (models && models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].id);
+      setSelectedModel(models[67].id);
     }
   }, [models, selectedModel]);
 
@@ -69,6 +71,13 @@ export const useAIPromptingLogic = () => {
   const handleOriginalQuestionChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setOriginalQuestion(e.target.value);
+    },
+    []
+  );
+
+  const handleTestQuestionChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setTestQuestion(e.target.value);
     },
     []
   );
@@ -113,36 +122,61 @@ export const useAIPromptingLogic = () => {
     setPromptExchanges((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const generateOutput = useCallback(async () => {
-    const messages: Message[] = [];
+   const generateOutput = useCallback(async () => {
+    const displayMessages: Message[] = [];
 
     if (systemPrompt.trim()) {
-      messages.push({ role: 'system', content: systemPrompt.trim() });
+      displayMessages.push({
+        role: 'system',
+        content: systemPrompt.trim().replace(/\\n/g, '\n'),
+      });
     }
 
     promptExchanges.forEach((exchange) => {
       if (exchange.user.trim()) {
-        messages.push({ role: 'user', content: exchange.user.trim() });
+        displayMessages.push({
+          role: 'user',
+          content: exchange.user.trim().replace(/\\n/g, '\n'),
+        });
       }
       if (exchange.assistant.trim()) {
-        messages.push({
+        displayMessages.push({
           role: 'assistant',
-          content: exchange.assistant.trim(),
+          content: exchange.assistant.trim().replace(/\\n/g, '\n'),
         });
       }
     });
 
     if (originalQuestion.trim()) {
-      messages.push({ role: 'user', content: originalQuestion.trim() });
+      displayMessages.push({
+        role: 'user',
+        content: originalQuestion.trim().replace(/\\n/g, '\n'),
+      });
     }
 
-    const outputObject = {
+    const displayObject = {
       model: selectedModel,
-      messages: messages,
+      messages: displayMessages,
+    };
+    setRequestJson(JSON.stringify(displayObject, null, 2));
+
+    const payloadMessages = [...displayMessages];
+    if (testQuestion.trim()) {
+      payloadMessages.push({
+        role: 'user',
+        content: testQuestion.trim().replace(/\\n/g, '\n'),
+      });
+    }
+
+    const payloadObject = {
+      model: selectedModel,
+      messages: payloadMessages,
     };
 
+    console.log('Payload sent to API:', payloadObject);
+
     try {
-      const payload = await getAiResponse(outputObject).unwrap();
+      const payload = await getAiResponse(payloadObject).unwrap();
       setOutput(payload);
     } catch (error) {
       console.error('Failed to get AI response:', error);
@@ -156,6 +190,7 @@ export const useAIPromptingLogic = () => {
     selectedModel,
     getAiResponse,
     originalQuestion,
+    testQuestion,
   ]);
 
   const clearAll = useCallback(() => {
@@ -164,6 +199,8 @@ export const useAIPromptingLogic = () => {
     setOriginalQuestion('');
     setPromptExchanges([{ user: '', assistant: '' }]);
     setOutput('');
+    setRequestJson('');
+    setTestQuestion('');
   }, [models]);
 
   return {
@@ -186,5 +223,8 @@ export const useAIPromptingLogic = () => {
     output,
     generateOutput,
     clearAll,
+    requestJson,
+    testQuestion,
+    handleTestQuestionChange
   };
 };

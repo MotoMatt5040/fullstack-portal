@@ -26,6 +26,9 @@ const AIPrompting: React.FC = () => {
     output,
     generateOutput,
     clearAll,
+    requestJson,
+    handleTestQuestionChange,
+    testQuestion,
   } = useAIPromptingLogic();
 
   if (modelsLoading) {
@@ -128,15 +131,27 @@ const AIPrompting: React.FC = () => {
         </div>
 
         <div className='form-group'>
-            <label htmlFor='original-question'>Original Question:</label>
-            <textarea
-                id='original-question'
-                className='grow-textarea'
-                value={originalQuestion}
-                onChange={handleOriginalQuestionChange}
-                placeholder='Enter the final user question here. This will be appended as the last message in the request.'
-                rows={3}
-            />
+          <label htmlFor='original-question'>Original Question:</label>
+          <textarea
+            id='original-question'
+            className='grow-textarea'
+            value={originalQuestion}
+            onChange={handleOriginalQuestionChange}
+            placeholder='Enter the final user question here. This will be appended as the last message in the request.'
+            rows={3}
+          />
+        </div>
+
+        <div className='form-group'>
+          <label htmlFor='test-question'>Test Question:</label>
+          <textarea
+            id='test-question'
+            className='grow-textarea'
+            value={testQuestion}
+            onChange={handleTestQuestionChange}
+            placeholder='Enter the test question here. This will be appended as the final message.'
+            rows={3}
+          />
         </div>
 
         <div className='action-buttons'>
@@ -153,7 +168,13 @@ const AIPrompting: React.FC = () => {
             className='action-button primary'
             disabled={isGenerating}
           >
-            {isGenerating ? 'Generating...' : <><FaPlay /> Generate Response</>}
+            {isGenerating ? (
+              'Generating...'
+            ) : (
+              <>
+                <FaPlay /> Generate Response
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -171,6 +192,23 @@ const AIPrompting: React.FC = () => {
           >
             {output}
           </div>
+        </div>
+      )}
+      {requestJson && (
+        <div className='ai-prompt-output'>
+          <h2>Request JSON:</h2>
+          <pre
+            contentEditable={true}
+            suppressContentEditableWarning={true}
+            style={{
+              whiteSpace: 'pre-wrap',
+              background: '#f5f5f5',
+              padding: '10px',
+              borderRadius: '5px',
+            }}
+          >
+            <code>{requestJson}</code>
+          </pre>
         </div>
       )}
     </section>

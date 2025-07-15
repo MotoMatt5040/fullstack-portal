@@ -12,7 +12,7 @@
 }
 
 .ai-prompting-header h1 {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: bold;
   color: var(--text-color);
   margin-bottom: 0.5rem;
@@ -20,7 +20,7 @@
 
 .ai-prompting-header p {
   color: var(--label-text-color);
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   max-width: 700px;
   margin: 0 auto;
 }
@@ -45,7 +45,7 @@
 .ai-controls label {
   font-weight: 600;
   color: var(--label-text-color);
-  font-size: 1rem;
+  font-size: 1.5rem;
 }
 
 .ai-controls .my-select {
@@ -57,7 +57,7 @@
   padding: 0.75rem;
   border: 1px solid var(--border-color-soft);
   border-radius: 0.5rem;
-  font-size: 1rem;
+  font-size: 1.5rem;
   background-color: var(--input-background);
   color: var(--text-color);
   resize: vertical;
@@ -84,7 +84,7 @@
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 1.5rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s ease;
@@ -125,7 +125,7 @@
   box-shadow: var(--box-shadow-elevated);
   white-space: pre-wrap; /* Preserves whitespace and wraps text */
   font-family: monospace;
-  font-size: 0.95rem;
+  font-size: 1.5rem;
   color: var(--text-color);
   max-height: 500px;
   overflow-y: auto;
@@ -140,4 +140,58 @@
 
 .error-indicator {
   color: #dc3545;
+}
+
+.ai-prompt-pairs-container {
+ display: flex;
+ flex-direction: column;
+ gap: 1.5rem;
+}
+
+.ai-prompt-output {
+  /* --- Core Layout & Appearance --- */
+  background-color: var(--background-color-elevated);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--box-shadow-elevated);
+  border: 1px solid var(--border-color-soft);
+
+  /* --- SIZING & EXPANSION LOGIC --- */
+  width: 100%;
+  box-sizing: border-box;
+  height: auto; /* Crucial: Sets height based on content */
+  max-height: none; /* Crucial: Removes ANY maximum height limit */
+  overflow: visible; /* Ensures content is never clipped or scrolled */
+}
+
+/* Adds space between the "Response" and "Request JSON" blocks */
+.ai-prompt-output + .ai-prompt-output {
+  margin-top: 1.5rem;
+}
+
+/* Styles the "Response:" and "Request JSON:" titles */
+.ai-prompt-output h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: var(--label-text-color);
+  font-size: 1.5rem;
+}
+
+/* Styles the content of the regular AI Response */
+.ai-prompt-output > div {
+  color: var(--text-color);
+  font-size: 1.5rem;
+  white-space: pre-wrap;
+}
+
+/* Styles the <pre> tag used for the JSON output */
+.ai-prompt-output pre {
+  margin: 0;
+  padding: 0;
+  color: var(--text-color);
+  font-family: monospace;
+  font-size: 1.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
