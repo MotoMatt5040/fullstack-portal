@@ -1,5 +1,11 @@
 const sql = require('mssql');
 
+let VOXCO_PASSWORD = process.env.VOXCO_DB_PASSWORD;
+
+if (process.env.ENVIRONMENT === 'production') {
+  VOXCO_PASSWORD = process.env.VOXCO_DB_PROD_PASSWORD;
+}
+
 const dbConfigs = {
 	promark: {
 		user: process.env.PROMARK_DB_USER,
@@ -18,7 +24,7 @@ const dbConfigs = {
 	},
 	voxco: {
 		user: process.env.VOXCO_DB_USER,
-		password: process.env.VOXCO_DB_PASSWORD,
+		password: VOXCO_PASSWORD,
 		server: process.env.VOXCO_DB_SERVER,
 		database: process.env.VOXCO_DB_NAME,
 		options: {
