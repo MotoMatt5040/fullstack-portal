@@ -40,9 +40,9 @@ jobs:
             # Create .env file with TESTING values
             cat > .env << 'EOF'
             # Environment
-            NODE_ENV=production
-            VITE_ENV=production
-            COMPOSE_ENV=production
+            NODE_ENV=testing
+            VITE_ENV=testing
+            COMPOSE_ENV=testing
             
             # Domain Configuration (TESTING URL)
             VITE_DOMAIN_NAME=${{ secrets.VITE_DOMAIN_NAME }}
@@ -63,7 +63,6 @@ jobs:
             FROM_NAME=${{ secrets.FROM_NAME }}
             FROM_EMAIL=${{ secrets.FROM_EMAIL }}
             
-            # Add all other production secrets here...
             EOF
             
             # Stop existing containers
