@@ -42,6 +42,26 @@
   gap: 0.5rem;
 }
 
+.ai-controls .text-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+  font-size: 1.5rem;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  max-width: 400px;
+}
+
+.ai-controls .text-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  background-color: var(--input-focus-background);
+}
+
 .ai-controls label {
   font-weight: 600;
   color: var(--label-text-color);
@@ -52,7 +72,10 @@
   max-width: 400px;
 }
 
-.ai-controls textarea.grow-textarea {
+.ai-controls textarea.grow-textarea,
+.grow-textarea-short {
+  resize: none;
+  overflow-y: hidden;
   width: 100%;
   padding: 0.75rem;
   border: 1px solid var(--border-color-soft);
@@ -60,17 +83,25 @@
   font-size: 1.5rem;
   background-color: var(--input-background);
   color: var(--text-color);
-  resize: vertical;
-  min-height: 120px;
   box-sizing: border-box;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.ai-controls textarea.grow-textarea:focus {
+.ai-controls textarea.grow-textarea:focus,
+.grow-textarea-short:focus {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
   background-color: var(--input-focus-background);
+}
+
+.ai-controls textarea.grow-textarea {
+  min-height: 80px;
+}
+
+.grow-textarea-short {
+  height: auto;
+  min-height: 3.5rem;
 }
 
 .ai-controls .action-buttons {
@@ -89,6 +120,9 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .ai-controls .action-button.primary {
@@ -112,10 +146,29 @@
   cursor: not-allowed;
 }
 
-.ai-prompt-pairs-container {
+.ai-prompt-pairs-container,
+.test-responses-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+}
+
+.input-pair-item,
+.test-response-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.remove-button-spacing,
+.remove-test-response-button {
+  align-self: flex-start;
+}
+
+.add-button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
 }
 
 .ai-prompt-output {
@@ -123,75 +176,57 @@
   padding: 1.5rem;
   border-radius: 1rem;
   box-shadow: var(--box-shadow-elevated);
-  white-space: pre-wrap; /* Preserves whitespace and wraps text */
-  font-family: monospace;
-  font-size: 1.5rem;
-  color: var(--text-color);
-  max-height: 500px;
-  overflow-y: auto;
   border: 1px solid var(--border-color-soft);
-}
-
-.loading-indicator, .error-indicator {
-  text-align: center;
-  padding: 2rem;
-  color: var(--text-color);
-}
-
-.error-indicator {
-  color: #dc3545;
-}
-
-.ai-prompt-pairs-container {
- display: flex;
- flex-direction: column;
- gap: 1.5rem;
-}
-
-.ai-prompt-output {
-  /* --- Core Layout & Appearance --- */
-  background-color: var(--background-color-elevated);
-  padding: 1.5rem;
-  border-radius: 1rem;
-  box-shadow: var(--box-shadow-elevated);
-  border: 1px solid var(--border-color-soft);
-
-  /* --- SIZING & EXPANSION LOGIC --- */
   width: 100%;
   box-sizing: border-box;
-  height: auto; /* Crucial: Sets height based on content */
-  max-height: none; /* Crucial: Removes ANY maximum height limit */
-  overflow: visible; /* Ensures content is never clipped or scrolled */
 }
 
-/* Adds space between the "Response" and "Request JSON" blocks */
 .ai-prompt-output + .ai-prompt-output {
   margin-top: 1.5rem;
 }
 
-/* Styles the "Response:" and "Request JSON:" titles */
-.ai-prompt-output h2 {
-  margin-top: 0;
+.nested-output {
+  margin-top: 10px;
+}
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
+}
+
+.output-header h2 {
+  margin: 0;
   font-weight: 600;
   color: var(--label-text-color);
   font-size: 1.5rem;
 }
 
-/* Styles the content of the regular AI Response */
-.ai-prompt-output > div {
-  color: var(--text-color);
-  font-size: 1.5rem;
-  white-space: pre-wrap;
+.word-counter {
+  font-size: 1.2rem;
+  color: var(--label-text-color);
 }
 
-/* Styles the <pre> tag used for the JSON output */
-.ai-prompt-output pre {
-  margin: 0;
-  padding: 0;
+.output-content-box {
+  white-space: pre-wrap;
+  background: var(--background-color);
+  padding: 10px;
+  border-radius: 5px;
   color: var(--text-color);
   font-family: monospace;
   font-size: 1.5rem;
-  white-space: pre-wrap;
   word-break: break-all;
+}
+
+.loading-indicator,
+.error-indicator {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color);
+  font-size: 1.5rem;
+}
+
+.error-indicator {
+  color: #dc3545;
 }

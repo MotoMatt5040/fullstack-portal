@@ -1,7 +1,6 @@
 import React from 'react';
 import Select from 'react-select';
 import { useAIPromptingLogic } from './useAIPromptingLogic';
-import PromptInputPair from '../../components/PromptInputPair';
 import { FaPlus, FaTrashAlt, FaRedo, FaPlay } from 'react-icons/fa';
 import './AIPrompting.css';
 
@@ -14,22 +13,37 @@ const AIPrompting: React.FC = () => {
     handleModelChange,
     systemPrompt,
     handleSystemPromptChange,
-    systemPromptRef,
     originalQuestion,
     handleOriginalQuestionChange,
-    promptExchanges,
-    handleUserPromptChange,
-    handleAssistantResponseChange,
-    addPromptExchange,
-    removePromptExchange,
     isGenerating,
     output,
     generateOutput,
     clearAll,
     requestJson,
+    temperature,
+    handleTemperatureChange,
+    questionNumber,
+    handleQuestionNumberChange,
+    showExchanges,
+    showTestResponses,
+    addPromptExchange,
+    removePromptExchange,
+    promptExchanges,
+    handleUserPromptChange,
+    handleAssistantResponseChange,
+    addTestQuestion,
+    removeTestQuestion,
+    testQuestions,
     handleTestQuestionChange,
-    testQuestion,
+    testResponses,
+    outputWordCount,
+    testResponsesWordCounts,
   } = useAIPromptingLogic();
+
+  const autoResizeTextarea = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
 
   if (modelsLoading) {
     return (
@@ -85,49 +99,102 @@ const AIPrompting: React.FC = () => {
         </div>
 
         <div className='form-group'>
-          <label htmlFor='system-prompt'>System Prompt:</label>
-          <textarea
-            id='system-prompt'
-            ref={systemPromptRef}
-            className='grow-textarea'
-            value={systemPrompt}
-            onChange={handleSystemPromptChange}
-            placeholder='Enter system-level instructions for the AI (e.g., "You are a helpful assistant."). This sets the context for the conversation.'
-            rows={3}
+          <label htmlFor='temperature-slider'>Temperature: {temperature}</label>
+          <input
+            type='range'
+            id='temperature-slider'
+            min='0'
+            max='2'
+            step='0.1'
+            value={temperature}
+            onChange={handleTemperatureChange}
           />
         </div>
 
-        <div className='ai-prompt-pairs-container'>
-          {promptExchanges.map((exchange, index) => (
-            <div key={index}>
-              <PromptInputPair
-                index={index}
-                userContent={exchange.user}
-                assistantContent={exchange.assistant}
-                onUserChange={(e) => handleUserPromptChange(index, e)}
-                onAssistantChange={(e) =>
-                  handleAssistantResponseChange(index, e)
-                }
-              />
-              {promptExchanges.length > 1 && (
-                <button
-                  type='button'
-                  onClick={() => removePromptExchange(index)}
-                  className='action-button secondary'
-                  style={{ marginBottom: '1rem' }}
-                >
-                  <FaTrashAlt /> Remove Exchange
-                </button>
-              )}
+        <div className='form-group'>
+          <label htmlFor='system-prompt'>System Prompt:</label>
+          <textarea
+            id='system-prompt'
+            className='grow-textarea'
+            value={systemPrompt}
+            onChange={(e) => {
+              handleSystemPromptChange(e);
+              autoResizeTextarea(e);
+            }}
+            placeholder='Enter system-level instructions for the AI...'
+            rows={1}
+          />
+        </div>
+
+        <div className='form-group'>
+          {showExchanges && (
+            <div className='ai-prompt-pairs-container'>
+              <label>User/Assistant Exchanges:</label>
+              {promptExchanges.map((exchange, index) => (
+                <div key={index} className='input-pair-item'>
+                  <div>
+                    <label htmlFor={`user-prompt-${index}`}>User:</label>
+                    <textarea
+                      id={`user-prompt-${index}`}
+                      className='grow-textarea-short'
+                      value={exchange.user}
+                      onChange={(e) => {
+                        handleUserPromptChange(index, e);
+                        autoResizeTextarea(e);
+                      }}
+                      placeholder='Enter user prompt content...'
+                      rows={1}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor={`assistant-response-${index}`}>
+                      Assistant:
+                    </label>
+                    <textarea
+                      id={`assistant-response-${index}`}
+                      className='grow-textarea-short'
+                      value={exchange.assistant}
+                      onChange={(e) => {
+                        handleAssistantResponseChange(index, e);
+                        autoResizeTextarea(e);
+                      }}
+                      placeholder='Enter assistant response content...'
+                      rows={1}
+                    />
+                  </div>
+                  <button
+                    type='button'
+                    onClick={() => removePromptExchange(index)}
+                    className='action-button secondary remove-button-spacing'
+                  >
+                    <FaTrashAlt /> Remove Exchange
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
           <button
             type='button'
             onClick={addPromptExchange}
-            className='action-button primary'
+            className='action-button primary add-button'
           >
-            <FaPlus /> Add Exchange
+            <FaPlus />{' '}
+            {showExchanges
+              ? 'Add Another Exchange'
+              : 'Add User/Assistant Exchanges'}
           </button>
+        </div>
+
+        <div className='form-group'>
+          <label htmlFor='question-number'>Question Number:</label>
+          <input
+            id='question-number'
+            type='text'
+            className='text-input'
+            value={questionNumber}
+            onChange={handleQuestionNumberChange}
+            placeholder='Enter the question number (e.g., 1a, 2b)'
+          />
         </div>
 
         <div className='form-group'>
@@ -136,22 +203,65 @@ const AIPrompting: React.FC = () => {
             id='original-question'
             className='grow-textarea'
             value={originalQuestion}
-            onChange={handleOriginalQuestionChange}
-            placeholder='Enter the final user question here. This will be appended as the last message in the request.'
-            rows={3}
+            onChange={(e) => {
+              handleOriginalQuestionChange(e);
+              autoResizeTextarea(e);
+            }}
+            placeholder='Enter the final user question here...'
+            rows={1}
           />
         </div>
 
         <div className='form-group'>
-          <label htmlFor='test-question'>Test Question:</label>
-          <textarea
-            id='test-question'
-            className='grow-textarea'
-            value={testQuestion}
-            onChange={handleTestQuestionChange}
-            placeholder='Enter the test question here. This will be appended as the final message.'
-            rows={3}
-          />
+          {showTestResponses && (
+            <div className='test-responses-container'>
+              <label>Test Responses:</label>
+              {testQuestions.map((question, index) => (
+                <div key={index} className='test-response-item'>
+                  <textarea
+                    className='grow-textarea-short'
+                    value={question}
+                    onChange={(e) => {
+                      handleTestQuestionChange(index, e);
+                      autoResizeTextarea(e);
+                    }}
+                    placeholder={`Enter Test Response #${index + 1}`}
+                    rows={1}
+                  />
+                  {testResponses[index] && (
+                    <div className='ai-prompt-output nested-output'>
+                      <div className='output-header'>
+                        <h2>Response:</h2>
+                        <div className='word-counter'>
+                          {testResponsesWordCounts[index] || 0} words
+                        </div>
+                      </div>
+                      <div className='output-content-box'>
+                        {testResponses[index]}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type='button'
+                    onClick={() => removeTestQuestion(index)}
+                    className='action-button secondary remove-test-response-button'
+                  >
+                    <FaTrashAlt /> Remove Test Response
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type='button'
+            onClick={addTestQuestion}
+            className='action-button primary add-button'
+          >
+            <FaPlus />{' '}
+            {showTestResponses
+              ? 'Add Another Test Response'
+              : 'Add Test Responses'}
+          </button>
         </div>
 
         <div className='action-buttons'>
@@ -181,32 +291,19 @@ const AIPrompting: React.FC = () => {
 
       {output && (
         <div className='ai-prompt-output'>
-          <h2>Response:</h2>
-          <div
-            style={{
-              whiteSpace: 'pre-wrap',
-              background: '#f5f5f5',
-              padding: '10px',
-              borderRadius: '5px',
-            }}
-          >
-            {output}
+          <div className='output-header'>
+            <h2>Response:</h2>
+            <div className='word-counter'>{outputWordCount} words</div>
           </div>
+          <div className='output-content-box'>{output}</div>
         </div>
       )}
       {requestJson && (
         <div className='ai-prompt-output'>
-          <h2>Request JSON:</h2>
-          <pre
-            contentEditable={true}
-            suppressContentEditableWarning={true}
-            style={{
-              whiteSpace: 'pre-wrap',
-              background: '#f5f5f5',
-              padding: '10px',
-              borderRadius: '5px',
-            }}
-          >
+          <div className='output-header'>
+            <h2>Request JSON:</h2>
+          </div>
+          <pre className='output-content-box'>
             <code>{requestJson}</code>
           </pre>
         </div>
