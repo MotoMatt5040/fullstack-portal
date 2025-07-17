@@ -8,6 +8,15 @@ interface AiPromptRequestBody {
   }[];
 }
 
+interface AddAiPromptBody {
+  projectId: string;
+  questionNumber: string;
+  questionSummary: string;
+  tone: string;
+  prompt: string;
+  email: string;
+}
+
 export const aiPromptingApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getChatModels: builder.query<string[], void>({
@@ -24,8 +33,29 @@ export const aiPromptingApiSlice = apiSlice.injectEndpoints({
         responseHandler: (response) => response.text(),
       }),
     }),
+    getAiPrompts: builder.query<any[], { projectId: string; questionNumber: string }>({
+      query: ({ projectId, questionNumber }) => ({
+        url: `/ai-prompting/prompts?projectId=${projectId}&questionNumber=${questionNumber}`,
+        method: 'GET',
+        responseHandler: (response) => response.json(),
+      }),
+      providesTags: ['AiPrompts'],
+    }),
+    addAiPrompt: builder.mutation<any, AddAiPromptBody>({
+      query: ({ projectId, questionNumber, questionSummary, tone, prompt, email }) => ({
+        url: '/ai-prompting/prompts',
+        method: 'POST',
+        body: { projectId, questionNumber, questionSummary, tone, prompt, email },
+        responseHandler: (response) => response.json(),
+      }),
+      invalidatesTags: ['AiPrompts'],
+    }),
   }),
 });
 
-export const { useGetChatModelsQuery, useGetAiResponseMutation } =
-  aiPromptingApiSlice;
+export const {
+  useGetChatModelsQuery,
+  useGetAiResponseMutation,
+  useGetAiPromptsQuery,
+  useAddAiPromptMutation,
+} = aiPromptingApiSlice;

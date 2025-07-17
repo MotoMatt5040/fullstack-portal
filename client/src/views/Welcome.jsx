@@ -70,7 +70,7 @@ const Welcome = () => {
             <div className='quick-action-icon'>
               <FaChartLine />
             </div>
-            AI Prompting
+            Prompt Engineering
           </Link>
         )}
 

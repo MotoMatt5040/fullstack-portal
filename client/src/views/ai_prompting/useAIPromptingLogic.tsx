@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useSelector } from 'react-redux';
+import { selectUser } from '../../features/auth/authSlice';
 import {
   useGetChatModelsQuery,
   useGetAiResponseMutation,
+  useGetAiPromptsQuery,
+  useAddAiPromptMutation,
 } from '../../features/aiPromptingApiSlice';
 
 // Helper function to calculate words
-const countWords = (str: string) => {
+const countWords = (str) => {
   if (!str.trim()) return 0;
   return str.trim().split(/\s+/).length;
 };
@@ -35,27 +39,52 @@ export const useAIPromptingLogic = () => {
   const [getAiResponse, { isLoading: isGenerating }] =
     useGetAiResponseMutation();
 
-  const [rawOriginalQuestion, setRawOriginalQuestion] = useState<string>('');
-  const [testQuestions, setTestQuestions] = useState<string[]>([]);
-  const [testResponses, setTestResponses] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [temperature, setTemperature] = useState<number>(0.2);
-  const [systemPrompt, setSystemPrompt] = useState<string>('');
-  const [questionNumber, setQuestionNumber] = useState<string>('');
-  const [promptExchanges, setPromptExchanges] = useState<PromptExchange[]>([]);
-  const [requestJson, setRequestJson] = useState<string>('');
-  const [output, setOutput] = useState<string>('');
-  const systemPromptRef = useRef<HTMLTextAreaElement>(null);
+  const [addAiPrompt, { isLoading: isAddingPrompt }] = useAddAiPromptMutation();
+
+  const currentUser = useSelector(selectUser);
+
+  const [rawFinalSystemInstruction, setRawFinalSystemInstruction] = useState('');
+  const [testQuestions, setTestQuestions] = useState([]);
+  const [testResponses, setTestResponses] = useState([]);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [temperature, setTemperature] = useState(0.5);
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [questionSummary, setQuestionSummary] = useState('');
+  const [tone, setTone] = useState('neutral / friendly');
+  const [projectId, setProjectId] = useState('');
+  const [questionNumber, setQuestionNumber] = useState('');
+  const [promptExchanges, setPromptExchanges] = useState([]);
+  const [requestJson, setRequestJson] = useState('');
+  const [output, setOutput] = useState('');
+  const systemPromptRef = useRef(null);
 
   // State for visibility and RESPONSE word counts
-  const [showExchanges, setShowExchanges] = useState<boolean>(false);
-  const [showTestResponses, setShowTestResponses] = useState<boolean>(false);
+  const [showExchanges, setShowExchanges] = useState(false);
+  const [showTestResponses, setShowTestResponses] = useState(false);
   const [outputWordCount, setOutputWordCount] = useState(0);
-  const [testResponsesWordCounts, setTestResponsesWordCounts] = useState<number[]>([]);
+  const [testResponsesWordCounts, setTestResponsesWordCounts] = useState([]);
+
+  // Query for prompts - now uses projectId and questionNumber
+  const { data: prompts, isLoading: promptsLoading } = useGetAiPromptsQuery(
+    { projectId, questionNumber },
+    { skip: !projectId || !questionNumber }
+  );
+
+  // Tone options for the dropdown
+  const toneOptions = useMemo(() => [
+    { value: 'neutral / friendly', label: '1. Neutral / Friendly' },
+    { value: 'neutral / objective', label: '2. Neutral / Objective' },
+    { value: 'professional / formal', label: '3. Professional / Formal' },
+    { value: 'friendly / conversational', label: '4. Friendly / Conversational' },
+    { value: 'encouraging / supportive', label: '5. Encouraging / Supportive' },
+    { value: 'concise / direct', label: '6. Concise / Direct' },
+    { value: 'polite / softened', label: '7. Polite / Softened' },
+    { value: 'direct / challenging', label: '8. Direct / Challenging' },
+  ], []);
 
   const modelOptions = useMemo(() => {
     if (!models) return [];
-    return models.map((model: ChatModel) => ({
+    return models.map((model) => ({
       value: model.id,
       label: model.id,
     }));
@@ -68,42 +97,129 @@ export const useAIPromptingLogic = () => {
   }, [models, selectedModel]);
 
   useEffect(() => {
-    if (systemPromptRef.current) {
-      systemPromptRef.current.style.height = 'auto';
-      systemPromptRef.current.style.height = `${systemPromptRef.current.scrollHeight}px`;
+    if (prompts && prompts.length > 0) {
+      const latestPrompt = prompts[0]; // Since they're ordered by dateCreated DESC
+      setSystemPrompt(latestPrompt.prompt);
+      
+      // Auto-populate questionSummary if it exists in the data
+      if (latestPrompt.questionSummary) {
+        setQuestionSummary(latestPrompt.questionSummary);
+      }
+      
+      // Auto-populate tone if it exists in the data, otherwise keep default
+      if (latestPrompt.tone) {
+        setTone(latestPrompt.tone);
+      }
     }
-  }, [systemPrompt]);
+  }, [prompts]);
 
-  const handleModelChange = useCallback(
-    (option: { value: string; label: string } | null) => {
-      setSelectedModel(option ? option.value : null);
-    },
-    []
-  );
+  // Function to replace brackets in system prompt with question summary and tone for display
+  const getProcessedSystemPrompt = useCallback(() => {
+    if (!systemPrompt) return '';
+    let processed = systemPrompt;
+    
+    // Replace [summary:] with [summary: questionSummary]
+    if (questionSummary && questionSummary.trim()) {
+      processed = processed.replace(/\[summary:\]/gi, `[summary: ${questionSummary}]`);
+    }
+    
+    // Replace [tone:] with [tone: selectedTone]
+    if (tone && tone.trim()) {
+      processed = processed.replace(/\[tone:\]/gi, `[tone: ${tone}]`);
+    }
+    
+    return processed;
+  }, [systemPrompt, questionSummary, tone]);
 
-  const handleTemperatureChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setTemperature(parseFloat(e.target.value));
-    },
-    []
-  );
+  // Function to get final system prompt without brackets for JSON output
+  const getFinalSystemPromptForJson = useCallback(() => {
+    if (!systemPrompt) return '';
+    let processed = systemPrompt;
+    
+    // Replace [summary:] with just the questionSummary (no brackets)
+    if (questionSummary && questionSummary.trim()) {
+      processed = processed.replace(/\[summary:\]/gi, questionSummary);
+    } else {
+      processed = processed.replace(/\[summary:\]/gi, '');
+    }
+    
+    // Replace [tone:] with just the tone (no brackets)
+    if (tone && tone.trim()) {
+      processed = processed.replace(/\[tone:\]/gi, tone);
+    } else {
+      processed = processed.replace(/\[tone:\]/gi, '');
+    }
+    
+    return processed;
+  }, [systemPrompt, questionSummary, tone]);
 
-  const handleQuestionNumberChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setQuestionNumber(e.target.value);
-    },
-    []
-  );
+  const handleSelectPrompt = useCallback((selectedPromptText) => {
+    setSystemPrompt(selectedPromptText);
+  }, []);
 
-  const handleOriginalQuestionChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setRawOriginalQuestion(e.target.value);
-    },
-    []
-  );
+  const handleUpdatePrompt = useCallback(async () => {
+    if (!systemPrompt.trim()) {
+      console.error('Cannot update with an empty prompt.');
+      return;
+    }
+
+    if (!currentUser) {
+      console.error('No user information available.');
+      return;
+    }
+
+    if (!projectId || !questionNumber) {
+      console.error('Project ID and Question Number are required.');
+      return;
+    }
+
+    try {
+      const payload = {
+        projectId,
+        questionNumber,
+        questionSummary,
+        tone,
+        prompt: systemPrompt,
+        email: currentUser.email,
+      };
+
+      await addAiPrompt(payload).unwrap();
+      console.log('Prompt updated successfully!');
+    } catch (error) {
+      console.error('Failed to update prompt:', error);
+    }
+  }, [systemPrompt, addAiPrompt, currentUser, projectId, questionNumber, questionSummary, tone]);
+
+  const handleModelChange = useCallback((option) => {
+    setSelectedModel(option ? option.value : null);
+  }, []);
+
+  const handleTemperatureChange = useCallback((e) => {
+    setTemperature(parseFloat(e.target.value));
+  }, []);
+
+  const handleProjectIdChange = useCallback((e) => {
+    setProjectId(e.target.value);
+  }, []);
+
+  const handleQuestionNumberChange = useCallback((e) => {
+    setQuestionNumber(e.target.value);
+  }, []);
+
+  const handleQuestionSummaryChange = useCallback((e) => {
+    setQuestionSummary(e.target.value);
+  }, []);
+
+  const handleToneChange = useCallback((option) => {
+    setTone(option ? option.value : 'neutral / friendly');
+  }, []);
+
+  const handleFinalSystemInstructionChange = useCallback((e) => {
+    setRawFinalSystemInstruction(e.target.value);
+  }, []);
 
   const handleTestQuestionChange = useCallback(
-    (index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    (index, e) => {
       const newTestQuestions = [...testQuestions];
       newTestQuestions[index] = e.target.value;
       setTestQuestions(newTestQuestions);
@@ -118,7 +234,7 @@ export const useAIPromptingLogic = () => {
   }, [showTestResponses]);
 
   const removeTestQuestion = useCallback(
-    (index: number) => {
+    (index) => {
       const newTestQuestions = testQuestions.filter((_, i) => i !== index);
       setTestQuestions(newTestQuestions);
       setTestResponses((prev) => prev.filter((_, i) => i !== index));
@@ -131,37 +247,28 @@ export const useAIPromptingLogic = () => {
     [testQuestions]
   );
 
-  const handleSystemPromptChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setSystemPrompt(e.target.value);
-    },
-    []
-  );
+  const handleSystemPromptChange = useCallback((e) => {
+    setSystemPrompt(e.target.value);
+  }, []);
 
-  const handleUserPromptChange = useCallback(
-    (index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setPromptExchanges((prev) => {
-        const newExchanges = [...prev];
-        newExchanges[index] = { ...newExchanges[index], user: e.target.value };
-        return newExchanges;
-      });
-    },
-    []
-  );
+  const handleUserPromptChange = useCallback((index, e) => {
+    setPromptExchanges((prev) => {
+      const newExchanges = [...prev];
+      newExchanges[index] = { ...newExchanges[index], user: e.target.value };
+      return newExchanges;
+    });
+  }, []);
 
-  const handleAssistantResponseChange = useCallback(
-    (index: number, e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setPromptExchanges((prev) => {
-        const newExchanges = [...prev];
-        newExchanges[index] = {
-          ...newExchanges[index],
-          assistant: e.target.value,
-        };
-        return newExchanges;
-      });
-    },
-    []
-  );
+  const handleAssistantResponseChange = useCallback((index, e) => {
+    setPromptExchanges((prev) => {
+      const newExchanges = [...prev];
+      newExchanges[index] = {
+        ...newExchanges[index],
+        assistant: e.target.value,
+      };
+      return newExchanges;
+    });
+  }, []);
 
   const addPromptExchange = useCallback(() => {
     if (!showExchanges) setShowExchanges(true);
@@ -169,7 +276,7 @@ export const useAIPromptingLogic = () => {
   }, [showExchanges]);
 
   const removePromptExchange = useCallback(
-    (index: number) => {
+    (index) => {
       const newExchanges = promptExchanges.filter((_, i) => i !== index);
       setPromptExchanges(newExchanges);
       if (newExchanges.length === 0) {
@@ -180,72 +287,67 @@ export const useAIPromptingLogic = () => {
   );
 
   const generateOutput = useCallback(async () => {
-    const displayMessages: Message[] = [];
+    const messages = [];
 
-    if (systemPrompt.trim()) {
-      displayMessages.push({
+    // Use the final system prompt (without brackets) for JSON and API
+    const finalSystemPromptForJson = getFinalSystemPromptForJson();
+    if (finalSystemPromptForJson.trim()) {
+      messages.push({
         role: 'system',
-        content: systemPrompt.trim().replace(/\\n/g, '\n'),
+        content: finalSystemPromptForJson.trim().replace(/\\n/g, '\n'),
       });
     }
 
     promptExchanges.forEach((exchange) => {
       if (exchange.user.trim()) {
-        displayMessages.push({
+        messages.push({
           role: 'user',
           content: exchange.user.trim().replace(/\\n/g, '\n'),
         });
       }
       if (exchange.assistant.trim()) {
-        displayMessages.push({
+        messages.push({
           role: 'assistant',
           content: exchange.assistant.trim().replace(/\\n/g, '\n'),
         });
       }
     });
 
-    const finalOriginalQuestion = `Original Question: ${rawOriginalQuestion}\nResponse: [${questionNumber}]\nFollow-up Question:`;
+    const finalSystemInstructionContent = `Generate a follow-up question based on the original survey question and the respondent's answer below.\n\nOriginal Question: [${questionNumber}.textLabel]\nResponse: [${questionNumber}.openEnd]\n\nFollow-up Question:`;
 
-    if (rawOriginalQuestion.trim() && !testQuestions.some((q) => q.trim())) {
-      displayMessages.push({
+    // Add the final system instruction to messages
+    if (rawFinalSystemInstruction.trim()) {
+      messages.push({
         role: 'user',
-        content: finalOriginalQuestion.trim().replace(/\\n/g, '\n'),
+        content: finalSystemInstructionContent.trim().replace(/\\n/g, '\n'),
       });
     }
 
-    const displayObject = {
+    const requestObject = {
       model: selectedModel,
       temperature: temperature,
-      messages: displayMessages,
+      messages: messages,
     };
-    setRequestJson(JSON.stringify(displayObject, null, 2));
+    setRequestJson(JSON.stringify(requestObject, null, 2));
 
     if (testQuestions.some((q) => q.trim())) {
-      const responses: string[] = [];
-      const wordCounts: number[] = [];
+      const responses = [];
+      const wordCounts = [];
       for (const testQuestion of testQuestions) {
         if (testQuestion.trim()) {
-          const payloadMessages = [...displayMessages];
-          if (rawOriginalQuestion.trim()) {
-            payloadMessages.push({
-              role: 'user',
-              content: finalOriginalQuestion.trim().replace(/\\n/g, '\n'),
-            });
-            payloadMessages.push({
-              role: 'assistant',
-              content: testQuestion.trim().replace(/\\n/g, '\n'),
-            });
-          } else {
-             payloadMessages.push({
-              role: 'user',
-              content: testQuestion.trim().replace(/\\n/g, '\n'),
-            });
-          }
+          // Create test messages starting with the main messages
+          const testMessages = [...messages];
+          
+          // Add the test question as an assistant response to the final system instruction
+          testMessages.push({
+            role: 'assistant',
+            content: testQuestion.trim().replace(/\\n/g, '\n'),
+          });
 
           const payloadObject = {
             model: selectedModel,
             temperature: temperature,
-            messages: payloadMessages,
+            messages: testMessages,
           };
 
           try {
@@ -268,11 +370,11 @@ export const useAIPromptingLogic = () => {
       setOutput('');
       setOutputWordCount(0);
     } else {
-      const payloadMessages = [...displayMessages];
+      // For single response, use the messages as-is
       const payloadObject = {
         model: selectedModel,
         temperature: temperature,
-        messages: payloadMessages,
+        messages: messages,
       };
 
       try {
@@ -290,19 +392,25 @@ export const useAIPromptingLogic = () => {
     }
   }, [
     systemPrompt,
+    questionSummary,
+    tone,
     promptExchanges,
     selectedModel,
     temperature,
     getAiResponse,
-    rawOriginalQuestion,
+    rawFinalSystemInstruction,
     questionNumber,
     testQuestions,
+    getFinalSystemPromptForJson,
   ]);
 
   const clearAll = useCallback(() => {
     setSelectedModel(models && models.length > 0 ? models[0].id : null);
     setSystemPrompt('');
-    setRawOriginalQuestion('');
+    setQuestionSummary('');
+    setTone('neutral / friendly');
+    setProjectId('');
+    setRawFinalSystemInstruction('');
     setPromptExchanges([]);
     setOutput('');
     setRequestJson('');
@@ -319,14 +427,22 @@ export const useAIPromptingLogic = () => {
     modelsLoading,
     modelsError,
     modelOptions,
+    toneOptions,
     selectedModel,
     isGenerating,
     handleModelChange,
     systemPrompt,
     handleSystemPromptChange,
+    questionSummary,
+    handleQuestionSummaryChange,
+    tone,
+    handleToneChange,
+    projectId,
+    handleProjectIdChange,
+    getProcessedSystemPrompt,
     systemPromptRef,
-    originalQuestion: rawOriginalQuestion,
-    handleOriginalQuestionChange,
+    finalSystemInstruction: rawFinalSystemInstruction,
+    handleFinalSystemInstructionChange,
     promptExchanges,
     handleUserPromptChange,
     handleAssistantResponseChange,
@@ -349,5 +465,10 @@ export const useAIPromptingLogic = () => {
     showTestResponses,
     outputWordCount,
     testResponsesWordCounts,
+    prompts,
+    promptsLoading,
+    handleSelectPrompt,
+    handleUpdatePrompt,
+    isAddingPrompt,
   };
 };

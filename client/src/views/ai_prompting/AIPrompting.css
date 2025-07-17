@@ -96,7 +96,7 @@
 }
 
 .ai-controls textarea.grow-textarea {
-  min-height: 80px;
+  min-height: 30rem;
 }
 
 .grow-textarea-short {
@@ -123,6 +123,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.ai-controls .temperature-slider {
+  width: 100%;
+  max-width: 400px;
 }
 
 .ai-controls .action-button.primary {

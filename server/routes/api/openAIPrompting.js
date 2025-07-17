@@ -24,4 +24,22 @@ router.route('/models')
     OpenAIPromptingController.handleGetOpenAIModels
   );
 
+router.route('/prompts')
+  .get(
+    verifyRoles(
+      ROLES_LIST.Admin,
+      ROLES_LIST.Executive,
+      ROLES_LIST.Programmer
+    ),
+    OpenAIPromptingController.handleGetAiPrompts
+  )
+  .post(
+    verifyRoles(
+      ROLES_LIST.Admin,
+      ROLES_LIST.Executive,
+      ROLES_LIST.Programmer
+    ),
+    OpenAIPromptingController.handleAddAiPrompt
+  );
+
 module.exports = router;

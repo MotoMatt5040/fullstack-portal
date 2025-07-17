@@ -1,20 +1,28 @@
 import React from 'react';
 import Select from 'react-select';
 import { useAIPromptingLogic } from './useAIPromptingLogic';
-import { FaPlus, FaTrashAlt, FaRedo, FaPlay } from 'react-icons/fa';
+import { FaPlus, FaTrashAlt, FaRedo, FaPlay, FaSave } from 'react-icons/fa';
 import './AIPrompting.css';
 
-const AIPrompting: React.FC = () => {
+const AIPrompting = () => {
   const {
     modelsLoading,
     modelsError,
     modelOptions,
+    toneOptions,
     selectedModel,
     handleModelChange,
     systemPrompt,
     handleSystemPromptChange,
-    originalQuestion,
-    handleOriginalQuestionChange,
+    questionSummary,
+    handleQuestionSummaryChange,
+    tone,
+    handleToneChange,
+    projectId,
+    handleProjectIdChange,
+    getProcessedSystemPrompt,
+    finalSystemInstruction,
+    handleFinalSystemInstructionChange,
     isGenerating,
     output,
     generateOutput,
@@ -25,12 +33,12 @@ const AIPrompting: React.FC = () => {
     questionNumber,
     handleQuestionNumberChange,
     showExchanges,
-    showTestResponses,
     addPromptExchange,
     removePromptExchange,
     promptExchanges,
     handleUserPromptChange,
     handleAssistantResponseChange,
+    showTestResponses,
     addTestQuestion,
     removeTestQuestion,
     testQuestions,
@@ -38,18 +46,55 @@ const AIPrompting: React.FC = () => {
     testResponses,
     outputWordCount,
     testResponsesWordCounts,
+    prompts,
+    promptsLoading,
+    handleSelectPrompt,
+    handleUpdatePrompt,
+    isAddingPrompt,
   } = useAIPromptingLogic();
 
-  const autoResizeTextarea = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const autoResizeTextarea = (e) => {
     e.target.style.height = 'auto';
     e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  // Create options for the recent prompts dropdown
+  const promptOptions = prompts?.map((p) => ({
+    value: p.prompt,
+    label: p.prompt.length > 60 ? `${p.prompt.substring(0, 60)}...` : p.prompt,
+  })) || [];
+
+  const handlePromptSelectChange = (selectedOption) => {
+    if (selectedOption) {
+      handleSelectPrompt(selectedOption.value);
+    }
+  };
+
+  const handleSystemPromptEdit = (e) => {
+    const newValue = e.target.value;
+    // Handle both tone and summary replacements when editing
+    let originalValue = newValue;
+    
+    // Replace [tone: selectedTone] back to [tone:]
+    if (tone && tone.trim()) {
+      const tonePattern = `[tone: ${tone}]`;
+      originalValue = originalValue.replaceAll(tonePattern, '[tone:]');
+    }
+    
+    // Replace [summary: questionSummary] back to [summary:]
+    if (questionSummary && questionSummary.trim()) {
+      const summaryPattern = `[summary: ${questionSummary}]`;
+      originalValue = originalValue.replaceAll(summaryPattern, '[summary:]');
+    }
+    
+    handleSystemPromptChange({ target: { value: originalValue } });
   };
 
   if (modelsLoading) {
     return (
       <section className='ai-prompting-container'>
         <div className='ai-prompting-header'>
-          <h1>AI Prompting Tool</h1>
+          <h1>AI Prompt Engineering Tool</h1>
           <p>Craft and test AI prompts with ease.</p>
         </div>
         <div className='loading-indicator'>Loading models...</div>
@@ -75,10 +120,7 @@ const AIPrompting: React.FC = () => {
     <section className='ai-prompting-container'>
       <div className='ai-prompting-header'>
         <h1>AI Prompting Tool</h1>
-        <p>
-          Select an AI model, define a system prompt, and add user/assistant
-          exchanges to craft and test your prompts.
-        </p>
+        <p>Select an AI model, define a system prompt, and add user/assistant exchanges to craft and test your prompts.</p>
       </div>
 
       <div className='ai-controls'>
@@ -101,6 +143,7 @@ const AIPrompting: React.FC = () => {
         <div className='form-group'>
           <label htmlFor='temperature-slider'>Temperature: {temperature}</label>
           <input
+            className='temperature-slider'
             type='range'
             id='temperature-slider'
             min='0'
@@ -112,16 +155,104 @@ const AIPrompting: React.FC = () => {
         </div>
 
         <div className='form-group'>
-          <label htmlFor='system-prompt'>System Prompt:</label>
+          <label htmlFor='tone-select'>Tone:</label>
+          <Select
+            classNamePrefix='my-select'
+            inputId='tone-select'
+            options={toneOptions}
+            value={toneOptions.find((option) => option.value === tone)}
+            onChange={handleToneChange}
+            placeholder='Select a tone...'
+            isClearable={false}
+          />
+        </div>
+
+        <div className='form-group'>
+          <label htmlFor='project-id'>Project ID:</label>
+          <input
+            id='project-id'
+            type='text'
+            className='text-input'
+            value={projectId}
+            onChange={handleProjectIdChange}
+            placeholder='Enter the project ID'
+          />
+        </div>
+
+        <div className='form-group'>
+          <label htmlFor='question-number'>Question Number:</label>
+          <input
+            id='question-number'
+            type='text'
+            className='text-input'
+            value={questionNumber}
+            onChange={handleQuestionNumberChange}
+            placeholder='Enter the question number (e.g., 1a, 2b)'
+          />
+        </div>
+
+        <div className='form-group'>
+          <label htmlFor='recent-prompts-select'>Recent Prompts:</label>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <Select
+                classNamePrefix='my-select'
+                inputId='recent-prompts-select'
+                options={promptOptions}
+                value={null}
+                onChange={handlePromptSelectChange}
+                placeholder={
+                  !projectId || !questionNumber 
+                    ? 'Enter Project ID and Question Number first...' 
+                    : promptsLoading 
+                    ? 'Loading recent prompts...' 
+                    : 'Select a recent prompt...'
+                }
+                isClearable={true}
+                isDisabled={!projectId || !questionNumber || promptsLoading}
+                isSearchable={true}
+                noOptionsMessage={() => 'No recent prompts found'}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className='form-group'>
+          <label htmlFor='question-summary'>Question Summary:</label>
+          <textarea
+            id='question-summary'
+            className='grow-textarea-short'
+            value={questionSummary}
+            onChange={(e) => {
+              handleQuestionSummaryChange(e);
+              autoResizeTextarea(e);
+            }}
+            placeholder='Enter the question summary that will replace [summary:] in the system prompt...'
+            rows={1}
+          />
+        </div>
+
+        <div className='form-group'>
+          <div className='system-prompt-header'>
+            <label htmlFor='system-prompt'>System Prompt:</label>
+            <button
+              type='button'
+              onClick={handleUpdatePrompt}
+              className='action-button primary'
+              disabled={isAddingPrompt}
+            >
+              <FaSave /> {isAddingPrompt ? 'Updating...' : 'Update Prompt'}
+            </button>
+          </div>
           <textarea
             id='system-prompt'
             className='grow-textarea'
-            value={systemPrompt}
+            value={getProcessedSystemPrompt()}
             onChange={(e) => {
-              handleSystemPromptChange(e);
+              handleSystemPromptEdit(e);
               autoResizeTextarea(e);
             }}
-            placeholder='Enter system-level instructions for the AI...'
+            placeholder='Enter system-level instructions for the AI... Use [tone:] and [summary:] where you want the tone and question summary to appear.'
             rows={1}
           />
         </div>
@@ -186,28 +317,16 @@ const AIPrompting: React.FC = () => {
         </div>
 
         <div className='form-group'>
-          <label htmlFor='question-number'>Question Number:</label>
-          <input
-            id='question-number'
-            type='text'
-            className='text-input'
-            value={questionNumber}
-            onChange={handleQuestionNumberChange}
-            placeholder='Enter the question number (e.g., 1a, 2b)'
-          />
-        </div>
-
-        <div className='form-group'>
-          <label htmlFor='original-question'>Original Question:</label>
+          <label htmlFor='final-system-instruction'>Final System Instruction:</label>
           <textarea
-            id='original-question'
-            className='grow-textarea'
-            value={originalQuestion}
+            id='final-system-instruction'
+            className='grow-textarea-short'
+            value={finalSystemInstruction}
             onChange={(e) => {
-              handleOriginalQuestionChange(e);
+              handleFinalSystemInstructionChange(e);
               autoResizeTextarea(e);
             }}
-            placeholder='Enter the final user question here...'
+            placeholder='Enter the final system instruction here...'
             rows={1}
           />
         </div>
