@@ -49,10 +49,10 @@ const AIPrompting = () => {
     prompts,
     promptsLoading,
     handleSelectPrompt,
-    handleUpdatePrompt,           // For project-specific prompts
-    isAddingPrompt,               // Loading state for project prompts
-    handleUpdateDefaultPrompt,    // NEW: For default prompts
-    isUpdatingDefaultPrompt,      // NEW: Loading state for default prompts
+    handleUpdatePrompt,
+    isAddingPrompt,
+    handleUpdateDefaultPrompt,
+    isUpdatingDefaultPrompt,
     defaultPromptLoading,
   } = useAIPromptingLogic();
 
@@ -61,11 +61,12 @@ const AIPrompting = () => {
     e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
-  // Create options for the recent prompts dropdown
-  const promptOptions = prompts?.map((p) => ({
-    value: p.prompt,
-    label: p.prompt.length > 60 ? `${p.prompt.substring(0, 60)}...` : p.prompt,
-  })) || [];
+  const promptOptions =
+    prompts?.map((p) => ({
+      value: p.prompt,
+      label:
+        p.prompt.length > 60 ? `${p.prompt.substring(0, 60)}...` : p.prompt,
+    })) || [];
 
   const handlePromptSelectChange = (selectedOption) => {
     if (selectedOption) {
@@ -75,21 +76,18 @@ const AIPrompting = () => {
 
   const handleSystemPromptEdit = (e) => {
     const newValue = e.target.value;
-    // Handle both tone and summary replacements when editing
     let originalValue = newValue;
-    
-    // Replace [tone: selectedTone] back to [tone:]
+
     if (tone && tone.trim()) {
       const tonePattern = `[tone: ${tone}]`;
       originalValue = originalValue.replaceAll(tonePattern, '[tone:]');
     }
-    
-    // Replace [summary: questionSummary] back to [summary:]
+
     if (questionSummary && questionSummary.trim()) {
       const summaryPattern = `[summary: ${questionSummary}]`;
       originalValue = originalValue.replaceAll(summaryPattern, '[summary:]');
     }
-    
+
     handleSystemPromptChange({ target: { value: originalValue } });
   };
 
@@ -123,7 +121,10 @@ const AIPrompting = () => {
     <section className='ai-prompting-container'>
       <div className='ai-prompting-header'>
         <h1>AI Prompt Engineering Tool</h1>
-        <p>Select an AI model, define a system prompt, and add user/assistant exchanges to craft and test your prompts.</p>
+        <p>
+          Select an AI model, define a system prompt, and add user/assistant
+          exchanges to craft and test your prompts.
+        </p>
       </div>
 
       <div className='ai-controls'>
@@ -205,10 +206,10 @@ const AIPrompting = () => {
                 value={null}
                 onChange={handlePromptSelectChange}
                 placeholder={
-                  !projectId || !questionNumber 
-                    ? 'Enter Project ID and Question Number first...' 
-                    : promptsLoading 
-                    ? 'Loading recent prompts...' 
+                  !projectId || !questionNumber
+                    ? 'Enter Project ID and Question Number first...'
+                    : promptsLoading
+                    ? 'Loading recent prompts...'
                     : 'Select a recent prompt...'
                 }
                 isClearable={true}
@@ -236,7 +237,14 @@ const AIPrompting = () => {
         </div>
 
         <div className='form-group'>
-          <div className='system-prompt-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            className='system-prompt-header'
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <label htmlFor='system-prompt'>System Prompt:</label>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button
@@ -245,13 +253,21 @@ const AIPrompting = () => {
                 className='action-button secondary'
                 disabled={isUpdatingDefaultPrompt || !systemPrompt.trim()}
               >
-                <FaSave /> {isUpdatingDefaultPrompt ? 'Updating...' : 'Update Default Prompt'}
+                <FaSave />{' '}
+                {isUpdatingDefaultPrompt
+                  ? 'Updating...'
+                  : 'Update Default Prompt'}
               </button>
               <button
                 type='button'
                 onClick={handleUpdatePrompt}
                 className='action-button primary'
-                disabled={isAddingPrompt || !projectId || !questionNumber || !systemPrompt.trim()}
+                disabled={
+                  isAddingPrompt ||
+                  !projectId ||
+                  !questionNumber ||
+                  !systemPrompt.trim()
+                }
               >
                 <FaSave /> {isAddingPrompt ? 'Updating...' : 'Update Prompt'}
               </button>
@@ -330,7 +346,9 @@ const AIPrompting = () => {
         </div>
 
         <div className='form-group'>
-          <label htmlFor='final-system-instruction'>Final System Instruction:</label>
+          <label htmlFor='final-system-instruction'>
+            Final System Instruction:
+          </label>
           <textarea
             id='final-system-instruction'
             className='grow-textarea-short'

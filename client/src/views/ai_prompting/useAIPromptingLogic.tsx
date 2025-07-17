@@ -10,7 +10,6 @@ import {
   useUpdateDefaultPromptMutation,
 } from '../../features/aiPromptingApiSlice';
 
-// Helper function to calculate words
 const countWords = (str) => {
   if (!str.trim()) return 0;
   return str.trim().split(/\s+/).length;
@@ -63,26 +62,22 @@ export const useAIPromptingLogic = () => {
   const [output, setOutput] = useState('');
   const systemPromptRef = useRef(null);
 
-  // State for visibility and RESPONSE word counts
   const [showExchanges, setShowExchanges] = useState(false);
   const [showTestResponses, setShowTestResponses] = useState(false);
   const [outputWordCount, setOutputWordCount] = useState(0);
   const [testResponsesWordCounts, setTestResponsesWordCounts] = useState([]);
 
-  // Query for default prompt - gets the first/default result
   const { 
     data: defaultPrompt, 
     isLoading: defaultPromptLoading,
     error: defaultPromptError 
   } = useGetDefaultPromptQuery();
 
-  // Query for prompts - now uses projectId and questionNumber
   const { data: prompts, isLoading: promptsLoading } = useGetAiPromptsQuery(
     { projectId, questionNumber },
     { skip: !projectId || !questionNumber }
   );
 
-  // Tone options for the dropdown
   const toneOptions = useMemo(() => [
     { value: 'professional / friendly', label: '1. Professional / Friendly' },
     { value: 'neutral / objective', label: '2. Neutral / Objective' },
@@ -108,13 +103,10 @@ export const useAIPromptingLogic = () => {
     }
   }, [models, selectedModel]);
 
-  // Load default prompt when component mounts
   useEffect(() => {
     if (defaultPrompt && defaultPrompt.prompt) {
-      // Only set if systemPrompt is empty (on initial load)
       if (!systemPrompt || systemPrompt === '') {
         setSystemPrompt(defaultPrompt.prompt);
-        // Also set the tone from the default prompt if it exists
         if (defaultPrompt.tone) {
           setTone(defaultPrompt.tone);
         }
@@ -124,32 +116,27 @@ export const useAIPromptingLogic = () => {
 
   useEffect(() => {
     if (prompts && prompts.length > 0) {
-      const latestPrompt = prompts[0]; // Since they're ordered by dateCreated DESC
+      const latestPrompt = prompts[0]; 
       setSystemPrompt(latestPrompt.prompt);
       
-      // Auto-populate questionSummary if it exists in the data
       if (latestPrompt.questionSummary) {
         setQuestionSummary(latestPrompt.questionSummary);
       }
       
-      // Auto-populate tone if it exists in the data, otherwise keep default
       if (latestPrompt.tone) {
         setTone(latestPrompt.tone);
       }
     }
   }, [prompts]);
 
-  // Function to replace brackets in system prompt with question summary and tone for display
   const getProcessedSystemPrompt = useCallback(() => {
     if (!systemPrompt) return '';
     let processed = systemPrompt;
     
-    // Replace [summary:] with [summary: questionSummary]
     if (questionSummary && questionSummary.trim()) {
       processed = processed.replace(/\[summary:\]/gi, `[summary: ${questionSummary}]`);
     }
     
-    // Replace [tone:] with [tone: selectedTone]
     if (tone && tone.trim()) {
       processed = processed.replace(/\[tone:\]/gi, `[tone: ${tone}]`);
     }
@@ -157,19 +144,16 @@ export const useAIPromptingLogic = () => {
     return processed;
   }, [systemPrompt, questionSummary, tone]);
 
-  // Function to get final system prompt without brackets for JSON output
   const getFinalSystemPromptForJson = useCallback(() => {
     if (!systemPrompt) return '';
     let processed = systemPrompt;
     
-    // Replace [summary:] with just the questionSummary (no brackets)
     if (questionSummary && questionSummary.trim()) {
       processed = processed.replace(/\[summary:\]/gi, questionSummary);
     } else {
       processed = processed.replace(/\[summary:\]/gi, '');
     }
     
-    // Replace [tone:] with just the tone (no brackets)
     if (tone && tone.trim()) {
       processed = processed.replace(/\[tone:\]/gi, tone);
     } else {
@@ -264,7 +248,6 @@ export const useAIPromptingLogic = () => {
   const handleToneChange = useCallback((option) => {
     const newTone = option ? option.value : 'neutral / friendly';
     setTone(newTone);
-    // Don't clear system prompt when tone changes - keep current content
   }, []);
 
   const handleFinalSystemInstructionChange = useCallback((e) => {
@@ -388,10 +371,8 @@ export const useAIPromptingLogic = () => {
       const wordCounts = [];
       for (const testQuestion of testQuestions) {
         if (testQuestion.trim()) {
-          // Create test messages starting with the main messages
           const testMessages = [...messages];
           
-          // Add the test question as an assistant response to the final system instruction
           testMessages.push({
             role: 'assistant',
             content: testQuestion.trim().replace(/\\n/g, '\n'),
@@ -423,7 +404,6 @@ export const useAIPromptingLogic = () => {
       setOutput('');
       setOutputWordCount(0);
     } else {
-      // For single response, use the messages as-is
       const payloadObject = {
         model: selectedModel,
         temperature: temperature,
