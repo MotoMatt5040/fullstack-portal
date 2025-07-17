@@ -6,6 +6,8 @@ import {
   useGetAiResponseMutation,
   useGetAiPromptsQuery,
   useAddAiPromptMutation,
+  useGetDefaultPromptQuery,
+  useUpdateDefaultPromptMutation,
 } from '../../features/aiPromptingApiSlice';
 
 // Helper function to calculate words
@@ -41,6 +43,9 @@ export const useAIPromptingLogic = () => {
 
   const [addAiPrompt, { isLoading: isAddingPrompt }] = useAddAiPromptMutation();
 
+  const [updateDefaultPrompt, { isLoading: isUpdatingDefaultPrompt }] = 
+    useUpdateDefaultPromptMutation();
+
   const currentUser = useSelector(selectUser);
 
   const [rawFinalSystemInstruction, setRawFinalSystemInstruction] = useState('');
@@ -50,7 +55,7 @@ export const useAIPromptingLogic = () => {
   const [temperature, setTemperature] = useState(0.5);
   const [systemPrompt, setSystemPrompt] = useState('');
   const [questionSummary, setQuestionSummary] = useState('');
-  const [tone, setTone] = useState('neutral / friendly');
+  const [tone, setTone] = useState('professional / friendly');
   const [projectId, setProjectId] = useState('');
   const [questionNumber, setQuestionNumber] = useState('');
   const [promptExchanges, setPromptExchanges] = useState([]);
@@ -64,6 +69,13 @@ export const useAIPromptingLogic = () => {
   const [outputWordCount, setOutputWordCount] = useState(0);
   const [testResponsesWordCounts, setTestResponsesWordCounts] = useState([]);
 
+  // Query for default prompt - gets the first/default result
+  const { 
+    data: defaultPrompt, 
+    isLoading: defaultPromptLoading,
+    error: defaultPromptError 
+  } = useGetDefaultPromptQuery();
+
   // Query for prompts - now uses projectId and questionNumber
   const { data: prompts, isLoading: promptsLoading } = useGetAiPromptsQuery(
     { projectId, questionNumber },
@@ -72,7 +84,7 @@ export const useAIPromptingLogic = () => {
 
   // Tone options for the dropdown
   const toneOptions = useMemo(() => [
-    { value: 'neutral / friendly', label: '1. Neutral / Friendly' },
+    { value: 'professional / friendly', label: '1. Professional / Friendly' },
     { value: 'neutral / objective', label: '2. Neutral / Objective' },
     { value: 'professional / formal', label: '3. Professional / Formal' },
     { value: 'friendly / conversational', label: '4. Friendly / Conversational' },
@@ -95,6 +107,20 @@ export const useAIPromptingLogic = () => {
       setSelectedModel(models[67].id);
     }
   }, [models, selectedModel]);
+
+  // Load default prompt when component mounts
+  useEffect(() => {
+    if (defaultPrompt && defaultPrompt.prompt) {
+      // Only set if systemPrompt is empty (on initial load)
+      if (!systemPrompt || systemPrompt === '') {
+        setSystemPrompt(defaultPrompt.prompt);
+        // Also set the tone from the default prompt if it exists
+        if (defaultPrompt.tone) {
+          setTone(defaultPrompt.tone);
+        }
+      }
+    }
+  }, [defaultPrompt, systemPrompt]);
 
   useEffect(() => {
     if (prompts && prompts.length > 0) {
@@ -190,6 +216,31 @@ export const useAIPromptingLogic = () => {
     }
   }, [systemPrompt, addAiPrompt, currentUser, projectId, questionNumber, questionSummary, tone]);
 
+  const handleUpdateDefaultPrompt = useCallback(async () => {
+    if (!systemPrompt.trim()) {
+      console.error('Cannot update default prompt with an empty prompt.');
+      return;
+    }
+
+    if (!currentUser) {
+      console.error('No user information available.');
+      return;
+    }
+
+    try {
+      const payload = {
+        tone,
+        prompt: systemPrompt,
+        email: currentUser.email,
+      };
+
+      await updateDefaultPrompt(payload).unwrap();
+      console.log('Default prompt updated successfully!');
+    } catch (error) {
+      console.error('Failed to update default prompt:', error);
+    }
+  }, [systemPrompt, tone, updateDefaultPrompt, currentUser]);
+
   const handleModelChange = useCallback((option) => {
     setSelectedModel(option ? option.value : null);
   }, []);
@@ -211,7 +262,9 @@ export const useAIPromptingLogic = () => {
   }, []);
 
   const handleToneChange = useCallback((option) => {
-    setTone(option ? option.value : 'neutral / friendly');
+    const newTone = option ? option.value : 'neutral / friendly';
+    setTone(newTone);
+    // Don't clear system prompt when tone changes - keep current content
   }, []);
 
   const handleFinalSystemInstructionChange = useCallback((e) => {
@@ -470,5 +523,8 @@ export const useAIPromptingLogic = () => {
     handleSelectPrompt,
     handleUpdatePrompt,
     isAddingPrompt,
+    handleUpdateDefaultPrompt,
+    isUpdatingDefaultPrompt,
+    defaultPromptLoading,
   };
 };

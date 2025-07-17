@@ -6,7 +6,7 @@ var _tblBlueBookProjMaster = require("./tblBlueBookProjMaster");
 var _tblCC3EmployeeList = require("./tblCC3EmployeeList");
 var _tblCC3ProjectHeader = require("./tblCC3ProjectHeader");
 var _tblClients = require("./tblClients");
-var _tblDefaultPrompts = require("./tblDefaultPrompts"); // Added this line
+// var _tblDefaultPrompts = require("./tblDefaultPrompts"); 
 var _tblDispo = require("./tblDispo");
 var _tblEmployees = require("./tblEmployees");
 var _tblGPCPHDaily = require("./tblGPCPHDaily");
@@ -19,6 +19,8 @@ var _tblRoles = require("./tblRoles");
 var _tblUserProfiles = require("./tblUserProfiles");
 var _tblUserProjects = require("./tblUserProjects");
 var _tblUserRoles = require("./tblUserRoles");
+var _tblProjectPrompts = require("./tblProjectPrompts");
+var _tblDefaultPrompt = require("./tblDefaultPrompt");
 
 function initModels(sequelize) {
   var tblAspenProdII = _tblAspenProdII(sequelize, DataTypes);
@@ -28,7 +30,7 @@ function initModels(sequelize) {
   var tblCC3EmployeeList = _tblCC3EmployeeList(sequelize, DataTypes);
   var tblCC3ProjectHeader = _tblCC3ProjectHeader(sequelize, DataTypes);
   var tblClients = _tblClients(sequelize, DataTypes);
-  var tblDefaultPrompts = _tblDefaultPrompts(sequelize, DataTypes); // Added this line
+  // var tblDefaultPrompts = _tblDefaultPrompts(sequelize, DataTypes);
   var tblDispo = _tblDispo(sequelize, DataTypes);
   var tblEmployees = _tblEmployees(sequelize, DataTypes);
   var tblGPCPHDaily = _tblGPCPHDaily(sequelize, DataTypes);
@@ -41,6 +43,8 @@ function initModels(sequelize) {
   var tblUserProfiles = _tblUserProfiles(sequelize, DataTypes);
   var tblUserProjects = _tblUserProjects(sequelize, DataTypes);
   var tblUserRoles = _tblUserRoles(sequelize, DataTypes);
+  var tblProjectPrompts = _tblProjectPrompts(sequelize, DataTypes);
+  var tblDefaultPrompt = _tblDefaultPrompt(sequelize, DataTypes);
 
   // Associations
   tblAuthentication.belongsToMany(tblCC3ProjectHeader, { as: 'projectId_tblCC3ProjectHeaders', through: tblUserProjects, foreignKey: "UUID", otherKey: "projectId" });
@@ -57,8 +61,14 @@ function initModels(sequelize) {
   tblClients.hasMany(tblUserProfiles, { as: "tblUserProfiles", foreignKey: "ClientID"});
 
   // Added associations for tblDefaultPrompts
-  tblDefaultPrompts.belongsTo(tblAuthentication, { as: "createdBy_tblAuthentication", foreignKey: "createdBy"});
-  tblAuthentication.hasMany(tblDefaultPrompts, { as: "tblDefaultPrompts", foreignKey: "createdBy"});
+  // tblDefaultPrompts.belongsTo(tblAuthentication, { as: "createdBy_tblAuthentication", foreignKey: "createdBy"});
+  // tblAuthentication.hasMany(tblDefaultPrompts, { as: "tblDefaultPrompts", foreignKey: "createdBy"});
+
+  tblDefaultPrompt.belongsTo(tblAuthentication, { as: "createdBy_tblAuthentication", foreignKey: "createdBy"});
+  tblAuthentication.hasMany(tblDefaultPrompt, { as: "tblDefaultPrompt", foreignKey: "createdBy"});
+
+  tblProjectPrompts.belongsTo(tblAuthentication, { as: "createdBy_tblAuthentication", foreignKey: "createdBy"});
+  tblAuthentication.hasMany(tblProjectPrompts, { as: "tblProjectPrompts", foreignKey: "createdBy"});
 
 
   return {
@@ -69,7 +79,7 @@ function initModels(sequelize) {
     tblCC3EmployeeList,
     tblCC3ProjectHeader,
     tblClients,
-    tblDefaultPrompts, // Added this line
+    // tblDefaultPrompts,
     tblDispo,
     tblEmployees,
     tblGPCPHDaily,
@@ -82,6 +92,8 @@ function initModels(sequelize) {
     tblUserProfiles,
     tblUserProjects,
     tblUserRoles,
+    tblProjectPrompts,
+    tblDefaultPrompt
   };
 }
 module.exports = initModels;

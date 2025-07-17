@@ -42,4 +42,22 @@ router.route('/prompts')
     OpenAIPromptingController.handleAddAiPrompt
   );
 
+router.route('/default-prompt')
+  .get(
+    verifyRoles(
+      ROLES_LIST.Admin,
+      ROLES_LIST.Executive,
+      ROLES_LIST.Programmer
+    ),
+    OpenAIPromptingController.handleGetDefaultPrompt
+  )
+  .post(
+    verifyRoles(
+      ROLES_LIST.Admin,
+      ROLES_LIST.Executive,
+      ROLES_LIST.Programmer
+    ),
+    OpenAIPromptingController.handleUpdateDefaultPrompt
+  );
+
 module.exports = router;

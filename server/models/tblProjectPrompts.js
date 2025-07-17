@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tblDefaultPrompts', {
+  return sequelize.define('tblProjectPrompts', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -42,12 +42,12 @@ module.exports = function(sequelize, DataTypes) {
     }
   }, {
     sequelize,
-    tableName: 'tblDefaultPrompts',
+    tableName: 'tblProjectPrompts',
     schema: 'dbo',
     timestamps: false,
     indexes: [
       {
-        name: "PK__tblDefau__3213E83FB39D6889",
+        name: "PK__tblProje__3213E83F7C2A564B",
         unique: true,
         fields: [
           { name: "id" },

@@ -1,12 +1,46 @@
-const OpenAI = require('openai');const { tblDefaultPrompts, tblAuthentication } = require('../models');
+const OpenAI = require('openai');const { tblProjectPrompts, tblAuthentication, tblDefaultPrompt } = require('../models');
 
 const openAI = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const getDefaultPrompt = async () => {
+  try {
+    const prompt = await tblDefaultPrompt.findOne({
+      order: [['dateCreated', 'DESC']],
+    });
+    return prompt;
+  } catch (error) {
+    console.error('Error fetching default prompt:', error);
+    throw new Error('Failed to fetch default prompt');
+  }
+};
+
+const updateDefaultPrompt = async (tone, prompt, email) => {
+  try {
+    const user = await tblAuthentication.findOne({
+      where: { email: email },
+    });
+    if (!user) {
+      throw new Error(`Authentication error: User with email ${email} not found.`);
+    }
+    const [defaultPrompt, created] = await tblDefaultPrompt.upsert({
+      tone: tone,
+      prompt: prompt,
+      createdBy: user.Uuid,
+    }, {
+      returning: true,
+    });
+    return defaultPrompt;
+  } catch (error) {
+    console.error('Error updating default prompt:', error);
+    throw new Error('Failed to update default prompt');
+  }
+};
+
 const getAiPrompts = async (projectId, questionNumber) => {
   try {
-    const prompts = await tblDefaultPrompts.findAll({
+    const prompts = await tblProjectPrompts.findAll({
       where: {
         projectId: projectId,
         questionNumber: questionNumber
@@ -30,7 +64,7 @@ const addAiPrompt = async (projectId, questionNumber, questionSummary, tone, pro
       throw new Error(`Authentication error: User with email ${email} not found.`);
     }
 
-    const newPrompt = await tblDefaultPrompts.create({
+    const newPrompt = await tblProjectPrompts.create({
       projectId: projectId,
       questionNumber: questionNumber,
       questionSummary: questionSummary,
@@ -74,4 +108,6 @@ module.exports = {
   getGPTModels,
   getAiPrompts,
   addAiPrompt,
+  getDefaultPrompt,
+  updateDefaultPrompt
 };

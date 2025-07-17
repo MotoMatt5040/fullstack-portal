@@ -49,8 +49,11 @@ const AIPrompting = () => {
     prompts,
     promptsLoading,
     handleSelectPrompt,
-    handleUpdatePrompt,
-    isAddingPrompt,
+    handleUpdatePrompt,           // For project-specific prompts
+    isAddingPrompt,               // Loading state for project prompts
+    handleUpdateDefaultPrompt,    // NEW: For default prompts
+    isUpdatingDefaultPrompt,      // NEW: Loading state for default prompts
+    defaultPromptLoading,
   } = useAIPromptingLogic();
 
   const autoResizeTextarea = (e) => {
@@ -106,7 +109,7 @@ const AIPrompting = () => {
     return (
       <section className='ai-prompting-container'>
         <div className='ai-prompting-header'>
-          <h1>AI Prompting Tool</h1>
+          <h1>AI Prompt Engineering Tool</h1>
           <p>Craft and test AI prompts with ease.</p>
         </div>
         <div className='error-indicator'>
@@ -119,7 +122,7 @@ const AIPrompting = () => {
   return (
     <section className='ai-prompting-container'>
       <div className='ai-prompting-header'>
-        <h1>AI Prompting Tool</h1>
+        <h1>AI Prompt Engineering Tool</h1>
         <p>Select an AI model, define a system prompt, and add user/assistant exchanges to craft and test your prompts.</p>
       </div>
 
@@ -233,16 +236,26 @@ const AIPrompting = () => {
         </div>
 
         <div className='form-group'>
-          <div className='system-prompt-header'>
+          <div className='system-prompt-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <label htmlFor='system-prompt'>System Prompt:</label>
-            <button
-              type='button'
-              onClick={handleUpdatePrompt}
-              className='action-button primary'
-              disabled={isAddingPrompt}
-            >
-              <FaSave /> {isAddingPrompt ? 'Updating...' : 'Update Prompt'}
-            </button>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type='button'
+                onClick={handleUpdateDefaultPrompt}
+                className='action-button secondary'
+                disabled={isUpdatingDefaultPrompt || !systemPrompt.trim()}
+              >
+                <FaSave /> {isUpdatingDefaultPrompt ? 'Updating...' : 'Update Default Prompt'}
+              </button>
+              <button
+                type='button'
+                onClick={handleUpdatePrompt}
+                className='action-button primary'
+                disabled={isAddingPrompt || !projectId || !questionNumber || !systemPrompt.trim()}
+              >
+                <FaSave /> {isAddingPrompt ? 'Updating...' : 'Update Prompt'}
+              </button>
+            </div>
           </div>
           <textarea
             id='system-prompt'
