@@ -17,7 +17,7 @@ const Login = () => {
   const [pwd, setPwd] = useState('');
   const [errMsg, setErrMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [check, toggleCheck] = useToggle('persist', false);
+  // const [check, toggleCheck] = useToggle('persist', false);
   const [persist, setPersist] = useState(false);
 
   const [login, { isLoading }] = useLoginMutation();
@@ -31,8 +31,22 @@ const Login = () => {
   // const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState('');
 
+  // Helper function to get cookie value
+  const getCookieValue = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  };
+
   useEffect(() => {
     userRef.current?.focus();
+    
+    // Check if persist cookie exists and set the checkbox accordingly
+    const persistCookie = getCookieValue('persist');
+    if (persistCookie === 'true') {
+      setPersist(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -54,7 +68,7 @@ const Login = () => {
       if (!err?.status) {
         setErrMsg('No Server Response');
       } else if (err.status === 400) {
-        setErrMsg('Missing Username or Password');
+        setErrMsg('Missing Email or Password');
       } else if (err.status === 401) {
         setErrMsg('Unauthorized');
       } else {
@@ -126,7 +140,7 @@ const Login = () => {
           </p>
         )}
 
-        <label htmlFor='username'>Username:</label>
+        <label htmlFor='username'>Email:</label>
         <input
           type='text'
           id='username'

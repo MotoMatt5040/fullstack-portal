@@ -1,4 +1,23 @@
-require("dotenv").config();
+const environment = process.env.NODE_ENV || process.env.APP_ENV || 'production';
+
+let envPath;
+switch (environment) {
+  case 'testing':
+    envPath = '.env.testing';
+    break;
+  case 'development':
+    envPath = '.env.development';
+    break;
+  case 'production':
+  default:
+    envPath = '.env.production';
+    break;
+}
+
+console.log(`🚀 Loading environment: ${environment}`);
+console.log(`📁 Environment file: ${envPath}`);
+
+require("dotenv").config({ path: envPath });
 const express = require("express");
 const app = express();
 const { initializeRoles } = require('./config/rolesConfig'); 
