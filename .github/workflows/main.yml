@@ -24,21 +24,36 @@ jobs:
           script: |
             echo "🚀 Starting deployment at $(date)"
             
-            # Deploy path
-            DEPLOY_PATH="$HOME/fullstack-portal"
+            # Ensure we're in the user's home directory
+            cd $HOME
+            echo "📁 Current directory: $(pwd)"
+            echo "👤 Current user: $(whoami)"
             
-            # Remove old deployment
+            # Deploy path - explicitly in home directory
+            DEPLOY_PATH="$HOME/fullstack_portal"
+            echo "🎯 Deploy path: $DEPLOY_PATH"
+            
+            # Stop existing containers first (if they exist)
             if [ -d "$DEPLOY_PATH" ]; then
-              rm -rf $DEPLOY_PATH
+              echo "🛑 Stopping existing containers..."
+              cd $DEPLOY_PATH
+              docker compose --env-file .env.testing -f docker-compose.testing.yml down || true
+              docker compose down || true
             fi
             
+            # Remove old deployment
+            echo "🗑️ Removing old deployment..."
+            rm -rf $DEPLOY_PATH
+            
             # Clone fresh
+            echo "📥 Cloning fresh code..."
             mkdir -p $DEPLOY_PATH
             cd $DEPLOY_PATH
             git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
             
-            # Create .env file with TESTING values
-            cat > .env << 'EOF'
+            echo "📋 Creating environment file..."
+            # Create .env.testing file (not .env)
+            cat > .env.testing << 'EOF'
             # Environment
             NODE_ENV=testing
             VITE_ENV=testing
@@ -60,28 +75,37 @@ jobs:
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
             SMTP_PASS=${{ secrets.SMTP_PASS }}
-            FROM_NAME=${{ secrets.FROM_NAME }}
-            FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+            FROM_NAME=${{ vars.FROM_NAME }}
+            FROM_EMAIL=${{ vars.FROM_EMAIL }}
             
             EOF
             
-            # Stop existing containers
-            docker compose down || true
+            # Verify we're in the right directory
+            echo "📂 Files in deploy directory:"
+            ls -la
             
-            # Build and start with the main docker-compose.yml
-            docker compose up -d --build
+            # Build and start with the testing docker-compose file
+            echo "🔨 Building and starting containers..."
+            docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --build
             
             # Wait for services
+            echo "⏳ Waiting for services to start..."
             sleep 30
             
             # Check status
-            docker compose ps
+            echo "📊 Container status:"
+            docker compose --env-file .env.testing -f docker-compose.testing.yml ps
+            
+            # Show container logs for debugging
+            echo "📜 Container logs:"
+            docker compose --env-file .env.testing -f docker-compose.testing.yml logs --tail=10
             
             # Test endpoints
-            echo "Testing API..."
+            echo "🧪 Testing API..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" || echo "API not ready"
             
-            echo "Testing Frontend..."
+            echo "🧪 Testing Frontend..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}" || echo "Frontend not ready"
             
-            echo "✅ Deployment completed"
+            echo "✅ Deployment completed at $(date)"
+            echo "🌐 Site available at: https://${{ secrets.VITE_DOMAIN_NAME }}"

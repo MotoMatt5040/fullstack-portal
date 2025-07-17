@@ -1,5 +1,6 @@
 {
     email matt.w@promarkresearch.com
+    # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
     # storage /caddy_data
 }
 
@@ -78,6 +79,6 @@
     }
 }
 
-www.{$VITE_DOMAIN_NAME:invalid} {
-    redir https://portaldevelopment1.promarkresearch.com{uri} permanent
-}
+#www.{$VITE_DOMAIN_NAME:invalid} {
+#    redir https://portaldevelopment1.promarkresearch.com{uri} permanent
+#}
