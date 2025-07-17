@@ -10,7 +10,7 @@ switch (environment) {
     break;
   case 'production':
   default:
-    envPath = '.env.production';
+    envPath = '.env.dev';
     break;
 }
 
