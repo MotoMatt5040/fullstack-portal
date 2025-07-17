@@ -57,26 +57,57 @@ jobs:
             # Environment
             NODE_ENV=testing
             VITE_ENV=testing
-            COMPOSE_ENV=testing
-            
-            # Domain Configuration (TESTING URL)
+
+            # Domain Configuration
             VITE_DOMAIN_NAME=${{ secrets.VITE_DOMAIN_NAME }}
             FRONTEND_URL=${{ secrets.FRONTEND_URL }}
             VITE_DEV_API_URL=${{ secrets.VITE_DEV_API_URL }}
             VITE_DOCKER_API_URL=${{ secrets.VITE_DOCKER_API_URL }}
-            
-            # All your other secrets
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+
+            # JWT Secrets (Generate new ones for testing)
             ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
             REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
+
+            # MongoDB Database (Testing - could use same cluster with different database name)
             DATABASE_URI=${{ secrets.DATABASE_URI }}
-            
-            # Email
+
+            # GitHub Integration (Same as production)
+            FULLSTACK_PORTAL_ISSUES_TOKEN=${{ secrets.FULLSTACK_PORTAL_ISSUES_TOKEN }}
+            REPO_OWNER=${{ vars.REPO_OWNER }}
+            REPO_NAME=${{ vars.REPO_NAME }}
+
+            # Email Configuration
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
             SMTP_PASS=${{ secrets.SMTP_PASS }}
             FROM_NAME=${{ vars.FROM_NAME }}
             FROM_EMAIL=${{ vars.FROM_EMAIL }}
+
+            # Promark Database (Same as production for testing)
+            PROMARK_DB_USER=${{ secrets.PROMARK_DB_USER }}
+            PROMARK_DB_PASSWORD=${{ secrets.PROMARK_DB_PASSWORD }}
+            PROMARK_DB_SERVER=${{ secrets.PROMARK_DB_SERVER }}
+            PROMARK_DB_NAME=${{ secrets.PROMARK_DB_NAME }}
+
+            # Voxco Database (Same as production for testing)
+            VOXCO_DB_USER=${{ secrets.VOXCO_DB_USER }}
+            VOXCO_DB_PASSWORD=${{ secrets.VOXCO_DB_PASSWORD }}
+            VOXCO_DB_SERVER=${{ secrets.VOXCO_DB_SERVER }}
+            VOXCO_DB_NAME=${{ secrets.VOXCO_DB_NAME }}
+
+            # Voxco API (Same as production for testing)
+            VOXCO_API_USERNAME=${{ secrets.VOXCO_API_USERNAME }}
+            VOXCO_API_PASSWORD=${{ secrets.VOXCO_API_PASSWORD }}
+            VOXCO_API_CONTEXT=${{ secrets.VOXCO_API_CONTEXT }}
+            VOXCO_WEB_API_ACCESS_KEY=${{ secrets.VOXCO_WEB_API_ACCESS_KEY }}
+
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+
+            # Docker Registry
+            DOCKER_REGISTRY=${{ secrets.DOCKER_REGISTRY }}
+            IMAGE_TAG=${{ vars.IMAGE_TAG }}
             
             EOF
             
