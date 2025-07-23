@@ -1,32 +1,28 @@
-/* Clean, Modern Welcome Screen with Real Cards and Stronger Elevation */
-
 .welcome-container {
-  min-height: calc(100vh - 6rem); /* Adjust based on your NavBar height */
+  min-height: calc(100vh - 6rem);
   padding: 2rem;
   background: var(--background-color);
   display: flex;
   flex-direction: column;
-  gap: 3rem; /* Add gap between sections for better spacing */
+  gap: 3rem;
 }
 
-/* Hero Card - More Prominent Elevation */
 .welcome-hero {
   text-align: center;
   padding: 3rem 2rem;
   background: var(--background-color-elevated);
-  border-radius: 1.5rem; /* Slightly larger radius */
-  box-shadow: var(--box-shadow-elevated); /* Use new elevated shadow variable */
+  border-radius: 1.5rem;
+  box-shadow: var(--box-shadow-elevated);
   border: 1px solid var(--border-color-soft);
   transition: all 0.3s ease;
-  position: relative; /* For potential future animations */
+  position: relative;
 }
 
 .welcome-hero:hover {
-  transform: translateY(-5px); /* More noticeable lift */
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.12); /* Stronger hover shadow */
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.12);
 }
 
-/* Theme-specific adjustments for dark and superdark themes */
 [data-theme="dark"] .welcome-hero,
 [data-theme="superdark"] .welcome-hero {
   border: 1px solid var(--border-color-half-soft);
@@ -35,7 +31,7 @@
 
 [data-theme="dark"] .welcome-hero:hover,
 [data-theme="superdark"] .welcome-hero:hover {
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 10px 10px rgba(0, 0, 0, 0.5); /* Darker hover shadow */
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 10px 10px rgba(0, 0, 0, 0.5);
 }
 
 .welcome-hero h1 {
@@ -52,8 +48,8 @@
   font-size: 1.2rem;
   color: var(--text-color);
   opacity: 0.85;
-  max-width: 700px; /* Slightly wider text for better flow */
-  margin: 0 auto 2rem auto; /* Add bottom margin to separate from button */
+  max-width: 700px;
+  margin: 0 auto 2rem auto;
   line-height: 1.6;
 }
 
@@ -81,25 +77,25 @@
 /* Feature Cards Grid */
 .welcome-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Adjusted min-width for better fit */
-  gap: 2rem; /* Consistent gap */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem; 
 }
 
 /* Feature Cards with REAL Depth - Stronger Elevation */
 .welcome-card {
   background: var(--background-color-elevated);
   border-radius: 1.25rem;
-  padding: 2.5rem; /* Increased padding */
-  box-shadow: var(--box-shadow-elevated); /* Use new elevated shadow variable */
+  padding: 2.5rem;
+  box-shadow: var(--box-shadow-elevated); 
   border: 1px solid var(--border-color-soft);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   transform: translateY(0);
-  display: flex; /* Use flex for internal layout */
+  display: flex; 
   flex-direction: column;
+  overflow: hidden;
 }
 
-/* Theme-specific adjustments for dark and superdark themes */
 [data-theme="dark"] .welcome-card,
 [data-theme="superdark"] .welcome-card {
   border: 1px solid var(--border-color-half-soft);
@@ -112,21 +108,21 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 5px; /* Thicker accent line */
+  height: 5px; 
   background: linear-gradient(90deg, var(--accent-color), var(--welcome-button-color));
   transform: scaleX(0);
-  transition: transform 0.3s ease-out; /* Smoother transition */
+  transition: transform 0.3s ease-out;
   border-radius: 1.25rem 1.25rem 0 0;
 }
 
 .welcome-card:hover {
-  transform: translateY(-10px); /* More noticeable lift */
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15), 0 25px 50px rgba(0, 0, 0, 0.1); /* Stronger hover shadow */
+  transform: translateY(-10px); 
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15), 0 25px 50px rgba(0, 0, 0, 0.1); 
 }
 
 [data-theme="dark"] .welcome-card:hover,
 [data-theme="superdark"] .welcome-card:hover {
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 25px 50px rgba(0, 0, 0, 0.5); /* Darker hover shadow */
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
 .welcome-card:hover::before {
@@ -134,27 +130,27 @@
 }
 
 .welcome-card-icon {
-  width: 4rem; /* Larger icon */
-  height: 4rem; /* Larger icon */
+  width: 4rem; 
+  height: 4rem; 
   margin-bottom: 1.5rem;
   background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
-  border-radius: 1.25rem; /* Consistent border-radius */
+  border-radius: 1.25rem; 
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem; /* Larger icon font */
+  font-size: 1.8rem;
   color: white;
   box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
   transition: transform 0.3s ease;
 }
 
 .welcome-card:hover .welcome-card-icon {
-  transform: scale(1.08); /* More pronounced icon scale */
+  transform: scale(1.08);
   box-shadow: 0 8px 20px rgba(74, 144, 226, 0.5);
 }
 
 .welcome-card h3 {
-  font-size: 1.5rem; /* Larger heading */
+  font-size: 1.5rem; 
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: 1rem;
@@ -162,9 +158,9 @@
 
 .welcome-card p {
   color: var(--text-color);
-  opacity: 0.75; /* Slightly less opaque for better contrast */
-  line-height: 1.7; /* Increased line height for readability */
-  flex-grow: 1; /* Allows paragraphs to take available space for uniform card height */
+  opacity: 0.75; 
+  line-height: 1.7;
+  flex-grow: 1; 
   margin-bottom: 1.5rem;
 }
 
@@ -189,22 +185,20 @@
   box-shadow: 0 8px 25px rgba(74, 144, 226, 0.45);
 }
 
-/* Quick Actions Card */
 .welcome-quick-actions {
   background: var(--background-color-elevated);
   border-radius: 1.25rem;
-  padding: 2.5rem; /* Increased padding */
-  box-shadow: var(--box-shadow-elevated); /* Use new elevated shadow variable */
+  padding: 2.5rem; 
+  box-shadow: var(--box-shadow-elevated); 
   border: 1px solid var(--border-color-soft);
   transition: all 0.3s ease;
 }
 
 .welcome-quick-actions:hover {
-  transform: translateY(-5px); /* More noticeable lift */
+  transform: translateY(-5px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12), 0 10px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Theme-specific adjustments for dark and superdark themes */
 [data-theme="dark"] .welcome-quick-actions,
 [data-theme="superdark"] .welcome-quick-actions {
   border: 1px solid var(--border-color-half-soft);
@@ -217,38 +211,37 @@
 }
 
 .welcome-quick-actions h2 {
-  font-size: 1.7rem; /* Larger heading */
+  font-size: 1.7rem;
   font-weight: 600;
   color: var(--text-color);
-  margin-bottom: 2rem; /* More space below heading */
+  margin-bottom: 2rem;
   text-align: center;
 }
 
 .quick-actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted min-width */
-  gap: 1.5rem; /* Consistent gap */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
 }
 
 .quick-action-btn {
   display: flex;
-  flex-direction: column; /* Stack icon and text */
+  flex-direction: column; 
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 1.5rem 1.25rem; /* More padding */
+  padding: 1.5rem 1.25rem;
   background: var(--background-color-muted);
   border: 1px solid var(--border-color-soft);
-  border-radius: 1rem; /* Slightly larger radius */
+  border-radius: 1rem; 
   text-decoration: none;
   color: var(--text-color);
   font-weight: 500;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* More noticeable shadow */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
   text-align: center;
 }
 
-/* Theme-specific adjustments for dark and superdark themes */
 [data-theme="dark"] .quick-action-btn,
 [data-theme="superdark"] .quick-action-btn {
   border: 1px solid var(--border-color-half-soft);
@@ -258,40 +251,39 @@
 .quick-action-btn:hover {
   background: var(--background-color-hover);
   border-color: var(--accent-color);
-  transform: translateY(-3px); /* More noticeable lift */
+  transform: translateY(-3px);
   color: var(--text-color);
-  box-shadow: 0 6px 16px rgba(74, 144, 226, 0.25); /* Stronger hover shadow */
+  box-shadow: 0 6px 16px rgba(74, 144, 226, 0.25);
 }
 
 .quick-action-icon {
-  width: 2.5rem; /* Larger icon */
-  height: 2.5rem; /* Larger icon */
+  width: 2.5rem; 
+  height: 2.5rem; 
   background: linear-gradient(135deg, var(--accent-color), var(--welcome-button-color));
-  border-radius: 0.75rem; /* Consistent border-radius */
+  border-radius: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem; /* Larger icon font */
+  font-size: 1.2rem;
   color: white;
   box-shadow: 0 3px 9px rgba(74, 144, 226, 0.4);
 }
 
-/* Development Notice Card */
 .development-notice {
   background: var(--background-color-elevated);
   color: #f39c12;
-  padding: 1.5rem 2rem; /* More padding */
+  padding: 1.5rem 2rem;
   border-radius: 1rem;
   text-align: center;
   font-weight: 500;
-  box-shadow: var(--box-shadow-elevated); /* Use new elevated shadow variable */
+  box-shadow: var(--box-shadow-elevated);
   border: 2px solid #f39c12;
   border-left: 6px solid #f39c12;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem; /* Space for icon if you add one */
+  gap: 0.75rem;
 }
 
 .development-notice:hover {
@@ -299,29 +291,26 @@
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(243, 156, 18, 0.15);
 }
 
-/* Theme-specific adjustments for dark and superdark themes */
 [data-theme="dark"] .development-notice,
 [data-theme="superdark"] .development-notice {
   box-shadow: var(--box-shadow-elevated);
 }
 
-/* Footer Card */
 .welcome-footer {
   background: var(--background-color-elevated);
   border-radius: 1.25rem;
-  padding: 2.5rem; /* Increased padding */
-  box-shadow: var(--box-shadow-elevated); /* Use new elevated shadow variable */
+  padding: 2.5rem;
+  box-shadow: var(--box-shadow-elevated);
   border: 1px solid var(--border-color-soft);
   transition: all 0.3s ease;
   text-align: center;
 }
 
 .welcome-footer:hover {
-  transform: translateY(-5px); /* More noticeable lift */
+  transform: translateY(-5px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12), 0 10px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Theme-specific adjustments for dark and superdark themes */
 [data-theme="dark"] .welcome-footer,
 [data-theme="superdark"] .welcome-footer {
   border: 1px solid var(--border-color-half-soft);
@@ -334,7 +323,7 @@
 }
 
 .welcome-footer h3 {
-  font-size: 1.5rem; /* Larger heading */
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: 1rem;
@@ -351,7 +340,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 1rem 2.5rem; /* More padding */
+  padding: 1rem 2.5rem;
   background: transparent;
   border: 2px solid var(--accent-color);
   color: var(--accent-color);
@@ -365,11 +354,10 @@
 .support-link:hover {
   background: var(--accent-color);
   color: white;
-  transform: translateY(-3px); /* More noticeable lift */
+  transform: translateY(-3px);
   box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
   .welcome-container {
     padding: 1rem;

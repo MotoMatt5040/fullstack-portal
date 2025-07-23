@@ -2,10 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-// --- Redux Imports ---
-// 1. Import the RTK Query hook to trigger the fetch
 import { useGetRolesQuery } from './features/config/configApiSlice';
-// 2. Import the selectors to read data from the Redux state
 import { selectRoles, selectIsRolesLoading } from './features/roles/rolesSlice';
 
 // Compnents
@@ -71,9 +68,6 @@ function App() {
         <Route path='unauthorized' element={<Unauthorized />} />
         <Route path='reset-password' element={<ResetPassword />} />
 
-        {/* protected routes */}
-        {/* This JSX does not need to change, as it uses the 'roles' variable */}
-        {/* which is now populated from the Redux store. */}
         <Route
           element={
             <RequireAuth

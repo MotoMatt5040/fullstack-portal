@@ -25,7 +25,6 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
       return;
     }
 
-    // Convert warningDuration from milliseconds to seconds
     const warningSeconds = Math.floor(warningDuration / 1000);
     let timeLeft = warningSeconds;
     setCountdown(timeLeft);

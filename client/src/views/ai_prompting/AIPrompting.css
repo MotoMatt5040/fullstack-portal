@@ -12,7 +12,7 @@
 }
 
 .ai-prompting-header h1 {
-  font-size: 2.75rem; /* was 3rem */
+  font-size: 2.75rem;
   font-weight: bold;
   color: var(--text-color);
   margin-bottom: 0.5rem;
@@ -20,7 +20,7 @@
 
 .ai-prompting-header p {
   color: var(--label-text-color);
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
   max-width: 700px;
   margin: 0 auto;
 }
@@ -47,7 +47,7 @@
   padding: 0.75rem;
   border: 1px solid var(--border-color-soft);
   border-radius: 0.5rem;
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
   background-color: var(--input-background);
   color: var(--text-color);
   box-sizing: border-box;
@@ -65,7 +65,7 @@
 .ai-controls label {
   font-weight: 600;
   color: var(--label-text-color);
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
 }
 
 .ai-controls .my-select {
@@ -80,7 +80,7 @@
   padding: 0.75rem;
   border: 1px solid var(--border-color-soft);
   border-radius: 0.5rem;
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
   background-color: var(--input-background);
   color: var(--text-color);
   box-sizing: border-box;
@@ -115,7 +115,7 @@
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s ease;
@@ -205,11 +205,11 @@
   margin: 0;
   font-weight: 600;
   color: var(--label-text-color);
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
 }
 
 .word-counter {
-  font-size: 0.95rem; /* was 1.2rem */
+  font-size: 0.95rem;
   color: var(--label-text-color);
 }
 
@@ -220,7 +220,7 @@
   border-radius: 5px;
   color: var(--text-color);
   font-family: monospace;
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
   word-break: break-all;
 }
 
@@ -229,7 +229,7 @@
   text-align: center;
   padding: 2rem;
   color: var(--text-color);
-  font-size: 1.25rem; /* was 1.5rem */
+  font-size: 1.25rem;
 }
 
 .error-indicator {
