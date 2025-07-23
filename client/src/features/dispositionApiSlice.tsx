@@ -26,8 +26,6 @@ export const dispositionApiSlice = apiSlice.injectEndpoints({
         { type: 'Disposition', id: `phone-${projectId}` },
       ],
     }),
-    
-    // Optional: Combined endpoint if your backend supports it
     getBothDispositions: builder.query({
       query: ({ projectId, isInternalUser }) => ({
         url: `/disposition-report/combined/${projectId}`,

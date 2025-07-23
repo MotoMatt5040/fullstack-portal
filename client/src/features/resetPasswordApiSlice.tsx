@@ -11,14 +11,14 @@ export const resetPasswordApiSlice = apiSlice.injectEndpoints({
     }),
     resetPassword: builder.mutation({
       query: ({ token, email, newPassword }) => ({
-        url: '/reset/reset-password', // Updated to use /reset
+        url: '/reset/reset-password',
         method: 'POST',
         body: { token, email, newPassword },
       }),
     }),
     verifyResetToken: builder.query({
       query: ({ token, email }) => ({
-        url: `/reset/verify-reset-token?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`, // Updated to use /reset
+        url: `/reset/verify-reset-token?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`,
         method: 'GET',
       }),
     }),
