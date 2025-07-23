@@ -325,7 +325,6 @@ export const useAIPromptingLogic = () => {
   const generateOutput = useCallback(async () => {
     const messages = [];
 
-    // Use the final system prompt (without brackets) for JSON and API
     const finalSystemPromptForJson = getFinalSystemPromptForJson();
     if (finalSystemPromptForJson.trim()) {
       messages.push({
@@ -351,7 +350,6 @@ export const useAIPromptingLogic = () => {
 
     const finalSystemInstructionContent = `Generate a follow-up question based on the original survey question and the respondent's answer below.\n\nOriginal Question: [${questionNumber}.textLabel]\nResponse: [${questionNumber}.openEnd]\n\nFollow-up Question:`;
 
-    // Add the final system instruction to messages
     if (rawFinalSystemInstruction.trim()) {
       messages.push({
         role: 'user',
@@ -359,11 +357,14 @@ export const useAIPromptingLogic = () => {
       });
     }
 
+    // console.log(messages)
+
     const requestObject = {
       model: selectedModel,
       temperature: temperature,
       messages: messages,
     };
+    // console.log('Request Object:', requestObject);
     setRequestJson(JSON.stringify(requestObject, null, 2));
 
     if (testQuestions.some((q) => q.trim())) {
@@ -441,7 +442,7 @@ export const useAIPromptingLogic = () => {
     setSelectedModel(models && models.length > 0 ? models[0].id : null);
     setSystemPrompt('');
     setQuestionSummary('');
-    setTone('neutral / friendly');
+    setTone('professional / friendly');
     setProjectId('');
     setRawFinalSystemInstruction('');
     setPromptExchanges([]);
