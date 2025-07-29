@@ -32,6 +32,7 @@ import Toplines from './views/toplines/Toplines';
 import ProjectPublishing from './views/project_publishing/ProjectPublishing';
 import DispositionReport from './views/disposition_report/DispositionReport';
 import AIPrompting from './views/ai_prompting/AIPrompting';
+import ContactSupport from './views/support/ContactSupport';
 
 function App() {
   useGetRolesQuery();
@@ -87,6 +88,7 @@ function App() {
           <Route path='reports' element={<Reports />} />
           <Route path='topline-report' element={<Toplines />} />
           <Route path='disposition-report' element={<DispositionReport />} />
+          <Route path="contact-support" element={<ContactSupport />} />
         </Route>
 
         <Route
