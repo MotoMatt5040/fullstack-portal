@@ -1,10 +1,11 @@
+// server/controllers/refreshTokenController.js
 const { getUserByRefreshToken } = require('../services/PromarkUsers');
 const { getUserRoles } = require('../services/UserRoles');
 const jwt = require('jsonwebtoken');
 
 const handleRefreshToken = async (req, res) => {
     const cookies = req.cookies;
-    if (cookies?.persist !== 'true') return res.sendStatus(200); 
+    
     if (!cookies?.jwt) return res.sendStatus(401);
     const refreshToken = cookies.jwt;
 
@@ -18,6 +19,7 @@ const handleRefreshToken = async (req, res) => {
             process.env.REFRESH_TOKEN_SECRET,
             (err, decoded) => {
                 if (err || foundUser.Email !== decoded.username) return res.sendStatus(403);
+                
                 const accessToken = jwt.sign(
                     { 
                         "UserInfo": {
@@ -26,9 +28,9 @@ const handleRefreshToken = async (req, res) => {
                         }
                     },
                     process.env.ACCESS_TOKEN_SECRET,
-                    { expiresIn: '15m' } // refresh access token timer
+                    { expiresIn: '15m' } 
                 );
-                res.json({ accessToken }); // roles are being sent in the access token above
+                res.json({ accessToken });
             }
         );
     } catch (err) {

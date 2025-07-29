@@ -406,19 +406,48 @@ const calculateData = (data) => {
 };
 
 const filterForExternalUsers = (data) => {
-
+  // Remove tracker key
   const trackerKey = Object.keys(data).find((key) => key === 'STYPE>0');
-
   if (trackerKey) {
     delete data[trackerKey];
   }
 
+  // Get quota keys (excluding totalRow)
   const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
 
-  for (const quotaKey of quotaKeys) {
-    const hasPhoneCom = data[quotaKey].Phone?.com;
+  // Check if Phone.com exists to determine filtering strategy
+  const hasPhoneCom = data?.Phone?.com;
 
-    if (!hasPhoneCom) {
+  for (const quotaKey of quotaKeys) {
+    if (hasPhoneCom) {
+      // If Phone.com exists, use original logic: remove entries without Phone.com
+      const rowHasPhoneCom = data[quotaKey].Phone?.com;
+      if (!rowHasPhoneCom) {
+        delete data[quotaKey];
+        continue; // Skip to next iteration since this quotaKey is deleted
+      }
+    }
+
+    // For both cases (with or without Phone.com), filter out rows where any label contains "!"
+    const rowData = data[quotaKey];
+    let shouldRemoveRow = false;
+
+    // Check all groups and subgroups for labels containing "!"
+    Object.values(rowData).forEach(groupData => {
+      if (groupData && typeof groupData === 'object') {
+        Object.values(groupData).forEach(subGroupData => {
+          if (subGroupData && typeof subGroupData === 'object' && 'Label' in subGroupData) {
+            const label = subGroupData.Label?.toString() || '';
+            if (label.includes('!')) {
+              shouldRemoveRow = true;
+            }
+          }
+        });
+      }
+    });
+
+    // Remove the entire row if any label contains "!"
+    if (shouldRemoveRow) {
       delete data[quotaKey];
     }
   }
@@ -498,7 +527,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
 
     calculateData(data);
 
-    if (!isInternalUser && data?.Phone?.com) {
+    if (!isInternalUser) {
       filterForExternalUsers(data);
     }
 
