@@ -313,8 +313,8 @@
   background-color: var(--background-color-muted);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: var(--box-shadow-elevated);
-  border: 1px solid var(--border-color-soft);
+  /* box-shadow: var(--box-shadow-elevated); */
+  /* border: 1px solid var(--border-color-soft); */
   transition: transform 0.3s ease;
   width: 100%;
   max-width: 950px; /* Accommodate 900px chart + padding */
@@ -657,7 +657,7 @@
 
 [data-theme="dark"] .disposition-report .chart-item,
 [data-theme="superdark"] .disposition-report .chart-item {
-  border: 1px solid var(--border-color-half-soft);
+  /* border: 1px solid var(--border-color-half-soft); */
   background-color: var(--background-color-elevated);
 }
 

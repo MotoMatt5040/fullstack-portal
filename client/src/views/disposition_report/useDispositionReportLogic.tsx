@@ -154,49 +154,42 @@ const useDispositionReportLogic = () => {
     []
   );
 
-  const transformWebDropoutData = useCallback(
-    (data: any[]): ChartDataItem[] => {
-      if (!data || !Array.isArray(data)) return [];
+const transformWebDropoutData = useCallback(
+  (data: any[]): ChartDataItem[] => {
+    if (!data || !Array.isArray(data)) return [];
 
-      const filtered = data.filter(
-        (item) => item.CountOfDropouts && item.CountOfDropouts > 0
-      );
-      const total = filtered.reduce(
-        (sum, item) => sum + item.CountOfDropouts,
-        0
-      );
+    const filtered = data.filter(
+      (item) => item.CountOfDropouts && item.CountOfDropouts > 0
+    );
 
-      // Only show items that represent at least 2% of total dropouts
-      const significantItems = filtered.filter(
-        (item) => item.CountOfDropouts / total >= 0.005
-      );
+    const mapped = filtered.map((item) => ({
+      field: item.HisLastDisplayedQuestionName || 'Unknown Question',
+      value: item.CountOfDropouts,
+    }));
 
-      // Group small items into "Other"
-      const smallItems = filtered.filter(
-        (item) => item.CountOfDropouts / total < 0.005
-      );
-      const otherCount = smallItems.reduce(
-        (sum, item) => sum + item.CountOfDropouts,
-        0
-      );
+    // Sort by value descending
+    const sorted = mapped.sort((a, b) => b.value - a.value);
 
-      const mapped = significantItems.map((item) => ({
-        field: item.HisLastDisplayedQuestionName || 'Unknown Question',
-        value: item.CountOfDropouts,
-      }));
+    // If we have more than 10 items, take top 9 and group the rest as "Others"
+    if (sorted.length > 10) {
+      const top9 = sorted.slice(0, 9);
+      const remaining = sorted.slice(9);
+      const othersCount = remaining.reduce((sum, item) => sum + item.value, 0);
+      
+      return [
+        ...top9,
+        {
+          field: 'Others',
+          value: othersCount,
+        }
+      ];
+    }
 
-      // Add "Other" category if there are small items
-      if (otherCount > 0) {
-        mapped.push({
-          field: 'Other',
-          value: otherCount,
-        });
-      }
-
-      return mapped.sort((a, b) => b.value - a.value);
-    },
-    []
-  );
+    // If 10 or fewer items, return all of them
+    return sorted;
+  },
+  []
+);
 
   // Combine web and phone data for comparison
   const combineChartData = useCallback(

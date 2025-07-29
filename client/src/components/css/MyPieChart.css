@@ -1,90 +1,87 @@
 .svg-pie-chart-container {
-  max-height: 100%;
-  max-width: 100%;
-  height: auto;
-  font-family: sans-serif;
-  /* Font size is now dynamically set via JavaScript based on chart size */
-}
-
-/* Remove fixed font sizes - they're now calculated dynamically */
-tspan {
-  /* Font size will be set inline based on chart dimensions */
+ max-height: 100%;
+ max-width: 100%;
+ height: auto;
+ font-family: sans-serif;
 }
 
 .spinner {
-  border: 0.25rem solid rgba(0, 0, 0, 0.1);
-  border-top-color: #4f46e5; /* Indigo-600 or whatever color you want */
-  border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-  animation: spin 1s linear infinite;
-  margin: auto;
+ border: 0.25rem solid rgba(0, 0, 0, 0.1);
+ border-top-color: #4f46e5;
+ border-radius: 50%;
+ width: 2rem;
+ height: 2rem;
+ animation: spin 1s linear infinite;
+ margin: auto;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+ to {
+   transform: rotate(360deg);
+ }
 }
 
-/* Extra small (phones) */
 @media (min-width: 479px) {
 
 }
 
-/* Small (phones) */
 @media (min-width: 480px) {
 
 }
 
-/* Medium (tablets) */
 @media (min-width: 768px) {
-  /* Font scaling is now handled by JavaScript, not CSS */
+
 }
 
-/* Large (small desktops & laptops) */
 @media (min-width: 1024px) {
 
 }
 
-/* X-Large (standard desktops) */
 @media (min-width: 1280px) {
 
 }
 
-/* Large Laptops */
 @media (min-width: 1440px) {
 
 }
 
-/* Standard Desktops (HD) */
 @media (min-width: 1600px) {
 
 }
 
-/* Ultra-wide HD (between HD and 2K) */
 @media (min-width: 1920px) {
 
 }
 
-/* 2K+ (2560px and above) */
 @media (min-width: 2560px) {
 
 }
 
-/* Ensure text remains readable at all sizes */
-.svg-pie-chart-container text {
-  pointer-events: none; /* Prevent text from interfering with interactions */
-  user-select: none;
-  fill: var(--text-color) !important;
+.svg-pie-chart-container .label-text-external {
+ fill: var(--text-color) !important;
+ pointer-events: none;
+ user-select: none;
 }
 
-/* Style for text that might be too small to read */
+.svg-pie-chart-container .label-text-internal,
+.svg-pie-chart-container .label-text-internal .label-title-internal,
+.svg-pie-chart-container .label-text-internal .label-value-internal, 
+.svg-pie-chart-container .label-text-internal .label-percentage-internal {
+ fill: black !important;
+ pointer-events: none;
+ user-select: none;
+}
+
+.svg-pie-chart-container .label-line {
+ stroke: var(--text-color) !important;
+}
+
+.svg-pie-chart-container text:not(.label-text-internal):not(.label-text-external) {
+ fill: var(--text-color);
+ pointer-events: none;
+ user-select: none;
+}
+
 .svg-pie-chart-container tspan[font-size] {
-  fill: var(--text-color) !important;
-  transition: font-size 0.3s ease;
-}
-
-.svg-pie-chart-container polyline {
-  stroke: var(--text-color) !important; /* Use theme color for label lines */
+ transition: font-size 0.3s ease;
 }

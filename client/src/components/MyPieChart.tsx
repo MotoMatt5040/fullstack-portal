@@ -14,7 +14,7 @@ interface MyPieChartProps {
   width?: number;
   height?: number;
   radius?: number;
-  colorScheme?: (t: number) => string;
+  colorScheme?: (t: number) => string | 'random';
   colorMap?: { [key: string]: string };
   dataIsReady?: boolean;
   textOutside?: boolean;
@@ -65,6 +65,36 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       (item) => !skip.includes(item.field) && item[valueColumn] > 0
     );
 
+    // Generate random colors for the pie chart with consistent saturation and lightness
+    const generateRandomColors = (count: number, data: any[]) => {
+      const colors = [];
+      
+      // Find the index of the largest value
+      const largestIndex = data.reduce((maxIndex, current, index) => 
+        current[valueColumn] > data[maxIndex][valueColumn] ? index : maxIndex, 0
+      );
+      
+      // Fixed saturation and lightness for consistency - more vibrant, less pastel
+      const standardSaturation = 85; // Higher saturation for more vibrant colors
+      const standardLightness = 45;  // Lower lightness for richer, deeper colors
+      const largestSaturation = 70;  // Still vibrant but slightly muted for largest slice
+      const largestLightness = 60;   // Darker than before but still distinguishable
+      
+      for (let i = 0; i < count; i++) {
+        // Use golden angle for good color distribution
+        const hue = (i * 137.508) % 360;
+        
+        if (i === largestIndex) {
+          // Use consistent lighter shade for the largest slice
+          colors.push(`hsl(${hue}, ${largestSaturation}%, ${largestLightness}%)`);
+        } else {
+          // Use consistent vibrant colors for other slices
+          colors.push(`hsl(${hue}, ${standardSaturation}%, ${standardLightness}%)`);
+        }
+      }
+      return colors;
+    };
+
     // Color scale setup
     const getColorForSingleSlice = (field: string) => {
       if (colorMap[field]) return [colorMap[field]];
@@ -85,17 +115,28 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
           if (filteredData.length === 1) {
             return getColorForSingleSlice(field)[0];
           }
+          
+          // Check if random colors are requested
+          if (colorScheme === 'random') {
+            const randomColors = generateRandomColors(filteredData.length, filteredData);
+            const index = filteredData.findIndex(item => item[domainColumn] === field);
+            return randomColors[index];
+          }
+          
+          // Use the provided color scheme
           const index = filteredData.findIndex(item => item[domainColumn] === field);
           const t = (index / (filteredData.length - 1)) * 0.8 + 0.1;
           return colorScheme(t);
         })
       );
 
+    // D3 pie generator
     const pie = d3
       .pie<any>()
       .sort(null)
       .value((d) => d[valueColumn]);
 
+    // Arc generators
     const arc = d3.arc<any>()
       .innerRadius(0)
       .outerRadius(chartRadius);
@@ -104,8 +145,10 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .innerRadius(chartRadius * 1.4)
       .outerRadius(chartRadius * 1.4);
 
+    // Generate pie data
     const arcs = pie(filteredData);
 
+    // Setup SVG
     const svg = d3
       .select(svgRef.current)
       .attr('width', width)
@@ -115,16 +158,18 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .attr('class', 'svg-pie-chart-container')
       .style('font-size', `${baseFontSize}px`);
 
+    // Clear previous content
     svg.selectAll('*').remove();
 
+    // Create main group
     const g = svg.append('g');
 
     // Create hover arc for expanded effect
     const hoverArc = d3.arc<any>()
       .innerRadius(0)
-      .outerRadius(chartRadius * 1.08);
+      .outerRadius(chartRadius * 1.08); // 8% larger on hover
 
-    // Draw pie slices with hover effects
+    // Draw pie slices with hover effects - REMOVED WHITE BORDER
     g.selectAll('.arc')
       .data(arcs)
       .join('path')
@@ -132,13 +177,13 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .attr('d', arc)
       .attr('fill', (d) => color(d.data[domainColumn]))
       .attr('stroke', 'white')
-      .attr('stroke-width', 2)
+      .attr('stroke-width', 1)
       .style('cursor', 'pointer')
       .style('transition', 'all 0.3s ease')
       .on('mouseenter', function(event, d) {
         // Calculate offset to "pop out" the slice
         const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-        const offsetDistance = 8;
+        const offsetDistance = 8; // Distance to move the slice outward
         const offsetX = Math.cos(midAngle - Math.PI / 2) * offsetDistance;
         const offsetY = Math.sin(midAngle - Math.PI / 2) * offsetDistance;
         
@@ -165,7 +210,7 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       );
 
     if (textOutside) {
-      // D3's built-in approach for external labels
+      // D3's built-in approach for external labels with your original sizing
       const labelRadius = chartRadius * 1.3;
       const outerArc = d3.arc<any>()
         .innerRadius(labelRadius)
@@ -204,7 +249,7 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
 
       const allLabels = [...leftLabels, ...rightLabels];
 
-      // Draw smooth curved lines
+      // Draw smooth curved lines instead of polylines
       g.selectAll('.label-line')
         .data(allLabels)
         .join('path')
@@ -235,14 +280,16 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
           return `M ${outerEdgePoint[0]},${outerEdgePoint[1]} Q ${controlPoint[0]},${controlPoint[1]} ${finalPoint[0]},${finalPoint[1]}`;
         });
 
-      // Draw label text
-      g.selectAll('.label-text')
+      // Draw label text - keeping original smaller font size for external labels
+      const externalLabelFontSize = Math.max(10, Math.min(16, Math.min(width, height) * 0.04));
+      
+      g.selectAll('.label-text-external')
         .data(allLabels)
         .join('text')
-        .attr('class', 'label-text')
+        .attr('class', 'label-text-external')
         .attr('transform', (d) => `translate(${d.pos})`)
         .attr('text-anchor', (d) => d.midAngle < Math.PI ? 'start' : 'end')
-        .attr('font-size', `${baseFontSize}px`)
+        .attr('font-size', `${externalLabelFontSize}px`)
         .attr('fill', 'var(--text-color)')
         .text((d) => {
           const percentage = ((d.arc.endAngle - d.arc.startAngle) / (2 * Math.PI)) * 100;
@@ -251,9 +298,10 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
         });
 
     } else {
-      const labelRadius = chartRadius * 0.65;
+      // --- LOGIC FOR INTERNAL LABELS (keeping your original logic) ---
+      const labelRadius = chartRadius * 0.65; // Moved slightly outward for more space
       const arcLabel = d3.arc<any>().innerRadius(labelRadius).outerRadius(labelRadius);
-      const minAngleForText = Math.max(0.12, baseFontSize * 0.006); 
+      const minAngleForText = Math.max(0.12, baseFontSize * 0.006); // Lowered threshold
 
       g.selectAll('.label-text')
         .data(arcs)
@@ -261,8 +309,8 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
         .attr('class', 'label-text')
         .attr('transform', (d) => `translate(${arcLabel.centroid(d)})`)
         .attr('text-anchor', 'middle')
-        .attr('fill', 'var(--text-color)')
-        .style('font-weight', '600')
+        .attr('fill', 'black') // Always black for inside labels
+        .style('font-weight', '600') // Make text bolder for better readability
         .each(function(d) {
           const text = d3.select(this);
           
@@ -270,13 +318,15 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
             .attr('y', `-${titleFontSize * 0.2}px`)
             .attr('font-weight', 'bold')
             .attr('font-size', `${titleFontSize}px`)
+            .attr('fill', 'black') // Force black color
             .text(d.data[domainColumn]);
           
           if (d.endAngle - d.startAngle > minAngleForText) {
             text.append('tspan')
               .attr('x', 0)
               .attr('y', `${valueFontSize * 0.6}px`)
-              .attr('fill-opacity', 0.9)
+              .attr('fill', 'black') // Force black color
+              .attr('fill-opacity', 0.9) // Increased opacity for better visibility
               .attr('font-size', `${valueFontSize}px`)
               .attr('font-weight', '500')
               .text(d.data[valueColumn].toLocaleString('en-US'));
@@ -287,7 +337,8 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
             text.append('tspan')
               .attr('x', 0)
               .attr('y', `${baseFontSize * 1.4}px`)
-              .attr('fill-opacity', 0.85) 
+              .attr('fill', 'black') // Force black color
+              .attr('fill-opacity', 0.85) // Increased opacity
               .attr('font-size', `${percentageFontSize}px`)
               .attr('font-weight', '500')
               .text(`${percentage.toFixed(0)}%`);

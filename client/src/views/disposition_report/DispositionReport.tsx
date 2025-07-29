@@ -292,7 +292,7 @@ const DispositionReport: React.FC = () => {
                         {/* Web Dropout Counts Chart */}
                         {webDropoutChartData.length > 0 && (
                           <div className='chart-item'>
-                            <h4 className='chart-title'>Web Dropout by Page</h4>
+                            <h4 className='chart-title'>Web Dropout</h4>
                             <div className='chart-wrapper'>
                               <MyPieChart
                                 data={webDropoutChartData}
@@ -302,6 +302,7 @@ const DispositionReport: React.FC = () => {
                                 domainColumn='field'
                                 valueColumn='value'
                                 textOutside={true}
+                                colorScheme="random"
                               />
                             </div>
                           </div>
