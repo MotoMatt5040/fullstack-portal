@@ -19,7 +19,7 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
   const [countdown, setCountdown] = useState<number>(0);
 
   useEffect(() => {
-    console.log('SessionWarningModal render - isVisible:', isVisible, 'warningDuration:', warningDuration);
+    // console.log('SessionWarningModal render - isVisible:', isVisible, 'warningDuration:', warningDuration);
     if (!isVisible) {
       setCountdown(0);
       return;
@@ -29,14 +29,14 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
     let timeLeft = warningSeconds;
     setCountdown(timeLeft);
 
-    console.log(`Starting modal countdown from ${warningSeconds} seconds`);
+    // console.log(`Starting modal countdown from ${warningSeconds} seconds`);
 
     const interval = setInterval(() => {
       timeLeft -= 1;
       console.log('Modal countdown:', timeLeft);
       
       if (timeLeft <= 0) {
-        console.log('Modal countdown reached 0 - logging out');
+        // console.log('Modal countdown reached 0 - logging out');
         onLogout();
         return;
       }

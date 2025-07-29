@@ -41,7 +41,7 @@ const Login = () => {
 
   useEffect(() => {
     userRef.current?.focus();
-    
+
     // Check if persist cookie exists and set the checkbox accordingly
     const persistCookie = getCookieValue('persist');
     if (persistCookie === 'true') {
@@ -93,8 +93,12 @@ const Login = () => {
       const result = await forgotPassword({ email: forgotEmail }).unwrap();
 
       // Handle success
-      setForgotMessage('If an account with that email exists, a password reset link has been sent.');
-      setSuccessMsg('If an account with that email exists, a password reset link has been sent.');
+      setForgotMessage(
+        'If an account with that email exists, a password reset link has been sent.'
+      );
+      setSuccessMsg(
+        'If an account with that email exists, a password reset link has been sent.'
+      );
       setTimeout(() => {
         setShowForgotPassword(false);
         setForgotEmail('');
@@ -165,7 +169,10 @@ const Login = () => {
             type='checkbox'
             id='persist'
             // onChange={toggleCheck}
-            onChange={(e) => setPersist(e.target.checked)}
+            onChange={(e) => {
+              setPersist(e.target.checked);
+              document.cookie = `persist=${e.target.checked}; path=/`;
+            }}
             // checked={check}
             checked={persist}
           />
@@ -202,7 +209,10 @@ const Login = () => {
               </button>
             </div>
 
-            <form className='forgot-password-form' onSubmit={handleForgotPassword}>
+            <form
+              className='forgot-password-form'
+              onSubmit={handleForgotPassword}
+            >
               <label htmlFor='forgot-email'>Email Address:</label>
               <input
                 type='email'
