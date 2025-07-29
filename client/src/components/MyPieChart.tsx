@@ -46,11 +46,11 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
     ? maxRadius * 0.65  // 65% of available space for the pie when labels are outside
     : maxRadius * 0.9; // 90% of available space when labels are inside
 
-  // Calculate responsive font sizes based on chart dimensions
-  const baseFontSize = Math.max(10, Math.min(16, Math.min(width, height) * 0.04));
-  const titleFontSize = baseFontSize * 1.1;
-  const valueFontSize = baseFontSize * 0.85;
-  const percentageFontSize = baseFontSize * 0.75;
+  // Calculate responsive font sizes based on chart dimensions - increased for better readability
+  const baseFontSize = Math.max(12, Math.min(20, Math.min(width, height) * 0.06));
+  const titleFontSize = baseFontSize * 1.3;
+  const valueFontSize = baseFontSize * 1.0;
+  const percentageFontSize = baseFontSize * 0.9;
 
   useEffect(() => {
     if (!dataIsReady && svgRef.current) {
@@ -91,13 +91,11 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
         })
       );
 
-    // D3 pie generator
     const pie = d3
       .pie<any>()
       .sort(null)
       .value((d) => d[valueColumn]);
 
-    // Arc generators
     const arc = d3.arc<any>()
       .innerRadius(0)
       .outerRadius(chartRadius);
@@ -106,10 +104,8 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .innerRadius(chartRadius * 1.4)
       .outerRadius(chartRadius * 1.4);
 
-    // Generate pie data
     const arcs = pie(filteredData);
 
-    // Setup SVG
     const svg = d3
       .select(svgRef.current)
       .attr('width', width)
@@ -119,13 +115,16 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .attr('class', 'svg-pie-chart-container')
       .style('font-size', `${baseFontSize}px`);
 
-    // Clear previous content
     svg.selectAll('*').remove();
 
-    // Create main group
     const g = svg.append('g');
 
-    // Draw pie slices
+    // Create hover arc for expanded effect
+    const hoverArc = d3.arc<any>()
+      .innerRadius(0)
+      .outerRadius(chartRadius * 1.08);
+
+    // Draw pie slices with hover effects
     g.selectAll('.arc')
       .data(arcs)
       .join('path')
@@ -134,13 +133,39 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .attr('fill', (d) => color(d.data[domainColumn]))
       .attr('stroke', 'white')
       .attr('stroke-width', 2)
+      .style('cursor', 'pointer')
+      .style('transition', 'all 0.3s ease')
+      .on('mouseenter', function(event, d) {
+        // Calculate offset to "pop out" the slice
+        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+        const offsetDistance = 8;
+        const offsetX = Math.cos(midAngle - Math.PI / 2) * offsetDistance;
+        const offsetY = Math.sin(midAngle - Math.PI / 2) * offsetDistance;
+        
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .ease(d3.easeBackOut.overshoot(1.2))
+          .attr('d', hoverArc)
+          .attr('transform', `translate(${offsetX}, ${offsetY})`)
+          .style('filter', 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))');
+      })
+      .on('mouseleave', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .ease(d3.easeBackIn)
+          .attr('d', arc)
+          .attr('transform', 'translate(0, 0)')
+          .style('filter', 'none');
+      })
       .append('title')
       .text((d) => 
         `${d.data[domainColumn]}: ${d.data[valueColumn].toLocaleString('en-US')}`
       );
 
     if (textOutside) {
-      // D3's built-in approach for external labels with your original sizing
+      // D3's built-in approach for external labels
       const labelRadius = chartRadius * 1.3;
       const outerArc = d3.arc<any>()
         .innerRadius(labelRadius)
@@ -179,7 +204,7 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
 
       const allLabels = [...leftLabels, ...rightLabels];
 
-      // Draw smooth curved lines instead of polylines
+      // Draw smooth curved lines
       g.selectAll('.label-line')
         .data(allLabels)
         .join('path')
@@ -226,10 +251,9 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
         });
 
     } else {
-      // --- LOGIC FOR INTERNAL LABELS (keeping your original logic) ---
-      const labelRadius = chartRadius * 0.6;
+      const labelRadius = chartRadius * 0.65;
       const arcLabel = d3.arc<any>().innerRadius(labelRadius).outerRadius(labelRadius);
-      const minAngleForText = Math.max(0.15, baseFontSize * 0.008);
+      const minAngleForText = Math.max(0.12, baseFontSize * 0.006); 
 
       g.selectAll('.label-text')
         .data(arcs)
@@ -238,11 +262,12 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
         .attr('transform', (d) => `translate(${arcLabel.centroid(d)})`)
         .attr('text-anchor', 'middle')
         .attr('fill', 'var(--text-color)')
+        .style('font-weight', '600')
         .each(function(d) {
           const text = d3.select(this);
           
           text.append('tspan')
-            .attr('y', `-${titleFontSize * 0.3}px`)
+            .attr('y', `-${titleFontSize * 0.2}px`)
             .attr('font-weight', 'bold')
             .attr('font-size', `${titleFontSize}px`)
             .text(d.data[domainColumn]);
@@ -250,9 +275,10 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
           if (d.endAngle - d.startAngle > minAngleForText) {
             text.append('tspan')
               .attr('x', 0)
-              .attr('y', `${valueFontSize * 0.5}px`)
-              .attr('fill-opacity', 0.7)
+              .attr('y', `${valueFontSize * 0.6}px`)
+              .attr('fill-opacity', 0.9)
               .attr('font-size', `${valueFontSize}px`)
+              .attr('font-weight', '500')
               .text(d.data[valueColumn].toLocaleString('en-US'));
           }
           
@@ -260,9 +286,10 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
             const percentage = ((d.endAngle - d.startAngle) / (2 * Math.PI)) * 100;
             text.append('tspan')
               .attr('x', 0)
-              .attr('y', `${baseFontSize * 1.2}px`)
-              .attr('fill-opacity', 0.7)
+              .attr('y', `${baseFontSize * 1.4}px`)
+              .attr('fill-opacity', 0.85) 
               .attr('font-size', `${percentageFontSize}px`)
+              .attr('font-weight', '500')
               .text(`${percentage.toFixed(0)}%`);
           }
         });
