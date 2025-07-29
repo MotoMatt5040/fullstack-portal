@@ -14,7 +14,11 @@ export const dispositionApiSlice = apiSlice.injectEndpoints({
         { type: 'Disposition', id: `web-${projectId}` },
       ],
     }),
-    
+    getWebDropoutCounts: builder.query({
+      query: ({ projectId }) => ({
+        url: `/disposition-report/web/${projectId}/counts`
+      })
+    }),
     getPhoneDisposition: builder.query({
       query: ({ projectId, isInternalUser }) => ({
         url: `/disposition-report/phone/${projectId}`,
@@ -42,6 +46,7 @@ export const dispositionApiSlice = apiSlice.injectEndpoints({
 
 export const {
   useLazyGetWebDispositionQuery,
+  useLazyGetWebDropoutCountsQuery,
   useLazyGetPhoneDispositionQuery,
   useLazyGetBothDispositionsQuery,
   useGetWebDispositionQuery,

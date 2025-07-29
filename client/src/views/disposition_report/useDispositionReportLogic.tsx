@@ -1,11 +1,11 @@
+// client/src/views/disposition_report/useDispositionReportLogic.tsx
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
-import {
-  useLazyGetProjectListQuery,
-} from '../../features/projectInfoApiSlice';
+import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import {
   useLazyGetWebDispositionQuery,
+  useLazyGetWebDropoutCountsQuery,
   useLazyGetPhoneDispositionQuery,
 } from '../../features/dispositionApiSlice';
 import { useSearchParams } from 'react-router-dom';
@@ -41,11 +41,19 @@ const POLLING_INTERVAL = 15000; // 15 seconds
 
 const useDispositionReportLogic = () => {
   const [selectedProject, setSelectedProject] = useState<string>('');
-  const [webDispositionData, setWebDispositionData] = useState<DispositionData | null>(null);
-  const [phoneDispositionData, setPhoneDispositionData] = useState<DispositionData | null>(null);
+  const [webDispositionData, setWebDispositionData] =
+    useState<DispositionData | null>(null);
+  const [phoneDispositionData, setPhoneDispositionData] =
+    useState<DispositionData | null>(null);
   const [webChartData, setWebChartData] = useState<ChartDataItem[]>([]);
   const [phoneChartData, setPhoneChartData] = useState<ChartDataItem[]>([]);
-  const [combinedChartData, setCombinedChartData] = useState<ChartDataItem[]>([]);
+  const [combinedChartData, setCombinedChartData] = useState<ChartDataItem[]>(
+    []
+  );
+  // Add state for web dropout counts chart data
+  const [webDropoutChartData, setWebDropoutChartData] = useState<
+    ChartDataItem[]
+  >([]);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchParamsRef = useRef<any>(null);
@@ -58,13 +66,13 @@ const useDispositionReportLogic = () => {
   // Memoized user info
   const userInfo = useMemo(() => {
     if (!currentUser) return { roles: [], username: '', isInternalUser: true };
-    
+
     const isInternalUser = !currentUser.roles.includes(EXTERNAL_ROLE_ID);
-    
-    return { 
+
+    return {
       roles: currentUser.roles,
       username: currentUser.username,
-      isInternalUser 
+      isInternalUser,
     };
   }, [currentUser]);
 
@@ -80,20 +88,21 @@ const useDispositionReportLogic = () => {
 
   const [
     getWebDisposition,
-    {
-      data: webData,
-      isFetching: webIsFetching,
-      error: webError,
-    },
+    { data: webData, isFetching: webIsFetching, error: webError },
   ] = useLazyGetWebDispositionQuery();
 
   const [
-    getPhoneDisposition,
+    getWebDropoutCounts,
     {
-      data: phoneData,
-      isFetching: phoneIsFetching,
-      error: phoneError,
+      data: webCountsData,
+      isFetching: webCountsIsFetching,
+      error: webCountsError,
     },
+  ] = useLazyGetWebDropoutCountsQuery();
+
+  const [
+    getPhoneDisposition,
+    { data: phoneData, isFetching: phoneIsFetching, error: phoneError },
   ] = useLazyGetPhoneDispositionQuery();
 
   // Memoized list of project options
@@ -108,9 +117,11 @@ const useDispositionReportLogic = () => {
 
   // Determine what data is available
   const dataAvailability = useMemo((): DataAvailability => {
-    const hasWebData = webDispositionData && Object.keys(webDispositionData).length > 0;
-    const hasPhoneData = phoneDispositionData && Object.keys(phoneDispositionData).length > 0;
-    
+    const hasWebData =
+      webDispositionData && Object.keys(webDispositionData).length > 0;
+    const hasPhoneData =
+      phoneDispositionData && Object.keys(phoneDispositionData).length > 0;
+
     if (hasWebData && hasPhoneData) return 'both';
     if (hasWebData) return 'web-only';
     if (hasPhoneData) return 'phone-only';
@@ -118,52 +129,112 @@ const useDispositionReportLogic = () => {
   }, [webDispositionData, phoneDispositionData]);
 
   // Transform disposition data to chart format
-  const transformDispositionData = useCallback((data: DispositionData): ChartDataItem[] => {
-    const excludeKeys = ['Sample', 'Objective', 'Responses', 'AvgCompletionSeconds', 'AvgCompletionTime', 'CompletionRate'];
-    
-    return Object.entries(data)
-      .filter(([key, value]) => !excludeKeys.includes(key) && typeof value === 'number')
-      .map(([key, value]) => ({
-        field: key,
-        value: value as number,
-      }))
-      .sort((a, b) => b.value - a.value); // Sort by value descending
-  }, []);
+  const transformDispositionData = useCallback(
+    (data: DispositionData): ChartDataItem[] => {
+      const excludeKeys = [
+        'Sample',
+        'Objective',
+        'Responses',
+        'AvgCompletionSeconds',
+        'AvgCompletionTime',
+        'CompletionRate',
+      ];
+
+      return Object.entries(data)
+        .filter(
+          ([key, value]) =>
+            !excludeKeys.includes(key) && typeof value === 'number'
+        )
+        .map(([key, value]) => ({
+          field: key,
+          value: value as number,
+        }))
+        .sort((a, b) => b.value - a.value); // Sort by value descending
+    },
+    []
+  );
+
+  const transformWebDropoutData = useCallback(
+    (data: any[]): ChartDataItem[] => {
+      if (!data || !Array.isArray(data)) return [];
+
+      const filtered = data.filter(
+        (item) => item.CountOfDropouts && item.CountOfDropouts > 0
+      );
+      const total = filtered.reduce(
+        (sum, item) => sum + item.CountOfDropouts,
+        0
+      );
+
+      // Only show items that represent at least 2% of total dropouts
+      const significantItems = filtered.filter(
+        (item) => item.CountOfDropouts / total >= 0.005
+      );
+
+      // Group small items into "Other"
+      const smallItems = filtered.filter(
+        (item) => item.CountOfDropouts / total < 0.005
+      );
+      const otherCount = smallItems.reduce(
+        (sum, item) => sum + item.CountOfDropouts,
+        0
+      );
+
+      const mapped = significantItems.map((item) => ({
+        field: item.HisLastDisplayedQuestionName || 'Unknown Question',
+        value: item.CountOfDropouts,
+      }));
+
+      // Add "Other" category if there are small items
+      if (otherCount > 0) {
+        mapped.push({
+          field: 'Other',
+          value: otherCount,
+        });
+      }
+
+      return mapped.sort((a, b) => b.value - a.value);
+    },
+    []
+  );
 
   // Combine web and phone data for comparison
-  const combineChartData = useCallback((webData: ChartDataItem[], phoneData: ChartDataItem[]): ChartDataItem[] => {
-    const combined = new Map<string, { web: number; phone: number }>();
-    
-    // Add web data
-    webData.forEach(item => {
-      combined.set(item.field, { web: item.value, phone: 0 });
-    });
-    
-    // Add phone data
-    phoneData.forEach(item => {
-      const existing = combined.get(item.field);
-      if (existing) {
-        existing.phone = item.value;
-      } else {
-        combined.set(item.field, { web: 0, phone: item.value });
-      }
-    });
-    
-    // Convert to array format
-    return Array.from(combined.entries())
-      .map(([field, values]) => ({
-        field,
-        value: values.web + values.phone,
-        webValue: values.web,
-        phoneValue: values.phone,
-      }))
-      .sort((a, b) => b.value - a.value); // Sort by total value descending
-  }, []);
+  const combineChartData = useCallback(
+    (webData: ChartDataItem[], phoneData: ChartDataItem[]): ChartDataItem[] => {
+      const combined = new Map<string, { web: number; phone: number }>();
+
+      // Add web data
+      webData.forEach((item) => {
+        combined.set(item.field, { web: item.value, phone: 0 });
+      });
+
+      // Add phone data
+      phoneData.forEach((item) => {
+        const existing = combined.get(item.field);
+        if (existing) {
+          existing.phone = item.value;
+        } else {
+          combined.set(item.field, { web: 0, phone: item.value });
+        }
+      });
+
+      // Convert to array format
+      return Array.from(combined.entries())
+        .map(([field, values]) => ({
+          field,
+          value: values.web + values.phone,
+          webValue: values.web,
+          phoneValue: values.phone,
+        }))
+        .sort((a, b) => b.value - a.value); // Sort by total value descending
+    },
+    []
+  );
 
   // Initialize from URL params
   useEffect(() => {
     const projectIdFromUrl = searchParams.get(PROJECT_ID_QUERY_PARAM);
-    
+
     if (projectIdFromUrl && projectIdFromUrl !== selectedProject) {
       setSelectedProject(projectIdFromUrl);
     }
@@ -192,6 +263,16 @@ const useDispositionReportLogic = () => {
     }
   }, [webData, transformDispositionData]);
 
+  // Process web dropout counts data
+  useEffect(() => {
+    if (webCountsData) {
+      const transformed = transformWebDropoutData(webCountsData);
+      setWebDropoutChartData(transformed);
+    } else {
+      setWebDropoutChartData([]);
+    }
+  }, [webCountsData, transformWebDropoutData]);
+
   // Process phone disposition data
   useEffect(() => {
     if (phoneData) {
@@ -206,7 +287,11 @@ const useDispositionReportLogic = () => {
 
   // Combine chart data when both are available
   useEffect(() => {
-    if (dataAvailability === 'both' && webChartData.length > 0 && phoneChartData.length > 0) {
+    if (
+      dataAvailability === 'both' &&
+      webChartData.length > 0 &&
+      phoneChartData.length > 0
+    ) {
       const combined = combineChartData(webChartData, phoneChartData);
       setCombinedChartData(combined);
     } else {
@@ -217,13 +302,13 @@ const useDispositionReportLogic = () => {
   // URL management
   useEffect(() => {
     const newSearchParams = new URLSearchParams(searchParams);
-    
+
     if (!selectedProject) {
       newSearchParams.delete(PROJECT_ID_QUERY_PARAM);
     } else if (searchParams.get(PROJECT_ID_QUERY_PARAM) !== selectedProject) {
       newSearchParams.set(PROJECT_ID_QUERY_PARAM, selectedProject);
     }
-    
+
     if (newSearchParams.toString() !== searchParams.toString()) {
       setSearchParams(newSearchParams, { replace: true });
     }
@@ -243,6 +328,7 @@ const useDispositionReportLogic = () => {
       setWebChartData([]);
       setPhoneChartData([]);
       setCombinedChartData([]);
+      setWebDropoutChartData([]);
       lastFetchParamsRef.current = null;
       return;
     }
@@ -265,6 +351,7 @@ const useDispositionReportLogic = () => {
       ) {
         // Always attempt to fetch both web and phone data
         getWebDisposition(fetchParams).catch(console.error);
+        getWebDropoutCounts(fetchParams).catch(console.error);
         getPhoneDisposition(fetchParams).catch(console.error);
       }
     };
@@ -282,7 +369,26 @@ const useDispositionReportLogic = () => {
         intervalRef.current = null;
       }
     };
-  }, [selectedProject, userInfo.isInternalUser, getWebDisposition, getPhoneDisposition]);
+  }, [
+    selectedProject,
+    userInfo.isInternalUser,
+    getWebDisposition,
+    getWebDropoutCounts,
+    getPhoneDisposition,
+  ]);
+
+  useEffect(() => {
+    console.log('🔍 Raw webCountsData:', webCountsData);
+
+    if (webCountsData) {
+      const transformed = transformWebDropoutData(webCountsData);
+      console.log('📊 Transformed webDropoutChartData:', transformed);
+      setWebDropoutChartData(transformed);
+    } else {
+      console.log('❌ No webCountsData available');
+      setWebDropoutChartData([]);
+    }
+  }, [webCountsData, transformWebDropoutData]);
 
   // Callback for handling project selection changes
   const handleProjectChange = useCallback(
@@ -302,38 +408,61 @@ const useDispositionReportLogic = () => {
         projectId: selectedProject,
         isInternalUser: userInfo.isInternalUser,
       };
-      
+
       // Always try to refresh both types of data
       getWebDisposition(fetchParams).catch(console.error);
+      getWebDropoutCounts(fetchParams).catch(console.error);
       getPhoneDisposition(fetchParams).catch(console.error);
     }
-  }, [selectedProject, userInfo.isInternalUser, getWebDisposition, getPhoneDisposition]);
+  }, [
+    selectedProject,
+    userInfo.isInternalUser,
+    getWebDisposition,
+    getWebDropoutCounts,
+    getPhoneDisposition,
+  ]);
 
   // Loading states
   const isLoading = useMemo(() => {
     if (!selectedProject) return false;
-    
+
     // Initial loading - when we haven't received any data yet
     const hasInitialData = webDispositionData || phoneDispositionData;
     const isInitialLoad = !hasInitialData && (webIsFetching || phoneIsFetching);
-    
+
     return projectListIsFetching || isInitialLoad;
-  }, [projectListIsFetching, webIsFetching, phoneIsFetching, selectedProject, webDispositionData, phoneDispositionData]);
+  }, [
+    projectListIsFetching,
+    webIsFetching,
+    phoneIsFetching,
+    selectedProject,
+    webDispositionData,
+    phoneDispositionData,
+  ]);
 
   const isRefetching = useMemo(() => {
     const hasExistingData = webDispositionData || phoneDispositionData;
-    return hasExistingData && (webIsFetching || phoneIsFetching);
-  }, [webIsFetching, phoneIsFetching, webDispositionData, phoneDispositionData]);
+    return (
+      hasExistingData &&
+      (webIsFetching || phoneIsFetching || webCountsIsFetching)
+    );
+  }, [
+    webIsFetching,
+    phoneIsFetching,
+    webCountsIsFetching,
+    webDispositionData,
+    phoneDispositionData,
+  ]);
 
   // Error state - only show error if both requests failed
   const error = useMemo(() => {
     if (projectListError) return projectListError;
-    
+
     // Only consider it an error if both web and phone requests failed
     if (webError && phoneError) {
       return webError || phoneError;
     }
-    
+
     return null;
   }, [projectListError, webError, phoneError]);
 
@@ -368,8 +497,11 @@ const useDispositionReportLogic = () => {
   // Summary statistics
   const summaryStats = useMemo(() => {
     const webTotal = webChartData.reduce((sum, item) => sum + item.value, 0);
-    const phoneTotal = phoneChartData.reduce((sum, item) => sum + item.value, 0);
-    
+    const phoneTotal = phoneChartData.reduce(
+      (sum, item) => sum + item.value,
+      0
+    );
+
     return {
       webTotal,
       phoneTotal,
@@ -403,6 +535,8 @@ const useDispositionReportLogic = () => {
     activeChartData,
     displayTitle,
     summaryStats,
+    // Add web dropout chart data
+    webDropoutChartData,
 
     // Loading states
     isLoading,

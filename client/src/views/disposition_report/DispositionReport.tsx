@@ -14,9 +14,13 @@ const DispositionReport: React.FC = () => {
     dataAvailability,
     webDispositionData,
     phoneDispositionData,
+    webChartData,
+    phoneChartData,
+    combinedChartData,
     activeChartData,
     displayTitle,
     summaryStats,
+    webDropoutChartData,
     isLoading,
     isRefetching,
     error,
@@ -149,8 +153,7 @@ const DispositionReport: React.FC = () => {
   return (
     <section className='disposition-report section'>
       <div className='development-notice'>
-        <FaInfoCircle /> This page is currently under active development. The only current available data is
-        Web Disposition data.
+        <FaInfoCircle /> This page is currently under active development. Web Disposition and Dropout data are now available.
       </div>
       <br />
       <div className='section-header'>
@@ -246,128 +249,232 @@ const DispositionReport: React.FC = () => {
 
                 {/* Chart Display */}
                 <div className='disposition-chart-container'>
-                  {activeChartData.length > 0 && (
-                    <>
-                      <div className='chart-wrapper'>
-                        <MyPieChart
-                          data={activeChartData}
-                          title={displayTitle}
-                          dataIsReady={true}
-                          height={500}
-                          width={900}
-                          domainColumn='field'
-                          valueColumn='value'
-                          textOutside={true}
-                          colorMap={{
-                            Completed: '#4CAF50',
-                            Closed: '#2196F3',
-                            DropOut: '#FF9800',
-                            Interrupted: '#F44336',
-                            ScreenedOut: '#9E9E9E',
-                            NoAnswer: '#795548',
-                            Busy: '#FFC107',
-                            Callback: '#00BCD4',
-                            Voicemail: '#9C27B0',
-                            Disconnected: '#E91E63',
-                            WrongNumber: '#FF5722',
-                            DoNotCall: '#F44336',
-                            LanguageBarrier: '#3F51B5',
-                            Refused: '#FF6B6B',
-                          }}
-                        />
+                  {/* Web Data Charts - Show both disposition and dropout charts side by side */}
+                  {(dataAvailability === 'web-only' || dataAvailability === 'both') && (
+                    <div className='web-charts-section'>
+                      <h3 className='charts-section-title'>Web Data Analysis</h3>
+                      
+                      <div className='charts-grid'>
+                        {/* Web Disposition Chart */}
+                        {webChartData.length > 0 && (
+                          <div className='chart-item'>
+                            <h4 className='chart-title'>Web Disposition Overview</h4>
+                            <div className='chart-wrapper'>
+                              <MyPieChart
+                                data={webChartData}
+                                dataIsReady={true}
+                                height={500}
+                                width={900}
+                                domainColumn='field'
+                                valueColumn='value'
+                                textOutside={true}
+                                colorMap={{
+                                  Completed: '#4CAF50',
+                                  Closed: '#2196F3',
+                                  DropOut: '#FF9800',
+                                  Interrupted: '#F44336',
+                                  ScreenedOut: '#9E9E9E',
+                                  NoAnswer: '#795548',
+                                  Busy: '#FFC107',
+                                  Callback: '#00BCD4',
+                                  Voicemail: '#9C27B0',
+                                  Disconnected: '#E91E63',
+                                  WrongNumber: '#FF5722',
+                                  DoNotCall: '#F44336',
+                                  LanguageBarrier: '#3F51B5',
+                                  Refused: '#FF6B6B',
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Web Dropout Counts Chart */}
+                        {webDropoutChartData.length > 0 && (
+                          <div className='chart-item'>
+                            <h4 className='chart-title'>Web Dropout by Page</h4>
+                            <div className='chart-wrapper'>
+                              <MyPieChart
+                                data={webDropoutChartData}
+                                dataIsReady={true}
+                                height={500}
+                                width={900}
+                                domainColumn='field'
+                                valueColumn='value'
+                                textOutside={true}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    </div>
+                  )}
 
-                      {/* Comparison Table for Both View */}
-                      {dataAvailability === 'both' &&
-                        activeChartData.some(
-                          (item: any) => item.webValue !== undefined
-                        ) && (
-                          <div className='comparison-table-container'>
-                            <h3>Detailed Comparison</h3>
-                            <table className='comparison-table'>
-                              <thead>
-                                <tr>
-                                  <th>Disposition Type</th>
-                                  <th className='web-column'>Web</th>
-                                  <th className='phone-column'>Phone</th>
-                                  <th className='total-column'>Total</th>
-                                  <th className='percentage-column'>
-                                    % of Total
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {activeChartData.map((item: any) => {
-                                  const percentage =
-                                    summaryStats.combinedTotal > 0
-                                      ? (
-                                          (item.value /
-                                            summaryStats.combinedTotal) *
-                                          100
-                                        ).toFixed(1)
-                                      : '0';
+                  {/* Phone Data Chart - Only show if phone-only or both */}
+                  {(dataAvailability === 'phone-only' || dataAvailability === 'both') && phoneChartData.length > 0 && (
+                    <div className='phone-charts-section'>
+                      <h3 className='charts-section-title'>Phone Data Analysis</h3>
+                      
+                      <div className='charts-grid single-chart'>
+                        <div className='chart-item'>
+                          <h4 className='chart-title'>Phone Disposition Overview</h4>
+                          <div className='chart-wrapper'>
+                            <MyPieChart
+                              data={phoneChartData}
+                              dataIsReady={true}
+                              height={400}
+                              width={450}
+                              domainColumn='field'
+                              valueColumn='value'
+                              textOutside={true}
+                              colorMap={{
+                                Completed: '#4CAF50',
+                                NoAnswer: '#795548',
+                                Busy: '#FFC107',
+                                Callback: '#00BCD4',
+                                Voicemail: '#9C27B0',
+                                Disconnected: '#E91E63',
+                                WrongNumber: '#FF5722',
+                                DoNotCall: '#F44336',
+                                LanguageBarrier: '#3F51B5',
+                                Refused: '#FF6B6B',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                                  return (
-                                    <tr key={item.field}>
-                                      <td className='disposition-name'>
-                                        {item.field}
-                                      </td>
-                                      <td className='web-column'>
-                                        {(item.webValue || 0).toLocaleString()}
-                                      </td>
-                                      <td className='phone-column'>
-                                        {(
-                                          item.phoneValue || 0
-                                        ).toLocaleString()}
-                                      </td>
-                                      <td className='total-column'>
-                                        <strong>
-                                          {item.value.toLocaleString()}
-                                        </strong>
-                                      </td>
-                                      <td className='percentage-column'>
-                                        <div className='percentage-bar-container'>
-                                          <div
-                                            className='percentage-bar'
-                                            style={{ width: `${percentage}%` }}
-                                          ></div>
-                                          <span className='percentage-text'>
-                                            {percentage}%
-                                          </span>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                              <tfoot>
-                                <tr className='total-row'>
-                                  <td>Total</td>
+                  {/* Combined Chart - Only show if both data types are available */}
+                  {dataAvailability === 'both' && combinedChartData.length > 0 && (
+                    <div className='combined-charts-section'>
+                      <h3 className='charts-section-title'>Combined Analysis</h3>
+                      
+                      <div className='charts-grid single-chart'>
+                        <div className='chart-item'>
+                          <h4 className='chart-title'>Combined Disposition Overview</h4>
+                          <div className='chart-wrapper'>
+                            <MyPieChart
+                              data={combinedChartData}
+                              dataIsReady={true}
+                              height={500}
+                              width={900}
+                              domainColumn='field'
+                              valueColumn='value'
+                              textOutside={true}
+                              colorMap={{
+                                Completed: '#4CAF50',
+                                Closed: '#2196F3',
+                                DropOut: '#FF9800',
+                                Interrupted: '#F44336',
+                                ScreenedOut: '#9E9E9E',
+                                NoAnswer: '#795548',
+                                Busy: '#FFC107',
+                                Callback: '#00BCD4',
+                                Voicemail: '#9C27B0',
+                                Disconnected: '#E91E63',
+                                WrongNumber: '#FF5722',
+                                DoNotCall: '#F44336',
+                                LanguageBarrier: '#3F51B5',
+                                Refused: '#FF6B6B',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Comparison Table for Both View */}
+                  {dataAvailability === 'both' &&
+                    combinedChartData.some(
+                      (item: any) => item.webValue !== undefined
+                    ) && (
+                      <div className='comparison-table-container'>
+                        <h3>Detailed Comparison</h3>
+                        <table className='comparison-table'>
+                          <thead>
+                            <tr>
+                              <th>Disposition Type</th>
+                              <th className='web-column'>Web</th>
+                              <th className='phone-column'>Phone</th>
+                              <th className='total-column'>Total</th>
+                              <th className='percentage-column'>
+                                % of Total
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {combinedChartData.map((item: any) => {
+                              const percentage =
+                                summaryStats.combinedTotal > 0
+                                  ? (
+                                      (item.value /
+                                        summaryStats.combinedTotal) *
+                                      100
+                                    ).toFixed(1)
+                                  : '0';
+
+                              return (
+                                <tr key={item.field}>
+                                  <td className='disposition-name'>
+                                    {item.field}
+                                  </td>
                                   <td className='web-column'>
-                                    <strong>
-                                      {summaryStats.webTotal.toLocaleString()}
-                                    </strong>
+                                    {(item.webValue || 0).toLocaleString()}
                                   </td>
                                   <td className='phone-column'>
-                                    <strong>
-                                      {summaryStats.phoneTotal.toLocaleString()}
-                                    </strong>
+                                    {(
+                                      item.phoneValue || 0
+                                    ).toLocaleString()}
                                   </td>
                                   <td className='total-column'>
                                     <strong>
-                                      {summaryStats.combinedTotal.toLocaleString()}
+                                      {item.value.toLocaleString()}
                                     </strong>
                                   </td>
                                   <td className='percentage-column'>
-                                    <strong>100%</strong>
+                                    <div className='percentage-bar-container'>
+                                      <div
+                                        className='percentage-bar'
+                                        style={{ width: `${percentage}%` }}
+                                      ></div>
+                                      <span className='percentage-text'>
+                                        {percentage}%
+                                      </span>
+                                    </div>
                                   </td>
                                 </tr>
-                              </tfoot>
-                            </table>
-                          </div>
-                        )}
-                    </>
-                  )}
+                              );
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr className='total-row'>
+                              <td>Total</td>
+                              <td className='web-column'>
+                                <strong>
+                                  {summaryStats.webTotal.toLocaleString()}
+                                </strong>
+                              </td>
+                              <td className='phone-column'>
+                                <strong>
+                                  {summaryStats.phoneTotal.toLocaleString()}
+                                </strong>
+                              </td>
+                              <td className='total-column'>
+                                <strong>
+                                  {summaryStats.combinedTotal.toLocaleString()}
+                                </strong>
+                              </td>
+                              <td className='percentage-column'>
+                                <strong>100%</strong>
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
                 </div>
               </>
             ) : (

@@ -1,4 +1,4 @@
-/* DispositionReport.css - Consistent with application styling patterns */
+/* DispositionReport.css - Complete with side-by-side chart layout */
 
 /* Main container following the section pattern */
 .disposition-report.section {
@@ -272,6 +272,87 @@
   width: 100%;
 }
 
+/* ===============================
+   NEW CHART SECTION STYLES
+   =============================== */
+
+/* Charts section styling */
+.disposition-report .web-charts-section,
+.disposition-report .phone-charts-section,
+.disposition-report .combined-charts-section {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.disposition-report .charts-section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--accent-color);
+}
+
+/* Charts grid layout - side by side with responsive stacking */
+.disposition-report .charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(900px, 1fr));
+  gap: 2rem;
+  justify-items: center;
+  margin-bottom: 2rem;
+}
+
+.disposition-report .charts-grid.single-chart {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+/* Individual chart item styling */
+.disposition-report .chart-item {
+  background-color: var(--background-color-muted);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow-elevated);
+  border: 1px solid var(--border-color-soft);
+  transition: transform 0.3s ease;
+  width: 100%;
+  max-width: 950px; /* Accommodate 900px chart + padding */
+}
+
+.disposition-report .chart-item:hover {
+  transform: translateY(-5px);
+}
+
+.disposition-report .chart-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+/* Chart wrapper adjustments for side-by-side layout */
+.disposition-report .chart-item .chart-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 500px; /* Increased for 900px charts */
+}
+
+/* Fix pie chart text visibility for all themes */
+.disposition-report .chart-wrapper svg text,
+.disposition-report .chart-wrapper svg tspan {
+  fill: var(--text-color) !important;
+}
+
+.disposition-report .chart-wrapper svg polyline {
+  stroke: var(--text-color) !important;
+}
+
 /* Comparison table */
 .disposition-report .comparison-table-container {
   width: 100%;
@@ -454,7 +535,25 @@
   opacity: 0.8;
 }
 
-/* Responsive design */
+/* ===============================
+   RESPONSIVE DESIGN
+   =============================== */
+
+/* Large screens - charts can be side by side */
+@media (min-width: 1900px) {
+  .disposition-report .charts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(900px, 1fr));
+  }
+}
+
+/* Medium-large screens - stack charts when can't fit two 900px charts */
+@media (max-width: 1900px) {
+  .disposition-report .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
 @media (min-width: 768px) {
   .disposition-report .controls-panel {
     flex-direction: row;
@@ -478,6 +577,24 @@
 
   .disposition-report .section-header h1 {
     font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 1000px) {
+  /* On smaller screens, reduce chart container sizing */
+  .disposition-report .chart-item {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  .disposition-report .chart-item .chart-wrapper {
+    min-height: 400px;
+  }
+  
+  /* Chart SVGs should be responsive */
+  .disposition-report .chart-wrapper svg {
+    max-width: 100%;
+    height: auto;
   }
 }
 
@@ -506,9 +623,28 @@
   .disposition-report .chart-wrapper {
     overflow-x: auto;
   }
+
+  .disposition-report .chart-item {
+    padding: 1rem;
+  }
+  
+  .disposition-report .chart-item .chart-wrapper {
+    min-height: 350px;
+  }
+  
+  .disposition-report .charts-section-title {
+    font-size: 1.2rem;
+  }
+  
+  .disposition-report .chart-title {
+    font-size: 1rem;
+  }
 }
 
-/* Dark theme specific adjustments */
+/* ===============================
+   DARK THEME ADJUSTMENTS
+   =============================== */
+
 [data-theme="dark"] .disposition-report .disposition-info-card,
 [data-theme="superdark"] .disposition-report .disposition-info-card {
   border: 1px solid var(--border-color-half-soft);
@@ -517,4 +653,15 @@
 [data-theme="dark"] .disposition-report .comparison-table,
 [data-theme="superdark"] .disposition-report .comparison-table {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .disposition-report .chart-item,
+[data-theme="superdark"] .disposition-report .chart-item {
+  border: 1px solid var(--border-color-half-soft);
+  background-color: var(--background-color-elevated);
+}
+
+[data-theme="dark"] .disposition-report .chart-item:hover,
+[data-theme="superdark"] .disposition-report .chart-item:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }

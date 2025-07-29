@@ -52,11 +52,6 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
   const valueFontSize = baseFontSize * 0.85;
   const percentageFontSize = baseFontSize * 0.75;
 
-  // Adjust viewBox when text is outside to show labels
-  // No need for extra padding - use the actual dimensions
-  const viewBoxWidth = width;
-  const viewBoxHeight = height;
-
   useEffect(() => {
     if (!dataIsReady && svgRef.current) {
       d3.select(svgRef.current).selectAll('*').remove();
@@ -70,10 +65,9 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       (item) => !skip.includes(item.field) && item[valueColumn] > 0
     );
 
+    // Color scale setup
     const getColorForSingleSlice = (field: string) => {
-      // First check if color is defined in colorMap
       if (colorMap[field]) return [colorMap[field]];
-      // Fall back to default colors
       if (field === 'On CPH') return ['rgb(34, 150, 79)'];
       if (field === 'On VAR') return ['rgb(199, 231, 129)'];
       if (field === 'Off CPH') return ['rgb(254, 206, 126)'];
@@ -87,29 +81,35 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .range(
         filteredData.map((d) => {
           const field = d[domainColumn];
-          // Check colorMap first
           if (colorMap[field]) return colorMap[field];
-          // For single slice, use getColorForSingleSlice
           if (filteredData.length === 1) {
             return getColorForSingleSlice(field)[0];
           }
-          // For multiple slices, use color scheme
           const index = filteredData.findIndex(item => item[domainColumn] === field);
           const t = (index / (filteredData.length - 1)) * 0.8 + 0.1;
           return colorScheme(t);
         })
       );
 
+    // D3 pie generator
     const pie = d3
-      .pie()
+      .pie<any>()
       .sort(null)
       .value((d) => d[valueColumn]);
 
-    // Use the new chartRadius for all arc calculations
-    const arc = d3.arc().innerRadius(0).outerRadius(chartRadius);
+    // Arc generators
+    const arc = d3.arc<any>()
+      .innerRadius(0)
+      .outerRadius(chartRadius);
 
+    const labelArc = d3.arc<any>()
+      .innerRadius(chartRadius * 1.4)
+      .outerRadius(chartRadius * 1.4);
+
+    // Generate pie data
     const arcs = pie(filteredData);
 
+    // Setup SVG
     const svg = d3
       .select(svgRef.current)
       .attr('width', width)
@@ -119,164 +119,155 @@ const MyPieChart: React.FC<MyPieChartProps> = (props) => {
       .attr('class', 'svg-pie-chart-container')
       .style('font-size', `${baseFontSize}px`);
 
-    // --- Chart Drawing ---
-    svg.selectAll('.arc-path').remove();
-    svg.selectAll('.label-group').remove();
+    // Clear previous content
+    svg.selectAll('*').remove();
 
-    svg
-      .append('g')
-      .attr('class', 'arc-path')
-      .selectAll('path')
-      .data(arcs, (d) => d.data[domainColumn])
+    // Create main group
+    const g = svg.append('g');
+
+    // Draw pie slices
+    g.selectAll('.arc')
+      .data(arcs)
       .join('path')
+      .attr('class', 'arc')
+      .attr('d', arc)
       .attr('fill', (d) => color(d.data[domainColumn]))
       .attr('stroke', 'white')
-      .attr('d', arc)
-      .each(function (d) {
-        this._current = d;
-      })
+      .attr('stroke-width', 2)
       .append('title')
-      .text(
-        (d) =>
-          `${d.data[domainColumn]}: ${d.data[valueColumn].toLocaleString(
-            'en-US'
-          )}`
+      .text((d) => 
+        `${d.data[domainColumn]}: ${d.data[valueColumn].toLocaleString('en-US')}`
       );
 
-    // --- Conditional Label Rendering ---
-    const labelGroup = svg
-      .append('g')
-      .attr('class', 'label-group')
-      .attr('text-anchor', 'middle');
-
-    const minAngleForText = Math.max(0.15, baseFontSize * 0.008);
-
     if (textOutside) {
-      // --- LOGIC FOR EXTERNAL LABELS WITH LINES ---
+      // D3's built-in approach for external labels with your original sizing
       const labelRadius = chartRadius * 1.3;
-      const outerArc = d3
-        .arc()
+      const outerArc = d3.arc<any>()
         .innerRadius(labelRadius)
         .outerRadius(labelRadius);
-
-      // Function to prevent label overlap
-      const preventOverlap = (labels: any[]) => {
-        const labelHeight = baseFontSize * 1.5; // Approximate height of label text
-        const minDistance = labelHeight;
-        
-        // Separate labels by side
-        const leftLabels = labels.filter(l => l.midangle >= Math.PI);
-        const rightLabels = labels.filter(l => l.midangle < Math.PI);
-        
-        // Adjust each side separately
-        const adjustSide = (sideLabels: any[]) => {
-          sideLabels.sort((a, b) => a.pos[1] - b.pos[1]);
-          
-          for (let i = 1; i < sideLabels.length; i++) {
-            const prev = sideLabels[i - 1];
-            const curr = sideLabels[i];
-            const distance = curr.pos[1] - prev.pos[1];
-            
-            if (distance < minDistance) {
-              curr.pos[1] = prev.pos[1] + minDistance;
-            }
-          }
-        };
-        
-        adjustSide(leftLabels);
-        adjustSide(rightLabels);
-        
-        return labels;
-      };
-
-      // Prepare label data with better positioning
+      
+      // Create label data using D3's standard positioning
       const labelData = arcs.map(d => {
         const pos = outerArc.centroid(d);
-        const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-        // Position labels closer to the pie, with a reasonable distance
-        const labelDistance = Math.min(chartRadius * 1.5, maxRadius * 0.9);
-        pos[0] = labelDistance * (midangle < Math.PI ? 1 : -1);
+        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+        pos[0] = chartRadius * 1.5 * (midAngle < Math.PI ? 1 : -1);
+        
         return {
-          data: d,
+          arc: d,
           pos: pos,
-          midangle: midangle
+          midAngle: midAngle
         };
       });
 
-      // Apply overlap prevention
-      const adjustedLabels = preventOverlap(labelData);
+      // D3's collision detection - separate by side and adjust vertically
+      const leftLabels = labelData.filter(d => d.midAngle >= Math.PI);
+      const rightLabels = labelData.filter(d => d.midAngle < Math.PI);
 
-      // Draw polylines
-      labelGroup
-        .selectAll('polyline')
-        .data(adjustedLabels)
-        .join('polyline')
-        .attr('stroke', 'black')
+      const adjustLabels = (labels: any[]) => {
+        labels.sort((a, b) => a.pos[1] - b.pos[1]);
+        const labelHeight = baseFontSize * 1.5;
+        
+        for (let i = 1; i < labels.length; i++) {
+          if (labels[i].pos[1] - labels[i-1].pos[1] < labelHeight) {
+            labels[i].pos[1] = labels[i-1].pos[1] + labelHeight;
+          }
+        }
+      };
+
+      adjustLabels(leftLabels);
+      adjustLabels(rightLabels);
+
+      const allLabels = [...leftLabels, ...rightLabels];
+
+      // Draw smooth curved lines instead of polylines
+      g.selectAll('.label-line')
+        .data(allLabels)
+        .join('path')
+        .attr('class', 'label-line')
+        .attr('stroke', 'var(--text-color)')
+        .attr('stroke-width', 1.5)
+        .attr('opacity', 0.8)
         .style('fill', 'none')
-        .attr('stroke-width', 1)
-        .attr('points', (d) => {
-          const posA = arc.centroid(d.data);
-          const posB = outerArc.centroid(d.data);
-          const posC = [...d.pos];
-          return [posA, posB, posC];
+        .style('stroke-linecap', 'round')
+        .attr('d', (d) => {
+          // Calculate the point on the outer edge of the pie chart
+          const midAngle = d.arc.startAngle + (d.arc.endAngle - d.arc.startAngle) / 2;
+          const outerEdgePoint = [
+            Math.cos(midAngle - Math.PI / 2) * chartRadius,
+            Math.sin(midAngle - Math.PI / 2) * chartRadius
+          ];
+          
+          // Intermediate control point for smooth curve
+          const controlRadius = chartRadius * 1.15;
+          const controlPoint = [
+            Math.cos(midAngle - Math.PI / 2) * controlRadius,
+            Math.sin(midAngle - Math.PI / 2) * controlRadius
+          ];
+          
+          const finalPoint = d.pos;
+          
+          // Create a smooth quadratic curve
+          return `M ${outerEdgePoint[0]},${outerEdgePoint[1]} Q ${controlPoint[0]},${controlPoint[1]} ${finalPoint[0]},${finalPoint[1]}`;
         });
 
-      // Draw text labels
-      labelGroup
-        .selectAll('text')
-        .data(adjustedLabels)
+      // Draw label text
+      g.selectAll('.label-text')
+        .data(allLabels)
         .join('text')
+        .attr('class', 'label-text')
         .attr('transform', (d) => `translate(${d.pos})`)
-        .attr('text-anchor', (d) => d.midangle < Math.PI ? 'start' : 'end')
+        .attr('text-anchor', (d) => d.midAngle < Math.PI ? 'start' : 'end')
         .attr('font-size', `${baseFontSize}px`)
+        .attr('fill', 'var(--text-color)')
         .text((d) => {
-          const percentage = ((d.data.endAngle - d.data.startAngle) / (2 * Math.PI)) * 100;
-          const value = d.data.data[valueColumn].toLocaleString('en-US');
-          return `${d.data.data[domainColumn]}: ${value} (${percentage.toFixed(0)}%)`;
+          const percentage = ((d.arc.endAngle - d.arc.startAngle) / (2 * Math.PI)) * 100;
+          const value = d.arc.data[valueColumn].toLocaleString('en-US');
+          return `${d.arc.data[domainColumn]}: ${value} (${percentage.toFixed(1)}%)`;
         });
-    } else {
-      // --- LOGIC FOR INTERNAL LABELS ---
-      const labelRadius = chartRadius * 0.6;
-      const arcLabel = d3.arc().innerRadius(labelRadius).outerRadius(labelRadius);
 
-      labelGroup
-        .selectAll('text')
+    } else {
+      // --- LOGIC FOR INTERNAL LABELS (keeping your original logic) ---
+      const labelRadius = chartRadius * 0.6;
+      const arcLabel = d3.arc<any>().innerRadius(labelRadius).outerRadius(labelRadius);
+      const minAngleForText = Math.max(0.15, baseFontSize * 0.008);
+
+      g.selectAll('.label-text')
         .data(arcs)
         .join('text')
+        .attr('class', 'label-text')
         .attr('transform', (d) => `translate(${arcLabel.centroid(d)})`)
-        .call((text) =>
-          text
-            .append('tspan')
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'var(--text-color)')
+        .each(function(d) {
+          const text = d3.select(this);
+          
+          text.append('tspan')
             .attr('y', `-${titleFontSize * 0.3}px`)
             .attr('font-weight', 'bold')
             .attr('font-size', `${titleFontSize}px`)
-            .text((d) => d.data[domainColumn])
-        )
-        .call((text) =>
-          text
-            .filter((d) => d.endAngle - d.startAngle > minAngleForText)
-            .append('tspan')
-            .attr('x', 0)
-            .attr('y', `${valueFontSize * 0.5}px`)
-            .attr('fill-opacity', 0.7)
-            .attr('font-size', `${valueFontSize}px`)
-            .text((d) => d.data[valueColumn].toLocaleString('en-US'))
-        )
-        .call((text) =>
-          text
-            .filter((d) => d.endAngle - d.startAngle > minAngleForText)
-            .append('tspan')
-            .attr('x', 0)
-            .attr('y', `${baseFontSize * 1.2}px`)
-            .attr('fill-opacity', 0.7)
-            .attr('font-size', `${percentageFontSize}px`)
-            .text((d) => {
-              const percentage =
-                ((d.endAngle - d.startAngle) / (2 * Math.PI)) * 100;
-              return `${percentage.toFixed(0)}%`;
-            })
-        );
+            .text(d.data[domainColumn]);
+          
+          if (d.endAngle - d.startAngle > minAngleForText) {
+            text.append('tspan')
+              .attr('x', 0)
+              .attr('y', `${valueFontSize * 0.5}px`)
+              .attr('fill-opacity', 0.7)
+              .attr('font-size', `${valueFontSize}px`)
+              .text(d.data[valueColumn].toLocaleString('en-US'));
+          }
+          
+          if (d.endAngle - d.startAngle > minAngleForText) {
+            const percentage = ((d.endAngle - d.startAngle) / (2 * Math.PI)) * 100;
+            text.append('tspan')
+              .attr('x', 0)
+              .attr('y', `${baseFontSize * 1.2}px`)
+              .attr('fill-opacity', 0.7)
+              .attr('font-size', `${percentageFontSize}px`)
+              .text(`${percentage.toFixed(0)}%`);
+          }
+        });
     }
+
   }, [
     dataIsReady,
     textOutside,

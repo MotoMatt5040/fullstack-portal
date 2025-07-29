@@ -76,9 +76,15 @@ tspan {
 .svg-pie-chart-container text {
   pointer-events: none; /* Prevent text from interfering with interactions */
   user-select: none;
+  fill: var(--text-color) !important;
 }
 
 /* Style for text that might be too small to read */
 .svg-pie-chart-container tspan[font-size] {
+  fill: var(--text-color) !important;
   transition: font-size 0.3s ease;
+}
+
+.svg-pie-chart-container polyline {
+  stroke: var(--text-color) !important; /* Use theme color for label lines */
 }
