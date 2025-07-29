@@ -12,5 +12,6 @@ router.use('/project-publishing', require('./api/projectPublishing'));
 router.use('/project-info', require('./api/projectInfo'));
 router.use('/disposition-report', require('./api/dispositions'));
 router.use('/ai-prompting', require('./api/openAIPrompting'));
+router.use('/support', require('./api/support'));
 
 module.exports = router;
