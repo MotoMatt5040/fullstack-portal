@@ -415,38 +415,50 @@ const filterForExternalUsers = (data) => {
   // Get quota keys (excluding totalRow)
   const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
 
-  // Check if Phone.com exists to determine filtering strategy
-  const hasPhoneCom = data?.Phone?.com;
+  // Check if we have any 'com' data anywhere in the structure
+  const hasComData = quotaKeys.some(quotaKey => {
+    const quotaData = data[quotaKey];
+    return quotaData?.Phone?.com || quotaData?.Web?.com;
+  });
+
+  console.log(`Has com data: ${hasComData}`);
 
   for (const quotaKey of quotaKeys) {
-    if (hasPhoneCom) {
-      // If Phone.com exists, use original logic: remove entries without Phone.com
-      const rowHasPhoneCom = data[quotaKey].Phone?.com;
-      if (!rowHasPhoneCom) {
-        delete data[quotaKey];
-        continue; // Skip to next iteration since this quotaKey is deleted
+    let shouldRemoveRow = false;
+
+    if (hasComData) {
+      // If we have com data anywhere, only keep rows that have com data
+      const rowHasComData = data[quotaKey]?.Phone?.com || data[quotaKey]?.Web?.com;
+      if (!rowHasComData) {
+        shouldRemoveRow = true;
+        // console.log(`Removing quota key: ${quotaKey} - no com data found`);
       }
     }
 
-    // For both cases (with or without Phone.com), filter out rows where any label contains "!"
-    const rowData = data[quotaKey];
-    let shouldRemoveRow = false;
-
-    // Check all groups and subgroups for labels containing "!"
-    Object.values(rowData).forEach(groupData => {
-      if (groupData && typeof groupData === 'object') {
-        Object.values(groupData).forEach(subGroupData => {
-          if (subGroupData && typeof subGroupData === 'object' && 'Label' in subGroupData) {
-            const label = subGroupData.Label?.toString() || '';
-            if (label.includes('!')) {
-              shouldRemoveRow = true;
+    // Also check for labels containing "!" (existing logic)
+    if (!shouldRemoveRow) {
+      const rowData = data[quotaKey];
+      
+      // Check all groups and subgroups for labels containing "!"
+      Object.values(rowData).forEach(groupData => {
+        if (groupData && typeof groupData === 'object') {
+          Object.values(groupData).forEach(subGroupData => {
+            if (subGroupData && typeof subGroupData === 'object' && 'Label' in subGroupData) {
+              const label = subGroupData.Label?.toString() || '';
+              if (label.includes('!')) {
+                shouldRemoveRow = true;
+              }
             }
-          }
-        });
-      }
-    });
+          });
+        }
+      });
 
-    // Remove the entire row if any label contains "!"
+      if (shouldRemoveRow) {
+        // console.log(`Removing quota key: ${quotaKey} due to label containing "!"`);
+      }
+    }
+
+    // Remove the row if it should be removed for any reason
     if (shouldRemoveRow) {
       delete data[quotaKey];
     }
