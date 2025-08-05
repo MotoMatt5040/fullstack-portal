@@ -1,21 +1,12 @@
+name: mern-app
+
 services:
   api:
     build:
       context: ./server
       target: production
     restart: unless-stopped
-    env_file: 
-      - .env.${COMPOSE_ENV:-production}
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - JWT_SECRET=${JWT_SECRET}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
+    env_file: ./.env.production
     volumes:
       - ./server_logs:/logs
     networks:
@@ -26,13 +17,11 @@ services:
       context: ./client
       target: production
       args:
-        - VITE_DEV_API_URL=${VITE_DEV_API_URL:-}
-        - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
-        - VITE_ENV=${VITE_ENV}
-        - API_URL=${API_URL}
+        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
+        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+        VITE_ENV: ${VITE_ENV}
     restart: unless-stopped
-    env_file:
-      - .env.${COMPOSE_ENV:-production}
+    env_file: ./.env.production
     networks:
       - mern-app
     depends_on:
@@ -42,14 +31,17 @@ services:
     build:
       context: ./caddy
       dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: production
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    env_file: ./.env.production
     environment:
-      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
-      - API_URL=${API_URL}
-      - CLIENT_URL=${CLIENT_URL}
+      VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
     volumes:
+      # - ./caddy/Caddyfile.production:/etc/caddy/Caddyfile
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
       - /var/log/caddy_logs:/var/log/caddy
@@ -62,6 +54,7 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+
 networks:
   mern-app:
     driver: bridge
