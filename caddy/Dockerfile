@@ -32,17 +32,18 @@ COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 
 # Copy validated configuration from config-prep stage
 COPY --from=config-prep /etc/caddy/Caddyfile /etc/caddy/Caddyfile
-COPY --from=config-prep --chown=caddy:caddy /caddy_data /caddy_data
-COPY --from=config-prep --chown=caddy:caddy /caddy_config /caddy_config
-COPY --from=config-prep --chown=caddy:caddy /var/log/caddy /var/log/caddy
 
-# Switch to non-root user
-USER caddy
+# Create directories with proper permissions but don't change ownership yet
+RUN mkdir -p /caddy_data /caddy_config /var/log/caddy && \
+    chmod 755 /caddy_data /caddy_config /var/log/caddy
+
+# Don't switch to non-root user yet - let's get basic functionality working
+# USER caddy
 
 EXPOSE 80
 EXPOSE 443
 
-# Health check
+# Simple health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD caddy version || exit 1
 

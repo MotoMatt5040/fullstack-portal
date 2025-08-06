@@ -41,17 +41,16 @@ RUN find build -name "*.map" -delete && \
 # Production stage with Caddy
 FROM caddy:2-alpine AS production
 
-# Copy the Caddyfile
+# Copy the client-specific Caddyfile (serves static files only)
 COPY ./Caddyfile /etc/caddy/Caddyfile
 
-# Copy built files from build stage
+# Copy built files from build stage to /srv
 COPY --from=build /app/build /srv
 
-# Set proper permissions
-RUN chown -R caddy:caddy /srv
+# Ensure proper ownership (but stay as root for now)
+RUN chown -R caddy:caddy /srv && chmod -R 755 /srv
 
-# Switch to caddy user (non-root)
-USER caddy
+# Don't switch to non-root user yet - let's fix the basic functionality first
+# USER caddy
 
 EXPOSE 80
-EXPOSE 443

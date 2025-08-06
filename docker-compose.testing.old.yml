@@ -1,0 +1,60 @@
+name: mern-app
+
+services:
+  api:
+    build:
+      context: ./server
+      target: production
+    restart: unless-stopped
+    env_file: ./.env.testing
+    volumes:
+      - ./server_logs:/logs
+    networks:
+      - mern-app
+
+  client:
+    build: 
+      context: ./client
+      target: production
+      args:
+        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
+        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+        VITE_ENV: ${VITE_ENV}
+    restart: unless-stopped
+    env_file: ./.env.testing
+    networks:
+      - mern-app
+    depends_on:
+      - api
+
+  caddy:
+    build:
+      context: ./caddy
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: testing
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: ./.env.testing
+    environment:
+      VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+    volumes:
+      # - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile
+      - caddy_data:/caddy_data
+      - caddy_config:/caddy_config
+      - /var/log/caddy_logs:/var/log/caddy
+    networks:
+      - mern-app
+    depends_on:
+      - api
+      - client
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  mern-app:
+    driver: bridge

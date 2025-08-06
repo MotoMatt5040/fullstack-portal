@@ -31,19 +31,19 @@ RUN rm -rf tests/ docs/ .github/ README.md *.md && \
 RUN mkdir -p /app/logs && \
     chown -R node:node /app/logs
 
-# Final production stage
+# Final production stage  
 FROM node:20-bookworm-slim AS production
 WORKDIR /app
 
 # Copy from runtime-prep stage
 COPY --from=runtime-prep /app ./
 
-# Ensure logs directory exists and is writable
-RUN mkdir -p /logs && \
-    chown -R node:node /logs
+# Ensure logs directory exists with proper permissions
+RUN mkdir -p /logs /app/logs && \
+    chmod 755 /logs /app/logs
 
-# Switch to non-root user (built-in node user)
-USER node
+# Don't switch to non-root user yet - let's get basic functionality working first
+# USER node
 
 EXPOSE 5000
 CMD ["node", "server.js"]
