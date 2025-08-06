@@ -1,34 +1,49 @@
 # Development stage
 FROM node:20-bookworm-slim AS development
-
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies (including devDependencies)
 RUN npm install
-
-# Copy application files
 COPY . .
-
 EXPOSE 5000
 CMD ["npm", "run", "dev"]
 
-# Production stage
-FROM node:20-bookworm-slim AS production
+# Dependencies stage - cacheable layer for production
+FROM node:20-bookworm-slim AS dependencies
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production && \
+    npm cache clean --force
 
+# Security audit stage (optional but recommended)
+FROM dependencies AS security-check
+RUN npm audit --audit-level high || true  # Don't fail build on audit issues
+
+# Runtime preparation stage
+FROM dependencies AS runtime-prep
+WORKDIR /app
+COPY . .
+# Remove development files
+RUN rm -rf tests/ docs/ .github/ README.md *.md && \
+    find . -name "*.test.js" -delete && \
+    find . -name "*.spec.js" -delete
+
+# Create logs directory with proper permissions
+RUN mkdir -p /app/logs && \
+    chown -R node:node /app/logs
+
+# Final production stage
+FROM node:20-bookworm-slim AS production
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy from runtime-prep stage
+COPY --from=runtime-prep /app ./
 
-# Install only production dependencies
-# Use npm ci for faster, more reliable builds
-RUN npm ci --only=production
+# Ensure logs directory exists and is writable
+RUN mkdir -p /logs && \
+    chown -R node:node /logs
 
-# Copy application files
-COPY . .
+# Switch to non-root user (built-in node user)
+USER node
 
 EXPOSE 5000
 CMD ["node", "server.js"]

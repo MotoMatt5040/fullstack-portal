@@ -4,56 +4,134 @@ services:
   api:
     build:
       context: ./server
+      # Use production build but consider testing-specific optimizations
       target: production
+      # Optional: Add testing-specific build args
+      args:
+        - NODE_ENV=testing
     restart: unless-stopped
-    env_file: ./.env.testing
+    env_file: 
+      - .env.testing
+    environment:
+      - NODE_ENV=testing
+      # Add all your environment variables from the main compose file
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - JWT_SECRET=${JWT_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      # Testing-specific variables
+      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - DATABASE_URI=${DATABASE_URI}
     volumes:
-      - ./server_logs:/logs
+      # Map logs with proper permissions
+      - ./server_logs:/logs:rw
+      # Optional: Add temp directory for testing file uploads
+      - api_temp:/app/temp
     networks:
       - mern-app
+    # Health check for better deployment reliability
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s  # Longer start period for testing environment
+    # Resource limits appropriate for testing server
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 384M
+        reservations:
+          cpus: '0.2'
+          memory: 192M
 
   client:
     build: 
       context: ./client
       target: production
       args:
-        VITE_DEV_API_URL: ${VITE_DEV_API_URL}
-        VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
-        VITE_ENV: ${VITE_ENV}
+        - VITE_DEV_API_URL=${VITE_DEV_API_URL}
+        - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+        - VITE_ENV=${VITE_ENV}
+        # Add API_URL if needed
+        - API_URL=${API_URL:-}
     restart: unless-stopped
-    env_file: ./.env.testing
+    env_file: 
+      - .env.testing
     networks:
       - mern-app
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    # Lighter resource limits for client (static files + Caddy)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 96M
+        reservations:
+          cpus: '0.1'
+          memory: 48M
 
   caddy:
     build:
       context: ./caddy
       dockerfile: Dockerfile
+      target: production
       args:
-        ENVIRONMENT: testing
+        # Use testing-specific Caddyfile
+        - ENVIRONMENT=testing
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-    env_file: ./.env.testing
+    env_file: 
+      - .env.testing
     environment:
-      VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
+      - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
+      - API_URL=${API_URL}
+      - CLIENT_URL=${CLIENT_URL}
+      # Add any other Caddy-specific environment variables
     volumes:
-      # - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile
+      # Persistent volumes for SSL certificates and config
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
-      - /var/log/caddy_logs:/var/log/caddy
+      # Logs with proper permissions
+      - /var/log/caddy_logs:/var/log/caddy:rw
     networks:
       - mern-app
     depends_on:
       - api
       - client
+    # Health check for Caddy
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Resource limits for reverse proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 192M
+        reservations:
+          cpus: '0.1'
+          memory: 48M
 
 volumes:
   caddy_data:
+    driver: local
   caddy_config:
+    driver: local
+  api_temp:
+    driver: local
 
 networks:
   mern-app:
