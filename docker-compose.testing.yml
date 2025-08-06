@@ -11,13 +11,6 @@ services:
       - ./server_logs:/logs
     networks:
       - mern-app
-    # Optional: Add health check if you want better reliability
-    # healthcheck:
-    #   test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 40s
 
   client:
     build: 
@@ -48,6 +41,7 @@ services:
     environment:
       VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
     volumes:
+      # - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
       - /var/log/caddy_logs:/var/log/caddy
@@ -59,11 +53,7 @@ services:
 
 volumes:
   caddy_data:
-    driver: local
   caddy_config:
-    driver: local
-  api_temp:
-    driver: local
 
 networks:
   mern-app:
