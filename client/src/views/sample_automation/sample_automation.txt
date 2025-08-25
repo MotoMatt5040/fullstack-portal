@@ -1,0 +1,37 @@
+Loading data into a table view
+
+ append promark internal variables
+  those are new columns
+    (VTYPE, TFLAG, VEND, CALLID1, CALLID2, CALLID3, CALLID4, SOURCE)
+    VTYPE = 2 ? CELL : 1 (LL)
+    TFLAG = 0
+    VEND = 5
+    SOURCE = (we may need a cross to change this later)
+      1 ? LL ONLY : 
+      2 ? CELL ONLY : 
+      3 ? BOTH
+
+dropdown to select age variable
+  any age > 99 becomes 99
+  if negative, change to 0
+  birthyear only ? compute age (just use current date)
+  (agerange/agerangecode depends on client) (codes depend on quotas sent)
+
+phone my have bad format (use dropdown to select phone column) (may have ll and cell columns, may have to split)
+  must be fixed to phone number format
+
+may need to compute regn, dma, countycodes, district quotas, party, etc...
+ we may want to use an api call to auto adjust the values. e.g.: party may say {Democrat} but we want that as {2}
+
+split sample depending on clients specification
+  this might be ll/cell/web splits, quota splits, or whatever client specifies
+
+LL ONLY
+  WDNC
+  householding
+    searching for duplicates
+      keeping first 4
+        order by youngest to oldest
+
+
+when importing a data set, if an unknown variable is found prompt to update the name

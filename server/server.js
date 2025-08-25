@@ -41,8 +41,8 @@ app.use(logger);
 
 app.use(credentials); //THIS MUST BE BEFORE CORS
 app.use(cors(corsOptions));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+app.use(express.urlencoded({ extended: false, limit: '200mb' }));
+app.use(express.json( {limit: '200mb'} ));
 app.use(cookieParser());
 
 //styling
