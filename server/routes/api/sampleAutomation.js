@@ -12,7 +12,7 @@ const allowedRoles = [
 
 router.route('/process').post(
   verifyRoles(...allowedRoles),
-  sampleAutomationController.upload.single('file'),
+  sampleAutomationController.upload,
   sampleAutomationController.processFile,
 );
 
