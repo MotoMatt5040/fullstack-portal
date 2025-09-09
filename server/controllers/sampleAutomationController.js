@@ -94,7 +94,8 @@ const processFile = async (req, res) => {
           dataWithSource = processResult.data.map(row => ({
             ...row,
             _source_file: originalFilename,
-            _file_index: i + 1
+            _file_index: i + 1,
+            // REMOVED: VEND: 5, TFLAG: 0 - Now handled by service layer
           }));
         } else {
           // Single file - no need for source tracking
@@ -130,6 +131,7 @@ const processFile = async (req, res) => {
       finalHeaders.push(
         { name: '_source_file', type: 'TEXT' },
         { name: '_file_index', type: 'INTEGER' }
+        // REMOVED: VEND and TFLAG - Now handled by service layer automatically
       );
     }
 
@@ -139,7 +141,7 @@ const processFile = async (req, res) => {
     console.log(`📊 Processing Summary:`);
     console.log(`- Files processed: ${filesToProcess.length}`);
     console.log(`- Total rows: ${allProcessedData.length}`);
-    console.log(`- Unique columns: ${finalHeaders.length}`);
+    console.log(`- File columns: ${finalHeaders.length}`);
 
     // Create dataset (merged if multiple files, single if one file)
     const processedData = {
@@ -149,7 +151,7 @@ const processFile = async (req, res) => {
       sourceFiles: processedFileNames
     };
 
-    console.log('🔗 Creating SQL table...');
+    console.log('🔗 Creating SQL table with Promark internal variables...');
 
     try {
       // Create table name based on file count
@@ -157,22 +159,22 @@ const processFile = async (req, res) => {
         ? `merged_${filesToProcess.length}_files` 
         : path.basename(processedFileNames[0], path.extname(processedFileNames[0]));
 
-      // Create SQL table from processed data
+      // Create SQL table from processed data (service will add Promark constants automatically)
       const tableResult = await createTableFromFileData(processedData, baseTableName);
-      console.log('✅ Table created successfully:', tableResult.tableName);
+      console.log('✅ Table created successfully with Promark constants:', tableResult.tableName);
 
       // Generate session ID
       const sessionId = generateSessionId();
 
       // Send success response
       const responseMessage = filesToProcess.length > 1
-        ? `Successfully merged ${filesToProcess.length} files and created table ${tableResult.tableName} with ${tableResult.rowsInserted} total rows`
-        : `Successfully processed ${processedFileNames[0]} and created table ${tableResult.tableName} with ${tableResult.rowsInserted} rows`;
+        ? `Successfully merged ${filesToProcess.length} files and created table ${tableResult.tableName} with ${tableResult.rowsInserted} total rows and Promark internal variables`
+        : `Successfully processed ${processedFileNames[0]} and created table ${tableResult.tableName} with ${tableResult.rowsInserted} rows and Promark internal variables`;
 
       res.json({
         success: true,
         sessionId: sessionId,
-        headers: tableResult.headers,
+        headers: tableResult.headers, // Includes Promark constants
         tableName: tableResult.tableName,
         rowsInserted: tableResult.rowsInserted,
         totalRows: tableResult.totalRows,
@@ -181,7 +183,8 @@ const processFile = async (req, res) => {
         message: responseMessage,
         fileTypes: [...new Set(filesToProcess.map(f => path.extname(f.originalname).toLowerCase()))],
         originalFilenames: processedFileNames,
-        projectId: projectId
+        projectId: projectId,
+        promarkConstantsAdded: tableResult.promarkConstantsAdded // Show which constants were added
       });
 
     } catch (sqlError) {

@@ -2,7 +2,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit"
 import { apiSlice } from "./api/apiSlice"
 import authReducer from '../features/auth/authSlice'
 import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
+import storage from 'redux-persist/lib/storage'
 import settingsReducer from '../features/settingsSlice'
 import summaryReducer from '../features/summarySlice'
 import rolesReducer from '../features/roles/rolesSlice';

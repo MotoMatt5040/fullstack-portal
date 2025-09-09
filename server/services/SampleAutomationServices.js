@@ -1,8 +1,12 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
+const { 
+  getPromarkConstantsAsHeaders, 
+  getPromarkConstantDefault 
+} = require('../config/promarkConstants');
 
 /**
- * Create a SQL table from processed file data
+ * Create a SQL table from processed file data with Promark internal variables
  * @param {Object} processedData - Data from file processor containing headers and data
  * @param {string} tableName - Base name for the table
  * @returns {Object} - Result object with table creation details
@@ -38,30 +42,41 @@ const createTableFromFileData = async (processedData, tableName) => {
 
         console.log('Generated table name:', finalTableName);
 
-        // Create table with dynamic schema
-        console.log('Creating table...');
-        await createTable(pool, finalTableName, headers);
+        // Get Promark internal variables and combine with original headers
+        const promarkConstants = getPromarkConstantsAsHeaders();
+        const enhancedHeaders = [...headers, ...promarkConstants];
 
-        // Insert the data
-        console.log('Inserting data...');
-        const insertedRows = await insertData(
+        console.log('Original headers:', headers.length);
+        console.log('Promark constants added:', promarkConstants.length);
+        console.log('Total headers:', enhancedHeaders.length);
+
+        // Create table with enhanced schema (original + constants)
+        console.log('Creating table with Promark internal variables...');
+        await createTable(pool, finalTableName, enhancedHeaders);
+
+        // Insert the data with constants applied
+        console.log('Inserting data with constants...');
+        const insertedRows = await insertDataWithConstants(
           pool,
           finalTableName,
-          headers,
-          data
+          headers, // Original headers from file
+          enhancedHeaders, // All headers (original + constants)
+          data,
+          promarkConstants
         );
 
         console.log(
-          `Successfully created table ${finalTableName} with ${insertedRows} rows`
+          `Successfully created table ${finalTableName} with ${insertedRows} rows and Promark internal variables`
         );
 
         return {
           success: true,
           tableName: finalTableName,
-          headers: headers,
+          headers: enhancedHeaders, // Return all headers including constants
           rowsInserted: insertedRows,
           totalRows: data.length,
-          message: `Successfully created table ${finalTableName} with ${insertedRows} rows`,
+          message: `Successfully created table ${finalTableName} with ${insertedRows} rows and Promark internal variables`,
+          promarkConstantsAdded: promarkConstants.map(c => c.name)
         };
       } catch (error) {
         console.error('Error creating table from file data:', error);
@@ -87,22 +102,35 @@ const sanitizeTableName = (tableName) => {
 };
 
 /**
- * Create SQL table with dynamic schema
+ * Create SQL table with dynamic schema including default values for constants
  * @param {Object} pool - Database connection pool
  * @param {string} tableName - Name of table to create
- * @param {Array} headers - Array of header objects with name and type
+ * @param {Array} headers - Array of header objects with name, type, and optional defaultValue
  */
 const createTable = async (pool, tableName, headers) => {
   try {
-    console.log('Creating table with headers:', headers);
+    console.log('Creating table with headers (including constants):', headers.length);
 
-    // Build column definitions - just the file data columns
+    // Build column definitions with DEFAULT clauses for constants
     const columnDefinitions = headers
       .map((header) => {
         const columnName = sanitizeColumnName(header.name);
         const sqlType = mapDataTypeToSQL(header.type);
-        console.log(`Column: ${columnName} -> ${sqlType}`);
-        return `[${columnName}] ${sqlType}`;
+        
+        // Add DEFAULT clause if header has defaultValue (for Promark constants)
+        const defaultClause = header.defaultValue !== undefined && header.defaultValue !== null
+          ? ` DEFAULT ${typeof header.defaultValue === 'string' ? `'${header.defaultValue}'` : header.defaultValue}`
+          : '';
+        
+        const columnDef = `[${columnName}] ${sqlType}${defaultClause}`;
+        
+        if (header.isPromarkConstant) {
+          console.log(`Promark constant: ${columnName} -> ${sqlType}${defaultClause}`);
+        } else {
+          console.log(`File column: ${columnName} -> ${sqlType}`);
+        }
+        
+        return columnDef;
       })
       .join(',\n    ');
 
@@ -112,22 +140,72 @@ const createTable = async (pool, tableName, headers) => {
     )
   `;
 
-    console.log('Executing CREATE TABLE SQL:', createTableSQL);
-
+    console.log('Executing CREATE TABLE SQL with constants...');
     const result = await pool.request().query(createTableSQL);
-    console.log('Table creation result:', result);
-    console.log(`Table [${tableName}] created successfully`);
+    console.log(`Table [${tableName}] created successfully with Promark constants`);
   } catch (error) {
     console.error('Error in createTable:', error);
-    console.error('SQL Error details:', {
-      message: error.message,
-      number: error.number,
-      state: error.state,
-      class: error.class,
-      serverName: error.serverName,
-      procName: error.procName,
-      lineNumber: error.lineNumber,
+    throw error;
+  }
+};
+
+/**
+ * Insert data with Promark constants applied
+ * @param {Object} pool - Database connection pool
+ * @param {string} tableName - Name of the table
+ * @param {Array} originalHeaders - Original headers from file
+ * @param {Array} allHeaders - All headers (original + constants)
+ * @param {Array} data - Array of data objects
+ * @param {Array} promarkConstants - Array of Promark constant definitions
+ * @returns {number} - Number of rows inserted
+ */
+const insertDataWithConstants = async (pool, tableName, originalHeaders, allHeaders, data, promarkConstants) => {
+  try {
+    if (data.length === 0) {
+      console.log('No data to insert');
+      return 0;
+    }
+
+    console.log(`Bulk inserting ${data.length} rows with Promark constants into table ${tableName}`);
+
+    // Use SQL Server's bulk insert capability
+    const table = new sql.Table(`dbo.${tableName}`);
+
+    // Define columns for bulk insert (all headers including constants)
+    allHeaders.forEach((header) => {
+      const columnName = sanitizeColumnName(header.name);
+      const sqlType = getSQLParameterType(header.type);
+      table.columns.add(columnName, sqlType, { nullable: true });
     });
+
+    // Add all rows to the table with constants
+    data.forEach((row) => {
+      const rowValues = allHeaders.map((header) => {
+        // Check if this is a Promark constant column
+        const isConstant = promarkConstants.find(c => c.name === header.name);
+        
+        if (isConstant) {
+          // Use the default value for constants
+          const defaultValue = getPromarkConstantDefault(header.name);
+          return convertValue(defaultValue, header.type);
+        } else {
+          // Use original file data
+          const value = row[header.name];
+          return convertValue(value, header.type);
+        }
+      });
+      
+      table.rows.add(...rowValues);
+    });
+
+    console.log('Executing bulk insert with constants...');
+    const request = pool.request();
+    await request.bulk(table);
+
+    console.log(`Successfully bulk inserted ${data.length} rows with Promark constants`);
+    return data.length;
+  } catch (error) {
+    console.error('Error in bulk insert with constants:', error);
     throw error;
   }
 };
@@ -167,125 +245,6 @@ const mapDataTypeToSQL = (dataType) => {
       return 'NVARCHAR(500) NULL';
   }
 };
-
-/**
- * Insert data into the created table using bulk operations
- * @param {Object} pool - Database connection pool
- * @param {string} tableName - Name of the table
- * @param {Array} headers - Array of header objects
- * @param {Array} data - Array of data objects
- * @returns {number} - Number of rows inserted
- */
-const insertData = async (pool, tableName, headers, data) => {
-  try {
-    if (data.length === 0) {
-      console.log('No data to insert');
-      return 0;
-    }
-
-    console.log(`Bulk inserting ${data.length} rows into table ${tableName}`);
-
-    // Use SQL Server's bulk insert capability
-    const table = new sql.Table(`dbo.${tableName}`);
-
-    // Define columns for bulk insert
-    headers.forEach((header) => {
-      const columnName = sanitizeColumnName(header.name);
-      const sqlType = getSQLParameterType(header.type);
-      table.columns.add(columnName, sqlType, { nullable: true });
-    });
-
-    // Add all rows to the table
-    data.forEach((row) => {
-      const rowValues = headers.map((header) => {
-        const value = row[header.name];
-        return convertValue(value, header.type);
-      });
-      table.rows.add(...rowValues);
-    });
-
-    console.log('Executing bulk insert...');
-    const request = pool.request();
-    await request.bulk(table);
-
-    console.log(`Successfully bulk inserted ${data.length} rows`);
-    return data.length;
-  } catch (error) {
-    console.error('Error in bulk insert:', error);
-
-    // Fallback to single row inserts if bulk insert fails
-    // console.log('Bulk insert failed, falling back to single row inserts...');
-    // return await insertDataSingleRows(pool, tableName, headers, data);
-  }
-};
-
-/**
- * Fallback method: Insert data row by row (slower but more reliable)
- */
-// const insertDataSingleRows = async (pool, tableName, headers, data) => {
-//   try {
-//     console.log(`Fallback: Inserting ${data.length} rows one by one...`);
-
-//     let insertedCount = 0;
-
-//     // Build dynamic INSERT query once
-//     const columnNames = headers
-//       .map((h) => `[${sanitizeColumnName(h.name)}]`)
-//       .join(', ');
-//     const valuePlaceholders = headers
-//       .map((_, index) => `@param${index}`)
-//       .join(', ');
-
-//     const insertSQL = `
-//       INSERT INTO [dbo].[${tableName}] (${columnNames})
-//       VALUES (${valuePlaceholders})
-//     `;
-
-//     // Process in smaller batches for better performance
-//     const batchSize = 50;
-//     for (
-//       let batchStart = 0;
-//       batchStart < data.length;
-//       batchStart += batchSize
-//     ) {
-//       const batchEnd = Math.min(batchStart + batchSize, data.length);
-//       console.log(
-//         `Processing batch: rows ${batchStart + 1}-${batchEnd} of ${data.length}`
-//       );
-
-//       for (let i = batchStart; i < batchEnd; i++) {
-//         const row = data[i];
-//         const request = pool.request();
-
-//         // Add parameters for each column
-//         headers.forEach((header, index) => {
-//           const value = row[header.name];
-//           const convertedValue = convertValue(value, header.type);
-//           const sqlType = getSQLParameterType(header.type);
-//           request.input(`param${index}`, sqlType, convertedValue);
-//         });
-
-//         await request.query(insertSQL);
-//         insertedCount++;
-//       }
-
-//       // Show progress every batch
-//       console.log(
-//         `Completed ${insertedCount} of ${data.length} rows (${Math.round(
-//           (insertedCount / data.length) * 100
-//         )}%)`
-//       );
-//     }
-
-//     console.log(
-//       `Successfully inserted all ${insertedCount} rows using single row method`
-//     );
-//     return insertedCount;
-//   } catch (error) {
-//     console.error('Error in single row insert fallback:', error);
-//     throw error;
-//   }
-// };
 
 /**
  * Get SQL parameter type for mssql library
