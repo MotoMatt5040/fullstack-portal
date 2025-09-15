@@ -20,6 +20,10 @@ const processFile = async (req, res) => {
     console.log('Files received:', req.files ? req.files.length : 0);
     console.log('Single file:', req.file ? 'Yes' : 'No');
     
+    // EXTRACT CUSTOM HEADERS FROM REQUEST
+    const customHeaders = req.body.customHeaders ? JSON.parse(req.body.customHeaders) : {};
+    console.log('Custom headers received:', customHeaders);
+    
     // Handle both single file (req.file) and multiple files (req.files)
     let filesToProcess = [];
     
@@ -88,17 +92,43 @@ const processFile = async (req, res) => {
         const processor = FileProcessorFactory.create(uploadedFilePath, fileName, fileExtension);
         const processResult = await processor.process();
 
-        // Add source file information to each row (only for multiple files)
+        // APPLY CUSTOM HEADERS - ONLY CHANGE THE SCHEMA, NOT THE DATA
+        let finalHeaders = processResult.headers;
+        if (customHeaders[i]) {
+          console.log(`Applying custom headers for file ${i + 1}:`, customHeaders[i]);
+          
+          // Simply replace header names - that's it!
+          finalHeaders = customHeaders[i].map((customName, headerIndex) => ({
+            name: customName,
+            type: processResult.headers[headerIndex]?.type || 'TEXT',
+            originalName: processResult.headers[headerIndex]?.name // Keep original for data mapping
+          }));
+          
+          // If there are more detected headers than custom ones, keep the extras
+          if (processResult.headers.length > customHeaders[i].length) {
+            const extraHeaders = processResult.headers.slice(customHeaders[i].length);
+            finalHeaders.push(...extraHeaders.map(h => ({
+              ...h,
+              originalName: h.name
+            })));
+          }
+        } else {
+          // No custom headers - add originalName for consistency
+          finalHeaders = finalHeaders.map(h => ({
+            ...h,
+            originalName: h.name
+          }));
+        }
+
+        // Use original data with NO CHANGES AT ALL
         let dataWithSource;
         if (filesToProcess.length > 1) {
           dataWithSource = processResult.data.map(row => ({
             ...row,
             _source_file: originalFilename,
             _file_index: i + 1,
-            // REMOVED: VEND: 5, TFLAG: 0 - Now handled by service layer
           }));
         } else {
-          // Single file - no need for source tracking
           dataWithSource = processResult.data;
         }
 
@@ -106,14 +136,17 @@ const processFile = async (req, res) => {
         totalOriginalRows += processResult.totalRows;
         processedFileNames.push(originalFilename);
 
-        // Track all unique headers across files
-        processResult.headers.forEach(header => {
+        // Track all unique headers across files (using custom names)
+        finalHeaders.forEach(header => {
           if (!allHeaders.has(header.name)) {
             allHeaders.set(header.name, header);
           }
         });
 
-        console.log(`✅ File ${i + 1} processed: ${processResult.totalRows} rows, ${processResult.headers.length} columns`);
+        console.log(`✅ File ${i + 1} processed: ${processResult.totalRows} rows, ${finalHeaders.length} columns (FAST - no data transformation)`);
+        if (customHeaders[i]) {
+          console.log(`📋 Custom headers applied: ${customHeaders[i].join(', ')}`);
+        }
 
       } catch (fileError) {
         console.error(`Error processing file ${originalFilename}:`, fileError);
@@ -129,9 +162,8 @@ const processFile = async (req, res) => {
     const finalHeaders = Array.from(allHeaders.values());
     if (filesToProcess.length > 1) {
       finalHeaders.push(
-        { name: '_source_file', type: 'TEXT' },
-        { name: '_file_index', type: 'INTEGER' }
-        // REMOVED: VEND and TFLAG - Now handled by service layer automatically
+        { name: '_source_file', type: 'TEXT', originalName: '_source_file' },
+        { name: '_file_index', type: 'INTEGER', originalName: '_file_index' }
       );
     }
 
@@ -142,16 +174,17 @@ const processFile = async (req, res) => {
     console.log(`- Files processed: ${filesToProcess.length}`);
     console.log(`- Total rows: ${allProcessedData.length}`);
     console.log(`- File columns: ${finalHeaders.length}`);
+    console.log(`- Custom headers used: ${Object.keys(customHeaders).length > 0 ? 'Yes' : 'No'}`);
 
     // Create dataset (merged if multiple files, single if one file)
     const processedData = {
       headers: finalHeaders,
-      data: normalizeData(allProcessedData, allHeaders),
+      data: allProcessedData, // Use data directly without normalizing for performance
       totalRows: allProcessedData.length,
       sourceFiles: processedFileNames
     };
 
-    console.log('🔗 Creating SQL table with Promark internal variables...');
+    console.log('🔗 Creating SQL table with custom headers and Promark internal variables...');
 
     try {
       // Create table name based on file count
@@ -161,20 +194,20 @@ const processFile = async (req, res) => {
 
       // Create SQL table from processed data (service will add Promark constants automatically)
       const tableResult = await createTableFromFileData(processedData, baseTableName);
-      console.log('✅ Table created successfully with Promark constants:', tableResult.tableName);
+      console.log('✅ Table created successfully with custom headers and Promark constants:', tableResult.tableName);
 
       // Generate session ID
       const sessionId = generateSessionId();
 
       // Send success response
       const responseMessage = filesToProcess.length > 1
-        ? `Successfully merged ${filesToProcess.length} files and created table ${tableResult.tableName} with ${tableResult.rowsInserted} total rows and Promark internal variables`
-        : `Successfully processed ${processedFileNames[0]} and created table ${tableResult.tableName} with ${tableResult.rowsInserted} rows and Promark internal variables`;
+        ? `Successfully merged ${filesToProcess.length} files and created table ${tableResult.tableName} with ${tableResult.rowsInserted} total rows, custom headers, and Promark internal variables`
+        : `Successfully processed ${processedFileNames[0]} and created table ${tableResult.tableName} with ${tableResult.rowsInserted} rows, custom headers, and Promark internal variables`;
 
       res.json({
         success: true,
         sessionId: sessionId,
-        headers: tableResult.headers, // Includes Promark constants
+        headers: tableResult.headers, // Includes custom headers + Promark constants
         tableName: tableResult.tableName,
         rowsInserted: tableResult.rowsInserted,
         totalRows: tableResult.totalRows,
@@ -184,7 +217,8 @@ const processFile = async (req, res) => {
         fileTypes: [...new Set(filesToProcess.map(f => path.extname(f.originalname).toLowerCase()))],
         originalFilenames: processedFileNames,
         projectId: projectId,
-        promarkConstantsAdded: tableResult.promarkConstantsAdded // Show which constants were added
+        promarkConstantsAdded: tableResult.promarkConstantsAdded, // Show which constants were added
+        customHeadersUsed: Object.keys(customHeaders).length > 0 // Show if custom headers were used
       });
 
     } catch (sqlError) {
@@ -212,35 +246,6 @@ const processFile = async (req, res) => {
     handleError(error, res);
   }
 };
-
-/**
- * Normalize data across files - fill in missing columns with null
- * @param {Array} allData - All data rows from all files
- * @param {Map} allHeaders - Map of all unique headers
- * @returns {Array} - Normalized data where all rows have all columns
- */
-function normalizeData(allData, allHeaders) {
-  const headerNames = Array.from(allHeaders.keys());
-  
-  return allData.map(row => {
-    const normalizedRow = {};
-    
-    // Ensure every row has every column (fill missing with null)
-    headerNames.forEach(headerName => {
-      normalizedRow[headerName] = row.hasOwnProperty(headerName) ? row[headerName] : null;
-    });
-    
-    // Keep source tracking columns if they exist
-    if (row._source_file) {
-      normalizedRow._source_file = row._source_file;
-    }
-    if (row._file_index) {
-      normalizedRow._file_index = row._file_index;
-    }
-    
-    return normalizedRow;
-  });
-}
 
 /**
  * Clean up uploaded files

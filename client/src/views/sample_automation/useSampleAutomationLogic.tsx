@@ -21,7 +21,7 @@ interface FileWrapper {
 }
 
 export const useSampleAutomationLogic = () => {
-  // State management - CHANGED: selectedFile -> selectedFiles array
+  // State management
   const [selectedFiles, setSelectedFiles] = useState<FileWrapper[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -30,6 +30,11 @@ export const useSampleAutomationLogic = () => {
   // Processing state
   const [processResult, setProcessResult] = useState<any>(null);
   const [processStatus, setProcessStatus] = useState('');
+
+  // Headers state
+  const [fileHeaders, setFileHeaders] = useState<Record<string, string[]>>({});
+  const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
+  const [hasHeaderConflicts, setHasHeaderConflicts] = useState(false);
 
   const currentUser = useSelector(selectUser);
 
@@ -134,20 +139,33 @@ export const useSampleAutomationLogic = () => {
     []
   );
 
-  // UPDATED: Clear all files
+  // Clear all files
   const clearSelectedFiles = useCallback(() => {
     setSelectedFiles([]);
     setProcessStatus('');
     setProcessResult(null);
+    setFileHeaders({});
+    setCheckedFiles(new Set());
+    setHasHeaderConflicts(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   }, []);
 
-  // NEW: Remove individual file
+  // Remove individual file
   const removeFile = useCallback((fileId: string) => {
     setSelectedFiles((prev) => prev.filter((file) => file.id !== fileId));
+    setFileHeaders((prev) => {
+      const updated = { ...prev };
+      delete updated[fileId];
+      return updated;
+    });
+    setCheckedFiles((prev) => {
+      const updated = new Set(prev);
+      updated.delete(fileId);
+      return updated;
+    });
   }, []);
 
   const openFileDialog = useCallback(() => {
@@ -169,6 +187,23 @@ export const useSampleAutomationLogic = () => {
     [selectedProjectId]
   );
 
+  // Updated handler for saving headers (now takes fileId instead of using selectedFileForHeaders)
+  const handleSaveHeaders = useCallback((fileId: string, headers: string[]) => {
+    // Store the headers for this file
+    setFileHeaders((prev) => ({
+      ...prev,
+      [fileId]: headers,
+    }));
+
+    // Mark this file as checked
+    setCheckedFiles((prev) => new Set([...prev, fileId]));
+  }, []);
+
+  // New handler for validation results
+  const handleValidationComplete = useCallback((hasConflicts: boolean) => {
+    setHasHeaderConflicts(hasConflicts);
+  }, []);
+
   // For backwards compatibility with select element
   const handleProjectSelect = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -178,19 +213,32 @@ export const useSampleAutomationLogic = () => {
     []
   );
 
-  // UPDATED: Clear all inputs
+  // Update the allFilesChecked logic to include validation
+  const allFilesChecked = useMemo(() => {
+    return selectedFiles?.every((file) => checkedFiles.has(file.id)) || false;
+  }, [selectedFiles, checkedFiles]);
+
+  // Updated merge button should be disabled if there are conflicts
+  const canMerge = useMemo(() => {
+    return allFilesChecked && !hasHeaderConflicts;
+  }, [allFilesChecked, hasHeaderConflicts]);
+
+  // Clear all inputs
   const clearInputs = useCallback(() => {
     setSelectedFiles([]);
     setSelectedProjectId('');
     setProcessStatus('');
     setProcessResult(null);
+    setFileHeaders({});
+    setCheckedFiles(new Set());
+    setHasHeaderConflicts(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   }, []);
 
-  // UPDATED: Process multiple files function
+  // Updated handleProcessFiles to use the validation state
   const handleProcessFiles = useCallback(async () => {
     if (!selectedProjectId) {
       setProcessStatus('❌ Please select a project');
@@ -199,6 +247,16 @@ export const useSampleAutomationLogic = () => {
 
     if (selectedFiles.length === 0) {
       setProcessStatus('❌ Please select at least one file');
+      return;
+    }
+
+    if (!allFilesChecked) {
+      setProcessStatus('❌ Please review headers for all files first');
+      return;
+    }
+
+    if (hasHeaderConflicts) {
+      setProcessStatus('❌ Please resolve header conflicts before merging');
       return;
     }
 
@@ -211,6 +269,15 @@ export const useSampleAutomationLogic = () => {
     });
 
     formData.append('projectId', selectedProjectId);
+
+    const headersMapping: Record<number, string[]> = {};
+    selectedFiles.forEach((item, index) => {
+      if (fileHeaders[item.id]) {
+        headersMapping[index] = fileHeaders[item.id];
+      }
+    });
+
+    formData.append('customHeaders', JSON.stringify(headersMapping));
 
     try {
       setProcessStatus(
@@ -237,7 +304,7 @@ export const useSampleAutomationLogic = () => {
         'Processing failed. Please try again.';
       setProcessStatus(`❌ Error: ${errorMessage}`);
     }
-  }, [selectedProjectId, selectedFiles, processFile]);
+  }, [selectedProjectId, selectedFiles, processFile, allFilesChecked, fileHeaders, hasHeaderConflicts]);
 
   // Utility functions
   const formatFileSize = useCallback((bytes: number): string => {
@@ -248,7 +315,7 @@ export const useSampleAutomationLogic = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }, []);
 
-  // UPDATED: Validate multiple files
+  // Validate multiple files
   const validateInputs = useCallback((): boolean => {
     if (!selectedProjectId) {
       setProcessStatus('❌ Please select a project');
@@ -281,12 +348,12 @@ export const useSampleAutomationLogic = () => {
   }, [processError, projectListError]);
 
   return {
-    // State - UPDATED
-    selectedFiles, // Changed from selectedFile
+    // State
+    selectedFiles,
     dragActive,
     selectedProjectId,
 
-    // Data - using consistent naming
+    // Data
     projectListOptions,
     userInfo,
 
@@ -294,7 +361,7 @@ export const useSampleAutomationLogic = () => {
     processResult,
     processStatus,
 
-    // Loading states - consistent with quota management
+    // Loading states
     isLoading,
     isProcessing,
 
@@ -304,31 +371,40 @@ export const useSampleAutomationLogic = () => {
     // Error states
     error,
 
-    // File handling - UPDATED
+    // File handling
     handleFileInputChange,
     handleDrop,
     handleDragOver,
     handleDragLeave,
-    clearSelectedFiles, // Changed from clearSelectedFile
-    removeFile, // NEW
+    clearSelectedFiles,
+    removeFile,
     openFileDialog,
     fileInputRef,
 
-    // Project handling - both optimized and legacy support
+    // Project handling
     handleProjectChange,
     handleProjectSelect,
     getProjectList,
 
-    // Actions - UPDATED
-    handleProcessFiles, // Changed from handleProcessFile
+    // Actions
+    handleProcessFiles,
     clearInputs,
     validateInputs,
 
     // Utilities
     formatFileSize,
-    totalFileSize, // NEW
+    totalFileSize,
 
     // Legacy support (can be removed after refactoring consumers)
     setSelectedProjectId,
+
+    // Updated/new header functionality
+    fileHeaders,
+    checkedFiles,
+    allFilesChecked,
+    hasHeaderConflicts,
+    canMerge,
+    handleSaveHeaders, // Updated signature
+    handleValidationComplete, // New handler
   };
 };

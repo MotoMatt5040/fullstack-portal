@@ -2,6 +2,7 @@ import React from 'react';
 import Select from 'react-select';
 import { useSampleAutomationLogic } from './useSampleAutomationLogic';
 import './SampleAutomation.css';
+import FileHeaders from './FileHeaders';
 
 const SampleAutomation: React.FC = () => {
   const {
@@ -42,6 +43,15 @@ const SampleAutomation: React.FC = () => {
     // Utilities
     formatFileSize,
     totalFileSize,
+
+    // Updated header functionality
+    fileHeaders,
+    checkedFiles,
+    allFilesChecked,
+    hasHeaderConflicts,
+    canMerge,
+    handleSaveHeaders,
+    handleValidationComplete,
   } = useSampleAutomationLogic();
 
   return (
@@ -151,38 +161,16 @@ const SampleAutomation: React.FC = () => {
           )}
         </div>
 
-        {/* Selected Files List */}
+        {/* New File Headers Component - Replaces old file list */}
         {selectedFiles && selectedFiles.length > 0 && (
-          <div className='files-list'>
-            <h3>Selected Files ({selectedFiles.length})</h3>
-            <div className='files-grid'>
-              {selectedFiles.map((item) => (
-                <div key={item.id} className='file-item'>
-                  <div className='file-info'>
-                    <div className='file-name'>{item.file.name}</div>
-                    <div className='file-details'>
-                      <span className='file-size'>
-                        {formatFileSize(item.file.size)}
-                      </span>
-                      <span className='file-type'>
-                        {item.file.name.split('.').pop()?.toUpperCase() ||
-                          'File'}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type='button'
-                    onClick={() => removeFile(item.id)}
-                    className='remove-file-btn'
-                    disabled={isProcessing}
-                    title='Remove this file'
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FileHeaders
+            selectedFiles={selectedFiles}
+            fileHeaders={fileHeaders}
+            checkedFiles={checkedFiles}
+            isProcessing={isProcessing}
+            onSaveHeaders={handleSaveHeaders}
+            onValidationComplete={handleValidationComplete}
+          />
         )}
 
         {/* File Path Preview */}
@@ -207,12 +195,18 @@ const SampleAutomation: React.FC = () => {
               !selectedProjectId ||
               !selectedFiles ||
               selectedFiles.length === 0 ||
+              !allFilesChecked ||
+              hasHeaderConflicts ||
               isProcessing
             }
             className='upload-btn'
           >
             {isProcessing
               ? `Processing ${selectedFiles?.length || 0} files...`
+              : hasHeaderConflicts
+              ? 'Resolve Header Conflicts'
+              : !allFilesChecked && selectedFiles && selectedFiles.length > 0
+              ? 'Review Headers First'
               : `Merge & Process ${selectedFiles?.length || 0} File${
                   selectedFiles?.length !== 1 ? 's' : ''
                 }`}
