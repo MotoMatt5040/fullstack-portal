@@ -80,7 +80,6 @@ export const useSampleAutomationLogic = () => {
     },
   ] = useLazyGetProjectListQuery();
 
-  // NEW: Get clients and vendors data from API
   const {
     data: clientsAndVendorsData,
     isLoading: isLoadingClientsAndVendors,

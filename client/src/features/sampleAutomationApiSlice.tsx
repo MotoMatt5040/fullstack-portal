@@ -13,6 +13,21 @@ interface ProcessFileResponse {
   originalFilename?: string;
 }
 
+interface Client {
+  ClientID: number;
+  ClientName: string;
+}
+
+interface Vendor {
+  VendorID: number;
+  VendorName: string;
+}
+
+interface ClientsAndVendorsResponse {
+  clients: Client[];
+  vendors: Vendor[];
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -23,7 +38,9 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
         body: formData, // Don't set Content-Type - let browser set it with boundary
       }),
     }),
-    getClients: builder.query({
+    
+    // Get clients from CaligulaD database
+    getClients: builder.query<Client[], void>({
       query: () => ({
         url: '/sample-automation/clients',
         method: 'GET',
@@ -32,7 +49,7 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
     }),
     
     // Get vendors from FAJITA database
-    getVendors: builder.query({
+    getVendors: builder.query<Vendor[], void>({
       query: () => ({
         url: '/sample-automation/vendors',
         method: 'GET',
@@ -41,7 +58,7 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
     }),
     
     // Get both clients and vendors in one call (more efficient)
-    getClientsAndVendors: builder.query({
+    getClientsAndVendors: builder.query<ClientsAndVendorsResponse, void>({
       query: () => ({
         url: '/sample-automation/clients-and-vendors',
         method: 'GET',
