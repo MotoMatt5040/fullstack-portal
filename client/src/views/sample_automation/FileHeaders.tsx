@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-interface HeaderValidation {
-  headerName: string;
-  status: 'present' | 'missing' | 'conflict';
-  files: Array<{
-    fileName: string;
-    position: number | null;
-    hasHeader: boolean;
-  }>;
-}
-
 interface FileHeadersProps {
   selectedFiles: Array<{
     id: string;
@@ -19,7 +9,14 @@ interface FileHeadersProps {
   checkedFiles: Set<string>;
   isProcessing: boolean;
   onSaveHeaders: (fileId: string, headers: string[]) => void;
-  onValidationComplete: (hasConflicts: boolean) => void;
+  validationSummary: {
+    matched: number;
+    total: number;
+    nonMatchingHeaders: Array<{
+      header: string;
+      missingFromFiles: string[];
+    }>;
+  };
 }
 
 const FileHeaders: React.FC<FileHeadersProps> = ({
@@ -28,12 +25,10 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   checkedFiles,
   isProcessing,
   onSaveHeaders,
-  onValidationComplete
+  validationSummary
 }) => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [editingHeaders, setEditingHeaders] = useState<Record<string, string[]>>({});
-  const [headerValidation, setHeaderValidation] = useState<HeaderValidation[]>([]);
-  const [showValidation, setShowValidation] = useState(false);
 
   // Auto-detect headers when files are loaded
   useEffect(() => {
@@ -43,17 +38,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
       }
     });
   }, [selectedFiles]);
-
-  // Validate headers when all files are checked
-  useEffect(() => {
-    const allFilesChecked = selectedFiles.every(file => checkedFiles.has(file.id));
-    if (allFilesChecked && selectedFiles.length > 1) {
-      validateHeaders();
-      setShowValidation(true);
-    } else {
-      setShowValidation(false);
-    }
-  }, [checkedFiles, selectedFiles, fileHeaders]);
 
   const detectFileHeaders = async (fileItem: { id: string; file: File }) => {
     try {
@@ -115,52 +99,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     }
   };
 
-  const validateHeaders = () => {
-    const allHeaders = new Map<string, Array<{fileName: string, position: number}>>();
-    
-    // Collect all headers from all files
-    selectedFiles.forEach(file => {
-      const headers = fileHeaders[file.id] || [];
-      headers.forEach((header, index) => {
-        if (!allHeaders.has(header)) {
-          allHeaders.set(header, []);
-        }
-        allHeaders.get(header)!.push({
-          fileName: file.file.name,
-          position: index
-        });
-      });
-    });
-
-    // Generate validation report
-    const validationResults: HeaderValidation[] = [];
-    
-    allHeaders.forEach((filesList, headerName) => {
-      const status = filesList.length === selectedFiles.length ? 'present' : 'missing';
-      
-      const files = selectedFiles.map(file => {
-        const headerPosition = filesList.find(f => f.fileName === file.file.name);
-        return {
-          fileName: file.file.name,
-          position: headerPosition?.position ?? null,
-          hasHeader: !!headerPosition
-        };
-      });
-
-      validationResults.push({
-        headerName,
-        status,
-        files
-      });
-    });
-
-    setHeaderValidation(validationResults);
-    
-    // Notify parent about conflicts
-    const hasConflicts = validationResults.some(result => result.status === 'missing');
-    onValidationComplete(hasConflicts);
-  };
-
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -168,6 +106,11 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  // Determine if we should show validation (all files checked and multiple files)
+  const shouldShowValidation = selectedFiles.every(file => checkedFiles.has(file.id)) && 
+                               selectedFiles.length > 1 && 
+                               validationSummary.total > 0;
 
   return (
     <div className="file-headers-container">
@@ -240,42 +183,44 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
         })}
       </div>
 
-      {/* Header Validation Results */}
-      {showValidation && headerValidation.length > 0 && (
+      {/* NEW: Validation Summary & Problem Headers Only */}
+      {shouldShowValidation && (
         <div className="header-validation">
           <h3>Header Validation</h3>
-          <div className="validation-results">
-            {headerValidation.map((result, index) => (
-              <div 
-                key={index} 
-                className={`validation-item ${result.status === 'missing' ? 'warning' : 'success'}`}
-              >
-                <div className="validation-header">
-                  <span className={`status-icon ${result.status === 'missing' ? 'error' : 'success'}`}>
-                    {result.status === 'missing' ? '❌' : '✅'}
-                  </span>
-                  <span className="header-name">"{result.headerName}"</span>
-                </div>
-                
-                {result.status === 'missing' && (
+          
+          {/* Summary */}
+          <div className="validation-summary">
+            <span className={validationSummary.matched === validationSummary.total ? 'success' : 'warning'}>
+              {validationSummary.matched}/{validationSummary.total} headers matched across all files
+            </span>
+          </div>
+          
+          {/* Only show non-matching headers */}
+          {validationSummary.nonMatchingHeaders.length > 0 && (
+            <div className="validation-results">
+              <h4>Headers that don't match across all files:</h4>
+              {validationSummary.nonMatchingHeaders.map((result, index) => (
+                <div key={index} className="validation-item warning">
+                  <div className="validation-header">
+                    <span className="status-icon error">❌</span>
+                    <span className="header-name">"{result.header}"</span>
+                  </div>
                   <div className="missing-details">
-                    <div className="present-in">
-                      Present in: {result.files
-                        .filter(f => f.hasHeader)
-                        .map(f => `${f.fileName} (pos ${f.position! + 1})`)
-                        .join(', ')}
-                    </div>
                     <div className="missing-from">
-                      Missing from: {result.files
-                        .filter(f => !f.hasHeader)
-                        .map(f => f.fileName)
-                        .join(', ')}
+                      Missing from: {result.missingFromFiles.join(', ')}
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Success message when all match */}
+          {validationSummary.nonMatchingHeaders.length === 0 && validationSummary.total > 0 && (
+            <div className="validation-success">
+              ✅ All headers match perfectly across all files!
+            </div>
+          )}
         </div>
       )}
     </div>

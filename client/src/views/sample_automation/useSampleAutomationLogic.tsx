@@ -1,5 +1,8 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { useProcessFileMutation, useGetClientsAndVendorsQuery } from '../../features/sampleAutomationApiSlice';
+import {
+  useProcessFileMutation,
+  useGetClientsAndVendorsQuery,
+} from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/ProjectInfoApiSlice';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
@@ -46,7 +49,6 @@ export const useSampleAutomationLogic = () => {
   // Headers state
   const [fileHeaders, setFileHeaders] = useState<Record<string, string[]>>({});
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
-  const [hasHeaderConflicts, setHasHeaderConflicts] = useState(false);
 
   const currentUser = useSelector(selectUser);
 
@@ -85,6 +87,64 @@ export const useSampleAutomationLogic = () => {
     error: clientsAndVendorsError,
   } = useGetClientsAndVendorsQuery();
 
+  // Calculate validation summary and non-matching headers
+  const validationSummary = useMemo(() => {
+    if (Object.keys(fileHeaders).length === 0) {
+      return { matched: 0, total: 0, nonMatchingHeaders: [] };
+    }
+
+    const headerSets = Object.values(fileHeaders);
+    if (headerSets.length === 0) {
+      return { matched: 0, total: 0, nonMatchingHeaders: [] };
+    }
+
+    // Get all unique headers from all files
+    const allUniqueHeaders = Array.from(
+      new Set(headerSets.flat().map((h) => h.toLowerCase().trim()))
+    );
+
+    let matched = 0;
+    const nonMatchingHeaders: Array<{
+      header: string;
+      missingFromFiles: string[];
+    }> = [];
+
+    allUniqueHeaders.forEach((header) => {
+      const filesWithHeader: string[] = [];
+      const filesMissingHeader: string[] = [];
+
+      Object.entries(fileHeaders).forEach(([fileId, headers]) => {
+        const hasHeader = headers.some(
+          (h) => h.toLowerCase().trim() === header.toLowerCase().trim()
+        );
+
+        if (hasHeader) {
+          const file = selectedFiles.find((f) => f.id === fileId);
+          if (file) filesWithHeader.push(file.file.name);
+        } else {
+          const file = selectedFiles.find((f) => f.id === fileId);
+          if (file) filesMissingHeader.push(file.file.name);
+        }
+      });
+
+      // Header matches if it's in all files
+      if (filesMissingHeader.length === 0) {
+        matched++;
+      } else {
+        nonMatchingHeaders.push({
+          header,
+          missingFromFiles: filesMissingHeader,
+        });
+      }
+    });
+
+    return {
+      matched,
+      total: allUniqueHeaders.length,
+      nonMatchingHeaders,
+    };
+  }, [fileHeaders, selectedFiles]);
+
   // Memoized list of project options for dropdown - same as quota management
   const projectListOptions = useMemo((): ProjectOption[] => {
     if (!projectList || projectListIsFetching) return [];
@@ -105,7 +165,7 @@ export const useSampleAutomationLogic = () => {
         { value: 3, label: 'Some other...' },
       ];
     }
-    
+
     return clientsAndVendorsData.vendors.map((vendor: any) => ({
       value: vendor.VendorID,
       label: vendor.VendorName,
@@ -122,7 +182,7 @@ export const useSampleAutomationLogic = () => {
         { value: 3, label: 'Some other...' },
       ];
     }
-    
+
     return clientsAndVendorsData.clients.map((client: any) => ({
       value: client.ClientID,
       label: client.ClientName,
@@ -199,7 +259,6 @@ export const useSampleAutomationLogic = () => {
     setProcessResult(null);
     setFileHeaders({});
     setCheckedFiles(new Set());
-    setHasHeaderConflicts(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -267,27 +326,30 @@ export const useSampleAutomationLogic = () => {
   );
 
   // Updated handler for saving headers (now takes fileId instead of using selectedFileForHeaders)
-  const handleSaveHeaders = useCallback((fileId: string, headers: string[]) => {
-    // Store the headers for this file
-    setFileHeaders((prev) => ({
-      ...prev,
-      [fileId]: headers,
-    }));
+  const handleSaveHeaders = useCallback(
+    (fileId: string, headers: string[]) => {
+      // Store the headers for this file
+      setFileHeaders((prev) => ({
+        ...prev,
+        [fileId]: headers,
+      }));
 
-    // Mark this file as checked
-    setCheckedFiles((prev) => new Set([...prev, fileId]));
+      // Mark this file as checked
+      setCheckedFiles((prev) => new Set([...prev, fileId]));
 
-    // TODO: Save header mappings to database if vendor/client are selected
-    if (selectedVendorId && selectedClientId) {
-      // Save mappings to tblHeaderMappings
-      console.log('TODO: Save header mappings for vendor:', selectedVendorId, 'client:', selectedClientId);
-    }
-  }, [selectedVendorId, selectedClientId]);
-
-  // New handler for validation results
-  const handleValidationComplete = useCallback((hasConflicts: boolean) => {
-    setHasHeaderConflicts(hasConflicts);
-  }, []);
+      // TODO: Save header mappings to database if vendor/client are selected
+      if (selectedVendorId && selectedClientId) {
+        // Save mappings to tblHeaderMappings
+        console.log(
+          'TODO: Save header mappings for vendor:',
+          selectedVendorId,
+          'client:',
+          selectedClientId
+        );
+      }
+    },
+    [selectedVendorId, selectedClientId]
+  );
 
   // For backwards compatibility with select element
   const handleProjectSelect = useCallback(
@@ -303,10 +365,9 @@ export const useSampleAutomationLogic = () => {
     return selectedFiles?.every((file) => checkedFiles.has(file.id)) || false;
   }, [selectedFiles, checkedFiles]);
 
-  // Updated merge button should be disabled if there are conflicts
   const canMerge = useMemo(() => {
-    return allFilesChecked && !hasHeaderConflicts;
-  }, [allFilesChecked, hasHeaderConflicts]);
+    return allFilesChecked && validationSummary.nonMatchingHeaders.length === 0;
+  }, [allFilesChecked, validationSummary]);
 
   // Clear all inputs
   const clearInputs = useCallback(() => {
@@ -318,7 +379,6 @@ export const useSampleAutomationLogic = () => {
     setProcessResult(null);
     setFileHeaders({});
     setCheckedFiles(new Set());
-    setHasHeaderConflicts(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -342,10 +402,10 @@ export const useSampleAutomationLogic = () => {
       return;
     }
 
-    if (hasHeaderConflicts) {
-      setProcessStatus('❌ Please resolve header conflicts before merging');
-      return;
-    }
+    if (validationSummary.nonMatchingHeaders.length > 0) {
+  setProcessStatus('❌ Please resolve header conflicts before merging');
+  return;
+}
 
     // Create FormData for multiple files
     const formData = new FormData();
@@ -399,7 +459,7 @@ export const useSampleAutomationLogic = () => {
         'Processing failed. Please try again.';
       setProcessStatus(`❌ Error: ${errorMessage}`);
     }
-  }, [selectedProjectId, selectedFiles, processFile, allFilesChecked, fileHeaders, hasHeaderConflicts, selectedVendorId, selectedClientId]);
+  }, [selectedProjectId, selectedFiles, processFile, allFilesChecked, fileHeaders, validationSummary, selectedVendorId, selectedClientId]);
 
   // Utility functions
   const formatFileSize = useCallback((bytes: number): string => {
@@ -441,6 +501,8 @@ export const useSampleAutomationLogic = () => {
   const error = useMemo(() => {
     return processError || projectListError;
   }, [processError, projectListError]);
+
+  
 
   return {
     // State
@@ -507,9 +569,9 @@ export const useSampleAutomationLogic = () => {
     fileHeaders,
     checkedFiles,
     allFilesChecked,
-    hasHeaderConflicts,
+    hasHeaderConflicts: validationSummary.nonMatchingHeaders.length > 0,
     canMerge,
     handleSaveHeaders, // Updated signature
-    handleValidationComplete, // New handler
+    validationSummary,
   };
 };

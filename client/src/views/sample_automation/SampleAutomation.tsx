@@ -63,7 +63,7 @@ const SampleAutomation: React.FC = () => {
     hasHeaderConflicts,
     canMerge,
     handleSaveHeaders,
-    handleValidationComplete,
+    validationSummary,
   } = useSampleAutomationLogic();
 
   return (
@@ -250,7 +250,7 @@ const SampleAutomation: React.FC = () => {
             checkedFiles={checkedFiles}
             isProcessing={isProcessing}
             onSaveHeaders={handleSaveHeaders}
-            onValidationComplete={handleValidationComplete}
+            validationSummary={validationSummary}
           />
         )}
 
