@@ -11,6 +11,16 @@ interface ProjectOption {
   label: string;
 }
 
+interface VendorOption {
+  value: number;
+  label: string;
+}
+
+interface ClientOption {
+  value: number;
+  label: string;
+}
+
 interface FileWithId extends File {
   id: string;
 }
@@ -25,6 +35,8 @@ export const useSampleAutomationLogic = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileWrapper[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Processing state
@@ -35,6 +47,19 @@ export const useSampleAutomationLogic = () => {
   const [fileHeaders, setFileHeaders] = useState<Record<string, string[]>>({});
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
   const [hasHeaderConflicts, setHasHeaderConflicts] = useState(false);
+
+  // Mock data for vendors and clients (replace with actual API calls later)
+  const [vendors] = useState<VendorOption[]>([
+    { value: 1, label: 'L2' },
+    { value: 2, label: 'I360' },
+    { value: 3, label: 'Some other...' },
+  ]);
+
+  const [clients] = useState<ClientOption[]>([
+    { value: 1, label: 'Tarrance' },
+    { value: 2, label: 'POS' },
+    { value: 3, label: 'Some other...' },
+  ]);
 
   const currentUser = useSelector(selectUser);
 
@@ -187,6 +212,32 @@ export const useSampleAutomationLogic = () => {
     [selectedProjectId]
   );
 
+  // Vendor selection handler
+  const handleVendorChange = useCallback(
+    (selected: VendorOption | null) => {
+      const newValue = selected?.value || null;
+      if (newValue !== selectedVendorId) {
+        setSelectedVendorId(newValue);
+        setProcessStatus('');
+        // TODO: Fetch header mappings for new vendor/client combination
+      }
+    },
+    [selectedVendorId]
+  );
+
+  // Client selection handler
+  const handleClientChange = useCallback(
+    (selected: ClientOption | null) => {
+      const newValue = selected?.value || null;
+      if (newValue !== selectedClientId) {
+        setSelectedClientId(newValue);
+        setProcessStatus('');
+        // TODO: Fetch header mappings for new vendor/client combination
+      }
+    },
+    [selectedClientId]
+  );
+
   // Updated handler for saving headers (now takes fileId instead of using selectedFileForHeaders)
   const handleSaveHeaders = useCallback((fileId: string, headers: string[]) => {
     // Store the headers for this file
@@ -197,7 +248,13 @@ export const useSampleAutomationLogic = () => {
 
     // Mark this file as checked
     setCheckedFiles((prev) => new Set([...prev, fileId]));
-  }, []);
+
+    // TODO: Save header mappings to database if vendor/client are selected
+    if (selectedVendorId && selectedClientId) {
+      // Save mappings to tblHeaderMappings
+      console.log('TODO: Save header mappings for vendor:', selectedVendorId, 'client:', selectedClientId);
+    }
+  }, [selectedVendorId, selectedClientId]);
 
   // New handler for validation results
   const handleValidationComplete = useCallback((hasConflicts: boolean) => {
@@ -227,6 +284,8 @@ export const useSampleAutomationLogic = () => {
   const clearInputs = useCallback(() => {
     setSelectedFiles([]);
     setSelectedProjectId('');
+    setSelectedVendorId(null);
+    setSelectedClientId(null);
     setProcessStatus('');
     setProcessResult(null);
     setFileHeaders({});
@@ -270,6 +329,14 @@ export const useSampleAutomationLogic = () => {
 
     formData.append('projectId', selectedProjectId);
 
+    // Include vendor and client info if selected
+    if (selectedVendorId) {
+      formData.append('vendorId', selectedVendorId.toString());
+    }
+    if (selectedClientId) {
+      formData.append('clientId', selectedClientId.toString());
+    }
+
     const headersMapping: Record<number, string[]> = {};
     selectedFiles.forEach((item, index) => {
       if (fileHeaders[item.id]) {
@@ -304,7 +371,7 @@ export const useSampleAutomationLogic = () => {
         'Processing failed. Please try again.';
       setProcessStatus(`❌ Error: ${errorMessage}`);
     }
-  }, [selectedProjectId, selectedFiles, processFile, allFilesChecked, fileHeaders, hasHeaderConflicts]);
+  }, [selectedProjectId, selectedFiles, processFile, allFilesChecked, fileHeaders, hasHeaderConflicts, selectedVendorId, selectedClientId]);
 
   // Utility functions
   const formatFileSize = useCallback((bytes: number): string => {
@@ -352,9 +419,13 @@ export const useSampleAutomationLogic = () => {
     selectedFiles,
     dragActive,
     selectedProjectId,
+    selectedVendorId,
+    selectedClientId,
 
     // Data
     projectListOptions,
+    vendors,
+    clients,
     userInfo,
 
     // Processing state
@@ -385,6 +456,10 @@ export const useSampleAutomationLogic = () => {
     handleProjectChange,
     handleProjectSelect,
     getProjectList,
+
+    // Vendor/Client handling
+    handleVendorChange,
+    handleClientChange,
 
     // Actions
     handleProcessFiles,

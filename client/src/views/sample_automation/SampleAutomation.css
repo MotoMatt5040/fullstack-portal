@@ -1,6 +1,55 @@
 /* SampleAutomation.css - Cleaned and Organized */
 
 /* ========================================
+   VENDOR/CLIENT SELECTION
+======================================== */
+
+.vendor-client-selection {
+  margin: 1.5rem 0;
+}
+
+.selection-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.selection-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.selection-item label {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.vendor-client-select {
+  min-height: 38px;
+}
+
+.selection-status {
+  padding: 0.75rem;
+  background: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.3);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.selection-indicator {
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.selection-indicator strong {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+/* ========================================
    BASE CONTAINER AND LAYOUT
 ======================================== */
 

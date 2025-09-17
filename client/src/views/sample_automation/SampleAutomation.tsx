@@ -10,9 +10,13 @@ const SampleAutomation: React.FC = () => {
     selectedFiles,
     dragActive,
     selectedProjectId,
+    selectedVendorId,
+    selectedClientId,
 
     // Data
     projectListOptions,
+    vendors,
+    clients,
     userInfo,
 
     // Processing state
@@ -35,6 +39,10 @@ const SampleAutomation: React.FC = () => {
 
     // Project handling
     handleProjectChange,
+
+    // Vendor/Client handling
+    handleVendorChange,
+    handleClientChange,
 
     // Actions - UPDATED
     handleProcessFiles,
@@ -98,6 +106,52 @@ const SampleAutomation: React.FC = () => {
         {!isLoading && projectListOptions.length === 0 && (
           <div className='error-text'>No projects available</div>
         )}
+
+        {/* Vendor and Client Selection */}
+        <div className='vendor-client-selection'>
+          <div className='selection-row'>
+            <div className='selection-item'>
+              <label htmlFor='vendor-select'>Vendor</label>
+              <Select
+                id='vendor-select'
+                classNamePrefix='my-select'
+                className='vendor-client-select'
+                options={vendors}
+                value={vendors.find((vendor) => vendor.value === selectedVendorId) || null}
+                onChange={handleVendorChange}
+                isDisabled={isProcessing}
+                placeholder='Select vendor...'
+                isClearable
+                closeMenuOnSelect={true}
+              />
+            </div>
+            <div className='selection-item'>
+              <label htmlFor='client-select'>Client</label>
+              <Select
+                id='client-select'
+                classNamePrefix='my-select'
+                className='vendor-client-select'
+                options={clients}
+                value={clients.find((client) => client.value === selectedClientId) || null}
+                onChange={handleClientChange}
+                isDisabled={isProcessing}
+                placeholder='Select client...'
+                isClearable
+                closeMenuOnSelect={true}
+              />
+            </div>
+          </div>
+          {selectedVendorId && selectedClientId && (
+            <div className='selection-status'>
+              <span className='selection-indicator'>
+                Header mappings will be saved for{' '}
+                <strong>{vendors.find(v => v.value === selectedVendorId)?.label}</strong>
+                {' → '}
+                <strong>{clients.find(c => c.value === selectedClientId)?.label}</strong>
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* File Drop Zone */}
         <div
