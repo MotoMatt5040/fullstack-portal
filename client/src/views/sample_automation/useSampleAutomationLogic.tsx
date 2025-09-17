@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { useProcessFileMutation } from '../../features/sampleAutomationApiSlice';
+import { useProcessFileMutation, useGetClientsAndVendorsQuery } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/ProjectInfoApiSlice';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
@@ -48,19 +48,6 @@ export const useSampleAutomationLogic = () => {
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
   const [hasHeaderConflicts, setHasHeaderConflicts] = useState(false);
 
-  // Mock data for vendors and clients (replace with actual API calls later)
-  const [vendors] = useState<VendorOption[]>([
-    { value: 1, label: 'L2' },
-    { value: 2, label: 'I360' },
-    { value: 3, label: 'Some other...' },
-  ]);
-
-  const [clients] = useState<ClientOption[]>([
-    { value: 1, label: 'Tarrance' },
-    { value: 2, label: 'POS' },
-    { value: 3, label: 'Some other...' },
-  ]);
-
   const currentUser = useSelector(selectUser);
 
   // Memoized user info extraction - same as quota management
@@ -91,6 +78,13 @@ export const useSampleAutomationLogic = () => {
     },
   ] = useLazyGetProjectListQuery();
 
+  // NEW: Get clients and vendors data from API
+  const {
+    data: clientsAndVendorsData,
+    isLoading: isLoadingClientsAndVendors,
+    error: clientsAndVendorsError,
+  } = useGetClientsAndVendorsQuery();
+
   // Memoized list of project options for dropdown - same as quota management
   const projectListOptions = useMemo((): ProjectOption[] => {
     if (!projectList || projectListIsFetching) return [];
@@ -100,6 +94,40 @@ export const useSampleAutomationLogic = () => {
       label: `${item.projectId} - ${item.projectName}`,
     }));
   }, [projectList, projectListIsFetching]);
+
+  // Updated vendors with API data but fallback to mock data
+  const vendors = useMemo((): VendorOption[] => {
+    // Fallback to mock data if API hasn't loaded yet
+    if (!clientsAndVendorsData?.vendors) {
+      return [
+        { value: 1, label: 'L2' },
+        { value: 2, label: 'I360' },
+        { value: 3, label: 'Some other...' },
+      ];
+    }
+    
+    return clientsAndVendorsData.vendors.map((vendor: any) => ({
+      value: vendor.VendorID,
+      label: vendor.VendorName,
+    }));
+  }, [clientsAndVendorsData]);
+
+  // Updated clients with API data but fallback to mock data
+  const clients = useMemo((): ClientOption[] => {
+    // Fallback to mock data if API hasn't loaded yet
+    if (!clientsAndVendorsData?.clients) {
+      return [
+        { value: 1, label: 'Tarrance' },
+        { value: 2, label: 'POS' },
+        { value: 3, label: 'Some other...' },
+      ];
+    }
+    
+    return clientsAndVendorsData.clients.map((client: any) => ({
+      value: client.ClientID,
+      label: client.ClientName,
+    }));
+  }, [clientsAndVendorsData]);
 
   // Load projects when user info is available - same pattern as quota management
   useEffect(() => {
@@ -435,12 +463,14 @@ export const useSampleAutomationLogic = () => {
     // Loading states
     isLoading,
     isProcessing,
+    isLoadingClientsAndVendors,
 
     // Success states
     processSuccess,
 
     // Error states
     error,
+    clientsAndVendorsError,
 
     // File handling
     handleFileInputChange,

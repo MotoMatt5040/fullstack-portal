@@ -2,7 +2,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
-const { createTableFromFileData } = require('../services/SampleAutomationServices');
+const SampleAutomation = require('../services/SampleAutomationServices');
+const handleAsync = require('./asyncController');
 
 // Configure multer for multiple file uploads (200MB limit per file)
 const upload = multer({
@@ -193,7 +194,7 @@ const processFile = async (req, res) => {
         : path.basename(processedFileNames[0], path.extname(processedFileNames[0]));
 
       // Create SQL table from processed data (service will add Promark constants automatically)
-      const tableResult = await createTableFromFileData(processedData, baseTableName);
+      const tableResult = await SampleAutomation.createTableFromFileData(processedData, baseTableName);
       console.log('✅ Table created successfully with custom headers and Promark constants:', tableResult.tableName);
 
       // Generate session ID
@@ -348,6 +349,44 @@ const handleError = (error, res) => {
   });
 };
 
+const handleGetClients = handleAsync(async (req, res) => {
+  const clients = await SampleAutomation.getClients();
+  
+  if (!clients) {
+    return res.status(404).json({ message: 'No clients found' });
+  }
+  
+  res.status(200).json(clients);
+});
+
+/**
+ * Handle GET request for vendors
+ * GET /api/sample-automation/vendors
+ */
+const handleGetVendors = handleAsync(async (req, res) => {
+  const vendors = await SampleAutomation.getVendors();
+  
+  if (!vendors) {
+    return res.status(404).json({ message: 'No vendors found' });
+  }
+  
+  res.status(200).json(vendors);
+});
+
+/**
+ * Handle GET request for both clients and vendors
+ * GET /api/sample-automation/clients-and-vendors
+ */
+const handleGetClientsAndVendors = handleAsync(async (req, res) => {
+  const data = await SampleAutomation.getClientsAndVendors();
+  
+  if (!data || (!data.clients && !data.vendors)) {
+    return res.status(404).json({ message: 'No data found' });
+  }
+  
+  res.status(200).json(data);
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -355,4 +394,7 @@ module.exports = {
   getProcessingStatus,
   reprocessFile,
   upload: upload.array('files', 10), // Accept up to 10 files with field name 'files'
+  handleGetClients,
+  handleGetVendors,
+  handleGetClientsAndVendors,
 };

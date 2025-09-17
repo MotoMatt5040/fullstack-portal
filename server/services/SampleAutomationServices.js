@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
+const { promark } = require('../utils/databaseTypes');
 const { 
   getPromarkConstantsAsHeaders, 
   getPromarkConstantDefault 
@@ -298,6 +299,60 @@ const convertValue = (value, dataType) => {
   }
 };
 
+const getClients = async () => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .query('SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName');
+      return result.recordset;
+    },
+    fnName: 'getClients',
+  });
+};
+
+/**
+ * Get all vendors from Vendors table in FAJITA database
+ */
+const getVendors = async () => {
+  return withDbConnection({
+    database: promark, // Same connection, different database
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .query('SELECT VendorID, VendorName FROM FAJITA.dbo.Vendors ORDER BY VendorName');
+      return result.recordset;
+    },
+    fnName: 'getVendors',
+  });
+};
+
+/**
+ * Get both clients and vendors in one call for efficiency
+ */
+const getClientsAndVendors = async () => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      // Execute both queries in parallel
+      const [clientsResult, vendorsResult] = await Promise.all([
+        pool.request().query('SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName'),
+        pool.request().query('SELECT VendorID, VendorName FROM FAJITA.dbo.Vendors ORDER BY VendorName')
+      ]);
+
+      return {
+        clients: clientsResult.recordset,
+        vendors: vendorsResult.recordset
+      };
+    },
+    fnName: 'getClientsAndVendors',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
+  getClients,
+  getVendors,
+  getClientsAndVendors,
 };

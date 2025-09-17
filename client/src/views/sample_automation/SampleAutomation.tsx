@@ -26,6 +26,10 @@ const SampleAutomation: React.FC = () => {
     // Loading states
     isLoading,
     isProcessing,
+    isLoadingClientsAndVendors,
+
+    // Error states
+    clientsAndVendorsError,
 
     // File handling - UPDATED
     handleFileInputChange,
@@ -119,8 +123,12 @@ const SampleAutomation: React.FC = () => {
                 options={vendors}
                 value={vendors.find((vendor) => vendor.value === selectedVendorId) || null}
                 onChange={handleVendorChange}
-                isDisabled={isProcessing}
-                placeholder='Select vendor...'
+                isDisabled={isProcessing || isLoadingClientsAndVendors}
+                placeholder={
+                  isLoadingClientsAndVendors 
+                    ? 'Loading vendors...' 
+                    : 'Select vendor...'
+                }
                 isClearable
                 closeMenuOnSelect={true}
               />
@@ -134,13 +142,32 @@ const SampleAutomation: React.FC = () => {
                 options={clients}
                 value={clients.find((client) => client.value === selectedClientId) || null}
                 onChange={handleClientChange}
-                isDisabled={isProcessing}
-                placeholder='Select client...'
+                isDisabled={isProcessing || isLoadingClientsAndVendors}
+                placeholder={
+                  isLoadingClientsAndVendors 
+                    ? 'Loading clients...' 
+                    : 'Select client...'
+                }
                 isClearable
                 closeMenuOnSelect={true}
               />
             </div>
           </div>
+          
+          {/* Error handling for clients/vendors */}
+          {clientsAndVendorsError && (
+            <div className='error-text' style={{ 
+              marginBottom: '1rem', 
+              padding: '0.75rem', 
+              background: 'rgba(220, 53, 69, 0.1)', 
+              border: '1px solid rgba(220, 53, 69, 0.3)', 
+              borderRadius: '6px', 
+              color: '#dc3545' 
+            }}>
+              Error loading clients and vendors. Please try again.
+            </div>
+          )}
+          
           {selectedVendorId && selectedClientId && (
             <div className='selection-status'>
               <span className='selection-indicator'>

@@ -23,10 +23,41 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
         body: formData, // Don't set Content-Type - let browser set it with boundary
       }),
     }),
+    getClients: builder.query({
+      query: () => ({
+        url: '/sample-automation/clients',
+        method: 'GET',
+      }),
+      providesTags: ['SampleAutomationClients'],
+    }),
+    
+    // Get vendors from FAJITA database
+    getVendors: builder.query({
+      query: () => ({
+        url: '/sample-automation/vendors',
+        method: 'GET',
+      }),
+      providesTags: ['SampleAutomationVendors'],
+    }),
+    
+    // Get both clients and vendors in one call (more efficient)
+    getClientsAndVendors: builder.query({
+      query: () => ({
+        url: '/sample-automation/clients-and-vendors',
+        method: 'GET',
+      }),
+      providesTags: ['SampleAutomationClients', 'SampleAutomationVendors'],
+    }),
   }),
 });
 
 // Export hooks for use in components
 export const {
   useProcessFileMutation,
+  useGetClientsQuery,
+  useGetVendorsQuery,
+  useGetClientsAndVendorsQuery,
+  useLazyGetClientsQuery,
+  useLazyGetVendorsQuery,
+  useLazyGetClientsAndVendorsQuery,
 } = sampleAutomationApiSlice;
