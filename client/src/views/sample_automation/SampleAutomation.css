@@ -559,7 +559,6 @@
 .cancel-headers-btn:hover:not(:disabled) {
   background: var(--button-background-hover);
 }
-
 /* ========================================
    HEADER VALIDATION SECTION
 ======================================== */
@@ -636,6 +635,33 @@
   text-align: center;
   color: #28a745;
   font-weight: 600;
+}
+
+/* SIMPLE VALIDATION OPTIONS */
+.validation-options {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--background-color);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+}
+
+.validation-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.validation-option input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.validation-option-text {
+  font-size: 0.9rem;
+  color: var(--text-color);
 }
 
 .status-icon.success {

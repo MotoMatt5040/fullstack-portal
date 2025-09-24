@@ -49,6 +49,7 @@ export const useSampleAutomationLogic = () => {
   // Headers state
   const [fileHeaders, setFileHeaders] = useState<Record<string, string[]>>({});
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
+  const [allowExtraHeaders, setAllowExtraHeaders] = useState(false);
 
   const currentUser = useSelector(selectUser);
 
@@ -88,61 +89,80 @@ export const useSampleAutomationLogic = () => {
 
   // Calculate validation summary and non-matching headers
   const validationSummary = useMemo(() => {
-    if (Object.keys(fileHeaders).length === 0) {
-      return { matched: 0, total: 0, nonMatchingHeaders: [] };
-    }
+  if (Object.keys(fileHeaders).length === 0) {
+    return { matched: 0, total: 0, nonMatchingHeaders: [] };
+  }
 
-    const headerSets = Object.values(fileHeaders);
-    if (headerSets.length === 0) {
-      return { matched: 0, total: 0, nonMatchingHeaders: [] };
-    }
+  const headerSets = Object.values(fileHeaders);
+  if (headerSets.length === 0) {
+    return { matched: 0, total: 0, nonMatchingHeaders: [] };
+  }
 
-    // Get all unique headers from all files
-    const allUniqueHeaders = Array.from(
-      new Set(headerSets.flat().map((h) => h.toLowerCase().trim()))
-    );
+  // Get all unique headers from all files
+  const allUniqueHeaders = Array.from(
+    new Set(headerSets.flat().map((h) => h.toLowerCase().trim()))
+  );
 
-    let matched = 0;
-    const nonMatchingHeaders: Array<{
-      header: string;
-      missingFromFiles: string[];
-    }> = [];
+  let matched = 0;
+  const nonMatchingHeaders: Array<{
+    header: string;
+    missingFromFiles: string[];
+    presentInFiles: string[];
+  }> = [];
 
-    allUniqueHeaders.forEach((header) => {
-      const filesWithHeader: string[] = [];
-      const filesMissingHeader: string[] = [];
+  allUniqueHeaders.forEach((header) => {
+    const filesWithHeader: string[] = [];
+    const filesMissingHeader: string[] = [];
 
-      Object.entries(fileHeaders).forEach(([fileId, headers]) => {
-        const hasHeader = headers.some(
-          (h) => h.toLowerCase().trim() === header.toLowerCase().trim()
-        );
+    Object.entries(fileHeaders).forEach(([fileId, headers]) => {
+      const hasHeader = headers.some(
+        (h) => h.toLowerCase().trim() === header.toLowerCase().trim()
+      );
 
+      const file = selectedFiles.find((f) => f.id === fileId);
+      if (file) {
         if (hasHeader) {
-          const file = selectedFiles.find((f) => f.id === fileId);
-          if (file) filesWithHeader.push(file.file.name);
+          filesWithHeader.push(file.file.name);
         } else {
-          const file = selectedFiles.find((f) => f.id === fileId);
-          if (file) filesMissingHeader.push(file.file.name);
+          filesMissingHeader.push(file.file.name);
         }
-      });
-
-      // Header matches if it's in all files
-      if (filesMissingHeader.length === 0) {
-        matched++;
-      } else {
-        nonMatchingHeaders.push({
-          header,
-          missingFromFiles: filesMissingHeader,
-        });
       }
     });
 
-    return {
-      matched,
-      total: allUniqueHeaders.length,
-      nonMatchingHeaders,
-    };
-  }, [fileHeaders, selectedFiles]);
+    if (allowExtraHeaders) {
+      // In "allow extra headers" mode: only flag headers that are missing from files
+      // Extra headers in some files are OK
+      if (filesMissingHeader.length > 0 && filesWithHeader.length > 0) {
+        nonMatchingHeaders.push({
+          header,
+          missingFromFiles: filesMissingHeader,
+          presentInFiles: filesWithHeader,
+        });
+      } else if (filesWithHeader.length > 0) {
+        // Count as matched if present in at least one file
+        matched++;
+      }
+    } else {
+      // Original strict mode: headers must be in ALL files
+      if (filesMissingHeader.length > 0 && filesWithHeader.length > 0) {
+        nonMatchingHeaders.push({
+          header,
+          missingFromFiles: filesMissingHeader,
+          presentInFiles: filesWithHeader,
+        });
+      } else if (filesWithHeader.length === Object.keys(fileHeaders).length) {
+        // Header is present in all files - count as matched
+        matched++;
+      }
+    }
+  });
+
+  return {
+    matched,
+    total: allUniqueHeaders.length,
+    nonMatchingHeaders,
+  };
+}, [fileHeaders, selectedFiles, allowExtraHeaders]); // Add allowExtraHeaders to dependencies
 
   // Memoized list of project options for dropdown - same as quota management
   const projectListOptions = useMemo((): ProjectOption[] => {
@@ -364,9 +384,15 @@ export const useSampleAutomationLogic = () => {
     return selectedFiles?.every((file) => checkedFiles.has(file.id)) || false;
   }, [selectedFiles, checkedFiles]);
 
-  const canMerge = useMemo(() => {
-    return allFilesChecked && validationSummary.nonMatchingHeaders.length === 0;
-  }, [allFilesChecked, validationSummary]);
+const canMerge = useMemo(() => {
+  if (!allFilesChecked) return false;
+  
+  // If allowing extra headers, ignore validation conflicts
+  if (allowExtraHeaders) return true;
+  
+  // Otherwise, require no header conflicts
+  return validationSummary.nonMatchingHeaders.length === 0;
+}, [allFilesChecked, validationSummary, allowExtraHeaders]);
 
   // Clear all inputs
   const clearInputs = useCallback(() => {
@@ -401,7 +427,7 @@ export const useSampleAutomationLogic = () => {
       return;
     }
 
-    if (validationSummary.nonMatchingHeaders.length > 0) {
+    if (!allowExtraHeaders && validationSummary.nonMatchingHeaders.length > 0) {
   setProcessStatus('❌ Please resolve header conflicts before merging');
   return;
 }
@@ -458,7 +484,16 @@ export const useSampleAutomationLogic = () => {
         'Processing failed. Please try again.';
       setProcessStatus(`❌ Error: ${errorMessage}`);
     }
-  }, [selectedProjectId, selectedFiles, processFile, allFilesChecked, fileHeaders, validationSummary, selectedVendorId, selectedClientId]);
+  }, [
+    selectedProjectId,
+    selectedFiles,
+    processFile,
+    allFilesChecked,
+    fileHeaders,
+    validationSummary,
+    selectedVendorId,
+    selectedClientId,
+  ]);
 
   // Utility functions
   const formatFileSize = useCallback((bytes: number): string => {
@@ -500,8 +535,6 @@ export const useSampleAutomationLogic = () => {
   const error = useMemo(() => {
     return processError || projectListError;
   }, [processError, projectListError]);
-
-  
 
   return {
     // State
@@ -572,5 +605,7 @@ export const useSampleAutomationLogic = () => {
     canMerge,
     handleSaveHeaders, // Updated signature
     validationSummary,
+    allowExtraHeaders,
+    setAllowExtraHeaders,
   };
 };

@@ -14,6 +14,27 @@ const upload = multer({
   },
 });
 
+/**
+ * Clean up uploaded files
+ * @param {Array} files - Array of uploaded files
+ */
+async function cleanupFiles(files) {
+  if (!files || files.length === 0) return;
+  
+  const cleanupPromises = files.map(file => 
+    fs.unlink(file.path).catch(error => 
+      console.error(`Failed to cleanup file ${file.path}:`, error)
+    )
+  );
+  
+  await Promise.all(cleanupPromises);
+  console.log(`Cleaned up ${files.length} temporary file(s)`);
+}
+
+const generateSessionId = () => {
+  return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+};
+
 // Main processing function for single or multiple files
 const processFile = async (req, res) => {
   try {
@@ -23,7 +44,7 @@ const processFile = async (req, res) => {
     
     // EXTRACT CUSTOM HEADERS FROM REQUEST
     const customHeaders = req.body.customHeaders ? JSON.parse(req.body.customHeaders) : {};
-    console.log('Custom headers received:', customHeaders);
+    // console.log('Custom headers received:', customHeaders);
     
     // Handle both single file (req.file) and multiple files (req.files)
     let filesToProcess = [];
@@ -31,11 +52,11 @@ const processFile = async (req, res) => {
     if (req.files && req.files.length > 0) {
       // Multiple files
       filesToProcess = req.files;
-      console.log('Processing multiple files:', req.files.length);
+      // console.log('Processing multiple files:', req.files.length);
     } else if (req.file) {
       // Single file (backward compatibility)
       filesToProcess = [req.file];
-      console.log('Processing single file');
+      // console.log('Processing single file');
     } else {
       return res.status(400).json({
         success: false,
@@ -66,7 +87,7 @@ const processFile = async (req, res) => {
       const originalFilename = file.originalname;
       const uploadedFilePath = file.path;
 
-      console.log(`Processing file ${i + 1}/${filesToProcess.length}: ${originalFilename}`);
+      // console.log(`Processing file ${i + 1}/${filesToProcess.length}: ${originalFilename}`);
 
       // Get file extension and validate
       const fileExtension = path.extname(originalFilename).toLowerCase();
@@ -96,18 +117,55 @@ const processFile = async (req, res) => {
         // APPLY CUSTOM HEADERS - ONLY CHANGE THE SCHEMA, NOT THE DATA
         let finalHeaders = processResult.headers;
         if (customHeaders[i]) {
-          console.log(`Applying custom headers for file ${i + 1}:`, customHeaders[i]);
+          // console.log(`Applying custom headers for file ${i + 1}:`, customHeaders[i]);
           
-          // Simply replace header names - that's it!
+          // Create normalized data with proper column mapping
+          const headerMapping = {};
+          
+          // Map original column names to custom names
+          customHeaders[i].forEach((customName, index) => {
+            const originalHeader = processResult.headers[index];
+            if (originalHeader) {
+              headerMapping[originalHeader.name] = customName;
+            }
+          });
+          
+          // Create normalized rows for this file
+          const normalizedData = processResult.data.map(row => {
+            const normalizedRow = {};
+            
+            // Map data using custom headers
+            Object.keys(row).forEach(originalKey => {
+              const mappedKey = headerMapping[originalKey] || originalKey;
+              normalizedRow[mappedKey] = row[originalKey];
+            });
+            
+            return normalizedRow;
+          });
+          
+          // Update processResult to use normalized data
+          processResult.data = normalizedData;
+          
+          // Create final headers with custom names
           finalHeaders = customHeaders[i].map((customName, headerIndex) => ({
             name: customName,
             type: processResult.headers[headerIndex]?.type || 'TEXT',
-            originalName: processResult.headers[headerIndex]?.name // Keep original for data mapping
+            originalName: processResult.headers[headerIndex]?.name
           }));
           
-          // If there are more detected headers than custom ones, keep the extras
+          // Handle extra headers beyond custom ones
           if (processResult.headers.length > customHeaders[i].length) {
             const extraHeaders = processResult.headers.slice(customHeaders[i].length);
+            extraHeaders.forEach(header => {
+              // Map extra headers in the data as well
+              normalizedData.forEach(row => {
+                if (row[header.name] !== undefined) {
+                  // Keep extra headers with original names
+                  row[header.name] = row[header.name];
+                }
+              });
+            });
+            
             finalHeaders.push(...extraHeaders.map(h => ({
               ...h,
               originalName: h.name
@@ -121,7 +179,7 @@ const processFile = async (req, res) => {
           }));
         }
 
-        // Use original data with NO CHANGES AT ALL
+        // Add source tracking if multiple files
         let dataWithSource;
         if (filesToProcess.length > 1) {
           dataWithSource = processResult.data.map(row => ({
@@ -144,13 +202,13 @@ const processFile = async (req, res) => {
           }
         });
 
-        console.log(`✅ File ${i + 1} processed: ${processResult.totalRows} rows, ${finalHeaders.length} columns (FAST - no data transformation)`);
+        // console.log(`File ${i + 1} processed: ${processResult.totalRows} rows, ${finalHeaders.length} columns`);
         if (customHeaders[i]) {
-          console.log(`📋 Custom headers applied: ${customHeaders[i].join(', ')}`);
+          // console.log(`Custom headers applied: ${customHeaders[i].join(', ')}`);
         }
 
       } catch (fileError) {
-        console.error(`Error processing file ${originalFilename}:`, fileError);
+        // console.error(`Error processing file ${originalFilename}:`, fileError);
         await cleanupFiles(filesToProcess);
         return res.status(400).json({
           success: false,
@@ -171,7 +229,7 @@ const processFile = async (req, res) => {
     // Clean up uploaded files after processing
     await cleanupFiles(filesToProcess);
 
-    console.log(`📊 Processing Summary:`);
+    console.log(`Processing Summary:`);
     console.log(`- Files processed: ${filesToProcess.length}`);
     console.log(`- Total rows: ${allProcessedData.length}`);
     console.log(`- File columns: ${finalHeaders.length}`);
@@ -180,12 +238,12 @@ const processFile = async (req, res) => {
     // Create dataset (merged if multiple files, single if one file)
     const processedData = {
       headers: finalHeaders,
-      data: allProcessedData, // Use data directly without normalizing for performance
+      data: allProcessedData,
       totalRows: allProcessedData.length,
       sourceFiles: processedFileNames
     };
 
-    console.log('🔗 Creating SQL table with custom headers and Promark internal variables...');
+    console.log('Creating SQL table with custom headers and Promark internal variables...');
 
     try {
       // Create table name based on file count
@@ -195,7 +253,7 @@ const processFile = async (req, res) => {
 
       // Create SQL table from processed data (service will add Promark constants automatically)
       const tableResult = await SampleAutomation.createTableFromFileData(processedData, baseTableName);
-      console.log('✅ Table created successfully with custom headers and Promark constants:', tableResult.tableName);
+      console.log('Table created successfully with custom headers and Promark constants:', tableResult.tableName);
 
       // Generate session ID
       const sessionId = generateSessionId();
@@ -247,23 +305,6 @@ const processFile = async (req, res) => {
     handleError(error, res);
   }
 };
-
-/**
- * Clean up uploaded files
- * @param {Array} files - Array of uploaded files
- */
-async function cleanupFiles(files) {
-  if (!files || files.length === 0) return;
-  
-  const cleanupPromises = files.map(file => 
-    fs.unlink(file.path).catch(error => 
-      console.error(`Failed to cleanup file ${file.path}:`, error)
-    )
-  );
-  
-  await Promise.all(cleanupPromises);
-  console.log(`🧹 Cleaned up ${files.length} temporary file(s)`);
-}
 
 const getSupportedFileTypes = async (req, res) => {
   try {
@@ -331,10 +372,6 @@ const validateFileExists = async (fullPath) => {
     err.statusCode = 404;
     throw err;
   }
-};
-
-const generateSessionId = () => {
-  return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 };
 
 const handleError = (error, res) => {

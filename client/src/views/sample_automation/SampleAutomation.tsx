@@ -64,6 +64,8 @@ const SampleAutomation: React.FC = () => {
     canMerge,
     handleSaveHeaders,
     validationSummary,
+    allowExtraHeaders,
+    setAllowExtraHeaders,
   } = useSampleAutomationLogic();
 
   return (
@@ -251,6 +253,8 @@ const SampleAutomation: React.FC = () => {
             isProcessing={isProcessing}
             onSaveHeaders={handleSaveHeaders}
             validationSummary={validationSummary}
+            allowExtraHeaders={allowExtraHeaders}
+            onValidationModeChange={setAllowExtraHeaders}
           />
         )}
 
@@ -277,14 +281,14 @@ const SampleAutomation: React.FC = () => {
               !selectedFiles ||
               selectedFiles.length === 0 ||
               !allFilesChecked ||
-              hasHeaderConflicts ||
+              (!allowExtraHeaders && hasHeaderConflicts) ||
               isProcessing
             }
             className='upload-btn'
           >
             {isProcessing
               ? `Processing ${selectedFiles?.length || 0} files...`
-              : hasHeaderConflicts
+              : hasHeaderConflicts && !allowExtraHeaders
               ? 'Resolve Header Conflicts'
               : !allFilesChecked && selectedFiles && selectedFiles.length > 0
               ? 'Review Headers First'

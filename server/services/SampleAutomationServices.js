@@ -191,8 +191,9 @@ const insertDataWithConstants = async (pool, tableName, originalHeaders, allHead
           return convertValue(defaultValue, header.type);
         } else {
           // Use original file data
-          const dataKey = header.originalName || header.name;
-          const value = row[dataKey];
+          // const dataKey = header.originalName || header.name;
+          // const value = row[dataKey];
+          const value = row[header.name];
           return convertValue(value, header.type);
         }
       });
