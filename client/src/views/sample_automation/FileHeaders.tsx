@@ -29,8 +29,8 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   isProcessing,
   onSaveHeaders,
   validationSummary,
-  allowExtraHeaders,        
-  onValidationModeChange,   
+  allowExtraHeaders,
+  onValidationModeChange,
 }) => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [editingHeaders, setEditingHeaders] = useState<
@@ -207,18 +207,18 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
           <h3>Header Validation</h3>
 
           <div className='validation-options'>
-  <label className='validation-option'>
-    <input
-      type='checkbox'
-      checked={allowExtraHeaders}
-      onChange={(e) => onValidationModeChange(e.target.checked)}
-      disabled={isProcessing}
-    />
-    <span className='validation-option-text'>
-      Allow files with extra headers
-    </span>
-  </label>
-</div>
+            <label className='validation-option'>
+              <input
+                type='checkbox'
+                checked={allowExtraHeaders}
+                onChange={(e) => onValidationModeChange(e.target.checked)}
+                disabled={isProcessing}
+              />
+              <span className='validation-option-text'>
+                Allow files with extra headers
+              </span>
+            </label>
+          </div>
 
           {/* Summary */}
           <div className='validation-summary'>

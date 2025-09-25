@@ -123,12 +123,15 @@ const SampleAutomation: React.FC = () => {
                 classNamePrefix='my-select'
                 className='vendor-client-select'
                 options={vendors}
-                value={vendors.find((vendor) => vendor.value === selectedVendorId) || null}
+                value={
+                  vendors.find((vendor) => vendor.value === selectedVendorId) ||
+                  null
+                }
                 onChange={handleVendorChange}
                 isDisabled={isProcessing || isLoadingClientsAndVendors}
                 placeholder={
-                  isLoadingClientsAndVendors 
-                    ? 'Loading vendors...' 
+                  isLoadingClientsAndVendors
+                    ? 'Loading vendors...'
                     : 'Select vendor...'
                 }
                 isClearable
@@ -142,12 +145,15 @@ const SampleAutomation: React.FC = () => {
                 classNamePrefix='my-select'
                 className='vendor-client-select'
                 options={clients}
-                value={clients.find((client) => client.value === selectedClientId) || null}
+                value={
+                  clients.find((client) => client.value === selectedClientId) ||
+                  null
+                }
                 onChange={handleClientChange}
                 isDisabled={isProcessing || isLoadingClientsAndVendors}
                 placeholder={
-                  isLoadingClientsAndVendors 
-                    ? 'Loading clients...' 
+                  isLoadingClientsAndVendors
+                    ? 'Loading clients...'
                     : 'Select client...'
                 }
                 isClearable
@@ -155,31 +161,61 @@ const SampleAutomation: React.FC = () => {
               />
             </div>
           </div>
-          
+
           {/* Error handling for clients/vendors */}
           {clientsAndVendorsError && (
-            <div className='error-text' style={{ 
-              marginBottom: '1rem', 
-              padding: '0.75rem', 
-              background: 'rgba(220, 53, 69, 0.1)', 
-              border: '1px solid rgba(220, 53, 69, 0.3)', 
-              borderRadius: '6px', 
-              color: '#dc3545' 
-            }}>
+            <div
+              className='error-text'
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                background: 'rgba(220, 53, 69, 0.1)',
+                border: '1px solid rgba(220, 53, 69, 0.3)',
+                borderRadius: '6px',
+                color: '#dc3545',
+              }}
+            >
               Error loading clients and vendors. Please try again.
             </div>
           )}
-          
-          {selectedVendorId && selectedClientId && (
-            <div className='selection-status'>
-              <span className='selection-indicator'>
-                Header mappings will be saved for{' '}
-                <strong>{vendors.find(v => v.value === selectedVendorId)?.label}</strong>
-                {' → '}
-                <strong>{clients.find(c => c.value === selectedClientId)?.label}</strong>
-              </span>
-            </div>
-          )}
+
+          <div className='selection-status'>
+            <span className='selection-indicator'>
+              {selectedVendorId && selectedClientId ? (
+                <>
+                  Header mappings will be saved for{' '}
+                  <strong>
+                    {vendors.find((v) => v.value === selectedVendorId)?.label}
+                  </strong>
+                  {' → '}
+                  <strong>
+                    {clients.find((c) => c.value === selectedClientId)?.label}
+                  </strong>
+                </>
+              ) : selectedVendorId ? (
+                <>
+                  Header mappings will be saved for vendor:{' '}
+                  <strong>
+                    {vendors.find((v) => v.value === selectedVendorId)?.label}
+                  </strong>
+                  {' (no client selected)'}
+                </>
+              ) : selectedClientId ? (
+                <>
+                  Header mappings will be saved for client:{' '}
+                  <strong>
+                    {clients.find((c) => c.value === selectedClientId)?.label}
+                  </strong>
+                  {' (no vendor selected)'}
+                </>
+              ) : (
+                <span style={{ color: '#6c757d', fontStyle: 'italic' }}>
+                  No vendor or client selected - header mappings will be saved
+                  for all cases
+                </span>
+              )}
+            </span>
+          </div>
         </div>
 
         {/* File Drop Zone */}

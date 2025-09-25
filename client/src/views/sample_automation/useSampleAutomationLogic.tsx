@@ -327,6 +327,7 @@ export const useSampleAutomationLogic = () => {
         setProcessStatus('');
         // TODO: Fetch header mappings for new vendor/client combination
       }
+      // console.log('Selected vendor ID:', newValue);
     },
     [selectedVendorId]
   );
@@ -340,6 +341,7 @@ export const useSampleAutomationLogic = () => {
         setProcessStatus('');
         // TODO: Fetch header mappings for new vendor/client combination
       }
+      // console.log('Selected client ID:', newValue);
     },
     [selectedClientId]
   );
