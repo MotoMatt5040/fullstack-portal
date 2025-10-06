@@ -6,7 +6,7 @@ import FileHeaders from './FileHeaders';
 
 const SampleAutomation: React.FC = () => {
   const {
-    // State - UPDATED for multiple files
+    // State
     selectedFiles,
     dragActive,
     selectedProjectId,
@@ -23,15 +23,19 @@ const SampleAutomation: React.FC = () => {
     processStatus,
     processResult,
 
-    // Loading states
+    // Loading states - UPDATED to include header mapping loading
     isLoading,
     isProcessing,
     isLoadingClientsAndVendors,
+    isLoadingHeaderMappings,
+    isSavingHeaderMappings,
 
-    // Error states
+    // Error states - UPDATED to include header mapping errors
     clientsAndVendorsError,
+    headerMappingsError,
+    saveHeaderMappingsError,
 
-    // File handling - UPDATED
+    // File handling
     handleFileInputChange,
     handleDrop,
     handleDragOver,
@@ -48,7 +52,7 @@ const SampleAutomation: React.FC = () => {
     handleVendorChange,
     handleClientChange,
 
-    // Actions - UPDATED
+    // Actions
     handleProcessFiles,
     clearInputs,
 
@@ -102,9 +106,19 @@ const SampleAutomation: React.FC = () => {
             closeMenuOnSelect={true}
           />
 
-          {isProcessing && (
+          {(isProcessing ||
+            isLoadingHeaderMappings ||
+            isSavingHeaderMappings) && (
             <div className='processing-indicator'>
-              <span>Processing {selectedFiles?.length || 0} files...</span>
+              <span>
+                {isProcessing
+                  ? `Processing ${selectedFiles?.length || 0} files...`
+                  : isLoadingHeaderMappings
+                  ? 'Loading header mappings...'
+                  : isSavingHeaderMappings
+                  ? 'Saving header mappings...'
+                  : 'Processing...'}
+              </span>
             </div>
           )}
         </div>
@@ -128,7 +142,11 @@ const SampleAutomation: React.FC = () => {
                   null
                 }
                 onChange={handleVendorChange}
-                isDisabled={isProcessing || isLoadingClientsAndVendors}
+                isDisabled={
+                  isProcessing ||
+                  isLoadingClientsAndVendors ||
+                  isLoadingHeaderMappings
+                }
                 placeholder={
                   isLoadingClientsAndVendors
                     ? 'Loading vendors...'
@@ -150,7 +168,11 @@ const SampleAutomation: React.FC = () => {
                   null
                 }
                 onChange={handleClientChange}
-                isDisabled={isProcessing || isLoadingClientsAndVendors}
+                isDisabled={
+                  isProcessing ||
+                  isLoadingClientsAndVendors ||
+                  isLoadingHeaderMappings
+                }
                 placeholder={
                   isLoadingClientsAndVendors
                     ? 'Loading clients...'
@@ -162,8 +184,10 @@ const SampleAutomation: React.FC = () => {
             </div>
           </div>
 
-          {/* Error handling for clients/vendors */}
-          {clientsAndVendorsError && (
+          {/* Error handling for clients/vendors/headers */}
+          {(clientsAndVendorsError ||
+            headerMappingsError ||
+            saveHeaderMappingsError) && (
             <div
               className='error-text'
               style={{
@@ -175,7 +199,10 @@ const SampleAutomation: React.FC = () => {
                 color: '#dc3545',
               }}
             >
-              Error loading clients and vendors. Please try again.
+              {clientsAndVendorsError && 'Error loading clients and vendors. '}
+              {headerMappingsError && 'Error loading header mappings. '}
+              {saveHeaderMappingsError && 'Error saving header mappings. '}
+              Please try again.
             </div>
           )}
 
@@ -183,7 +210,7 @@ const SampleAutomation: React.FC = () => {
             <span className='selection-indicator'>
               {selectedVendorId && selectedClientId ? (
                 <>
-                  Header mappings will be saved for{' '}
+                  Header mappings will be applied for{' '}
                   <strong>
                     {vendors.find((v) => v.value === selectedVendorId)?.label}
                   </strong>
@@ -194,7 +221,7 @@ const SampleAutomation: React.FC = () => {
                 </>
               ) : selectedVendorId ? (
                 <>
-                  Header mappings will be saved for vendor:{' '}
+                  Header mappings will be applied for vendor:{' '}
                   <strong>
                     {vendors.find((v) => v.value === selectedVendorId)?.label}
                   </strong>
@@ -202,7 +229,7 @@ const SampleAutomation: React.FC = () => {
                 </>
               ) : selectedClientId ? (
                 <>
-                  Header mappings will be saved for client:{' '}
+                  Header mappings will be applied for client:{' '}
                   <strong>
                     {clients.find((c) => c.value === selectedClientId)?.label}
                   </strong>
@@ -210,8 +237,8 @@ const SampleAutomation: React.FC = () => {
                 </>
               ) : (
                 <span style={{ color: '#6c757d', fontStyle: 'italic' }}>
-                  No vendor or client selected - header mappings will be saved
-                  for all cases
+                  No vendor or client selected - using fallback mappings where
+                  available
                 </span>
               )}
             </span>
@@ -260,7 +287,7 @@ const SampleAutomation: React.FC = () => {
                     clearSelectedFiles();
                   }}
                   className='clear-all-btn'
-                  disabled={isProcessing}
+                  disabled={isProcessing || isLoadingHeaderMappings}
                 >
                   Clear All
                 </button>
@@ -280,13 +307,15 @@ const SampleAutomation: React.FC = () => {
           )}
         </div>
 
-        {/* New File Headers Component - Replaces old file list */}
+        {/* File Headers Component with Header Mapping Support */}
         {selectedFiles && selectedFiles.length > 0 && (
           <FileHeaders
             selectedFiles={selectedFiles}
             fileHeaders={fileHeaders}
             checkedFiles={checkedFiles}
-            isProcessing={isProcessing}
+            isProcessing={
+              isProcessing || isLoadingHeaderMappings || isSavingHeaderMappings
+            }
             onSaveHeaders={handleSaveHeaders}
             validationSummary={validationSummary}
             allowExtraHeaders={allowExtraHeaders}
@@ -303,7 +332,7 @@ const SampleAutomation: React.FC = () => {
             <br />
             <small>
               Total size: {formatFileSize(totalFileSize || 0)} | Files will be
-              combined into one table
+              combined into one table using mapped headers
             </small>
           </div>
         )}
@@ -318,12 +347,18 @@ const SampleAutomation: React.FC = () => {
               selectedFiles.length === 0 ||
               !allFilesChecked ||
               (!allowExtraHeaders && hasHeaderConflicts) ||
-              isProcessing
+              isProcessing ||
+              isLoadingHeaderMappings ||
+              isSavingHeaderMappings
             }
             className='upload-btn'
           >
             {isProcessing
               ? `Processing ${selectedFiles?.length || 0} files...`
+              : isLoadingHeaderMappings
+              ? 'Loading header mappings...'
+              : isSavingHeaderMappings
+              ? 'Saving header mappings...'
               : hasHeaderConflicts && !allowExtraHeaders
               ? 'Resolve Header Conflicts'
               : !allFilesChecked && selectedFiles && selectedFiles.length > 0
@@ -335,7 +370,9 @@ const SampleAutomation: React.FC = () => {
 
           <button
             onClick={clearInputs}
-            disabled={isProcessing}
+            disabled={
+              isProcessing || isLoadingHeaderMappings || isSavingHeaderMappings
+            }
             className='clear-btn'
             style={{ marginLeft: '10px' }}
           >

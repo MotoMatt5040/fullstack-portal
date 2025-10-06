@@ -28,6 +28,44 @@ interface ClientsAndVendorsResponse {
   vendors: Vendor[];
 }
 
+// New interfaces for header mapping
+interface HeaderMapping {
+  original: string;
+  mapped: string;
+  vendorName?: string;
+  clientName?: string;
+  vendorId?: number;
+  clientId?: number;
+  priority?: number;
+}
+
+interface HeaderMappingsResponse {
+  success: boolean;
+  data: Record<string, HeaderMapping>;
+  message: string;
+}
+
+interface HeaderMappingsParams {
+  vendorId?: number | null;
+  clientId?: number | null;
+  originalHeaders: string[];
+}
+
+interface SaveHeaderMappingsParams {
+  vendorId?: number | null;
+  clientId?: number | null;
+  mappings: Array<{
+    original: string;
+    mapped: string;
+  }>;
+}
+
+interface SaveHeaderMappingsResponse {
+  success: boolean;
+  savedCount: number;
+  message: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -65,6 +103,55 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ['SampleAutomationClients', 'SampleAutomationVendors'],
     }),
+
+    detectHeaders: builder.mutation({
+  query: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return {
+      url: '/sample-automation/detect-headers',
+      method: 'POST',
+      body: formData,
+    };
+  },
+}),
+
+    // NEW: Get header mappings based on vendor/client and original headers
+    getHeaderMappings: builder.query<HeaderMappingsResponse, HeaderMappingsParams>({
+      query: ({ vendorId, clientId, originalHeaders }) => {
+        const params = new URLSearchParams();
+        
+        if (vendorId !== null && vendorId !== undefined) {
+          params.append('vendorId', vendorId.toString());
+        }
+        if (clientId !== null && clientId !== undefined) {
+          params.append('clientId', clientId.toString());
+        }
+        params.append('originalHeaders', JSON.stringify(originalHeaders));
+
+        return {
+          url: `/sample-automation/header-mappings?${params.toString()}`,
+          method: 'GET',
+        };
+      },
+      providesTags: (result, error, { vendorId, clientId }) => [
+        'HeaderMappings',
+        { type: 'HeaderMappings', id: `${vendorId || 'null'}-${clientId || 'null'}` }
+      ],
+    }),
+
+    // NEW: Save header mappings to database (when user edits mappings)
+    saveHeaderMappings: builder.mutation<SaveHeaderMappingsResponse, SaveHeaderMappingsParams>({
+      query: (params) => ({
+        url: '/sample-automation/header-mappings',
+        method: 'POST',
+        body: params,
+      }),
+      invalidatesTags: (result, error, { vendorId, clientId }) => [
+        'HeaderMappings',
+        { type: 'HeaderMappings', id: `${vendorId || 'null'}-${clientId || 'null'}` }
+      ],
+    }),
   }),
 });
 
@@ -77,4 +164,9 @@ export const {
   useLazyGetClientsQuery,
   useLazyGetVendorsQuery,
   useLazyGetClientsAndVendorsQuery,
+  // NEW: Header mapping hooks
+  useGetHeaderMappingsQuery,
+  useLazyGetHeaderMappingsQuery,
+  useSaveHeaderMappingsMutation,
+  useDetectHeadersMutation,
 } = sampleAutomationApiSlice;

@@ -37,4 +37,22 @@ router
     sampleAutomationController.handleGetClientsAndVendors
   );
 
+// NEW: Header mapping routes
+router
+  .route('/header-mappings')
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    sampleAutomationController.getHeaderMappings
+  )
+  .post(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    sampleAutomationController.saveHeaderMappings
+  );
+
+router.route('/detect-headers').post(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.uploadSingle,
+  sampleAutomationController.detectHeaders
+);
+
 module.exports = router;

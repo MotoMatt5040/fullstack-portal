@@ -1,25 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
+
+interface FileWrapper {
+  file: File;
+  id: string;
+}
+
+interface HeaderMapping {
+  original: string;
+  mapped: string;
+  vendorName?: string;
+  clientName?: string;
+  priority?: number;
+}
+
+interface FileHeaderData {
+  originalHeaders: string[];
+  mappedHeaders: string[];
+  mappings: Record<string, HeaderMapping>;
+}
+
+interface ValidationSummary {
+  matched: number;
+  total: number;
+  nonMatchingHeaders: Array<{
+    header: string;
+    missingFromFiles: string[];
+    presentInFiles: string[];
+  }>;
+}
 
 interface FileHeadersProps {
-  selectedFiles: Array<{
-    id: string;
-    file: File;
-  }>;
-  fileHeaders: Record<string, string[]>;
+  selectedFiles: FileWrapper[];
+  fileHeaders: Record<string, FileHeaderData>;
   checkedFiles: Set<string>;
   isProcessing: boolean;
-  onSaveHeaders: (fileId: string, headers: string[]) => void;
-  validationSummary: {
-    matched: number;
-    total: number;
-    nonMatchingHeaders: Array<{
-      header: string;
-      missingFromFiles: string[];
-      presentInFiles?: string[];
-    }>;
-  };
+  onSaveHeaders: (fileId: string, originalHeaders: string[], editedMappedHeaders?: string[]) => void;
+  validationSummary: ValidationSummary;
   allowExtraHeaders: boolean;
-  onValidationModeChange: (allowExtra: boolean) => void;
+  onValidationModeChange: (allow: boolean) => void;
 }
 
 const FileHeaders: React.FC<FileHeadersProps> = ({
@@ -33,166 +51,329 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   onValidationModeChange,
 }) => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
-  const [editingHeaders, setEditingHeaders] = useState<
-    Record<string, string[]>
-  >({});
+  const [editingHeaders, setEditingHeaders] = useState<Record<string, string[]>>({});
+  const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(true);
 
-  // Auto-detect headers when files are loaded
-  useEffect(() => {
-    selectedFiles.forEach((file) => {
-      if (!fileHeaders[file.id] && !editingHeaders[file.id]) {
-        detectFileHeaders(file);
+  const toggleFileExpansion = useCallback((fileId: string) => {
+    setExpandedFiles(prev => {
+      const updated = new Set(prev);
+      if (updated.has(fileId)) {
+        updated.delete(fileId);
+      } else {
+        updated.add(fileId);
       }
+      return updated;
     });
-  }, [selectedFiles]);
+  }, []);
 
-  const detectFileHeaders = async (fileItem: { id: string; file: File }) => {
-    try {
-      const text = await fileItem.file.text();
-      const lines = text.split('\n');
-      if (lines.length > 0) {
-        const headerLine = lines[0];
-        const detectedHeaders = headerLine
-          .split(',')
-          .map((h) => h.trim().replace(/['"]/g, ''));
-
-        setEditingHeaders((prev) => ({
-          ...prev,
-          [fileItem.id]: detectedHeaders,
-        }));
-      }
-    } catch (error) {
-      console.error('Error detecting headers:', error);
-      setEditingHeaders((prev) => ({
+  const handleEditHeaders = useCallback((fileId: string) => {
+    const headerData = fileHeaders[fileId];
+    if (headerData && headerData.mappedHeaders) {
+      setEditingHeaders(prev => ({
         ...prev,
-        [fileItem.id]: ['Column 1', 'Column 2', 'Column 3'],
+        [fileId]: [...headerData.mappedHeaders]
       }));
     }
-  };
+  }, [fileHeaders]);
 
-  const toggleFileExpansion = (fileId: string) => {
-    setExpandedFiles((prev) => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(fileId)) {
-        newExpanded.delete(fileId);
-      } else {
-        newExpanded.add(fileId);
-      }
-      return newExpanded;
-    });
-  };
-
-  const handleHeaderChange = (fileId: string, index: number, value: string) => {
-    setEditingHeaders((prev) => {
-      const currentHeaders = prev[fileId] || [];
-      const newHeaders = [...currentHeaders];
-      newHeaders[index] = value;
-      return {
-        ...prev,
-        [fileId]: newHeaders,
-      };
-    });
-  };
-
-  const saveFileHeaders = (fileId: string) => {
-    const headers = editingHeaders[fileId];
-    if (headers) {
-      onSaveHeaders(fileId, headers);
-      setExpandedFiles((prev) => {
-        const newExpanded = new Set(prev);
-        newExpanded.delete(fileId);
-        return newExpanded;
+  const handleSaveEditedHeaders = useCallback((fileId: string) => {
+    const editedHeaders = editingHeaders[fileId];
+    if (editedHeaders) {
+      const originalHeaders = fileHeaders[fileId]?.originalHeaders || [];
+      onSaveHeaders(fileId, originalHeaders, editedHeaders);
+      setEditingHeaders(prev => {
+        const updated = { ...prev };
+        delete updated[fileId];
+        return updated;
       });
     }
-  };
+  }, [editingHeaders, fileHeaders, onSaveHeaders]);
 
-  const formatFileSize = (bytes: number): string => {
+  const handleCancelEdit = useCallback((fileId: string) => {
+    setEditingHeaders(prev => {
+      const updated = { ...prev };
+      delete updated[fileId];
+      return updated;
+    });
+  }, []);
+
+  const handleHeaderChange = useCallback((fileId: string, index: number, value: string) => {
+    setEditingHeaders(prev => ({
+      ...prev,
+      [fileId]: prev[fileId]?.map((header, i) => i === index ? value : header) || []
+    }));
+  }, []);
+
+  // Determine mapping status for visual indicators
+  const getMappingStatus = useCallback((original: string, mapped: string, mappings: Record<string, HeaderMapping>) => {
+    const upperOriginal = original.toUpperCase();
+    const mapping = mappings[upperOriginal];
+    
+    if (!mapping) {
+      return {
+        status: 'no-mapping',
+        color: '#dc3545', // Red - no mapping found
+        tooltip: 'No mapping found in database'
+      };
+    }
+    
+    if (mapping.mapped === mapped) {
+      return {
+        status: 'mapped',
+        color: '#28a745', // Green - successfully mapped
+        tooltip: `Mapped from ${mapping.vendorName || 'All'} → ${mapping.clientName || 'All'}`
+      };
+    }
+    
+    return {
+      status: 'custom',
+      color: '#ffc107', // Yellow - user customized
+      tooltip: 'Custom mapping (edited by user)'
+    };
+  }, []);
+
+  const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  }, []);
 
-  // Determine if we should show validation (all files checked and multiple files)
-  const shouldShowValidation =
-    selectedFiles.every((file) => checkedFiles.has(file.id)) &&
-    selectedFiles.length > 1 &&
-    validationSummary.total > 0;
+  const getSupportedFileIcon = useCallback((filename: string): string => {
+    const extension = filename.toLowerCase().split('.').pop();
+    switch (extension) {
+      case 'csv': return '📊';
+      case 'xlsx':
+      case 'xls': return '📗';
+      case 'json': return '📄';
+      case 'txt': return '📝';
+      default: return '📄';
+    }
+  }, []);
+
+  if (!selectedFiles || selectedFiles.length === 0) {
+    return null;
+  }
 
   return (
-    <div className='file-headers-container'>
-      {/* Individual File Header Editing */}
-      <div className='files-list'>
-        <h3>Files & Headers ({selectedFiles.length})</h3>
-        {selectedFiles.map((item) => {
-          const isExpanded = expandedFiles.has(item.id);
-          const isChecked = checkedFiles.has(item.id);
-          const currentHeaders =
-            editingHeaders[item.id] || fileHeaders[item.id] || [];
+    <div className="file-headers-container">
+      <div className="file-headers-header">
+        <h3>Review File Headers & Mappings</h3>
+        <div className="validation-controls">
+          <label className="validation-toggle">
+            <input
+              type="checkbox"
+              checked={allowExtraHeaders}
+              onChange={(e) => onValidationModeChange(e.target.checked)}
+            />
+            Allow extra headers (ignore missing columns in some files)
+          </label>
+        </div>
+      </div>
+
+      {validationSummary.nonMatchingHeaders.length > 0 && !allowExtraHeaders && (
+        <div className="validation-warning">
+          <h4>Header Conflicts Detected</h4>
+          <p>The following headers are not present in all files:</p>
+          {validationSummary.nonMatchingHeaders.map((conflict, index) => (
+            <div key={index} className="conflict-item">
+              <strong>"{conflict.header}"</strong>
+              <div className="conflict-details">
+                <span className="present-in">
+                  Present in: {conflict.presentInFiles.join(', ')}
+                </span>
+                <span className="missing-from">
+                  Missing from: {conflict.missingFromFiles.join(', ')}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="validation-summary">
+        <span className={`summary-text ${validationSummary.nonMatchingHeaders.length === 0 ? 'success' : 'warning'}`}>
+          {allowExtraHeaders ? 
+            `${validationSummary.matched} headers ready for processing` :
+            `${validationSummary.matched}/${validationSummary.total} headers match across all files`
+          }
+        </span>
+      </div>
+
+      <div className="files-list">
+        {selectedFiles.map((fileWrapper) => {
+          const { file, id } = fileWrapper;
+          const isChecked = checkedFiles.has(id);
+          const headerData = fileHeaders[id];
+          const isExpanded = expandedFiles.has(id);
+          const isEditing = editingHeaders[id];
 
           return (
-            <div
-              key={item.id}
-              className={`file-header-item ${isChecked ? 'checked' : ''}`}
-            >
-              {/* File Summary */}
-              <div
-                className='file-summary'
-                onClick={() => toggleFileExpansion(item.id)}
-              >
-                <div className='file-info'>
-                  <div className='file-name'>
-                    {item.file.name}
-                    {isChecked && <span className='check-indicator'>✓</span>}
+            <div key={id} className={`file-item ${isChecked ? 'checked' : ''}`}>
+              <div className="file-summary" onClick={() => toggleFileExpansion(id)}>
+                <div className="file-info">
+                  <div className="file-name">
+                    <span className="file-icon">{getSupportedFileIcon(file.name)}</span>
+                    {file.name}
                   </div>
-                  <div className='file-meta'>
-                    {formatFileSize(item.file.size)} • {currentHeaders.length}{' '}
-                    columns
+                  <div className="file-meta">
+                    {formatFileSize(file.size)}
+                    {headerData ? (
+                      <span className="header-count">
+                        • {headerData.originalHeaders.length} columns
+                        {headerData.mappedHeaders.some((mapped, idx) => 
+                          mapped !== headerData.originalHeaders[idx]) && (
+                          <span className="mapped-indicator"> (mapped)</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="header-count">• Processing headers...</span>
+                    )}
                   </div>
                 </div>
-                <div className='file-actions'>
-                  <button className='expand-btn'>
+                
+                <div className="file-actions">
+                  {isChecked && headerData && (
+                    <div className="checked-indicator">
+                      <span className="check-mark">✓</span>
+                      Headers Mapped
+                    </div>
+                  )}
+                  
+                  <button 
+                    className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+                  >
                     {isExpanded ? '▼' : '▶'}
                   </button>
                 </div>
               </div>
 
-              {/* Expandable Headers Section */}
-              {isExpanded && (
-                <div className='headers-edit-section'>
-                  <div className='headers-grid'>
-                    {currentHeaders.map((header, index) => (
-                      <div key={index} className='header-input-group'>
-                        <span className='header-index'>{index + 1}</span>
-                        <input
-                          type='text'
-                          value={header}
-                          onChange={(e) =>
-                            handleHeaderChange(item.id, index, e.target.value)
-                          }
-                          className='header-input'
-                          placeholder={`Header ${index + 1}`}
-                          disabled={isProcessing}
-                        />
+              {isExpanded && headerData && (
+                <div className="headers-detail">
+                  <div className="headers-actions">
+                    <div className="view-toggle-group">
+                      <button
+                        onClick={() => setShowOnlyUnmapped(!showOnlyUnmapped)}
+                        className={`view-toggle-btn ${showOnlyUnmapped ? 'active' : ''}`}
+                        title={showOnlyUnmapped ? "Showing only unmapped headers" : "Showing all headers"}
+                      >
+                        {showOnlyUnmapped ? '🔍 Show All Headers' : '✓ Show Only Unmapped'}
+                      </button>
+                    </div>
+                    {!isEditing ? (
+                      <button
+                        onClick={() => handleEditHeaders(id)}
+                        className="edit-headers-btn"
+                        disabled={isProcessing}
+                      >
+                        Edit Mappings
+                      </button>
+                    ) : (
+                      <div className="edit-actions">
+                        <button
+                          onClick={() => handleSaveEditedHeaders(id)}
+                          className="save-btn"
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          onClick={() => handleCancelEdit(id)}
+                          className="cancel-btn"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
-                  <div className='header-actions'>
-                    <button
-                      onClick={() => saveFileHeaders(item.id)}
-                      className='save-headers-btn'
-                      disabled={isProcessing}
-                    >
-                      Save Headers
-                    </button>
-                    <button
-                      onClick={() => toggleFileExpansion(item.id)}
-                      className='cancel-headers-btn'
-                      disabled={isProcessing}
-                    >
-                      Cancel
-                    </button>
+
+                  <div className="headers-mapping-container">
+                    <div className="mapping-header">
+                      <div className="original-column">Original Headers</div>
+                      <div className="arrow-column">→</div>
+                      <div className="mapped-column">Mapped Headers</div>
+                    </div>
+
+                    <div className="headers-grid">
+                      {headerData.originalHeaders.map((originalHeader, index) => {
+                        const mappedHeader = isEditing ? 
+                          editingHeaders[id]?.[index] || headerData.mappedHeaders[index] :
+                          headerData.mappedHeaders[index];
+                        
+                        const mappingStatus = getMappingStatus(
+                          originalHeader, 
+                          mappedHeader, 
+                          headerData.mappings
+                        );
+
+                        // Filter logic: only show unmapped headers when showOnlyUnmapped is true
+                        if (showOnlyUnmapped && mappingStatus.status === 'mapped') {
+                          return null;
+                        }
+
+                        return (
+                          <div key={index} className="header-row">
+                            <div className="original-header">
+                              <span className="header-text">{originalHeader}</span>
+                            </div>
+                            
+                            <div className="arrow">→</div>
+                            
+                            <div className="mapped-header">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={mappedHeader}
+                                  onChange={(e) => handleHeaderChange(id, index, e.target.value)}
+                                  className="header-input"
+                                />
+                              ) : (
+                                <div className="header-display">
+                                  <span 
+                                    className="header-text"
+                                    style={{ color: mappingStatus.color }}
+                                    title={mappingStatus.tooltip}
+                                  >
+                                    {mappedHeader}
+                                  </span>
+                                  <div 
+                                    className={`mapping-indicator ${mappingStatus.status}`}
+                                    style={{ backgroundColor: mappingStatus.color }}
+                                    title={mappingStatus.tooltip}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mapping-legend">
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: '#28a745' }}></div>
+                      <span>Database mapping found</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: '#ffc107' }}></div>
+                      <span>Custom mapping (edited)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: '#dc3545' }}></div>
+                      <span>No mapping found</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isExpanded && !headerData && (
+                <div className="headers-detail">
+                  <div className="loading-headers">
+                    <div className="loading-message">
+                      <div className="spinner"></div>
+                      <p>Processing file headers and fetching database mappings...</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -200,69 +381,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
           );
         })}
       </div>
-
-      {/* NEW: Validation Summary & Problem Headers Only */}
-      {shouldShowValidation && (
-        <div className='header-validation'>
-          <h3>Header Validation</h3>
-
-          <div className='validation-options'>
-            <label className='validation-option'>
-              <input
-                type='checkbox'
-                checked={allowExtraHeaders}
-                onChange={(e) => onValidationModeChange(e.target.checked)}
-                disabled={isProcessing}
-              />
-              <span className='validation-option-text'>
-                Allow files with extra headers
-              </span>
-            </label>
-          </div>
-
-          {/* Summary */}
-          <div className='validation-summary'>
-            <span
-              className={
-                validationSummary.matched === validationSummary.total
-                  ? 'success'
-                  : 'warning'
-              }
-            >
-              {validationSummary.matched}/{validationSummary.total} headers
-              matched across all files
-            </span>
-          </div>
-
-          {/* Only show non-matching headers */}
-          {validationSummary.nonMatchingHeaders.length > 0 && (
-            <div className='validation-results'>
-              <h4>Headers that don't match across all files:</h4>
-              {validationSummary.nonMatchingHeaders.map((result, index) => (
-                <div key={index} className='validation-item warning'>
-                  <div className='validation-header'>
-                    <span className='status-icon error'>❌</span>
-                    <span className='header-name'>"{result.header}"</span>
-                  </div>
-                  <div className='missing-details'>
-                    <div className='missing-from'>
-                      Missing from: {result.missingFromFiles.join(', ')}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Success message when all match */}
-          {validationSummary.nonMatchingHeaders.length === 0 &&
-            validationSummary.total > 0 && (
-              <div className='validation-success'>
-                ✅ All headers match perfectly across all files!
-              </div>
-            )}
-        </div>
-      )}
     </div>
   );
 };

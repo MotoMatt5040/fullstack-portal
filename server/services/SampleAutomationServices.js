@@ -1,9 +1,9 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
 const { promark } = require('../utils/databaseTypes');
-const { 
-  getPromarkConstantsAsHeaders, 
-  getPromarkConstantDefault 
+const {
+  getPromarkConstantsAsHeaders,
+  getPromarkConstantDefault,
 } = require('../config/promarkConstants');
 
 /**
@@ -77,7 +77,7 @@ const createTableFromFileData = async (processedData, tableName) => {
           rowsInserted: insertedRows,
           totalRows: data.length,
           message: `Successfully created table ${finalTableName} with ${insertedRows} rows and Promark internal variables`,
-          promarkConstantsAdded: promarkConstants.map(c => c.name)
+          promarkConstantsAdded: promarkConstants.map((c) => c.name),
         };
       } catch (error) {
         console.error('Error creating table from file data:', error);
@@ -87,6 +87,262 @@ const createTableFromFileData = async (processedData, tableName) => {
     },
     fnName: 'createTableFromFileData',
     allowRetry: false,
+  });
+};
+
+/**
+ * Get header mappings from database based on vendor/client and original headers
+ * @param {number|null} vendorId - Vendor ID (null for any vendor)
+ * @param {number|null} clientId - Client ID (null for any client)
+ * @param {string[]} originalHeaders - Array of original header names
+ * @returns {Object} - Mapping object with original headers as keys
+ */
+const getHeaderMappings = async (vendorId, clientId, originalHeaders) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        if (
+          !originalHeaders ||
+          !Array.isArray(originalHeaders) ||
+          originalHeaders.length === 0
+        ) {
+          return {};
+        }
+
+        console.log('Fetching header mappings for:', {
+          vendorId,
+          clientId,
+          originalHeadersCount: originalHeaders.length,
+          sampleHeaders: originalHeaders.slice(0, 3),
+        });
+
+        // Build the WHERE clause with proper precedence
+        let whereConditions = [];
+        const request = pool.request();
+
+        // Always add vendorId and clientId parameters (even if null)
+        // This prevents the "Must declare the scalar variable" error
+        request.input('vendorId', vendorId);
+        request.input('clientId', clientId);
+
+        // Add parameters for original headers
+        originalHeaders.forEach((header, index) => {
+          const paramName = `header${index}`;
+          request.input(paramName, header.toUpperCase());
+        });
+
+        const headerParams = originalHeaders
+          .map((_, index) => `@header${index}`)
+          .join(',');
+
+        // Build vendor/client conditions with precedence
+        if (vendorId && clientId) {
+          // Priority 1: Exact vendor and client match
+          whereConditions.push(
+            `(hm.VendorID = @vendorId AND hm.ClientID = @clientId)`
+          );
+
+          // Priority 2: Vendor match with null client
+          whereConditions.push(
+            `(hm.VendorID = @vendorId AND hm.ClientID IS NULL)`
+          );
+
+          // Priority 3: Client match with null vendor
+          whereConditions.push(
+            `(hm.VendorID IS NULL AND hm.ClientID = @clientId)`
+          );
+        } else if (vendorId) {
+          // Vendor only - prioritize vendor-specific mappings
+          whereConditions.push(`(hm.VendorID = @vendorId)`);
+          whereConditions.push(`(hm.VendorID IS NULL)`);
+        } else if (clientId) {
+          // Client only - prioritize client-specific mappings
+          whereConditions.push(`(hm.ClientID = @clientId)`);
+          whereConditions.push(`(hm.ClientID IS NULL)`);
+        }
+
+        // Always include fallback mappings where both are NULL (lowest priority)
+        whereConditions.push(`(hm.VendorID IS NULL AND hm.ClientID IS NULL)`);
+
+        const whereClause =
+          whereConditions.length > 0 ? whereConditions.join(' OR ') : '1=1';
+
+        const query = `
+          SELECT DISTINCT 
+            hm.OriginalHeader,
+            hm.MappedHeader,
+            COALESCE(v.VendorName, 'All') as VendorName,
+            COALESCE(c.ClientName, 'All') as ClientName,
+            hm.VendorID,
+            hm.ClientID,
+            CASE 
+              WHEN hm.VendorID = @vendorId AND hm.ClientID = @clientId THEN 1
+              WHEN hm.VendorID = @vendorId AND hm.ClientID IS NULL THEN 2
+              WHEN hm.VendorID IS NULL AND hm.ClientID = @clientId THEN 3
+              WHEN hm.VendorID IS NULL AND hm.ClientID IS NULL THEN 4
+              ELSE 5
+            END as Priority
+          FROM FAJITA.dbo.HeaderMappings hm
+          LEFT JOIN FAJITA.dbo.Vendors v ON v.VendorID = hm.VendorID
+          LEFT JOIN CaligulaD.dbo.tblClients c ON c.ClientID = hm.ClientID
+          WHERE (${whereClause})
+          AND UPPER(hm.OriginalHeader) IN (${headerParams})
+          ORDER BY Priority ASC, hm.OriginalHeader
+        `;
+
+        console.log('Executing header mapping query...');
+        console.log(query)
+        const result = await request.query(query);
+
+        // console.log(`Found ${result.recordset.length} raw mapping records`);
+
+        // Process results - keep only the highest priority mapping for each header
+        const mappings = {};
+
+        result.recordset.forEach((row) => {
+          const originalKey = row.OriginalHeader.toUpperCase();
+
+          // Only keep this mapping if we don't have one yet, or if this one has higher priority
+          if (
+            !mappings[originalKey] ||
+            row.Priority < mappings[originalKey].priority
+          ) {
+            mappings[originalKey] = {
+              original: row.OriginalHeader,
+              mapped: row.MappedHeader,
+              vendorName: row.VendorName,
+              clientName: row.ClientName,
+              vendorId: row.VendorID,
+              clientId: row.ClientID,
+              priority: row.Priority,
+            };
+          }
+        });
+
+        const mappingCount = Object.keys(mappings).length;
+        const unmappedCount = originalHeaders.length - mappingCount;
+
+        console.log(`Header mapping results:`, {
+          totalHeaders: originalHeaders.length,
+          mappedHeaders: mappingCount,
+          unmappedHeaders: unmappedCount,
+          sampleMappings: Object.values(mappings)
+            .slice(0, 3)
+            .map(
+              (m) =>
+                `${m.original} → ${m.mapped} (${m.vendorName}→${m.clientName})`
+            ),
+        });
+
+        return mappings;
+      } catch (error) {
+        console.error('Error in getHeaderMappings service:', error);
+        throw new Error(`Failed to fetch header mappings: ${error.message}`);
+      }
+    },
+    fnName: 'getHeaderMappings',
+  });
+};
+/**
+ * Save header mappings to database (for when user edits mappings)
+ * @param {number|null} vendorId - Vendor ID
+ * @param {number|null} clientId - Client ID
+ * @param {Object[]} mappings - Array of {original, mapped} objects
+ * @returns {number} - Number of mappings saved
+ */
+const saveHeaderMappings = async (vendorId, clientId, mappings) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        if (!mappings || !Array.isArray(mappings) || mappings.length === 0) {
+          return 0;
+        }
+
+        console.log('Saving header mappings:', {
+          vendorId,
+          clientId,
+          mappingCount: mappings.length,
+        });
+
+        let savedCount = 0;
+
+        for (let i = 0; i < mappings.length; i++) {
+          const { original, mapped } = mappings[i];
+
+          if (!original || !mapped) {
+            console.warn(`Skipping invalid mapping at index ${i}:`, {
+              original,
+              mapped,
+            });
+            continue;
+          }
+
+          // Check if mapping already exists
+          const checkQuery = `
+            SELECT COUNT(*) as count 
+            FROM FAJITA.dbo.HeaderMappings 
+            WHERE UPPER(OriginalHeader) = UPPER(@original)
+            AND VendorID ${vendorId ? '= @vendorId' : 'IS NULL'}
+            AND ClientID ${clientId ? '= @clientId' : 'IS NULL'}
+          `;
+
+          const checkRequest = pool.request();
+          checkRequest.input('original', original);
+          if (vendorId) checkRequest.input('vendorId', vendorId);
+          if (clientId) checkRequest.input('clientId', clientId);
+
+          const checkResult = await checkRequest.query(checkQuery);
+          const exists = checkResult.recordset[0].count > 0;
+
+          if (exists) {
+            // Update existing mapping
+            const updateQuery = `
+              UPDATE FAJITA.dbo.HeaderMappings 
+              SET MappedHeader = @mapped,
+                  UpdatedDate = GETDATE()
+              WHERE UPPER(OriginalHeader) = UPPER(@original)
+              AND VendorID ${vendorId ? '= @vendorId' : 'IS NULL'}
+              AND ClientID ${clientId ? '= @clientId' : 'IS NULL'}
+            `;
+
+            const updateRequest = pool.request();
+            updateRequest.input('mapped', mapped);
+            updateRequest.input('original', original);
+            if (vendorId) updateRequest.input('vendorId', vendorId);
+            if (clientId) updateRequest.input('clientId', clientId);
+
+            await updateRequest.query(updateQuery);
+            console.log(`Updated mapping: ${original} → ${mapped}`);
+          } else {
+            // Insert new mapping
+            const insertQuery = `
+              INSERT INTO FAJITA.dbo.HeaderMappings (VendorID, ClientID, OriginalHeader, MappedHeader, CreatedDate)
+              VALUES (@vendorId, @clientId, @original, @mapped, GETDATE())
+            `;
+
+            const insertRequest = pool.request();
+            insertRequest.input('vendorId', vendorId);
+            insertRequest.input('clientId', clientId);
+            insertRequest.input('original', original);
+            insertRequest.input('mapped', mapped);
+
+            await insertRequest.query(insertQuery);
+            console.log(`Inserted new mapping: ${original} → ${mapped}`);
+          }
+
+          savedCount++;
+        }
+
+        console.log(`Successfully saved ${savedCount} header mappings`);
+        return savedCount;
+      } catch (error) {
+        console.error('Error in saveHeaderMappings service:', error);
+        throw new Error(`Failed to save header mappings: ${error.message}`);
+      }
+    },
+    fnName: 'saveHeaderMappings',
   });
 };
 
@@ -110,27 +366,37 @@ const sanitizeTableName = (tableName) => {
  */
 const createTable = async (pool, tableName, headers) => {
   try {
-    console.log('Creating table with headers (including constants):', headers.length);
+    console.log(
+      'Creating table with headers (including constants):',
+      headers.length
+    );
 
     // Build column definitions with DEFAULT clauses for constants
     const columnDefinitions = headers
       .map((header) => {
         const columnName = sanitizeColumnName(header.name);
         const sqlType = mapDataTypeToSQL(header.type);
-        
+
         // Add DEFAULT clause if header has defaultValue (for Promark constants)
-        const defaultClause = header.defaultValue !== undefined && header.defaultValue !== null
-          ? ` DEFAULT ${typeof header.defaultValue === 'string' ? `'${header.defaultValue}'` : header.defaultValue}`
-          : '';
-        
+        const defaultClause =
+          header.defaultValue !== undefined && header.defaultValue !== null
+            ? ` DEFAULT ${
+                typeof header.defaultValue === 'string'
+                  ? `'${header.defaultValue}'`
+                  : header.defaultValue
+              }`
+            : '';
+
         const columnDef = `[${columnName}] ${sqlType}${defaultClause}`;
-        
+
         if (header.isPromarkConstant) {
-          console.log(`Promark constant: ${columnName} -> ${sqlType}${defaultClause}`);
+          console.log(
+            `Promark constant: ${columnName} -> ${sqlType}${defaultClause}`
+          );
         } else {
           console.log(`File column: ${columnName} -> ${sqlType}`);
         }
-        
+
         return columnDef;
       })
       .join(',\n    ');
@@ -143,7 +409,9 @@ const createTable = async (pool, tableName, headers) => {
 
     console.log('Executing CREATE TABLE SQL with constants...');
     const result = await pool.request().query(createTableSQL);
-    console.log(`Table [${tableName}] created successfully with Promark constants`);
+    console.log(
+      `Table [${tableName}] created successfully with Promark constants`
+    );
   } catch (error) {
     console.error('Error in createTable:', error);
     throw error;
@@ -160,14 +428,23 @@ const createTable = async (pool, tableName, headers) => {
  * @param {Array} promarkConstants - Array of Promark constant definitions
  * @returns {number} - Number of rows inserted
  */
-const insertDataWithConstants = async (pool, tableName, originalHeaders, allHeaders, data, promarkConstants) => {
+const insertDataWithConstants = async (
+  pool,
+  tableName,
+  originalHeaders,
+  allHeaders,
+  data,
+  promarkConstants
+) => {
   try {
     if (data.length === 0) {
       console.log('No data to insert');
       return 0;
     }
 
-    console.log(`Bulk inserting ${data.length} rows with Promark constants into table ${tableName}`);
+    console.log(
+      `Bulk inserting ${data.length} rows with Promark constants into table ${tableName}`
+    );
 
     // Use SQL Server's bulk insert capability
     const table = new sql.Table(`dbo.${tableName}`);
@@ -183,21 +460,19 @@ const insertDataWithConstants = async (pool, tableName, originalHeaders, allHead
     data.forEach((row) => {
       const rowValues = allHeaders.map((header) => {
         // Check if this is a Promark constant column
-        const isConstant = promarkConstants.find(c => c.name === header.name);
-        
+        const isConstant = promarkConstants.find((c) => c.name === header.name);
+
         if (isConstant) {
           // Use the default value for constants
           const defaultValue = getPromarkConstantDefault(header.name);
           return convertValue(defaultValue, header.type);
         } else {
           // Use original file data
-          // const dataKey = header.originalName || header.name;
-          // const value = row[dataKey];
           const value = row[header.name];
           return convertValue(value, header.type);
         }
       });
-      
+
       table.rows.add(...rowValues);
     });
 
@@ -205,7 +480,9 @@ const insertDataWithConstants = async (pool, tableName, originalHeaders, allHead
     const request = pool.request();
     await request.bulk(table);
 
-    console.log(`Successfully bulk inserted ${data.length} rows with Promark constants`);
+    console.log(
+      `Successfully bulk inserted ${data.length} rows with Promark constants`
+    );
     return data.length;
   } catch (error) {
     console.error('Error in bulk insert with constants:', error);
@@ -300,13 +577,18 @@ const convertValue = (value, dataType) => {
   }
 };
 
+/**
+ * Get clients from CaligulaD database
+ */
 const getClients = async () => {
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
       const result = await pool
         .request()
-        .query('SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName');
+        .query(
+          'SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName'
+        );
       return result.recordset;
     },
     fnName: 'getClients',
@@ -322,7 +604,9 @@ const getVendors = async () => {
     queryFn: async (pool) => {
       const result = await pool
         .request()
-        .query('SELECT VendorID, VendorName FROM FAJITA.dbo.Vendors ORDER BY VendorName');
+        .query(
+          'SELECT VendorID, VendorName FROM FAJITA.dbo.Vendors ORDER BY VendorName'
+        );
       return result.recordset;
     },
     fnName: 'getVendors',
@@ -338,13 +622,21 @@ const getClientsAndVendors = async () => {
     queryFn: async (pool) => {
       // Execute both queries in parallel
       const [clientsResult, vendorsResult] = await Promise.all([
-        pool.request().query('SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName'),
-        pool.request().query('SELECT VendorID, VendorName FROM FAJITA.dbo.Vendors ORDER BY VendorName')
+        pool
+          .request()
+          .query(
+            'SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName'
+          ),
+        pool
+          .request()
+          .query(
+            'SELECT VendorID, VendorName FROM FAJITA.dbo.Vendors ORDER BY VendorName'
+          ),
       ]);
 
       return {
         clients: clientsResult.recordset,
-        vendors: vendorsResult.recordset
+        vendors: vendorsResult.recordset,
       };
     },
     fnName: 'getClientsAndVendors',
@@ -356,4 +648,6 @@ module.exports = {
   getClients,
   getVendors,
   getClientsAndVendors,
+  getHeaderMappings,
+  saveHeaderMappings,
 };
