@@ -1,8 +1,10 @@
-// Base File Processor Interface
+// server/utils/file_processors/BaseFileProcessor.js
 class BaseFileProcessor {
   constructor(filePath, tableName) {
     this.filePath = filePath;
     this.tableName = tableName;
+    this.buffer = null; // Will be set if using buffer mode
+    this.isBuffer = false; // Flag for buffer mode
   }
 
   async process() {
@@ -22,13 +24,11 @@ class BaseFileProcessor {
       return 'BOOLEAN';
     }
 
-    // Try to parse as number
     const numValue = Number(value);
     if (!isNaN(numValue)) {
       return Number.isInteger(numValue) ? 'INTEGER' : 'REAL';
     }
 
-    // Try to parse as date
     const dateValue = new Date(value);
     if (!isNaN(dateValue.getTime())) {
       return 'DATE';

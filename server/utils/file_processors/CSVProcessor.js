@@ -1,6 +1,7 @@
 const BaseFileProcessor = require('./BaseFileProcessor');
 const fs = require('fs');
 const csv = require('csv-parser');
+const { Readable } = require('stream'); // ⭐ ADD THIS IMPORT
 
 class CSVProcessor extends BaseFileProcessor {
   async process() {
@@ -9,19 +10,31 @@ class CSVProcessor extends BaseFileProcessor {
       const headers = [];
       let isFirstRow = true;
 
-      fs.createReadStream(this.filePath)
+      // ⭐ CREATE STREAM BASED ON BUFFER OR FILE PATH
+      let stream;
+      if (this.isBuffer && this.buffer) {
+        // Create readable stream from buffer
+        stream = Readable.from(this.buffer);
+      } else if (this.filePath) {
+        // Create read stream from file (backward compatibility)
+        stream = fs.createReadStream(this.filePath);
+      } else {
+        return reject(new Error('No buffer or file path provided'));
+      }
+
+      // ⭐ USE THE STREAM VARIABLE INSTEAD OF fs.createReadStream
+      stream
         .pipe(csv())
         .on('headers', (headerList) => {
           headerList.forEach(header => {
             headers.push({
               name: header,
-              type: 'TEXT' // Will be refined when we see actual data
+              type: 'TEXT'
             });
           });
         })
         .on('data', (data) => {
           if (isFirstRow) {
-            // If headers weren't captured in 'headers' event
             if (headers.length === 0) {
               Object.keys(data).forEach(key => {
                 headers.push({
@@ -30,8 +43,7 @@ class CSVProcessor extends BaseFileProcessor {
                 });
               });
             } else {
-              // Refine header types based on actual data
-              headers.forEach((header, index) => {
+              headers.forEach((header) => {
                 const key = header.name;
                 if (data[key] !== undefined) {
                   header.type = this.detectDataType(data[key]);

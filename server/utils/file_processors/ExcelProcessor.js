@@ -5,9 +5,17 @@ class ExcelProcessor extends BaseFileProcessor {
   async process() {
     try {
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.readFile(this.filePath);
       
-      const worksheet = workbook.worksheets[0]; // Use first worksheet
+      // ⭐ LOAD FROM BUFFER OR FILE
+      if (this.isBuffer && this.buffer) {
+        await workbook.xlsx.load(this.buffer);
+      } else if (this.filePath) {
+        await workbook.xlsx.readFile(this.filePath);
+      } else {
+        throw new Error('No buffer or file path provided');
+      }
+      
+      const worksheet = workbook.worksheets[0];
       
       if (!worksheet || worksheet.rowCount === 0) {
         throw new Error('No data found in Excel file');
@@ -21,7 +29,7 @@ class ExcelProcessor extends BaseFileProcessor {
       headerRow.eachCell((cell, colNumber) => {
         headers.push({
           name: cell.value?.toString() || `Column_${colNumber}`,
-          type: 'TEXT' // Will be refined when we see actual data
+          type: 'TEXT'
         });
       });
 
@@ -35,14 +43,12 @@ class ExcelProcessor extends BaseFileProcessor {
           if (headerName) {
             rowData[headerName] = cell.value;
             
-            // Refine data type based on actual data
-            if (rowNumber === 2) { // First data row
+            if (rowNumber === 2) {
               headers[colNumber - 1].type = this.detectDataType(cell.value);
             }
           }
         });
         
-        // Only add row if it has data
         if (Object.keys(rowData).length > 0) {
           jsonData.push(rowData);
         }

@@ -6,11 +6,19 @@ const SampleAutomation = require('../services/SampleAutomationServices');
 const handleAsync = require('./asyncController');
 
 // Configure multer for multiple file uploads (200MB limit per file)
+// const upload = multer({
+//   dest: 'temp_uploads/', // Temporary directory for uploads
+//   limits: {
+//     fileSize: 200 * 1024 * 1024, // 200MB limit per file
+//     files: 10, // Maximum 10 files
+//   },
+// });
+
 const upload = multer({
-  dest: 'temp_uploads/', // Temporary directory for uploads
+  storage: multer.memoryStorage(), // ⭐ Keep in memory instead of disk
   limits: {
     fileSize: 200 * 1024 * 1024, // 200MB limit per file
-    files: 10, // Maximum 10 files
+    files: 10,
   },
 });
 
@@ -21,13 +29,15 @@ const upload = multer({
 async function cleanupFiles(files) {
   if (!files || files.length === 0) return;
 
-  const cleanupPromises = files.map((file) =>
-    fs
-      .unlink(file.path)
-      .catch((error) =>
-        console.error(`Failed to cleanup file ${file.path}:`, error)
-      )
-  );
+  const cleanupPromises = files
+    .filter((file) => file.path) // ⭐ ADDED: Only cleanup files with paths (disk storage)
+    .map((file) =>
+      fs
+        .unlink(file.path)
+        .catch((error) =>
+          console.error(`Failed to cleanup file ${file.path}:`, error)
+        )
+    );
 
   await Promise.all(cleanupPromises);
   console.log(`Cleaned up ${files.length} temporary file(s)`);
@@ -126,8 +136,14 @@ const processFile = async (req, res) => {
       try {
         // Create processor and process the file
         const fileName = path.basename(originalFilename, fileExtension);
-        const processor = FileProcessorFactory.create(
-          uploadedFilePath,
+        // const processor = FileProcessorFactory.create(
+        //   uploadedFilePath,
+        //   fileName,
+        //   fileExtension
+        // );
+        // Instead of reading from file.path
+        const processor = FileProcessorFactory.createFromBuffer(
+          file.buffer, // Direct buffer access
           fileName,
           fileExtension
         );
@@ -605,41 +621,49 @@ const detectHeaders = handleAsync(async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'No file uploaded'
+        message: 'No file uploaded',
       });
     }
 
     const file = req.file;
     const fileExtension = path.extname(file.originalname).toLowerCase();
     const fileName = path.basename(file.originalname, fileExtension);
-    
+
     if (!FileProcessorFactory.isSupported(fileExtension)) {
-      await fs.unlink(file.path).catch(console.error);
+      // await fs.unlink(file.path).catch(console.error);
       return res.status(400).json({
         success: false,
-        message: `Unsupported file type: ${fileExtension}`
+        message: `Unsupported file type: ${fileExtension}`,
       });
     }
-    
-    const processor = FileProcessorFactory.create(file.path, fileName, fileExtension);
+
+    // const processor = FileProcessorFactory.create(
+    //   file.path,
+    //   fileName,
+    //   fileExtension
+    // );
+    const processor = FileProcessorFactory.createFromBuffer(
+      file.buffer,
+      fileName, 
+      fileExtension
+    );
     const result = await processor.process();
-    const headerNames = result.headers.map(h => h.name);
-    
-    await fs.unlink(file.path).catch(console.error);
-    
+    const headerNames = result.headers.map((h) => h.name);
+
+    // await fs.unlink(file.path).catch(console.error);
+
     res.json({
       success: true,
       headers: headerNames,
-      message: `Detected ${headerNames.length} headers`
+      message: `Detected ${headerNames.length} headers`,
     });
-    
   } catch (error) {
-    if (req.file) {
-      await fs.unlink(req.file.path).catch(console.error);
-    }
+    // if (req.file) {
+    //   await fs.unlink(req.file.path).catch(console.error);
+    // }
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to detect headers'
+      message: error.message || 'Failed to detect headers',
     });
   }
 });
