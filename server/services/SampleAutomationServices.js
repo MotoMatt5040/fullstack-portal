@@ -301,7 +301,7 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
             const updateQuery = `
               UPDATE FAJITA.dbo.HeaderMappings 
               SET MappedHeader = @mapped,
-                  UpdatedDate = GETDATE()
+                  ModifiedDate = GETDATE()
               WHERE UPPER(OriginalHeader) = UPPER(@original)
               AND VendorID ${vendorId ? '= @vendorId' : 'IS NULL'}
               AND ClientID ${clientId ? '= @clientId' : 'IS NULL'}

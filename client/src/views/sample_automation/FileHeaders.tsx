@@ -34,7 +34,8 @@ interface FileHeadersProps {
   fileHeaders: Record<string, FileHeaderData>;
   checkedFiles: Set<string>;
   isProcessing: boolean;
-  onSaveHeaders: (fileId: string, originalHeaders: string[], editedMappedHeaders?: string[]) => void;
+  onUpdateLocalMapping?: (fileId: string, index: number, newMapped: string) => void;
+  onSaveMappingToDB?: (fileId: string, original: string, mapped: string) => void;
   validationSummary: ValidationSummary;
   allowExtraHeaders: boolean;
   onValidationModeChange: (allow: boolean) => void;
@@ -45,14 +46,16 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   fileHeaders,
   checkedFiles,
   isProcessing,
-  onSaveHeaders,
+  onUpdateLocalMapping,
+  onSaveMappingToDB,
   validationSummary,
   allowExtraHeaders,
   onValidationModeChange,
 }) => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
-  const [editingHeaders, setEditingHeaders] = useState<Record<string, string[]>>({});
-  const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(true);
+  const [editingHeaders, setEditingHeaders] = useState<Record<string, Record<number, string>>>({});
+  const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   const toggleFileExpansion = useCallback((fileId: string) => {
     setExpandedFiles(prev => {
@@ -66,45 +69,59 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     });
   }, []);
 
-  const handleEditHeaders = useCallback((fileId: string) => {
-    const headerData = fileHeaders[fileId];
-    if (headerData && headerData.mappedHeaders) {
-      setEditingHeaders(prev => ({
-        ...prev,
-        [fileId]: [...headerData.mappedHeaders]
-      }));
-    }
-  }, [fileHeaders]);
+  const handleEditHeader = useCallback((fileId: string, index: number, currentValue: string) => {
+    setEditingHeaders(prev => ({
+      ...prev,
+      [fileId]: {
+        ...(prev[fileId] || {}),
+        [index]: currentValue
+      }
+    }));
+  }, []);
 
-  const handleSaveEditedHeaders = useCallback((fileId: string) => {
-    const editedHeaders = editingHeaders[fileId];
-    if (editedHeaders) {
-      const originalHeaders = fileHeaders[fileId]?.originalHeaders || [];
-      onSaveHeaders(fileId, originalHeaders, editedHeaders);
-      setEditingHeaders(prev => {
-        const updated = { ...prev };
-        delete updated[fileId];
-        return updated;
-      });
-    }
-  }, [editingHeaders, fileHeaders, onSaveHeaders]);
-
-  const handleCancelEdit = useCallback((fileId: string) => {
+  const handleCancelEdit = useCallback((fileId: string, index: number) => {
     setEditingHeaders(prev => {
-      const updated = { ...prev };
-      delete updated[fileId];
-      return updated;
+      const fileEdits = { ...prev[fileId] };
+      delete fileEdits[index];
+      return {
+        ...prev,
+        [fileId]: fileEdits
+      };
     });
   }, []);
+
+  const handleConfirmEdit = useCallback((fileId: string, index: number, newMapped: string) => {
+    if (onUpdateLocalMapping) {
+    onUpdateLocalMapping(fileId, index, newMapped);
+  }
+    
+    // Clear editing state for this row
+    setEditingHeaders(prev => {
+      const fileEdits = { ...prev[fileId] };
+      delete fileEdits[index];
+      return {
+        ...prev,
+        [fileId]: fileEdits
+      };
+    });
+  }, [onUpdateLocalMapping]);
+
+  const handleSaveToDB = useCallback((fileId: string, index: number, original: string, mapped: string) => {
+    if (onSaveMappingToDB) {
+      onSaveMappingToDB(fileId, original, mapped);
+    }
+  }, [onSaveMappingToDB]);
 
   const handleHeaderChange = useCallback((fileId: string, index: number, value: string) => {
     setEditingHeaders(prev => ({
       ...prev,
-      [fileId]: prev[fileId]?.map((header, i) => i === index ? value : header) || []
+      [fileId]: {
+        ...(prev[fileId] || {}),
+        [index]: value
+      }
     }));
   }, []);
 
-  // Determine mapping status for visual indicators
   const getMappingStatus = useCallback((original: string, mapped: string, mappings: Record<string, HeaderMapping>) => {
     const upperOriginal = original.toUpperCase();
     const mapping = mappings[upperOriginal];
@@ -112,7 +129,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     if (!mapping) {
       return {
         status: 'no-mapping',
-        color: '#dc3545', // Red - no mapping found
+        color: '#dc3545',
         tooltip: 'No mapping found in database'
       };
     }
@@ -120,14 +137,14 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     if (mapping.mapped === mapped) {
       return {
         status: 'mapped',
-        color: '#28a745', // Green - successfully mapped
+        color: '#28a745',
         tooltip: `Mapped from ${mapping.vendorName || 'All'} → ${mapping.clientName || 'All'}`
       };
     }
     
     return {
       status: 'custom',
-      color: '#ffc107', // Yellow - user customized
+      color: '#ffc107',
       tooltip: 'Custom mapping (edited by user)'
     };
   }, []);
@@ -207,7 +224,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
           const isChecked = checkedFiles.has(id);
           const headerData = fileHeaders[id];
           const isExpanded = expandedFiles.has(id);
-          const isEditing = editingHeaders[id];
+          const fileEditingHeaders = editingHeaders[id] || {};
 
           return (
             <div key={id} className={`file-item ${isChecked ? 'checked' : ''}`}>
@@ -261,30 +278,19 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                         {showOnlyUnmapped ? '🔍 Show All Headers' : '✓ Show Only Unmapped'}
                       </button>
                     </div>
-                    {!isEditing ? (
+
+                    <div className="lock-toggle-group">
                       <button
-                        onClick={() => handleEditHeaders(id)}
-                        className="edit-headers-btn"
-                        disabled={isProcessing}
+                        onClick={() => setIsUnlocked(!isUnlocked)}
+                        className={`lock-toggle-btn ${isUnlocked ? 'unlocked' : 'locked'}`}
+                        title={isUnlocked ? "Database saves enabled - Click to lock" : "Database saves disabled - Click to unlock"}
                       >
-                        Edit Mappings
+                        {isUnlocked ? '🔓 Unlocked' : '🔒 Locked'}
                       </button>
-                    ) : (
-                      <div className="edit-actions">
-                        <button
-                          onClick={() => handleSaveEditedHeaders(id)}
-                          className="save-btn"
-                        >
-                          Save Changes
-                        </button>
-                        <button
-                          onClick={() => handleCancelEdit(id)}
-                          className="cancel-btn"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
+                      <span className="lock-hint">
+                        {isUnlocked ? 'Save to DB enabled' : 'Save to DB disabled'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="headers-mapping-container">
@@ -292,21 +298,22 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                       <div className="original-column">Original Headers</div>
                       <div className="arrow-column">→</div>
                       <div className="mapped-column">Mapped Headers</div>
+                      <div className="actions-column">Actions</div>
                     </div>
 
                     <div className="headers-grid">
                       {headerData.originalHeaders.map((originalHeader, index) => {
-                        const mappedHeader = isEditing ? 
-                          editingHeaders[id]?.[index] || headerData.mappedHeaders[index] :
-                          headerData.mappedHeaders[index];
+                        const isEditingThisRow = fileEditingHeaders[index] !== undefined;
+                        const mappedHeader = isEditingThisRow 
+                          ? fileEditingHeaders[index]
+                          : headerData.mappedHeaders[index];
                         
                         const mappingStatus = getMappingStatus(
                           originalHeader, 
-                          mappedHeader, 
+                          headerData.mappedHeaders[index], 
                           headerData.mappings
                         );
 
-                        // Filter logic: only show unmapped headers when showOnlyUnmapped is true
                         if (showOnlyUnmapped && mappingStatus.status === 'mapped') {
                           return null;
                         }
@@ -320,12 +327,13 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                             <div className="arrow">→</div>
                             
                             <div className="mapped-header">
-                              {isEditing ? (
+                              {isEditingThisRow ? (
                                 <input
                                   type="text"
                                   value={mappedHeader}
                                   onChange={(e) => handleHeaderChange(id, index, e.target.value)}
                                   className="header-input"
+                                  autoFocus
                                 />
                               ) : (
                                 <div className="header-display">
@@ -342,6 +350,47 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                                     title={mappingStatus.tooltip}
                                   />
                                 </div>
+                              )}
+                            </div>
+
+                            <div className="row-actions">
+                              {isEditingThisRow ? (
+                                <>
+                                  <button
+                                    onClick={() => handleConfirmEdit(id, index, mappedHeader)}
+                                    className="confirm-row-btn"
+                                    disabled={isProcessing}
+                                    title="Confirm this change (session only)"
+                                  >
+                                    ✓ Confirm
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancelEdit(id, index)}
+                                    className="cancel-row-btn"
+                                    title="Cancel editing"
+                                  >
+                                    ✕
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleEditHeader(id, index, mappedHeader)}
+                                    className="edit-row-btn"
+                                    disabled={isProcessing}
+                                    title="Edit this mapping"
+                                  >
+                                    ✏️ Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveToDB(id, index, originalHeader, mappedHeader)}
+                                    className="save-db-btn"
+                                    disabled={isProcessing || !isUnlocked}
+                                    title={isUnlocked ? "Save this mapping to database" : "Unlock to save to database"}
+                                  >
+                                    💾 Save to DB
+                                  </button>
+                                </>
                               )}
                             </div>
                           </div>

@@ -2061,3 +2061,319 @@
   align-items: center;
   margin-bottom: 1rem;
 }
+
+/* ========================================
+   SAVE MAPPING TO DB BUTTON
+======================================== */
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.save-mapping-btn {
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.save-mapping-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.save-mapping-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-mapping-btn:focus {
+  outline: 2px solid var(--focus-ring-color, var(--accent-color));
+  outline-offset: 2px;
+}
+
+/* ========================================
+   PER-ROW ACTIONS
+======================================== */
+
+.mapping-header {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 140px;
+  background: var(--table-header-background, rgba(0, 123, 255, 0.1));
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  font-weight: 600;
+  color: var(--table-header-color, var(--text-color));
+  text-align: center;
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 140px;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--table-border-color, rgba(0, 0, 0, 0.05));
+  transition: background-color 0.2s ease;
+}
+
+.actions-column {
+  text-align: center;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.edit-row-btn,
+.save-row-btn,
+.cancel-row-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.edit-row-btn {
+  background: #ffc107;
+  color: #212529;
+}
+
+.edit-row-btn:hover:not(:disabled) {
+  background: #e0a800;
+}
+
+.save-row-btn {
+  background: #28a745;
+  color: white;
+}
+
+.save-row-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.cancel-row-btn {
+  background: #dc3545;
+  color: white;
+  padding: 0.25rem 0.4rem;
+}
+
+.cancel-row-btn:hover {
+  background: #c82333;
+}
+
+.edit-row-btn:disabled,
+.save-row-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-row-btn:focus,
+.save-row-btn:focus,
+.cancel-row-btn:focus {
+  outline: 2px solid var(--focus-ring-color, var(--accent-color));
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mapping-header,
+  .header-row {
+    grid-template-columns: 1fr 40px 1fr 100px;
+    font-size: 0.8rem;
+  }
+  
+  .edit-row-btn,
+  .save-row-btn,
+  .cancel-row-btn {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* ========================================
+   LOCK/UNLOCK TOGGLE
+======================================== */
+
+.lock-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lock-toggle-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.lock-toggle-btn.locked {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.lock-toggle-btn.locked:hover {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+.lock-toggle-btn.unlocked {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.lock-toggle-btn.unlocked:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+.lock-hint {
+  font-size: 0.75rem;
+  color: var(--label-text-color);
+  font-style: italic;
+}
+
+/* ========================================
+   PER-ROW ACTIONS
+======================================== */
+
+.mapping-header {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 200px;
+  background: var(--table-header-background, rgba(0, 123, 255, 0.1));
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  font-weight: 600;
+  color: var(--table-header-color, var(--text-color));
+  text-align: center;
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 200px;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--table-border-color, rgba(0, 0, 0, 0.05));
+  transition: background-color 0.2s ease;
+}
+
+.actions-column {
+  text-align: center;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.edit-row-btn,
+.confirm-row-btn,
+.cancel-row-btn,
+.save-db-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.edit-row-btn {
+  background: #ffc107;
+  color: #212529;
+}
+
+.edit-row-btn:hover:not(:disabled) {
+  background: #e0a800;
+}
+
+.confirm-row-btn {
+  background: #17a2b8;
+  color: white;
+}
+
+.confirm-row-btn:hover:not(:disabled) {
+  background: #138496;
+}
+
+.save-db-btn {
+  background: #28a745;
+  color: white;
+}
+
+.save-db-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.save-db-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancel-row-btn {
+  background: #dc3545;
+  color: white;
+  padding: 0.25rem 0.4rem;
+}
+
+.cancel-row-btn:hover {
+  background: #c82333;
+}
+
+.edit-row-btn:disabled,
+.confirm-row-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-row-btn:focus,
+.confirm-row-btn:focus,
+.cancel-row-btn:focus,
+.save-db-btn:focus {
+  outline: 2px solid var(--focus-ring-color, var(--accent-color));
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mapping-header,
+  .header-row {
+    grid-template-columns: 1fr 40px 1fr 140px;
+    font-size: 0.8rem;
+  }
+  
+  .edit-row-btn,
+  .confirm-row-btn,
+  .cancel-row-btn,
+  .save-db-btn {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.3rem;
+  }
+  
+  .row-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

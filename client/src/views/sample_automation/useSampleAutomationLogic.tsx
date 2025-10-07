@@ -62,12 +62,18 @@ export const useSampleAutomationLogic = () => {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Refs to track current vendor/client IDs without causing re-renders
+  const selectedVendorIdRef = useRef(selectedVendorId);
+  const selectedClientIdRef = useRef(selectedClientId);
+
   // Processing state
   const [processResult, setProcessResult] = useState<any>(null);
   const [processStatus, setProcessStatus] = useState('');
 
   // Updated headers state to include mapping information
-  const [fileHeaders, setFileHeaders] = useState<Record<string, FileHeaderData>>({});
+  const [fileHeaders, setFileHeaders] = useState<
+    Record<string, FileHeaderData>
+  >({});
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
   const [allowExtraHeaders, setAllowExtraHeaders] = useState(false);
 
@@ -85,6 +91,15 @@ export const useSampleAutomationLogic = () => {
       isInternalUser,
     };
   }, [currentUser]);
+
+  // Update refs whenever vendor/client IDs change
+  useEffect(() => {
+    selectedVendorIdRef.current = selectedVendorId;
+  }, [selectedVendorId]);
+
+  useEffect(() => {
+    selectedClientIdRef.current = selectedClientId;
+  }, [selectedClientId]);
 
   // API hooks
   const [
@@ -120,17 +135,12 @@ export const useSampleAutomationLogic = () => {
   // Add save header mappings mutation
   const [
     saveHeaderMappings,
-    {
-      isLoading: isSavingHeaderMappings,
-      error: saveHeaderMappingsError,
-    },
+    { isLoading: isSavingHeaderMappings, error: saveHeaderMappingsError },
   ] = useSaveHeaderMappingsMutation();
 
   // Add detect headers mutation
-  const [
-    detectHeaders,
-    { isLoading: isDetectingHeaders }
-  ] = useDetectHeadersMutation();
+  const [detectHeaders, { isLoading: isDetectingHeaders }] =
+    useDetectHeadersMutation();
 
   // Calculate validation summary with mapped headers
   const validationSummary = useMemo(() => {
@@ -138,7 +148,7 @@ export const useSampleAutomationLogic = () => {
       return { matched: 0, total: 0, nonMatchingHeaders: [] };
     }
 
-    const headerSets = Object.values(fileHeaders).map(fh => fh.mappedHeaders);
+    const headerSets = Object.values(fileHeaders).map((fh) => fh.mappedHeaders);
     if (headerSets.length === 0) {
       return { matched: 0, total: 0, nonMatchingHeaders: [] };
     }
@@ -257,112 +267,133 @@ export const useSampleAutomationLogic = () => {
     }
   }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
 
-  // NEW: Function to fetch and apply header mappings
-  const fetchAndApplyHeaderMappings = useCallback(async (fileId: string, originalHeaders: string[]) => {
-    if (!originalHeaders.length) return;
+  // NEW: Function to fetch and apply header mappings using refs for current vendor/client
+  const fetchAndApplyHeaderMappings = useCallback(
+    async (fileId: string, originalHeaders: string[]) => {
+      if (!originalHeaders.length) return;
+
+      try {
+        // Use refs to get current values without adding to dependencies
+        const currentVendorId = selectedVendorIdRef.current;
+        const currentClientId = selectedClientIdRef.current;
+
+        console.log('Fetching header mappings for file:', fileId, {
+          vendorId: currentVendorId,
+          clientId: currentClientId,
+          headerCount: originalHeaders.length,
+        });
+
+        // Get header mappings from database
+        const mappingsResult = await getHeaderMappings({
+          vendorId: currentVendorId,
+          clientId: currentClientId,
+          originalHeaders,
+        }).unwrap();
+
+        console.log('Header mappings received:', mappingsResult);
+
+        // Apply mappings to create mapped headers array
+        const mappedHeaders = originalHeaders.map((originalHeader) => {
+          const upperOriginal = originalHeader.toUpperCase();
+          const mapping = mappingsResult.data[upperOriginal];
+          return mapping ? mapping.mapped : originalHeader;
+        });
+
+        // Update file headers with both original and mapped
+        setFileHeaders((prev) => ({
+          ...prev,
+          [fileId]: {
+            originalHeaders,
+            mappedHeaders,
+            mappings: mappingsResult.data,
+          },
+        }));
+
+        console.log(`Applied mappings for file ${fileId}:`, {
+          originalCount: originalHeaders.length,
+          mappedCount: mappedHeaders.length,
+          mappingsFound: Object.keys(mappingsResult.data).length,
+        });
+      } catch (error) {
+        console.error('Error fetching header mappings:', error);
+        // Fallback: use original headers as mapped headers
+        setFileHeaders((prev) => ({
+          ...prev,
+          [fileId]: {
+            originalHeaders,
+            mappedHeaders: originalHeaders,
+            mappings: {},
+          },
+        }));
+      }
+    },
+    [getHeaderMappings]
+  );
+
+  // NEW: Function to detect headers from file using RTK Query
+  const detectHeadersFromFile = useCallback(
+    async (file: File): Promise<string[]> => {
+      try {
+        const result = await detectHeaders(file).unwrap();
+        return result.headers || [];
+      } catch (error) {
+        console.error('Error detecting headers via backend:', error);
+        throw new Error(
+          `Failed to read headers from ${file.name}: ${error.message}`
+        );
+      }
+    },
+    [detectHeaders]
+  );
+
+  // Automatically process files when they're uploaded
+// In the useEffect that auto-processes files
+useEffect(() => {
+  console.log('🔍 useEffect triggered');
+  console.log('selectedFiles:', selectedFiles);
+  console.log('fileHeaders:', fileHeaders);
+  
+  selectedFiles.forEach(async (fileWrapper) => {
+    console.log(`📁 Processing file: ${fileWrapper.file.name}, ID: ${fileWrapper.id}`);
+    
+    // Skip if we already have header data for this file
+    if (fileHeaders[fileWrapper.id]) {
+      console.log(`⏭️ Skipping ${fileWrapper.file.name} - already has headers`);
+      return;
+    }
 
     try {
-      console.log('Fetching header mappings for file:', fileId, {
-        vendorId: selectedVendorId,
-        clientId: selectedClientId,
-        headerCount: originalHeaders.length
-      });
+      console.log(`🔎 Auto-detecting headers for file: ${fileWrapper.file.name}`);
 
-      // Get header mappings from database
-      const mappingsResult = await getHeaderMappings({
-        vendorId: selectedVendorId,
-        clientId: selectedClientId,
-        originalHeaders,
-      }).unwrap();
+      // Step 1: Detect headers from the file using backend
+      const detectedHeaders = await detectHeadersFromFile(fileWrapper.file);
+      console.log(`✅ Detected ${detectedHeaders.length} headers:`, detectedHeaders);
 
-      console.log('Header mappings received:', mappingsResult);
+      // Step 2: Fetch database mappings and apply them
+      console.log(`🔄 Fetching mappings for ${fileWrapper.id}...`);
+      await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders);
+      console.log(`✅ Mappings applied for ${fileWrapper.id}`);
 
-      // Apply mappings to create mapped headers array
-      const mappedHeaders = originalHeaders.map(originalHeader => {
-        const upperOriginal = originalHeader.toUpperCase();
-        const mapping = mappingsResult.data[upperOriginal];
-        return mapping ? mapping.mapped : originalHeader; // Use original if no mapping found
-      });
+      // Step 3: Mark file as processed
+      setCheckedFiles(prev => new Set([...prev, fileWrapper.id]));
 
-      // Update file headers with both original and mapped
-      setFileHeaders(prev => ({
-        ...prev,
-        [fileId]: {
-          originalHeaders,
-          mappedHeaders,
-          mappings: mappingsResult.data,
-        }
-      }));
-
-      console.log(`Applied mappings for file ${fileId}:`, {
-        originalCount: originalHeaders.length,
-        mappedCount: mappedHeaders.length,
-        mappingsFound: Object.keys(mappingsResult.data).length
-      });
+      console.log(`✅ Header processing complete for file: ${fileWrapper.file.name}`);
 
     } catch (error) {
-      console.error('Error fetching header mappings:', error);
-      // Fallback: use original headers as mapped headers
+      console.error(`❌ Failed to process headers for ${fileWrapper.file.name}:`, error);
+
+      // Fallback: set empty header data so file doesn't get stuck
       setFileHeaders(prev => ({
         ...prev,
-        [fileId]: {
-          originalHeaders,
-          mappedHeaders: originalHeaders,
+        [fileWrapper.id]: {
+          originalHeaders: [],
+          mappedHeaders: [],
           mappings: {},
         }
       }));
     }
-  }, [selectedVendorId, selectedClientId, getHeaderMappings]);
-
-  // NEW: Function to detect headers from file using RTK Query
-  const detectHeadersFromFile = useCallback(async (file: File): Promise<string[]> => {
-    try {
-      const result = await detectHeaders(file).unwrap();
-      return result.headers || [];
-    } catch (error) {
-      console.error('Error detecting headers via backend:', error);
-      throw new Error(`Failed to read headers from ${file.name}: ${error.message}`);
-    }
-  }, [detectHeaders]);
-
-  // NEW: Automatically process files when they're uploaded
-  useEffect(() => {
-    selectedFiles.forEach(async (fileWrapper) => {
-      // Skip if we already have header data for this file
-      if (fileHeaders[fileWrapper.id]) {
-        return;
-      }
-
-      try {
-        console.log(`Auto-detecting headers for file: ${fileWrapper.file.name}`);
-        
-        // Step 1: Detect headers from the file using backend
-        const detectedHeaders = await detectHeadersFromFile(fileWrapper.file);
-        console.log(`Detected ${detectedHeaders.length} headers:`, detectedHeaders);
-        
-        // Step 2: Fetch database mappings and apply them
-        await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders);
-        
-        // Step 3: Mark file as processed
-        setCheckedFiles(prev => new Set([...prev, fileWrapper.id]));
-        
-        console.log(`Header processing complete for file: ${fileWrapper.file.name}`);
-        
-      } catch (error) {
-        console.error(`Failed to process headers for ${fileWrapper.file.name}:`, error);
-        
-        // Fallback: set empty header data so file doesn't get stuck
-        setFileHeaders(prev => ({
-          ...prev,
-          [fileWrapper.id]: {
-            originalHeaders: [],
-            mappedHeaders: [],
-            mappings: {},
-          }
-        }));
-      }
-    });
-  }, [selectedFiles, fileHeaders, detectHeadersFromFile, fetchAndApplyHeaderMappings]);
+  });
+}, [selectedFiles, fileHeaders, detectHeadersFromFile, fetchAndApplyHeaderMappings]);
 
   // Updated file selection handler
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -469,9 +500,13 @@ export const useSampleAutomationLogic = () => {
       if (newValue !== selectedVendorId) {
         setSelectedVendorId(newValue);
         setProcessStatus('');
-        
-        console.log('Vendor changed to:', newValue, 'Re-fetching mappings for all files');
-        
+
+        console.log(
+          'Vendor changed to:',
+          newValue,
+          'Re-fetching mappings for all files'
+        );
+
         // Re-fetch mappings for all files when vendor changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
@@ -490,9 +525,13 @@ export const useSampleAutomationLogic = () => {
       if (newValue !== selectedClientId) {
         setSelectedClientId(newValue);
         setProcessStatus('');
-        
-        console.log('Client changed to:', newValue, 'Re-fetching mappings for all files');
-        
+
+        console.log(
+          'Client changed to:',
+          newValue,
+          'Re-fetching mappings for all files'
+        );
+
         // Re-fetch mappings for all files when client changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
@@ -504,49 +543,26 @@ export const useSampleAutomationLogic = () => {
     [selectedClientId, fileHeaders, fetchAndApplyHeaderMappings]
   );
 
-  // Updated handler for saving headers with mapping support
-  const handleSaveHeaders = useCallback(
-    (fileId: string, originalHeaders: string[], editedMappedHeaders?: string[]) => {
-      if (editedMappedHeaders) {
-        // User manually edited mapped headers
-        console.log('Updating manually edited headers for file:', fileId);
-        setFileHeaders((prev) => ({
-          ...prev,
-          [fileId]: {
-            ...prev[fileId],
-            mappedHeaders: editedMappedHeaders,
-          },
-        }));
-
-        // Optionally save the custom mappings to database
-        if (selectedVendorId || selectedClientId) {
-          const headerData = fileHeaders[fileId];
-          if (headerData) {
-            const mappingsToSave = originalHeaders.map((original, index) => ({
-              original,
-              mapped: editedMappedHeaders[index],
-            }));
-
-            saveHeaderMappings({
-              vendorId: selectedVendorId,
-              clientId: selectedClientId,
-              mappings: mappingsToSave,
-            }).catch(error => {
-              console.error('Failed to save header mappings:', error);
-            });
-          }
-        }
-      } else {
-        // First time setting headers - fetch mappings from database
-        console.log('First time setting headers for file:', fileId, 'Original headers:', originalHeaders);
-        fetchAndApplyHeaderMappings(fileId, originalHeaders);
-      }
-
-      // Mark this file as checked
-      setCheckedFiles((prev) => new Set([...prev, fileId]));
-    },
-    [selectedVendorId, selectedClientId, fileHeaders, fetchAndApplyHeaderMappings, saveHeaderMappings]
-  );
+  const handleUpdateLocalMapping = useCallback(
+  (fileId: string, index: number, newMapped: string) => {
+    setFileHeaders((prev) => {
+      const fileData = prev[fileId];
+      if (!fileData) return prev;
+      
+      const updatedMappedHeaders = [...fileData.mappedHeaders];
+      updatedMappedHeaders[index] = newMapped;
+      
+      return {
+        ...prev,
+        [fileId]: {
+          ...fileData,
+          mappedHeaders: updatedMappedHeaders,
+        },
+      };
+    });
+  },
+  []
+);
 
   // For backwards compatibility with select element
   const handleProjectSelect = useCallback(
@@ -699,13 +715,60 @@ export const useSampleAutomationLogic = () => {
 
   // Updated loading state to include header mapping loading
   const isLoading = useMemo(() => {
-    return projectListIsFetching || isLoadingHeaderMappings || isDetectingHeaders;
+    return (
+      projectListIsFetching || isLoadingHeaderMappings || isDetectingHeaders
+    );
   }, [projectListIsFetching, isLoadingHeaderMappings, isDetectingHeaders]);
 
   // Updated error state to include header mapping errors
   const error = useMemo(() => {
-    return processError || projectListError || headerMappingsError || saveHeaderMappingsError;
-  }, [processError, projectListError, headerMappingsError, saveHeaderMappingsError]);
+    return (
+      processError ||
+      projectListError ||
+      headerMappingsError ||
+      saveHeaderMappingsError
+    );
+  }, [
+    processError,
+    projectListError,
+    headerMappingsError,
+    saveHeaderMappingsError,
+  ]);
+
+const handleSaveMappingToDB = useCallback(
+  async (fileId: string, original: string, mapped: string) => {
+    try {
+      setProcessStatus(`Saving mapping: ${original} → ${mapped}...`);
+
+      const result = await saveHeaderMappings({
+        vendorId: selectedVendorId,
+        clientId: selectedClientId,
+        mappings: [{ original, mapped }],
+      }).unwrap();
+
+      if (result.success) {
+        setProcessStatus(`✓ Saved to database, refreshing all files...`);
+        
+        // Refresh mappings for ALL files to see the change everywhere
+        const refreshPromises = Object.entries(fileHeaders).map(([fId, headerData]) => {
+          if (headerData.originalHeaders.length > 0) {
+            return fetchAndApplyHeaderMappings(fId, headerData.originalHeaders);
+          }
+          return Promise.resolve();
+        });
+
+        await Promise.all(refreshPromises);
+        
+        setProcessStatus('✓ All files refreshed with new mapping');
+        setTimeout(() => setProcessStatus(''), 2000);
+      }
+    } catch (error: any) {
+      console.error('Error saving mapping:', error);
+      setProcessStatus(`❌ Error: ${error.message || 'Failed to save'}`);
+    }
+  },
+  [selectedVendorId, selectedClientId, saveHeaderMappings, fetchAndApplyHeaderMappings, fileHeaders]
+);
 
   return {
     // State
@@ -779,10 +842,11 @@ export const useSampleAutomationLogic = () => {
     allFilesChecked,
     hasHeaderConflicts: validationSummary.nonMatchingHeaders.length > 0,
     canMerge,
-    handleSaveHeaders,
     validationSummary,
     allowExtraHeaders,
     setAllowExtraHeaders,
+    handleSaveMappingToDB,
+    handleUpdateLocalMapping,
 
     // NEW: Header mapping specific functions and data
     fetchAndApplyHeaderMappings,

@@ -59,6 +59,7 @@ const SampleAutomation: React.FC = () => {
     // Utilities
     formatFileSize,
     totalFileSize,
+    handleUpdateLocalMapping,
 
     // Updated header functionality
     fileHeaders,
@@ -66,10 +67,10 @@ const SampleAutomation: React.FC = () => {
     allFilesChecked,
     hasHeaderConflicts,
     canMerge,
-    handleSaveHeaders,
     validationSummary,
     allowExtraHeaders,
     setAllowExtraHeaders,
+    handleSaveMappingToDB,
   } = useSampleAutomationLogic();
 
   return (
@@ -316,10 +317,11 @@ const SampleAutomation: React.FC = () => {
             isProcessing={
               isProcessing || isLoadingHeaderMappings || isSavingHeaderMappings
             }
-            onSaveHeaders={handleSaveHeaders}
             validationSummary={validationSummary}
             allowExtraHeaders={allowExtraHeaders}
             onValidationModeChange={setAllowExtraHeaders}
+            onSaveMappingToDB={handleSaveMappingToDB}
+            onUpdateLocalMapping={handleUpdateLocalMapping}
           />
         )}
 
