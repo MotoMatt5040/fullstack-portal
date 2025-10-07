@@ -2377,3 +2377,368 @@
     gap: 0.25rem;
   }
 }
+
+/* ========================================
+   STICKY PROGRESS BAR
+======================================== */
+
+.files-summary-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--background-color-elevated);
+  padding: 0.75rem 1.5rem;
+  border-bottom: 2px solid var(--accent-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progress-section {
+  flex: 1;
+}
+
+.progress-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.stat-item {
+  color: var(--text-color);
+}
+
+.stat-item.success {
+  color: #5cb85c;
+}
+
+.stat-item.warning {
+  color: #d9534f;
+}
+
+.stat-item.custom {
+  color: #f0ad4e;
+}
+
+.progress-bar-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--background-color);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-fill.mapped {
+  background: #5cb85c;
+}
+
+.progress-fill.custom {
+  background: #f0ad4e;
+}
+
+.global-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.control-btn {
+  padding: 0.4rem 0.8rem;
+  background: var(--button-background);
+  color: var(--button-text);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  background: var(--button-background-hover);
+}
+
+.lock-toggle-btn-compact {
+  padding: 0.4rem 0.6rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lock-toggle-btn-compact.locked {
+  background: #d9534f;
+}
+
+.lock-toggle-btn-compact.unlocked {
+  background: #5cb85c;
+}
+
+.lock-toggle-btn-compact:hover {
+  opacity: 0.8;
+}
+
+/* ========================================
+   FILE HEADERS HEADER
+======================================== */
+
+.file-headers-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--background-color);
+}
+
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-dropdown {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 4px;
+  background: var(--background-color-elevated);
+  color: var(--text-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* ========================================
+   COMPACT FILE ITEMS
+======================================== */
+
+.checked-indicator-compact {
+  background: #5cb85c;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+/* ========================================
+   CLEANER MAPPING TABLE
+======================================== */
+
+.mapping-header {
+  display: grid;
+  grid-template-columns: 1.2fr 40px 1.2fr 120px;
+  background: rgba(0, 123, 255, 0.08);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-color);
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: 1.2fr 40px 1.2fr 120px;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  transition: background-color 0.15s ease;
+}
+
+.header-row:hover {
+  background: rgba(0, 123, 255, 0.02);
+}
+
+.header-row:last-child {
+  border-bottom: none;
+}
+
+/* Remove zebra striping for cleaner look */
+.header-row:nth-child(even) {
+  background: transparent;
+}
+
+.header-input-compact {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--accent-color);
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  background: var(--background-color-elevated);
+  color: var(--text-color);
+}
+
+.header-input-compact:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+/* ========================================
+   COMPACT ACTIONS
+======================================== */
+
+.row-actions {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 0.2rem 0.4rem;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn.edit {
+  background: #f0ad4e;
+}
+
+.action-btn.edit:hover:not(:disabled) {
+  background: #ec971f;
+}
+
+.action-btn.confirm {
+  background: #5cb85c;
+  color: white;
+}
+
+.action-btn.confirm:hover {
+  background: #4cae4c;
+}
+
+.action-btn.cancel {
+  background: #d9534f;
+  color: white;
+}
+
+.action-btn.cancel:hover {
+  background: #c9302c;
+}
+
+.action-btn.save-db {
+  background: #5cb85c;
+  color: white;
+}
+
+.action-btn.save-db:hover:not(:disabled) {
+  background: #4cae4c;
+}
+
+.action-btn.save-db:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   COMPACT LEGEND
+======================================== */
+
+.mapping-legend-compact {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.5rem;
+  background: var(--background-color);
+  border-top: 1px solid var(--border-color-soft);
+  font-size: 0.75rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--label-text-color);
+}
+
+.legend-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-item .dot.mapped {
+  background: #5cb85c;
+}
+
+.legend-item .dot.custom {
+  background: #f0ad4e;
+}
+
+.legend-item .dot.unmapped {
+  background: #d9534f;
+}
+
+/* ========================================
+   IMPROVED INDICATOR
+======================================== */
+
+.header-display {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mapping-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media (max-width: 768px) {
+  .files-summary-sticky {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .progress-stats {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .mapping-header,
+  .header-row {
+    grid-template-columns: 1fr 30px 1fr 90px;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  .action-btn {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.3rem;
+    min-width: 24px;
+  }
+}

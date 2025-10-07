@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 
 interface FileWrapper {
   file: File;
@@ -34,6 +34,7 @@ interface FileHeadersProps {
   fileHeaders: Record<string, FileHeaderData>;
   checkedFiles: Set<string>;
   isProcessing: boolean;
+  onSaveHeaders: (fileId: string, originalHeaders: string[], editedMappedHeaders?: string[]) => void;
   onUpdateLocalMapping?: (fileId: string, index: number, newMapped: string) => void;
   onSaveMappingToDB?: (fileId: string, original: string, mapped: string) => void;
   validationSummary: ValidationSummary;
@@ -41,11 +42,14 @@ interface FileHeadersProps {
   onValidationModeChange: (allow: boolean) => void;
 }
 
+type FilterMode = 'all' | 'mapped' | 'unmapped' | 'custom';
+
 const FileHeaders: React.FC<FileHeadersProps> = ({
   selectedFiles,
   fileHeaders,
   checkedFiles,
   isProcessing,
+  onSaveHeaders,
   onUpdateLocalMapping,
   onSaveMappingToDB,
   validationSummary,
@@ -54,8 +58,35 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
 }) => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [editingHeaders, setEditingHeaders] = useState<Record<string, Record<number, string>>>({});
-  const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isUnlocked, setIsUnlocked] = useState(false);
+
+  // Calculate progress
+  const progressStats = useMemo(() => {
+    let totalHeaders = 0;
+    let mappedHeaders = 0;
+    let unmappedHeaders = 0;
+    let customHeaders = 0;
+
+    Object.values(fileHeaders).forEach(headerData => {
+      headerData.originalHeaders.forEach((original, index) => {
+        totalHeaders++;
+        const mapped = headerData.mappedHeaders[index];
+        const upperOriginal = original.toUpperCase();
+        const dbMapping = headerData.mappings[upperOriginal];
+
+        if (!dbMapping) {
+          unmappedHeaders++;
+        } else if (dbMapping.mapped === mapped) {
+          mappedHeaders++;
+        } else {
+          customHeaders++;
+        }
+      });
+    });
+
+    return { totalHeaders, mappedHeaders, unmappedHeaders, customHeaders };
+  }, [fileHeaders]);
 
   const toggleFileExpansion = useCallback((fileId: string) => {
     setExpandedFiles(prev => {
@@ -67,6 +98,14 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
       }
       return updated;
     });
+  }, []);
+
+  const expandAll = useCallback(() => {
+    setExpandedFiles(new Set(selectedFiles.map(f => f.id)));
+  }, [selectedFiles]);
+
+  const collapseAll = useCallback(() => {
+    setExpandedFiles(new Set());
   }, []);
 
   const handleEditHeader = useCallback((fileId: string, index: number, currentValue: string) => {
@@ -90,12 +129,11 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     });
   }, []);
 
-  const handleConfirmEdit = useCallback((fileId: string, index: number, newMapped: string) => {
+  const handleSaveLocal = useCallback((fileId: string, index: number, newMapped: string) => {
     if (onUpdateLocalMapping) {
-    onUpdateLocalMapping(fileId, index, newMapped);
-  }
+      onUpdateLocalMapping(fileId, index, newMapped);
+    }
     
-    // Clear editing state for this row
     setEditingHeaders(prev => {
       const fileEdits = { ...prev[fileId] };
       delete fileEdits[index];
@@ -129,7 +167,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     if (!mapping) {
       return {
         status: 'no-mapping',
-        color: '#dc3545',
+        color: '#d9534f',
         tooltip: 'No mapping found in database'
       };
     }
@@ -137,14 +175,14 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     if (mapping.mapped === mapped) {
       return {
         status: 'mapped',
-        color: '#28a745',
+        color: '#5cb85c',
         tooltip: `Mapped from ${mapping.vendorName || 'All'} → ${mapping.clientName || 'All'}`
       };
     }
     
     return {
       status: 'custom',
-      color: '#ffc107',
+      color: '#f0ad4e',
       tooltip: 'Custom mapping (edited by user)'
     };
   }, []);
@@ -175,48 +213,92 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
 
   return (
     <div className="file-headers-container">
+      {/* Sticky Progress Bar */}
+      <div className="files-summary-sticky">
+        <div className="progress-section">
+          <div className="progress-stats">
+            <span className="stat-item">
+              <strong>{selectedFiles.length}</strong> files
+            </span>
+            <span className="stat-item success">
+              <strong>{progressStats.mappedHeaders}</strong> mapped
+            </span>
+            <span className="stat-item warning">
+              <strong>{progressStats.unmappedHeaders}</strong> unmapped
+            </span>
+            <span className="stat-item custom">
+              <strong>{progressStats.customHeaders}</strong> custom
+            </span>
+          </div>
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div 
+                className="progress-fill mapped" 
+                style={{ width: `${(progressStats.mappedHeaders / progressStats.totalHeaders) * 100}%` }}
+              />
+              <div 
+                className="progress-fill custom" 
+                style={{ width: `${(progressStats.customHeaders / progressStats.totalHeaders) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="global-controls">
+          <button onClick={expandAll} className="control-btn">Expand All</button>
+          <button onClick={collapseAll} className="control-btn">Collapse All</button>
+          <button
+            onClick={() => setIsUnlocked(!isUnlocked)}
+            className={`lock-toggle-btn-compact ${isUnlocked ? 'unlocked' : 'locked'}`}
+            title={isUnlocked ? "DB saves enabled" : "DB saves disabled"}
+          >
+            {isUnlocked ? '🔓' : '🔒'}
+          </button>
+        </div>
+      </div>
+
       <div className="file-headers-header">
         <h3>Review File Headers & Mappings</h3>
-        <div className="validation-controls">
+        <div className="header-controls">
+          <select 
+            value={filterMode} 
+            onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+            className="filter-dropdown"
+          >
+            <option value="all">All Headers</option>
+            <option value="mapped">Mapped Only</option>
+            <option value="unmapped">Unmapped Only</option>
+            <option value="custom">Custom Only</option>
+          </select>
           <label className="validation-toggle">
             <input
               type="checkbox"
               checked={allowExtraHeaders}
               onChange={(e) => onValidationModeChange(e.target.checked)}
             />
-            Allow extra headers (ignore missing columns in some files)
+            Allow extra headers
           </label>
         </div>
       </div>
 
       {validationSummary.nonMatchingHeaders.length > 0 && !allowExtraHeaders && (
         <div className="validation-warning">
-          <h4>Header Conflicts Detected</h4>
+          <h4>⚠️ Header Conflicts Detected</h4>
           <p>The following headers are not present in all files:</p>
           {validationSummary.nonMatchingHeaders.map((conflict, index) => (
             <div key={index} className="conflict-item">
               <strong>"{conflict.header}"</strong>
               <div className="conflict-details">
                 <span className="present-in">
-                  Present in: {conflict.presentInFiles.join(', ')}
+                  ✓ Present in: {conflict.presentInFiles.join(', ')}
                 </span>
                 <span className="missing-from">
-                  Missing from: {conflict.missingFromFiles.join(', ')}
+                  ✗ Missing from: {conflict.missingFromFiles.join(', ')}
                 </span>
               </div>
             </div>
           ))}
         </div>
       )}
-
-      <div className="validation-summary">
-        <span className={`summary-text ${validationSummary.nonMatchingHeaders.length === 0 ? 'success' : 'warning'}`}>
-          {allowExtraHeaders ? 
-            `${validationSummary.matched} headers ready for processing` :
-            `${validationSummary.matched}/${validationSummary.total} headers match across all files`
-          }
-        </span>
-      </div>
 
       <div className="files-list">
         {selectedFiles.map((fileWrapper) => {
@@ -236,31 +318,20 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                   </div>
                   <div className="file-meta">
                     {formatFileSize(file.size)}
-                    {headerData ? (
+                    {headerData && (
                       <span className="header-count">
                         • {headerData.originalHeaders.length} columns
-                        {headerData.mappedHeaders.some((mapped, idx) => 
-                          mapped !== headerData.originalHeaders[idx]) && (
-                          <span className="mapped-indicator"> (mapped)</span>
-                        )}
                       </span>
-                    ) : (
-                      <span className="header-count">• Processing headers...</span>
                     )}
                   </div>
                 </div>
                 
                 <div className="file-actions">
                   {isChecked && headerData && (
-                    <div className="checked-indicator">
-                      <span className="check-mark">✓</span>
-                      Headers Mapped
-                    </div>
+                    <div className="checked-indicator-compact">✓</div>
                   )}
                   
-                  <button 
-                    className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
-                  >
+                  <button className={`expand-btn ${isExpanded ? 'expanded' : ''}`}>
                     {isExpanded ? '▼' : '▶'}
                   </button>
                 </div>
@@ -268,36 +339,11 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
 
               {isExpanded && headerData && (
                 <div className="headers-detail">
-                  <div className="headers-actions">
-                    <div className="view-toggle-group">
-                      <button
-                        onClick={() => setShowOnlyUnmapped(!showOnlyUnmapped)}
-                        className={`view-toggle-btn ${showOnlyUnmapped ? 'active' : ''}`}
-                        title={showOnlyUnmapped ? "Showing only unmapped headers" : "Showing all headers"}
-                      >
-                        {showOnlyUnmapped ? '🔍 Show All Headers' : '✓ Show Only Unmapped'}
-                      </button>
-                    </div>
-
-                    <div className="lock-toggle-group">
-                      <button
-                        onClick={() => setIsUnlocked(!isUnlocked)}
-                        className={`lock-toggle-btn ${isUnlocked ? 'unlocked' : 'locked'}`}
-                        title={isUnlocked ? "Database saves enabled - Click to lock" : "Database saves disabled - Click to unlock"}
-                      >
-                        {isUnlocked ? '🔓 Unlocked' : '🔒 Locked'}
-                      </button>
-                      <span className="lock-hint">
-                        {isUnlocked ? 'Save to DB enabled' : 'Save to DB disabled'}
-                      </span>
-                    </div>
-                  </div>
-
                   <div className="headers-mapping-container">
                     <div className="mapping-header">
-                      <div className="original-column">Original Headers</div>
+                      <div className="original-column">Original</div>
                       <div className="arrow-column">→</div>
-                      <div className="mapped-column">Mapped Headers</div>
+                      <div className="mapped-column">Mapped</div>
                       <div className="actions-column">Actions</div>
                     </div>
 
@@ -314,9 +360,10 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                           headerData.mappings
                         );
 
-                        if (showOnlyUnmapped && mappingStatus.status === 'mapped') {
-                          return null;
-                        }
+                        // Apply filter
+                        if (filterMode === 'mapped' && mappingStatus.status !== 'mapped') return null;
+                        if (filterMode === 'unmapped' && mappingStatus.status !== 'no-mapping') return null;
+                        if (filterMode === 'custom' && mappingStatus.status !== 'custom') return null;
 
                         return (
                           <div key={index} className="header-row">
@@ -332,23 +379,30 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                                   type="text"
                                   value={mappedHeader}
                                   onChange={(e) => handleHeaderChange(id, index, e.target.value)}
-                                  className="header-input"
+                                  className="header-input-compact"
                                   autoFocus
+                                  onBlur={() => handleSaveLocal(id, index, mappedHeader)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveLocal(id, index, mappedHeader);
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEdit(id, index);
+                                    }
+                                  }}
                                 />
                               ) : (
                                 <div className="header-display">
-                                  <span 
-                                    className="header-text"
-                                    style={{ color: mappingStatus.color }}
-                                    title={mappingStatus.tooltip}
-                                  >
-                                    {mappedHeader}
-                                  </span>
                                   <div 
                                     className={`mapping-indicator ${mappingStatus.status}`}
                                     style={{ backgroundColor: mappingStatus.color }}
                                     title={mappingStatus.tooltip}
                                   />
+                                  <span 
+                                    className="header-text"
+                                    title={mappingStatus.tooltip}
+                                  >
+                                    {mappedHeader}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -357,17 +411,16 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                               {isEditingThisRow ? (
                                 <>
                                   <button
-                                    onClick={() => handleConfirmEdit(id, index, mappedHeader)}
-                                    className="confirm-row-btn"
-                                    disabled={isProcessing}
-                                    title="Confirm this change (session only)"
+                                    onClick={() => handleSaveLocal(id, index, mappedHeader)}
+                                    className="action-btn confirm"
+                                    title="Save (Enter)"
                                   >
-                                    ✓ Confirm
+                                    ✓
                                   </button>
                                   <button
                                     onClick={() => handleCancelEdit(id, index)}
-                                    className="cancel-row-btn"
-                                    title="Cancel editing"
+                                    className="action-btn cancel"
+                                    title="Cancel (Esc)"
                                   >
                                     ✕
                                   </button>
@@ -376,19 +429,19 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                                 <>
                                   <button
                                     onClick={() => handleEditHeader(id, index, mappedHeader)}
-                                    className="edit-row-btn"
+                                    className="action-btn edit"
                                     disabled={isProcessing}
-                                    title="Edit this mapping"
+                                    title="Edit mapping"
                                   >
-                                    ✏️ Edit
+                                    ✏️
                                   </button>
                                   <button
                                     onClick={() => handleSaveToDB(id, index, originalHeader, mappedHeader)}
-                                    className="save-db-btn"
+                                    className="action-btn save-db"
                                     disabled={isProcessing || !isUnlocked}
-                                    title={isUnlocked ? "Save this mapping to database" : "Unlock to save to database"}
+                                    title={isUnlocked ? "Save to database" : "Unlock to save"}
                                   >
-                                    💾 Save to DB
+                                    💾
                                   </button>
                                 </>
                               )}
@@ -399,19 +452,10 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                     </div>
                   </div>
 
-                  <div className="mapping-legend">
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ backgroundColor: '#28a745' }}></div>
-                      <span>Database mapping found</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ backgroundColor: '#ffc107' }}></div>
-                      <span>Custom mapping (edited)</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ backgroundColor: '#dc3545' }}></div>
-                      <span>No mapping found</span>
-                    </div>
+                  <div className="mapping-legend-compact">
+                    <span className="legend-item"><span className="dot mapped"></span>Mapped</span>
+                    <span className="legend-item"><span className="dot custom"></span>Custom</span>
+                    <span className="legend-item"><span className="dot unmapped"></span>Unmapped</span>
                   </div>
                 </div>
               )}
@@ -419,10 +463,8 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
               {isExpanded && !headerData && (
                 <div className="headers-detail">
                   <div className="loading-headers">
-                    <div className="loading-message">
-                      <div className="spinner"></div>
-                      <p>Processing file headers and fetching database mappings...</p>
-                    </div>
+                    <div className="spinner"></div>
+                    <p>Loading headers...</p>
                   </div>
                 </div>
               )}
