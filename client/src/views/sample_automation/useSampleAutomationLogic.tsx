@@ -6,7 +6,7 @@ import {
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
 } from '../../features/sampleAutomationApiSlice';
-import { useLazyGetProjectListQuery } from '../../features/ProjectInfoApiSlice';
+import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
 
