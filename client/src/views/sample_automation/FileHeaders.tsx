@@ -130,18 +130,27 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   }, []);
 
   const handleSaveLocal = useCallback((fileId: string, index: number, newMapped: string) => {
+    // First clear the editing state
+    setEditingHeaders(prev => {
+      const newState = { ...prev };
+      if (newState[fileId]) {
+        const fileEdits = { ...newState[fileId] };
+        delete fileEdits[index];
+        
+        // If no more edits for this file, remove the file entry
+        if (Object.keys(fileEdits).length === 0) {
+          delete newState[fileId];
+        } else {
+          newState[fileId] = fileEdits;
+        }
+      }
+      return newState;
+    });
+
+    // Then update the local mapping
     if (onUpdateLocalMapping) {
       onUpdateLocalMapping(fileId, index, newMapped);
     }
-    
-    setEditingHeaders(prev => {
-      const fileEdits = { ...prev[fileId] };
-      delete fileEdits[index];
-      return {
-        ...prev,
-        [fileId]: fileEdits
-      };
-    });
   }, [onUpdateLocalMapping]);
 
   const handleSaveToDB = useCallback((fileId: string, index: number, original: string, mapped: string) => {
@@ -349,14 +358,14 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
 
                     <div className="headers-grid">
                       {headerData.originalHeaders.map((originalHeader, index) => {
-                        const isEditingThisRow = fileEditingHeaders[index] !== undefined;
-                        const mappedHeader = isEditingThisRow 
-                          ? fileEditingHeaders[index]
-                          : headerData.mappedHeaders[index];
+                        const isEditingThisRow = fileEditingHeaders.hasOwnProperty(index);
+                        const currentMappedValue = headerData.mappedHeaders[index];
+                        const editingValue = fileEditingHeaders[index];
+                        const displayValue = isEditingThisRow ? editingValue : currentMappedValue;
                         
                         const mappingStatus = getMappingStatus(
                           originalHeader, 
-                          headerData.mappedHeaders[index], 
+                          currentMappedValue, 
                           headerData.mappings
                         );
 
@@ -377,15 +386,16 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                               {isEditingThisRow ? (
                                 <input
                                   type="text"
-                                  value={mappedHeader}
+                                  value={displayValue}
                                   onChange={(e) => handleHeaderChange(id, index, e.target.value)}
                                   className="header-input-compact"
                                   autoFocus
-                                  onBlur={() => handleSaveLocal(id, index, mappedHeader)}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                      handleSaveLocal(id, index, mappedHeader);
+                                      e.preventDefault();
+                                      handleSaveLocal(id, index, displayValue);
                                     } else if (e.key === 'Escape') {
+                                      e.preventDefault();
                                       handleCancelEdit(id, index);
                                     }
                                   }}
@@ -401,7 +411,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                                     className="header-text"
                                     title={mappingStatus.tooltip}
                                   >
-                                    {mappedHeader}
+                                    {displayValue}
                                   </span>
                                 </div>
                               )}
@@ -411,7 +421,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                               {isEditingThisRow ? (
                                 <>
                                   <button
-                                    onClick={() => handleSaveLocal(id, index, mappedHeader)}
+                                    onClick={() => handleSaveLocal(id, index, displayValue)}
                                     className="action-btn confirm"
                                     title="Save (Enter)"
                                   >
@@ -428,7 +438,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => handleEditHeader(id, index, mappedHeader)}
+                                    onClick={() => handleEditHeader(id, index, currentMappedValue)}
                                     className="action-btn edit"
                                     disabled={isProcessing}
                                     title="Edit mapping"
@@ -436,7 +446,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                                     ✏️
                                   </button>
                                   <button
-                                    onClick={() => handleSaveToDB(id, index, originalHeader, mappedHeader)}
+                                    onClick={() => handleSaveToDB(id, index, originalHeader, currentMappedValue)}
                                     className="action-btn save-db"
                                     disabled={isProcessing || !isUnlocked}
                                     title={isUnlocked ? "Save to database" : "Unlock to save"}
