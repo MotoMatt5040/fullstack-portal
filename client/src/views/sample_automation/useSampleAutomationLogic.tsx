@@ -494,54 +494,56 @@ useEffect(() => {
   );
 
   // Updated vendor selection handler to refresh mappings
-  const handleVendorChange = useCallback(
-    (selected: VendorOption | null) => {
-      const newValue = selected?.value || null;
-      if (newValue !== selectedVendorId) {
-        setSelectedVendorId(newValue);
-        setProcessStatus('');
+const handleVendorChange = useCallback(
+  (selected: VendorOption | null) => {
+    const newValue = selected?.value || null;
+    if (newValue !== selectedVendorId) {
+      setSelectedVendorId(newValue);
+      selectedVendorIdRef.current = newValue; // SET REF IMMEDIATELY
+      setProcessStatus('');
 
-        console.log(
-          'Vendor changed to:',
-          newValue,
-          'Re-fetching mappings for all files'
-        );
+      console.log(
+        'Vendor changed to:',
+        newValue,
+        'Re-fetching mappings for all files'
+      );
 
-        // Re-fetch mappings for all files when vendor changes
-        Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
-          if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
-          }
-        });
-      }
-    },
-    [selectedVendorId, fileHeaders, fetchAndApplyHeaderMappings]
-  );
+      // Re-fetch mappings for all files when vendor changes
+      Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
+        if (headerData.originalHeaders.length > 0) {
+          fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+        }
+      });
+    }
+  },
+  [selectedVendorId, fileHeaders, fetchAndApplyHeaderMappings]
+);
 
-  // Updated client selection handler to refresh mappings
-  const handleClientChange = useCallback(
-    (selected: ClientOption | null) => {
-      const newValue = selected?.value || null;
-      if (newValue !== selectedClientId) {
-        setSelectedClientId(newValue);
-        setProcessStatus('');
+// Updated client selection handler to refresh mappings
+const handleClientChange = useCallback(
+  (selected: ClientOption | null) => {
+    const newValue = selected?.value || null;
+    if (newValue !== selectedClientId) {
+      setSelectedClientId(newValue);
+      selectedClientIdRef.current = newValue; // SET REF IMMEDIATELY
+      setProcessStatus('');
 
-        console.log(
-          'Client changed to:',
-          newValue,
-          'Re-fetching mappings for all files'
-        );
+      console.log(
+        'Client changed to:',
+        newValue,
+        'Re-fetching mappings for all files'
+      );
 
-        // Re-fetch mappings for all files when client changes
-        Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
-          if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
-          }
-        });
-      }
-    },
-    [selectedClientId, fileHeaders, fetchAndApplyHeaderMappings]
-  );
+      // Re-fetch mappings for all files when client changes
+      Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
+        if (headerData.originalHeaders.length > 0) {
+          fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+        }
+      });
+    }
+  },
+  [selectedClientId, fileHeaders, fetchAndApplyHeaderMappings]
+);
 
   const handleUpdateLocalMapping = useCallback(
   (fileId: string, index: number, newMapped: string) => {
