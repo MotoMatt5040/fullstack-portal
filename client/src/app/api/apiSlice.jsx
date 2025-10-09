@@ -1,13 +1,6 @@
+// client/src/app/api/apiSlice.jsx
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logOut } from '../../features/auth/authSlice';
-
-// let BASE_URL;
-
-// if (import.meta.env.VITE_ENV === 'dev') {
-//   BASE_URL = import.meta.env.VITE_DEV_API_URL;
-// } else {
-//   BASE_URL = `https://api.${import.meta.env.VITE_DOMAIN_NAME}`;
-// }
 
 const BASE_URL = '/api';
 
@@ -21,16 +14,21 @@ const baseQuery = fetchBaseQuery({
     }
     headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     headers.set('Expires', '0');
-    
+
     return headers;
   },
 });
 
 export const baseQueryWithReauth = async (args, api, extraOptions) => {
+  console.log('🔵 Making API request:', args);
   let result = await baseQuery(args, api, extraOptions);
 
+  // Handle 403 (your verifyJWT returns 403 for expired tokens)
   if (result?.error?.status === 403) {
-    // Check if the trust this device box was checked. We want to log out if the device is not trusted.
+    console.log('⚠️ Received 403 error - token likely expired');
+    console.log('📋 Error details:', result.error);
+
+    // Check if persist is enabled
     const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
       const [name, value] = cookie.split('=');
       acc[name] = value;
@@ -38,22 +36,39 @@ export const baseQueryWithReauth = async (args, api, extraOptions) => {
     }, {});
 
     const persist = cookies.persist === 'true';
+    console.log('🔐 Persist enabled:', persist);
+
     if (!persist) {
+      console.log('❌ Persist not enabled - logging out');
       api.dispatch(logOut());
       return result;
     }
 
-    // send refresh token to get new access token
+    // Attempt to refresh the token
+    console.log('🔄 Attempting to refresh token...');
     const refreshResult = await baseQuery('/refresh', api, extraOptions);
-    if (refreshResult?.data) {
-      console.log('🔍 Refresh result:', refreshResult);
+    console.log('📥 Refresh result:', refreshResult);
+
+    if (refreshResult?.data?.accessToken) {
+      console.log('✅ Token refresh successful!');
       const user = api.getState().auth.user;
-      // store the new token
+
+      // Store the new token
       api.dispatch(setCredentials({ ...refreshResult.data, user }));
-      // retry the original query with new access token
-      console.log('❌ Refresh failed, logging out. Result was:', refreshResult); 
+      console.log('💾 New token stored in Redux');
+
+      // Retry the original request with the new token
+      console.log('🔁 Retrying original request...');
       result = await baseQuery(args, api, extraOptions);
+
+      if (result?.error) {
+        console.log('❌ Retry failed:', result.error);
+      } else {
+        console.log('✅ Retry successful!');
+      }
     } else {
+      console.log('❌ Token refresh failed - no accessToken in response');
+      console.log('📋 Refresh response:', refreshResult);
       api.dispatch(logOut());
     }
   }

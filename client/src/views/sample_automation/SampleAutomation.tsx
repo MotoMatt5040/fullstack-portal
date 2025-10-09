@@ -71,6 +71,11 @@ const SampleAutomation: React.FC = () => {
     allowExtraHeaders,
     setAllowExtraHeaders,
     handleSaveMappingToDB,
+
+    // Table preview
+    tablePreview,
+    isLoadingPreview,
+    previewError,
   } = useSampleAutomationLogic();
 
   return (
@@ -418,6 +423,71 @@ const SampleAutomation: React.FC = () => {
                 <div className='result-label'>Rows Inserted</div>
                 <div className='result-value'>{processResult.rowsInserted}</div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Table Preview Section */}
+        {tablePreview && (
+          <div className='table-preview-section'>
+            <h3>
+              Table Preview: {tablePreview.tableName}
+              <span className='preview-info'>
+                (Showing {tablePreview.rowCount} of{' '}
+                {processResult?.totalRows || 0} rows)
+              </span>
+            </h3>
+
+            {isLoadingPreview ? (
+              <div className='loading-preview'>
+                <span>Loading preview...</span>
+              </div>
+            ) : previewError ? (
+              <div className='error-preview'>
+                <span>❌ Failed to load preview</span>
+              </div>
+            ) : (
+              <div className='table-wrapper'>
+                <table className='preview-table'>
+                  <thead>
+                    <tr>
+                      <th className='row-number-header'>#</th>
+                      {tablePreview.columns.map((column, idx) => (
+                        <th key={idx} title={`Type: ${column.type}`}>
+                          {column.name}
+                          <span className='column-type'>{column.type}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tablePreview.data.map((row, rowIdx) => (
+                      <tr key={rowIdx}>
+                        <td className='row-number'>{rowIdx + 1}</td>
+                        {tablePreview.columns.map((column, colIdx) => (
+                          <td key={colIdx}>
+                            {row[column.name] !== null &&
+                            row[column.name] !== undefined
+                              ? String(row[column.name])
+                              : '-'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className='preview-actions'>
+              <button
+                onClick={() => {
+                  console.log('View full table:', tablePreview.tableName);
+                }}
+                className='view-full-btn'
+              >
+                View Full Table ({processResult?.totalRows || 0} rows)
+              </button>
             </div>
           </div>
         )}

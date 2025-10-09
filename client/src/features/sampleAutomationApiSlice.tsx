@@ -66,6 +66,25 @@ interface SaveHeaderMappingsResponse {
   message: string;
 }
 
+interface TableColumn {
+  name: string;
+  type: string;
+}
+
+interface TablePreviewResponse {
+  success: boolean;
+  tableName: string;
+  columns: TableColumn[];
+  data: Record<string, any>[];
+  rowCount: number;
+  message: string;
+}
+
+interface TablePreviewParams {
+  tableName: string;
+  limit?: number;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -76,7 +95,7 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
         body: formData, // Don't set Content-Type - let browser set it with boundary
       }),
     }),
-    
+
     // Get clients from CaligulaD database
     getClients: builder.query<Client[], void>({
       query: () => ({
@@ -85,7 +104,7 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ['SampleAutomationClients'],
     }),
-    
+
     // Get vendors from FAJITA database
     getVendors: builder.query<Vendor[], void>({
       query: () => ({
@@ -94,7 +113,7 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ['SampleAutomationVendors'],
     }),
-    
+
     // Get both clients and vendors in one call (more efficient)
     getClientsAndVendors: builder.query<ClientsAndVendorsResponse, void>({
       query: () => ({
@@ -105,22 +124,25 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
     }),
 
     detectHeaders: builder.mutation({
-  query: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return {
-      url: '/sample-automation/detect-headers',
-      method: 'POST',
-      body: formData,
-    };
-  },
-}),
+      query: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return {
+          url: '/sample-automation/detect-headers',
+          method: 'POST',
+          body: formData,
+        };
+      },
+    }),
 
     // NEW: Get header mappings based on vendor/client and original headers
-    getHeaderMappings: builder.query<HeaderMappingsResponse, HeaderMappingsParams>({
+    getHeaderMappings: builder.query<
+      HeaderMappingsResponse,
+      HeaderMappingsParams
+    >({
       query: ({ vendorId, clientId, originalHeaders }) => {
         const params = new URLSearchParams();
-        
+
         if (vendorId !== null && vendorId !== undefined) {
           params.append('vendorId', vendorId.toString());
         }
@@ -136,12 +158,18 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
       },
       providesTags: (result, error, { vendorId, clientId }) => [
         'HeaderMappings',
-        { type: 'HeaderMappings', id: `${vendorId || 'null'}-${clientId || 'null'}` }
+        {
+          type: 'HeaderMappings',
+          id: `${vendorId || 'null'}-${clientId || 'null'}`,
+        },
       ],
     }),
 
     // NEW: Save header mappings to database (when user edits mappings)
-    saveHeaderMappings: builder.mutation<SaveHeaderMappingsResponse, SaveHeaderMappingsParams>({
+    saveHeaderMappings: builder.mutation<
+      SaveHeaderMappingsResponse,
+      SaveHeaderMappingsParams
+    >({
       query: (params) => ({
         url: '/sample-automation/header-mappings',
         method: 'POST',
@@ -149,8 +177,18 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: (result, error, { vendorId, clientId }) => [
         'HeaderMappings',
-        { type: 'HeaderMappings', id: `${vendorId || 'null'}-${clientId || 'null'}` }
+        {
+          type: 'HeaderMappings',
+          id: `${vendorId || 'null'}-${clientId || 'null'}`,
+        },
       ],
+    }),
+    // Get table preview (top N rows)
+    getTablePreview: builder.query<TablePreviewResponse, TablePreviewParams>({
+      query: ({ tableName, limit = 10 }) => ({
+        url: `/sample-automation/table-preview/${tableName}?limit=${limit}`,
+        method: 'GET',
+      }),
     }),
   }),
 });
@@ -169,4 +207,5 @@ export const {
   useLazyGetHeaderMappingsQuery,
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
+  useLazyGetTablePreviewQuery,
 } = sampleAutomationApiSlice;

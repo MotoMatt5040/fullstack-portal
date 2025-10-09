@@ -5,6 +5,7 @@ import {
   useLazyGetHeaderMappingsQuery,
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
+  useLazyGetTablePreviewQuery,
 } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
@@ -76,6 +77,17 @@ export const useSampleAutomationLogic = () => {
   >({});
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
   const [allowExtraHeaders, setAllowExtraHeaders] = useState(false);
+
+  const [tablePreview, setTablePreview] = useState<{
+    tableName: string;
+    columns: Array<{ name: string; type: string }>;
+    data: Record<string, any>[];
+    rowCount: number;
+  } | null>(null);
+  const [
+    getTablePreview,
+    { data: previewData, isLoading: isLoadingPreview, error: previewError },
+  ] = useLazyGetTablePreviewQuery();
 
   const currentUser = useSelector(selectUser);
 
@@ -347,53 +359,71 @@ export const useSampleAutomationLogic = () => {
   );
 
   // Automatically process files when they're uploaded
-// In the useEffect that auto-processes files
-useEffect(() => {
-  console.log('🔍 useEffect triggered');
-  console.log('selectedFiles:', selectedFiles);
-  console.log('fileHeaders:', fileHeaders);
-  
-  selectedFiles.forEach(async (fileWrapper) => {
-    console.log(`📁 Processing file: ${fileWrapper.file.name}, ID: ${fileWrapper.id}`);
-    
-    // Skip if we already have header data for this file
-    if (fileHeaders[fileWrapper.id]) {
-      console.log(`⏭️ Skipping ${fileWrapper.file.name} - already has headers`);
-      return;
-    }
+  // In the useEffect that auto-processes files
+  useEffect(() => {
+    console.log('🔍 useEffect triggered');
+    console.log('selectedFiles:', selectedFiles);
+    console.log('fileHeaders:', fileHeaders);
 
-    try {
-      console.log(`🔎 Auto-detecting headers for file: ${fileWrapper.file.name}`);
+    selectedFiles.forEach(async (fileWrapper) => {
+      console.log(
+        `📁 Processing file: ${fileWrapper.file.name}, ID: ${fileWrapper.id}`
+      );
 
-      // Step 1: Detect headers from the file using backend
-      const detectedHeaders = await detectHeadersFromFile(fileWrapper.file);
-      console.log(`✅ Detected ${detectedHeaders.length} headers:`, detectedHeaders);
+      // Skip if we already have header data for this file
+      if (fileHeaders[fileWrapper.id]) {
+        console.log(
+          `⏭️ Skipping ${fileWrapper.file.name} - already has headers`
+        );
+        return;
+      }
 
-      // Step 2: Fetch database mappings and apply them
-      console.log(`🔄 Fetching mappings for ${fileWrapper.id}...`);
-      await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders);
-      console.log(`✅ Mappings applied for ${fileWrapper.id}`);
+      try {
+        console.log(
+          `🔎 Auto-detecting headers for file: ${fileWrapper.file.name}`
+        );
 
-      // Step 3: Mark file as processed
-      setCheckedFiles(prev => new Set([...prev, fileWrapper.id]));
+        // Step 1: Detect headers from the file using backend
+        const detectedHeaders = await detectHeadersFromFile(fileWrapper.file);
+        console.log(
+          `✅ Detected ${detectedHeaders.length} headers:`,
+          detectedHeaders
+        );
 
-      console.log(`✅ Header processing complete for file: ${fileWrapper.file.name}`);
+        // Step 2: Fetch database mappings and apply them
+        console.log(`🔄 Fetching mappings for ${fileWrapper.id}...`);
+        await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders);
+        console.log(`✅ Mappings applied for ${fileWrapper.id}`);
 
-    } catch (error) {
-      console.error(`❌ Failed to process headers for ${fileWrapper.file.name}:`, error);
+        // Step 3: Mark file as processed
+        setCheckedFiles((prev) => new Set([...prev, fileWrapper.id]));
 
-      // Fallback: set empty header data so file doesn't get stuck
-      setFileHeaders(prev => ({
-        ...prev,
-        [fileWrapper.id]: {
-          originalHeaders: [],
-          mappedHeaders: [],
-          mappings: {},
-        }
-      }));
-    }
-  });
-}, [selectedFiles, fileHeaders, detectHeadersFromFile, fetchAndApplyHeaderMappings]);
+        console.log(
+          `✅ Header processing complete for file: ${fileWrapper.file.name}`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Failed to process headers for ${fileWrapper.file.name}:`,
+          error
+        );
+
+        // Fallback: set empty header data so file doesn't get stuck
+        setFileHeaders((prev) => ({
+          ...prev,
+          [fileWrapper.id]: {
+            originalHeaders: [],
+            mappedHeaders: [],
+            mappings: {},
+          },
+        }));
+      }
+    });
+  }, [
+    selectedFiles,
+    fileHeaders,
+    detectHeadersFromFile,
+    fetchAndApplyHeaderMappings,
+  ]);
 
   // Updated file selection handler
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -494,77 +524,77 @@ useEffect(() => {
   );
 
   // Updated vendor selection handler to refresh mappings
-const handleVendorChange = useCallback(
-  (selected: VendorOption | null) => {
-    const newValue = selected?.value || null;
-    if (newValue !== selectedVendorId) {
-      setSelectedVendorId(newValue);
-      selectedVendorIdRef.current = newValue; // SET REF IMMEDIATELY
-      setProcessStatus('');
+  const handleVendorChange = useCallback(
+    (selected: VendorOption | null) => {
+      const newValue = selected?.value || null;
+      if (newValue !== selectedVendorId) {
+        setSelectedVendorId(newValue);
+        selectedVendorIdRef.current = newValue; // SET REF IMMEDIATELY
+        setProcessStatus('');
 
-      console.log(
-        'Vendor changed to:',
-        newValue,
-        'Re-fetching mappings for all files'
-      );
+        console.log(
+          'Vendor changed to:',
+          newValue,
+          'Re-fetching mappings for all files'
+        );
 
-      // Re-fetch mappings for all files when vendor changes
-      Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
-        if (headerData.originalHeaders.length > 0) {
-          fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
-        }
-      });
-    }
-  },
-  [selectedVendorId, fileHeaders, fetchAndApplyHeaderMappings]
-);
+        // Re-fetch mappings for all files when vendor changes
+        Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
+          if (headerData.originalHeaders.length > 0) {
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+          }
+        });
+      }
+    },
+    [selectedVendorId, fileHeaders, fetchAndApplyHeaderMappings]
+  );
 
-// Updated client selection handler to refresh mappings
-const handleClientChange = useCallback(
-  (selected: ClientOption | null) => {
-    const newValue = selected?.value || null;
-    if (newValue !== selectedClientId) {
-      setSelectedClientId(newValue);
-      selectedClientIdRef.current = newValue; // SET REF IMMEDIATELY
-      setProcessStatus('');
+  // Updated client selection handler to refresh mappings
+  const handleClientChange = useCallback(
+    (selected: ClientOption | null) => {
+      const newValue = selected?.value || null;
+      if (newValue !== selectedClientId) {
+        setSelectedClientId(newValue);
+        selectedClientIdRef.current = newValue; // SET REF IMMEDIATELY
+        setProcessStatus('');
 
-      console.log(
-        'Client changed to:',
-        newValue,
-        'Re-fetching mappings for all files'
-      );
+        console.log(
+          'Client changed to:',
+          newValue,
+          'Re-fetching mappings for all files'
+        );
 
-      // Re-fetch mappings for all files when client changes
-      Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
-        if (headerData.originalHeaders.length > 0) {
-          fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
-        }
-      });
-    }
-  },
-  [selectedClientId, fileHeaders, fetchAndApplyHeaderMappings]
-);
+        // Re-fetch mappings for all files when client changes
+        Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
+          if (headerData.originalHeaders.length > 0) {
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+          }
+        });
+      }
+    },
+    [selectedClientId, fileHeaders, fetchAndApplyHeaderMappings]
+  );
 
   const handleUpdateLocalMapping = useCallback(
-  (fileId: string, index: number, newMapped: string) => {
-    setFileHeaders((prev) => {
-      const fileData = prev[fileId];
-      if (!fileData) return prev;
-      
-      const updatedMappedHeaders = [...fileData.mappedHeaders];
-      updatedMappedHeaders[index] = newMapped;
-      
-      return {
-        ...prev,
-        [fileId]: {
-          ...fileData,
-          mappedHeaders: updatedMappedHeaders,
-        },
-      };
-    });
-  },
-  []
-);
+    (fileId: string, index: number, newMapped: string) => {
+      setFileHeaders((prev) => {
+        const fileData = prev[fileId];
+        if (!fileData) return prev;
+
+        const updatedMappedHeaders = [...fileData.mappedHeaders];
+        updatedMappedHeaders[index] = newMapped;
+
+        return {
+          ...prev,
+          [fileId]: {
+            ...fileData,
+            mappedHeaders: updatedMappedHeaders,
+          },
+        };
+      });
+    },
+    []
+  );
 
   // For backwards compatibility with select element
   const handleProjectSelect = useCallback(
@@ -596,6 +626,7 @@ const handleClientChange = useCallback(
     setProcessResult(null);
     setFileHeaders({});
     setCheckedFiles(new Set());
+    setTablePreview(null);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -662,6 +693,27 @@ const handleClientChange = useCallback(
       if (result.success) {
         setProcessResult(result);
         setProcessStatus(`✅ ${result.message}`);
+        // Fetch table preview after successful upload
+        if (result.tableName) {
+          console.log('Fetching preview for table:', result.tableName);
+          try {
+            const preview = await getTablePreview({
+              tableName: result.tableName,
+              limit: 10,
+            }).unwrap();
+
+            if (preview.success) {
+              setTablePreview({
+                tableName: preview.tableName,
+                columns: preview.columns,
+                data: preview.data,
+                rowCount: preview.rowCount,
+              });
+            }
+          } catch (previewError) {
+            console.error('Failed to fetch table preview:', previewError);
+          }
+        }
       } else {
         throw new Error(result.message || 'Processing failed');
       }
@@ -683,6 +735,7 @@ const handleClientChange = useCallback(
     selectedVendorId,
     selectedClientId,
     allowExtraHeaders,
+    getTablePreview,
   ]);
 
   // Utility functions
@@ -737,40 +790,51 @@ const handleClientChange = useCallback(
     saveHeaderMappingsError,
   ]);
 
-const handleSaveMappingToDB = useCallback(
-  async (fileId: string, original: string, mapped: string) => {
-    try {
-      setProcessStatus(`Saving mapping: ${original} → ${mapped}...`);
+  const handleSaveMappingToDB = useCallback(
+    async (fileId: string, original: string, mapped: string) => {
+      try {
+        setProcessStatus(`Saving mapping: ${original} → ${mapped}...`);
 
-      const result = await saveHeaderMappings({
-        vendorId: selectedVendorId,
-        clientId: selectedClientId,
-        mappings: [{ original, mapped }],
-      }).unwrap();
+        const result = await saveHeaderMappings({
+          vendorId: selectedVendorId,
+          clientId: selectedClientId,
+          mappings: [{ original, mapped }],
+        }).unwrap();
 
-      if (result.success) {
-        setProcessStatus(`✓ Saved to database, refreshing all files...`);
-        
-        // Refresh mappings for ALL files to see the change everywhere
-        const refreshPromises = Object.entries(fileHeaders).map(([fId, headerData]) => {
-          if (headerData.originalHeaders.length > 0) {
-            return fetchAndApplyHeaderMappings(fId, headerData.originalHeaders);
-          }
-          return Promise.resolve();
-        });
+        if (result.success) {
+          setProcessStatus(`✓ Saved to database, refreshing all files...`);
 
-        await Promise.all(refreshPromises);
-        
-        setProcessStatus('✓ All files refreshed with new mapping');
-        setTimeout(() => setProcessStatus(''), 2000);
+          // Refresh mappings for ALL files to see the change everywhere
+          const refreshPromises = Object.entries(fileHeaders).map(
+            ([fId, headerData]) => {
+              if (headerData.originalHeaders.length > 0) {
+                return fetchAndApplyHeaderMappings(
+                  fId,
+                  headerData.originalHeaders
+                );
+              }
+              return Promise.resolve();
+            }
+          );
+
+          await Promise.all(refreshPromises);
+
+          setProcessStatus('✓ All files refreshed with new mapping');
+          setTimeout(() => setProcessStatus(''), 2000);
+        }
+      } catch (error: any) {
+        console.error('Error saving mapping:', error);
+        setProcessStatus(`❌ Error: ${error.message || 'Failed to save'}`);
       }
-    } catch (error: any) {
-      console.error('Error saving mapping:', error);
-      setProcessStatus(`❌ Error: ${error.message || 'Failed to save'}`);
-    }
-  },
-  [selectedVendorId, selectedClientId, saveHeaderMappings, fetchAndApplyHeaderMappings, fileHeaders]
-);
+    },
+    [
+      selectedVendorId,
+      selectedClientId,
+      saveHeaderMappings,
+      fetchAndApplyHeaderMappings,
+      fileHeaders,
+    ]
+  );
 
   return {
     // State
@@ -853,5 +917,10 @@ const handleSaveMappingToDB = useCallback(
     // NEW: Header mapping specific functions and data
     fetchAndApplyHeaderMappings,
     headerMappingsData,
+
+    // Table preview
+    tablePreview,
+    isLoadingPreview,
+    previewError,
   };
 };

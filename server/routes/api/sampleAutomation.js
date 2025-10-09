@@ -55,4 +55,9 @@ router.route('/detect-headers').post(
   sampleAutomationController.detectHeaders
 );
 
+router.route('/table-preview/:tableName').get(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.getTablePreview
+);
+
 module.exports = router;

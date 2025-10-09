@@ -402,7 +402,7 @@ const createTable = async (pool, tableName, headers) => {
       .join(',\n    ');
 
     const createTableSQL = `
-    CREATE TABLE [dbo].[${tableName}] (
+    CREATE TABLE FAJITA.dbo.[${tableName}] (
       ${columnDefinitions}
     )
   `;
@@ -447,7 +447,7 @@ const insertDataWithConstants = async (
     );
 
     // Use SQL Server's bulk insert capability
-    const table = new sql.Table(`dbo.${tableName}`);
+    const table = new sql.Table(`FAJITA.dbo.${tableName}`);
 
     // Define columns for bulk insert (all headers including constants)
     allHeaders.forEach((header) => {
@@ -643,6 +643,66 @@ const getClientsAndVendors = async () => {
   });
 };
 
+/**
+ * Get top N rows from a table for preview
+ * @param {string} tableName - Name of the table to query
+ * @param {number} limit - Number of rows to return (default 10)
+ * @returns {Object} - Result object with preview data
+ */
+const getTablePreview = async (tableName, limit = 10) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Fetching top ${limit} rows from ${tableName}`);
+
+        // Don't sanitize - table name is already sanitized from creation
+        // Just validate it's not empty
+        if (!tableName || tableName.trim() === '') {
+          throw new Error('Table name is required');
+        }
+
+        // First, let's try to query the table directly to see if it exists
+        // Skip INFORMATION_SCHEMA and just query the data directly
+        const dataQuery = `
+          SELECT TOP ${parseInt(limit)} *
+          FROM FAJITA.dbo.[${tableName}]
+        `;
+
+        console.log('Executing data query:', dataQuery);
+        const dataResult = await pool.request().query(dataQuery);
+
+        console.log(
+          `Successfully fetched ${dataResult.recordset.length} rows from ${tableName}`
+        );
+
+        // Get columns from the result set
+        const columns = dataResult.recordset.length > 0
+          ? Object.keys(dataResult.recordset[0]).map(colName => ({
+              name: colName,
+              type: 'unknown' // We'll get type from data
+            }))
+          : [];
+
+        return {
+          success: true,
+          tableName: tableName,
+          columns: columns,
+          data: dataResult.recordset,
+          rowCount: dataResult.recordset.length,
+          message: `Retrieved top ${dataResult.recordset.length} rows`,
+        };
+      } catch (error) {
+        console.error('Error in getTablePreview:', error);
+        console.error('Table name was:', tableName);
+        console.error('Full error:', error);
+        throw new Error(`Failed to get table preview: ${error.message}`);
+      }
+    },
+    fnName: 'getTablePreview',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -650,4 +710,5 @@ module.exports = {
   getClientsAndVendors,
   getHeaderMappings,
   saveHeaderMappings,
+  getTablePreview,
 };

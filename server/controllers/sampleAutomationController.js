@@ -4,6 +4,7 @@ const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
 const SampleAutomation = require('../services/SampleAutomationServices');
 const handleAsync = require('./asyncController');
+const { formatPhoneNumber } = require('../utils/FormatPhoneNumber.js');
 
 // Configure multer for multiple file uploads (200MB limit per file)
 // const upload = multer({
@@ -183,6 +184,18 @@ const processFile = async (req, res) => {
 
           // Update processResult to use normalized data
           processResult.data = normalizedData;
+
+          processResult.data = processResult.data.map((row) => {
+            const phoneFields = ['PHONE', 'LANDLINE', 'CELL'];
+
+            phoneFields.forEach((field) => {
+              if (row[field]) {
+                row[field] = formatPhoneNumber(row[field]);
+              }
+            });
+
+            return row;
+          });
 
           // Create final headers with mapped names
           finalHeaders = customHeaders[i].map((mappedName, headerIndex) => ({
@@ -644,7 +657,7 @@ const detectHeaders = handleAsync(async (req, res) => {
     // );
     const processor = FileProcessorFactory.createFromBuffer(
       file.buffer,
-      fileName, 
+      fileName,
       fileExtension
     );
     const result = await processor.process();
@@ -668,10 +681,42 @@ const detectHeaders = handleAsync(async (req, res) => {
   }
 });
 
-// // And export it
-// module.exports = {
-//   // ... your existing exports
-//   detectHeaders, // Add this
+/**
+ * Get table preview (top N rows)
+ * @route GET /api/sample-automation/table-preview/:tableName
+ */
+const getTablePreview = handleAsync(async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Table name is required',
+      });
+    }
+
+    if (isNaN(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Limit must be a number between 1 and 100',
+      });
+    }
+
+    console.log(`Fetching preview for table: ${tableName}, limit: ${limit}`);
+
+    const preview = await SampleAutomation.getTablePreview(tableName, limit);
+
+    res.json(preview);
+  } catch (error) {
+    console.error('Error in getTablePreview controller:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch table preview',
+    });
+  }
+});
 
 module.exports = {
   processFile,
@@ -686,5 +731,6 @@ module.exports = {
   getHeaderMappings,
   saveHeaderMappings,
   detectHeaders,
-  uploadSingle: upload.single('file'), // Add this too
+  uploadSingle: upload.single('file'), 
+  getTablePreview,
 };
