@@ -35,3 +35,8 @@ LL ONLY
 
 
 when importing a data set, if an unknown variable is found prompt to update the name
+
+
+FOR TARRANCE PROJECTS
+The phone variable may be landline or cell, this is dependant on whether the CELL column is Y or N
+  Using this information, we can create the LAND and CELL columns, then we can create the source

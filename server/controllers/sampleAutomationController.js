@@ -164,7 +164,7 @@ const processFile = async (req, res) => {
           customHeaders[i].forEach((mappedName, index) => {
             const originalHeader = processResult.headers[index];
             if (originalHeader) {
-              headerMapping[originalHeader.name] = mappedName;
+              headerMapping[originalHeader.name.toUpperCase()] = mappedName.toUpperCase();
             }
           });
 
@@ -176,7 +176,7 @@ const processFile = async (req, res) => {
             const normalizedRow = {};
 
             for (const originalKey in row) {
-              const mappedKey = headerMapping[originalKey] || originalKey;
+              const mappedKey = headerMapping[originalKey.toUpperCase()] || originalKey.toUpperCase();
               normalizedRow[mappedKey] = row[originalKey];
             }
 
@@ -319,23 +319,33 @@ const processFile = async (req, res) => {
         tableResult.tableName
       );
 
-      try {
-        console.log(
-          'Formatting phone numbers in table using stored procedure...'
-        );
-        await SampleAutomation.formatPhoneNumbersInTable(tableResult.tableName);
-        console.log('✅ Phone numbers formatted successfully');
-
-        console.log('Updating SOURCE column based on LAND and CELL values...');
-        await SampleAutomation.updateSourceColumn(tableResult.tableName);
-        console.log('✅ SOURCE column updated successfully');
-      } catch (phoneFormatError) {
-        console.error(
-          '⚠️ Post-processing failed (non-critical):',
-          phoneFormatError
-        );
-        // Don't fail the whole operation if phone formatting or SOURCE update fails
-      }
+try {
+  console.log('Formatting phone numbers in table using stored procedure...');
+  await SampleAutomation.formatPhoneNumbersInTable(tableResult.tableName);
+  console.log('✅ Phone numbers formatted successfully');
+  
+  // ⭐ Route Tarrance phones BEFORE updating SOURCE (ClientID 102)
+  if (clientId === 102) {
+    console.log('Tarrance client detected (ID: 102) - routing PHONE to LAND/CELL based on WPHONE...');
+    try {
+      const routingResult = await SampleAutomation.routeTarrancePhones(tableResult.tableName);
+      console.log(`✅ Tarrance phone routing complete: ${routingResult.totalRouted} phones routed (${routingResult.landlineCount} landlines, ${routingResult.cellCount} cells)`);
+      
+      console.log('Padding Tarrance REGN column to width 2...');
+      const paddingResult = await SampleAutomation.padTarranceRegion(tableResult.tableName);
+      console.log(`✅ Tarrance REGN padding complete: ${paddingResult.recordsPadded} records padded`);
+    } catch (tarranceError) {
+      console.error('⚠️ Tarrance-specific processing failed:', tarranceError);
+    }
+  }
+  
+  console.log('Updating SOURCE column based on LAND and CELL values...');
+  await SampleAutomation.updateSourceColumn(tableResult.tableName);
+  console.log('✅ SOURCE column updated successfully');
+  
+} catch (phoneFormatError) {
+  console.error('⚠️ Post-processing failed (non-critical):', phoneFormatError);
+}
 
       // Generate session ID
       const sessionId = generateSessionId();

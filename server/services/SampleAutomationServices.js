@@ -833,6 +833,74 @@ const updateSourceColumn = async (tableName) => {
   });
 };
 
+/**
+ * Route Tarrance phone numbers to LAND or CELL based on WPHONE
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with routing statistics
+ */
+const routeTarrancePhones = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Routing Tarrance phones in table: ${tableName}`);
+
+        const result = await pool.request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_RouteTarrancePhones');
+
+        const stats = result.recordset[0];
+        console.log(`✅ Tarrance phone routing complete:`, stats);
+
+        return {
+          success: true,
+          landlineCount: stats.LandlineCount,
+          cellCount: stats.CellCount,
+          totalRouted: stats.TotalRouted,
+          message: `Routed ${stats.TotalRouted} phones (${stats.LandlineCount} landlines, ${stats.CellCount} cells)`,
+        };
+      } catch (error) {
+        console.error('Error routing Tarrance phones:', error);
+        throw new Error(`Failed to route Tarrance phones: ${error.message}`);
+      }
+    },
+    fnName: 'routeTarrancePhones',
+  });
+};
+
+/**
+ * Pad Tarrance REGN column to width 2 with leading zeros
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with padding statistics
+ */
+const padTarranceRegion = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Padding Tarrance REGN in table: ${tableName}`);
+
+        const result = await pool.request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_PadTarranceRegion');
+
+        const stats = result.recordset[0];
+        console.log(`✅ Tarrance REGN padding complete:`, stats);
+
+        return {
+          success: true,
+          recordsPadded: stats.RecordsPadded,
+          message: `Padded ${stats.RecordsPadded} REGN values to width 2`,
+        };
+      } catch (error) {
+        console.error('Error padding Tarrance REGN:', error);
+        throw new Error(`Failed to pad Tarrance REGN: ${error.message}`);
+      }
+    },
+    fnName: 'padTarranceRegion',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -844,4 +912,6 @@ module.exports = {
   createDNCScrubbed,
   formatPhoneNumbersInTable,
   updateSourceColumn,
+  routeTarrancePhones,
+  padTarranceRegion,
 };
