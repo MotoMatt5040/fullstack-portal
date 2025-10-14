@@ -85,6 +85,21 @@ interface TablePreviewParams {
   limit?: number;
 }
 
+interface CreateDNCScrubbedParams {  // ✅ Fixed
+  tableName: string;
+}
+
+interface CreateDNCScrubbedResponse {  // ✅ Fixed
+  success: boolean;
+  sourceTableName: string;
+  newTableName: string;
+  phoneColumnsChecked: string[];
+  rowsOriginal: number;
+  rowsClean: number;
+  rowsRemoved: number;
+  message: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -165,6 +180,15 @@ export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
+    // Create DNC-scrubbed table
+createDNCScrubbed: builder.mutation<CreateDNCScrubbedResponse, CreateDNCScrubbedParams>({
+  query: (params) => ({
+    url: '/sample-automation/create-dnc-scrubbed',
+    method: 'POST',
+    body: params,
+  }),
+}),
+
     // NEW: Save header mappings to database (when user edits mappings)
     saveHeaderMappings: builder.mutation<
       SaveHeaderMappingsResponse,
@@ -208,4 +232,5 @@ export const {
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
+  useCreateDNCScrubbedMutation,
 } = sampleAutomationApiSlice;

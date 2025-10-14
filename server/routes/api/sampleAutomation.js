@@ -60,4 +60,9 @@ router.route('/table-preview/:tableName').get(
   sampleAutomationController.getTablePreview
 );
 
+router.route('/create-dnc-scrubbed').post(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.createDNCScrubbed
+);
+
 module.exports = router;

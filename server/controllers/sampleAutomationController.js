@@ -4,7 +4,7 @@ const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
 const SampleAutomation = require('../services/SampleAutomationServices');
 const handleAsync = require('./asyncController');
-const { formatPhoneNumber } = require('../utils/FormatPhoneNumber.js');
+// const { formatPhoneNumber } = require('../utils/FormatPhoneNumber.js');
 
 // Configure multer for multiple file uploads (200MB limit per file)
 // const upload = multer({
@@ -101,7 +101,7 @@ const processFile = async (req, res) => {
     );
 
     // Process each file and collect the data
-    const allProcessedData = [];
+    let allProcessedData = [];
     const allHeaders = new Map(); // Track all unique headers across files
     let totalOriginalRows = 0;
     const processedFileNames = [];
@@ -157,8 +157,7 @@ const processFile = async (req, res) => {
             `Applying mapped headers for file ${i + 1}:`,
             customHeaders[i]
           );
-
-          // Create normalized data with proper column mapping
+          // Create normalized data with proper column mapping AND phone formatting in ONE PASS
           const headerMapping = {};
 
           // Map original column names to mapped names
@@ -169,37 +168,27 @@ const processFile = async (req, res) => {
             }
           });
 
-          // Create normalized rows for this file
-          const normalizedData = processResult.data.map((row) => {
+          // ADD THIS - Map data without phone formatting (will be done by stored procedure)
+          const normalizedData = [];
+
+          for (let rowIdx = 0; rowIdx < processResult.data.length; rowIdx++) {
+            const row = processResult.data[rowIdx];
             const normalizedRow = {};
 
-            // Map data using mapped headers
-            Object.keys(row).forEach((originalKey) => {
+            for (const originalKey in row) {
               const mappedKey = headerMapping[originalKey] || originalKey;
               normalizedRow[mappedKey] = row[originalKey];
-            });
+            }
 
-            return normalizedRow;
-          });
+            normalizedData.push(normalizedRow);
+          }
 
           // Update processResult to use normalized data
           processResult.data = normalizedData;
 
-          processResult.data = processResult.data.map((row) => {
-            const phoneFields = ['PHONE', 'LANDLINE', 'CELL'];
-
-            phoneFields.forEach((field) => {
-              if (row[field]) {
-                row[field] = formatPhoneNumber(row[field]);
-              }
-            });
-
-            return row;
-          });
-
           // Create final headers with mapped names
           finalHeaders = customHeaders[i].map((mappedName, headerIndex) => ({
-            name: mappedName,
+            name: mappedName.toUpperCase(),
             type: processResult.headers[headerIndex]?.type || 'TEXT',
             originalName: processResult.headers[headerIndex]?.name,
           }));
@@ -235,18 +224,16 @@ const processFile = async (req, res) => {
         }
 
         // Add source tracking if multiple files
-        let dataWithSource;
         if (filesToProcess.length > 1) {
-          dataWithSource = processResult.data.map((row) => ({
-            ...row,
-            _source_file: originalFilename,
-            _file_index: i + 1,
-          }));
-        } else {
-          dataWithSource = processResult.data;
+          for (let j = 0; j < processResult.data.length; j++) {
+            processResult.data[j]._source_file = originalFilename;
+            processResult.data[j]._file_index = i + 1;
+          }
         }
 
-        allProcessedData.push(...dataWithSource);
+        // ✅ Memory-efficient: Direct concatenation
+        allProcessedData = allProcessedData.concat(processResult.data);
+
         totalOriginalRows += processResult.totalRows;
         processedFileNames.push(originalFilename);
 
@@ -331,6 +318,24 @@ const processFile = async (req, res) => {
         'Table created successfully with mapped headers and Promark constants:',
         tableResult.tableName
       );
+
+      try {
+        console.log(
+          'Formatting phone numbers in table using stored procedure...'
+        );
+        await SampleAutomation.formatPhoneNumbersInTable(tableResult.tableName);
+        console.log('✅ Phone numbers formatted successfully');
+
+        console.log('Updating SOURCE column based on LAND and CELL values...');
+        await SampleAutomation.updateSourceColumn(tableResult.tableName);
+        console.log('✅ SOURCE column updated successfully');
+      } catch (phoneFormatError) {
+        console.error(
+          '⚠️ Post-processing failed (non-critical):',
+          phoneFormatError
+        );
+        // Don't fail the whole operation if phone formatting or SOURCE update fails
+      }
 
       // Generate session ID
       const sessionId = generateSessionId();
@@ -718,6 +723,35 @@ const getTablePreview = handleAsync(async (req, res) => {
   }
 });
 
+/**
+ * Create DNC-scrubbed table
+ * @route POST /api/sample-automation/create-dnc-scrubbed
+ */
+const createDNCScrubbed = handleAsync(async (req, res) => {
+  try {
+    const { tableName } = req.body;
+
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Table name is required',
+      });
+    }
+
+    console.log(`Creating DNC-scrubbed table from: ${tableName}`);
+
+    const result = await SampleAutomation.createDNCScrubbed(tableName);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error in createDNCScrubbed controller:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create DNC-scrubbed table',
+    });
+  }
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -731,6 +765,7 @@ module.exports = {
   getHeaderMappings,
   saveHeaderMappings,
   detectHeaders,
-  uploadSingle: upload.single('file'), 
+  uploadSingle: upload.single('file'),
   getTablePreview,
+  createDNCScrubbed,
 };

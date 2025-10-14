@@ -21,6 +21,7 @@ const dbConfigs = {
 			idleTimeoutMillis: 30000,
 			acquireTimeoutMillis: 60000,
 		},
+		requestTimeout: 300000,
 	},
 	voxco: {
 		user: process.env.VOXCO_DB_USER,
@@ -36,6 +37,7 @@ const dbConfigs = {
 			idleTimeoutMillis: 30000,
 			acquireTimeoutMillis: 60000,
 		},
+		requestTimeout: 300000,
 	},
 };
 

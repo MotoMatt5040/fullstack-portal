@@ -76,6 +76,11 @@ const SampleAutomation: React.FC = () => {
     tablePreview,
     isLoadingPreview,
     previewError,
+
+    // DNC Scrub
+  handleCreateDNCScrubbed,
+  isCreatingDNC,
+  dncScrubResult,
   } = useSampleAutomationLogic();
 
   return (
@@ -491,6 +496,81 @@ const SampleAutomation: React.FC = () => {
             </div>
           </div>
         )}
+
+{/* DNC Scrub Section */}
+{processResult && tablePreview && (
+  <div className='dnc-scrub-section'>
+    <h3>DNC Scrub</h3>
+    <p>
+      Create a clean copy of the table with DNC numbers removed.
+      {tablePreview.columns.some(col => 
+        col.name.toUpperCase() === 'SOURCE'
+      ) ? (
+        <span className='source-column-found'>
+          {' '}✓ SOURCE column detected: {
+            tablePreview.columns
+              .filter(col => 
+                col.name.toUpperCase() === 'SOURCE'
+              )
+              .map(col => col.name)
+              .join(', ')
+          }
+        </span>
+      ) : (
+        <span className='no-source-column'>
+          {' '}⚠️ No SOURCE column detected
+        </span>
+      )}
+    </p>
+
+    <button
+      onClick={handleCreateDNCScrubbed}
+      disabled={
+        isCreatingDNC || 
+        !tablePreview.columns.some(col => 
+          col.name.toUpperCase() === 'SOURCE'
+        )
+      }
+      className='dnc-scrub-btn'
+    >
+      {isCreatingDNC 
+        ? 'Creating DNC-Scrubbed Table...' 
+        : 'Create DNC-Scrubbed Table'}
+    </button>
+
+    {dncScrubResult && (
+      <div className='dnc-scrub-results'>
+        <h4>DNC Scrub Results</h4>
+        <div className='results-grid'>
+          <div className='result-card'>
+            <div className='result-label'>Original Table</div>
+            <div className='result-value'>{dncScrubResult.sourceTableName}</div>
+          </div>
+          <div className='result-card'>
+            <div className='result-label'>New Clean Table</div>
+            <div className='result-value success'>{dncScrubResult.newTableName}</div>
+          </div>
+          <div className='result-card'>
+            <div className='result-label'>Original Rows</div>
+            <div className='result-value'>{dncScrubResult.rowsOriginal?.toLocaleString()}</div>
+          </div>
+          <div className='result-card'>
+            <div className='result-label'>Clean Rows</div>
+            <div className='result-value success'>{dncScrubResult.rowsClean?.toLocaleString()}</div>
+          </div>
+          <div className='result-card'>
+            <div className='result-label'>DNC Records Removed</div>
+            <div className='result-value error'>{dncScrubResult.rowsRemoved?.toLocaleString()}</div>
+          </div>
+          <div className='result-card'>
+            <div className='result-label'>Columns Checked</div>
+            <div className='result-value'>{dncScrubResult.phoneColumnsChecked?.join(', ')}</div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+)}
       </div>
     </div>
   );

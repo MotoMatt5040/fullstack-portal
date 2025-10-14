@@ -209,8 +209,8 @@ const getHeaderMappings = async (vendorId, clientId, originalHeaders) => {
             row.Priority < mappings[originalKey].priority
           ) {
             mappings[originalKey] = {
-              original: row.OriginalHeader,
-              mapped: row.MappedHeader,
+              original: row.OriginalHeader.toUpperCase(),
+              mapped: row.MappedHeader.toUpperCase(),
               vendorName: row.VendorName,
               clientName: row.ClientName,
               vendorId: row.VendorID,
@@ -244,6 +244,7 @@ const getHeaderMappings = async (vendorId, clientId, originalHeaders) => {
     fnName: 'getHeaderMappings',
   });
 };
+
 /**
  * Save header mappings to database (for when user edits mappings)
  * @param {number|null} vendorId - Vendor ID
@@ -279,6 +280,9 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
             continue;
           }
 
+          const upperOriginal = original.toUpperCase();
+          const upperMapped = mapped.toUpperCase();
+
           // Check if mapping already exists
           const checkQuery = `
             SELECT COUNT(*) as count 
@@ -289,7 +293,7 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
           `;
 
           const checkRequest = pool.request();
-          checkRequest.input('original', original);
+          checkRequest.input('original', upperOriginal);
           if (vendorId) checkRequest.input('vendorId', vendorId);
           if (clientId) checkRequest.input('clientId', clientId);
 
@@ -308,13 +312,13 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
             `;
 
             const updateRequest = pool.request();
-            updateRequest.input('mapped', mapped);
-            updateRequest.input('original', original);
+            updateRequest.input('mapped', upperMapped);
+            updateRequest.input('original', upperOriginal);
             if (vendorId) updateRequest.input('vendorId', vendorId);
             if (clientId) updateRequest.input('clientId', clientId);
 
             await updateRequest.query(updateQuery);
-            console.log(`Updated mapping: ${original} → ${mapped}`);
+            console.log(`Updated mapping: ${upperOriginal} → ${upperMapped}`);
           } else {
             // Insert new mapping
             const insertQuery = `
@@ -325,11 +329,11 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
             const insertRequest = pool.request();
             insertRequest.input('vendorId', vendorId);
             insertRequest.input('clientId', clientId);
-            insertRequest.input('original', original);
-            insertRequest.input('mapped', mapped);
+            insertRequest.input('original', upperOriginal);
+            insertRequest.input('mapped', upperMapped);
 
             await insertRequest.query(insertQuery);
-            console.log(`Inserted new mapping: ${original} → ${mapped}`);
+            console.log(`Inserted new mapping: ${upperOriginal} → ${upperMapped}`);
           }
 
           savedCount++;
@@ -562,15 +566,33 @@ const convertValue = (value, dataType) => {
 
   switch (dataType?.toUpperCase()) {
     case 'INTEGER':
-      return parseInt(value);
+      const intVal = parseInt(value);
+      return isNaN(intVal) ? null : intVal;
+      
     case 'REAL':
     case 'FLOAT':
-      return parseFloat(value);
+      const floatVal = parseFloat(value);
+      return isNaN(floatVal) ? null : floatVal;
+      
     case 'BOOLEAN':
       return Boolean(value);
+      
     case 'DATE':
     case 'DATETIME':
-      return new Date(value);
+      try {
+        const dateVal = new Date(value);
+        // Check if date is valid and within SQL Server DATETIME2 range
+        // SQL Server DATETIME2 range: 0001-01-01 to 9999-12-31
+        if (isNaN(dateVal.getTime()) || 
+            dateVal.getFullYear() < 1 || 
+            dateVal.getFullYear() > 9999) {
+          return null;
+        }
+        return dateVal;
+      } catch (e) {
+        return null;
+      }
+      
     case 'TEXT':
     default:
       return String(value);
@@ -703,6 +725,114 @@ const getTablePreview = async (tableName, limit = 10) => {
   });
 };
 
+/**
+ * Create a DNC-scrubbed copy of the table using stored procedure
+ * @param {string} sourceTableName - Name of the source table
+ * @returns {Object} - Result with new table info
+ */
+const createDNCScrubbed = async (sourceTableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Creating DNC-scrubbed table from: ${sourceTableName}`);
+
+        const result = await pool.request()
+          .input('SourceTableName', sql.NVarChar, sourceTableName)
+          .execute('FAJITA.dbo.sp_CreateDNCScrubbed');
+
+        const data = result.recordset[0];
+        
+        console.log(`DNC scrub complete:`, {
+          rowsRemoved: data.RowsRemoved,
+          landlinesCleared: data.LandlinesCleared,
+          newTable: data.NewTableName
+        });
+
+        return {
+          success: true,
+          sourceTableName: data.SourceTableName,
+          newTableName: data.NewTableName,
+          phoneColumnsChecked: ['LAND (SOURCE 1 removed, SOURCE 3 cleared)'],
+          rowsOriginal: data.RowsOriginal,
+          rowsClean: data.RowsClean,
+          rowsRemoved: data.RowsRemoved,
+          landlinesCleared: data.LandlinesCleared,
+          message: `Successfully created ${data.NewTableName} with ${data.RowsClean} records (${data.RowsRemoved} landline-only records removed, ${data.LandlinesCleared} landlines cleared from dual records)`,
+        };
+      } catch (error) {
+        console.error('Error in createDNCScrubbed:', error);
+        throw new Error(`Failed to create DNC-scrubbed table: ${error.message}`);
+      }
+    },
+    fnName: 'createDNCScrubbed',
+  });
+};
+
+/**
+ * Format phone numbers in a table using stored procedure
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result
+ */
+const formatPhoneNumbersInTable = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Formatting phone numbers in table: ${tableName}`);
+
+        const result = await pool.request()
+          .input('TableName', tableName)
+          .execute('FAJITA.dbo.FormatPhoneNumbers');
+
+        console.log(`Phone numbers formatted successfully in ${tableName}`);
+
+        return {
+          success: true,
+          message: `Phone numbers formatted in ${tableName}`,
+        };
+      } catch (error) {
+        console.error('Error formatting phone numbers:', error);
+        throw new Error(`Failed to format phone numbers: ${error.message}`);
+      }
+    },
+    fnName: 'formatPhoneNumbersInTable',
+  });
+};
+
+/**
+ * Update SOURCE column based on LAND and CELL values
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with rows updated
+ */
+const updateSourceColumn = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Updating SOURCE column in table: ${tableName}`);
+
+        const result = await pool.request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_UpdateSourceColumn');
+
+        const rowsUpdated = result.recordset[0].RowsUpdated;
+        console.log(`✅ SOURCE column updated for ${rowsUpdated} rows in ${tableName}`);
+
+        return {
+          success: true,
+          rowsUpdated: rowsUpdated,
+          message: `SOURCE column updated in ${tableName}`,
+        };
+      } catch (error) {
+        console.error('Error updating SOURCE column:', error);
+        throw new Error(`Failed to update SOURCE column: ${error.message}`);
+      }
+    },
+    fnName: 'updateSourceColumn',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -711,4 +841,7 @@ module.exports = {
   getHeaderMappings,
   saveHeaderMappings,
   getTablePreview,
+  createDNCScrubbed,
+  formatPhoneNumbersInTable,
+  updateSourceColumn,
 };

@@ -60,6 +60,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   const [editingHeaders, setEditingHeaders] = useState<Record<string, Record<number, string>>>({});
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [editedHeaders, setEditedHeaders] = useState<Record<string, Set<number>>>({});
 
   // Calculate progress
   const progressStats = useMemo(() => {
@@ -130,34 +131,52 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   }, []);
 
   const handleSaveLocal = useCallback((fileId: string, index: number, newMapped: string) => {
-    // First clear the editing state
-    setEditingHeaders(prev => {
-      const newState = { ...prev };
-      if (newState[fileId]) {
-        const fileEdits = { ...newState[fileId] };
-        delete fileEdits[index];
-        
-        // If no more edits for this file, remove the file entry
-        if (Object.keys(fileEdits).length === 0) {
-          delete newState[fileId];
-        } else {
-          newState[fileId] = fileEdits;
-        }
+  // First clear the editing state
+  setEditingHeaders(prev => {
+    const newState = { ...prev };
+    if (newState[fileId]) {
+      const fileEdits = { ...newState[fileId] };
+      delete fileEdits[index];
+      
+      if (Object.keys(fileEdits).length === 0) {
+        delete newState[fileId];
+      } else {
+        newState[fileId] = fileEdits;
       }
-      return newState;
-    });
-
-    // Then update the local mapping
-    if (onUpdateLocalMapping) {
-      onUpdateLocalMapping(fileId, index, newMapped);
     }
-  }, [onUpdateLocalMapping]);
+    return newState;
+  });
+
+  // Mark this header as edited
+  setEditedHeaders(prev => {
+    const fileEdited = prev[fileId] || new Set();
+    return {
+      ...prev,
+      [fileId]: new Set([...fileEdited, index])
+    };
+  });
+
+  // Then update the local mapping
+  if (onUpdateLocalMapping) {
+    onUpdateLocalMapping(fileId, index, newMapped);
+  }
+}, [onUpdateLocalMapping]);
 
   const handleSaveToDB = useCallback((fileId: string, index: number, original: string, mapped: string) => {
-    if (onSaveMappingToDB) {
-      onSaveMappingToDB(fileId, original, mapped);
-    }
-  }, [onSaveMappingToDB]);
+  if (onSaveMappingToDB) {
+    onSaveMappingToDB(fileId, original, mapped);
+    
+    // Remove from edited headers since it's now in DB
+    setEditedHeaders(prev => {
+      const fileEdited = new Set(prev[fileId] || []);
+      fileEdited.delete(index);
+      return {
+        ...prev,
+        [fileId]: fileEdited
+      };
+    });
+  }
+}, [onSaveMappingToDB]);
 
   const handleHeaderChange = useCallback((fileId: string, index: number, value: string) => {
     setEditingHeaders(prev => ({
@@ -169,32 +188,48 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     }));
   }, []);
 
-  const getMappingStatus = useCallback((original: string, mapped: string, mappings: Record<string, HeaderMapping>) => {
-    const upperOriginal = original.toUpperCase();
-    const mapping = mappings[upperOriginal];
-    
-    if (!mapping) {
-      return {
-        status: 'no-mapping',
-        color: '#d9534f',
-        tooltip: 'No mapping found in database'
-      };
-    }
-    
-    if (mapping.mapped === mapped) {
-      return {
-        status: 'mapped',
-        color: '#5cb85c',
-        tooltip: `Mapped from ${mapping.vendorName || 'All'} → ${mapping.clientName || 'All'}`
-      };
-    }
-    
+  const getMappingStatus = useCallback((
+  original: string, 
+  mapped: string, 
+  mappings: Record<string, HeaderMapping>,
+  fileId: string,
+  index: number
+) => {
+  const upperOriginal = original.toUpperCase();
+  const mapping = mappings[upperOriginal];
+  const wasEdited = editedHeaders[fileId]?.has(index);
+  
+  // If manually edited, always show as custom (yellow)
+  if (wasEdited) {
     return {
       status: 'custom',
       color: '#f0ad4e',
       tooltip: 'Custom mapping (edited by user)'
     };
-  }, []);
+  }
+  
+  if (!mapping) {
+    return {
+      status: 'no-mapping',
+      color: '#d9534f',
+      tooltip: 'No mapping found in database'
+    };
+  }
+  
+  if (mapping.mapped === mapped) {
+    return {
+      status: 'mapped',
+      color: '#5cb85c',
+      tooltip: `Mapped from ${mapping.vendorName || 'All'} → ${mapping.clientName || 'All'}`
+    };
+  }
+  
+  return {
+    status: 'custom',
+    color: '#f0ad4e',
+    tooltip: 'Custom mapping (edited by user)'
+  };
+}, [editedHeaders]);
 
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -364,10 +399,12 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                         const displayValue = isEditingThisRow ? editingValue : currentMappedValue;
                         
                         const mappingStatus = getMappingStatus(
-                          originalHeader, 
-                          currentMappedValue, 
-                          headerData.mappings
-                        );
+  originalHeader, 
+  currentMappedValue, 
+  headerData.mappings,
+  id,  // ADD THIS
+  index  // ADD THIS
+);
 
                         // Apply filter
                         if (filterMode === 'mapped' && mappingStatus.status !== 'mapped') return null;
