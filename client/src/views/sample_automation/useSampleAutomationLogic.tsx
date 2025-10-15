@@ -6,7 +6,6 @@ import {
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
-
   useCreateDNCScrubbedMutation,
 } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
@@ -67,13 +66,8 @@ export const useSampleAutomationLogic = () => {
   const [dncScrubResult, setDncScrubResult] = useState<any>(null);
   const isCreatingDNCRef = useRef(false);
 
-  const [
-  createDNCScrubbed,
-  {
-    isLoading: isCreatingDNC,
-    error: dncError,
-  },
-] = useCreateDNCScrubbedMutation();
+  const [createDNCScrubbed, { isLoading: isCreatingDNC, error: dncError }] =
+    useCreateDNCScrubbedMutation();
 
   // Refs to track current vendor/client IDs without causing re-renders
   const selectedVendorIdRef = useRef(selectedVendorId);
@@ -163,51 +157,56 @@ export const useSampleAutomationLogic = () => {
   ] = useSaveHeaderMappingsMutation();
 
   const handleCreateDNCScrubbed = useCallback(async () => {
-  if (!processResult?.tableName) {
-    setProcessStatus('❌ No table to scrub');
-    return;
-  }
-
-  if (isCreatingDNCRef.current) {
-    console.log('DNC scrub already in progress, skipping...');
-    return;
-  }
-
-  try {
-    isCreatingDNCRef.current = true;
-    setProcessStatus(`Creating DNC-scrubbed table from ${processResult.tableName}...`);
-
-    const result = await createDNCScrubbed({
-      tableName: processResult.tableName,
-    }).unwrap();
-
-    if (result.success) {
-      setDncScrubResult(result);
-      setProcessStatus(`✅ ${result.message}`);
-      
-      // Optionally load preview of the new clean table
-      const preview = await getTablePreview({
-        tableName: result.newTableName,
-        limit: 10,
-      }).unwrap();
-      
-      if (preview.success) {
-        setTablePreview({
-          tableName: preview.tableName,
-          columns: preview.columns,
-          data: preview.data,
-          rowCount: preview.rowCount,
-        });
-      }
+    if (!processResult?.tableName) {
+      setProcessStatus('❌ No table to scrub');
+      return;
     }
-  } catch (error: any) {
-    console.error('DNC scrub failed:', error);
-    const errorMessage = error?.data?.message || error?.message || 'Failed to create DNC-scrubbed table';
-    setProcessStatus(`❌ Error: ${errorMessage}`);
-  } finally {
-    isCreatingDNCRef.current = false;
-  }
-}, [processResult, createDNCScrubbed, getTablePreview]);
+
+    if (isCreatingDNCRef.current) {
+      console.log('DNC scrub already in progress, skipping...');
+      return;
+    }
+
+    try {
+      isCreatingDNCRef.current = true;
+      setProcessStatus(
+        `Creating DNC-scrubbed table from ${processResult.tableName}...`
+      );
+
+      const result = await createDNCScrubbed({
+        tableName: processResult.tableName,
+      }).unwrap();
+
+      if (result.success) {
+        setDncScrubResult(result);
+        setProcessStatus(`✅ ${result.message}`);
+
+        // Optionally load preview of the new clean table
+        const preview = await getTablePreview({
+          tableName: result.newTableName,
+          limit: 10,
+        }).unwrap();
+
+        if (preview.success) {
+          setTablePreview({
+            tableName: preview.tableName,
+            columns: preview.columns,
+            data: preview.data,
+            rowCount: preview.rowCount,
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('DNC scrub failed:', error);
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        'Failed to create DNC-scrubbed table';
+      setProcessStatus(`❌ Error: ${errorMessage}`);
+    } finally {
+      isCreatingDNCRef.current = false;
+    }
+  }, [processResult, createDNCScrubbed, getTablePreview]);
 
   // Add detect headers mutation
   const [detectHeaders, { isLoading: isDetectingHeaders }] =
@@ -983,8 +982,8 @@ export const useSampleAutomationLogic = () => {
     previewError,
 
     // DNC Scrub
-  handleCreateDNCScrubbed,
-  isCreatingDNC,
-  dncScrubResult,
+    handleCreateDNCScrubbed,
+    isCreatingDNC,
+    dncScrubResult,
   };
 };

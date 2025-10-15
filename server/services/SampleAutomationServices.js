@@ -192,7 +192,7 @@ const getHeaderMappings = async (vendorId, clientId, originalHeaders) => {
         `;
 
         console.log('Executing header mapping query...');
-        console.log(query)
+        console.log(query);
         const result = await request.query(query);
 
         // console.log(`Found ${result.recordset.length} raw mapping records`);
@@ -333,7 +333,9 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
             insertRequest.input('mapped', upperMapped);
 
             await insertRequest.query(insertQuery);
-            console.log(`Inserted new mapping: ${upperOriginal} → ${upperMapped}`);
+            console.log(
+              `Inserted new mapping: ${upperOriginal} → ${upperMapped}`
+            );
           }
 
           savedCount++;
@@ -568,31 +570,33 @@ const convertValue = (value, dataType) => {
     case 'INTEGER':
       const intVal = parseInt(value);
       return isNaN(intVal) ? null : intVal;
-      
+
     case 'REAL':
     case 'FLOAT':
       const floatVal = parseFloat(value);
       return isNaN(floatVal) ? null : floatVal;
-      
+
     case 'BOOLEAN':
       return Boolean(value);
-      
+
     case 'DATE':
     case 'DATETIME':
       try {
         const dateVal = new Date(value);
         // Check if date is valid and within SQL Server DATETIME2 range
         // SQL Server DATETIME2 range: 0001-01-01 to 9999-12-31
-        if (isNaN(dateVal.getTime()) || 
-            dateVal.getFullYear() < 1 || 
-            dateVal.getFullYear() > 9999) {
+        if (
+          isNaN(dateVal.getTime()) ||
+          dateVal.getFullYear() < 1 ||
+          dateVal.getFullYear() > 9999
+        ) {
           return null;
         }
         return dateVal;
       } catch (e) {
         return null;
       }
-      
+
     case 'TEXT':
     default:
       return String(value);
@@ -699,12 +703,13 @@ const getTablePreview = async (tableName, limit = 10) => {
         );
 
         // Get columns from the result set
-        const columns = dataResult.recordset.length > 0
-          ? Object.keys(dataResult.recordset[0]).map(colName => ({
-              name: colName,
-              type: 'unknown' // We'll get type from data
-            }))
-          : [];
+        const columns =
+          dataResult.recordset.length > 0
+            ? Object.keys(dataResult.recordset[0]).map((colName) => ({
+                name: colName,
+                type: 'unknown', // We'll get type from data
+              }))
+            : [];
 
         return {
           success: true,
@@ -737,16 +742,17 @@ const createDNCScrubbed = async (sourceTableName) => {
       try {
         console.log(`Creating DNC-scrubbed table from: ${sourceTableName}`);
 
-        const result = await pool.request()
+        const result = await pool
+          .request()
           .input('SourceTableName', sql.NVarChar, sourceTableName)
           .execute('FAJITA.dbo.sp_CreateDNCScrubbed');
 
         const data = result.recordset[0];
-        
+
         console.log(`DNC scrub complete:`, {
           rowsRemoved: data.RowsRemoved,
           landlinesCleared: data.LandlinesCleared,
-          newTable: data.NewTableName
+          newTable: data.NewTableName,
         });
 
         return {
@@ -762,7 +768,9 @@ const createDNCScrubbed = async (sourceTableName) => {
         };
       } catch (error) {
         console.error('Error in createDNCScrubbed:', error);
-        throw new Error(`Failed to create DNC-scrubbed table: ${error.message}`);
+        throw new Error(
+          `Failed to create DNC-scrubbed table: ${error.message}`
+        );
       }
     },
     fnName: 'createDNCScrubbed',
@@ -781,7 +789,8 @@ const formatPhoneNumbersInTable = async (tableName) => {
       try {
         console.log(`Formatting phone numbers in table: ${tableName}`);
 
-        const result = await pool.request()
+        const result = await pool
+          .request()
           .input('TableName', tableName)
           .execute('FAJITA.dbo.FormatPhoneNumbers');
 
@@ -812,12 +821,15 @@ const updateSourceColumn = async (tableName) => {
       try {
         console.log(`Updating SOURCE column in table: ${tableName}`);
 
-        const result = await pool.request()
+        const result = await pool
+          .request()
           .input('TableName', sql.NVarChar, tableName)
           .execute('FAJITA.dbo.sp_UpdateSourceColumn');
 
         const rowsUpdated = result.recordset[0].RowsUpdated;
-        console.log(`✅ SOURCE column updated for ${rowsUpdated} rows in ${tableName}`);
+        console.log(
+          `✅ SOURCE column updated for ${rowsUpdated} rows in ${tableName}`
+        );
 
         return {
           success: true,
@@ -845,7 +857,8 @@ const routeTarrancePhones = async (tableName) => {
       try {
         console.log(`Routing Tarrance phones in table: ${tableName}`);
 
-        const result = await pool.request()
+        const result = await pool
+          .request()
           .input('TableName', sql.NVarChar, tableName)
           .execute('FAJITA.dbo.sp_RouteTarrancePhones');
 
@@ -880,7 +893,8 @@ const padTarranceRegion = async (tableName) => {
       try {
         console.log(`Padding Tarrance REGN in table: ${tableName}`);
 
-        const result = await pool.request()
+        const result = await pool
+          .request()
           .input('TableName', sql.NVarChar, tableName)
           .execute('FAJITA.dbo.sp_PadTarranceRegion');
 
@@ -901,6 +915,119 @@ const padTarranceRegion = async (tableName) => {
   });
 };
 
+/**
+ * Populate AGERANGE column based on IAGE and AgeRange lookup table
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with population statistics
+ */
+const populateAgeRange = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Populating AGERANGE in table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_PopulateAgeRange');
+
+        const stats = result.recordset[0];
+        console.log(`✅ Age range population complete:`, stats);
+
+        return {
+          success: true,
+          totalWithIAge: stats.TotalWithIAge,
+          recordsWithAgeRange: stats.RecordsWithAgeRange,
+          recordsWithoutAgeRange: stats.RecordsWithoutAgeRange,
+          message: `Populated AGERANGE for ${stats.RecordsWithAgeRange} records`,
+        };
+      } catch (error) {
+        console.error('Error populating age range:', error);
+        throw new Error(`Failed to populate age range: ${error.message}`);
+      }
+    },
+    fnName: 'populateAgeRange',
+  });
+};
+
+/**
+ * Create stratified batches by adding BatchNumber column
+ * Only uses columns that actually exist in the table
+ * @param {string} tableName - Name of the table
+ * @param {string} stratifyColumns - Comma-separated column names to stratify by
+ * @param {number} batchCount - Number of batches to create (default 20)
+ * @returns {Object} - Result with batch statistics
+ */
+const createStratifiedBatches = async (tableName, stratifyColumns = 'AGERANGE,SOURCE', batchCount = 20) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Creating stratified batches for table: ${tableName}`);
+        console.log(`Requested stratify columns: ${stratifyColumns}`);
+
+        // Get list of columns that actually exist in the table
+        const columnCheckQuery = `
+          SELECT COLUMN_NAME
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = @tableName
+        `;
+        
+        const columnResult = await pool.request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(columnCheckQuery);
+        
+        const existingColumns = columnResult.recordset.map(row => row.COLUMN_NAME.toUpperCase());
+        
+        // Parse requested columns and filter to only those that exist
+        const requestedColumns = stratifyColumns
+          .split(',')
+          .map(col => col.trim().toUpperCase())
+          .filter(col => existingColumns.includes(col));
+        
+        if (requestedColumns.length === 0) {
+          console.warn('⚠️ None of the requested stratify columns exist in the table. Skipping stratification.');
+          return {
+            success: false,
+            batchCount: 0,
+            stratifyColumns: '',
+            message: 'No valid stratify columns found - skipping batch creation',
+          };
+        }
+        
+        const finalStratifyColumns = requestedColumns.join(',');
+        console.log(`✓ Using existing columns for stratification: ${finalStratifyColumns}`);
+
+        // Call stored procedure with validated columns
+        const result = await pool.request()
+          .input('TableName', sql.NVarChar, tableName)
+          .input('StratifyColumns', sql.NVarChar, finalStratifyColumns)
+          .input('BatchCount', sql.Int, batchCount)
+          .execute('FAJITA.dbo.sp_StratifiedSplit');
+
+        console.log(`✅ Stratified batches created successfully`);
+
+        return {
+          success: true,
+          batchCount: batchCount,
+          stratifyColumns: finalStratifyColumns,
+          columnsUsed: requestedColumns,
+          columnsSkipped: stratifyColumns.split(',')
+            .map(col => col.trim().toUpperCase())
+            .filter(col => !existingColumns.includes(col)),
+          message: `Created ${batchCount} stratified batches using ${finalStratifyColumns}`,
+        };
+      } catch (error) {
+        console.error('Error creating stratified batches:', error);
+        throw new Error(`Failed to create stratified batches: ${error.message}`);
+      }
+    },
+    fnName: 'createStratifiedBatches',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -914,4 +1041,6 @@ module.exports = {
   updateSourceColumn,
   routeTarrancePhones,
   padTarranceRegion,
+  populateAgeRange,
+  createStratifiedBatches,
 };
