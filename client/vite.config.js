@@ -16,6 +16,11 @@ export default defineConfig({
         target: 'http://localhost:5000', // Your backend server
         changeOrigin: true,
       },
+      // Add this for temp file downloads
+      '/temp': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
   resolve: {
