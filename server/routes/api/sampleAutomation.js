@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const verifyRoles = require('../../middleware/verifyRoles');
 const { ROLES_LIST } = require('../../config/rolesConfig');
@@ -64,5 +65,18 @@ router.route('/create-dnc-scrubbed').post(
   verifyRoles(...allowedRoles),
   sampleAutomationController.createDNCScrubbed
 );
+
+router.route('/distinct-age-ranges/:tableName').get(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.getDistinctAgeRanges
+);
+
+router.route('/extract-files').post(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.extractFiles
+);
+
+// router.use('/temp', express.static(path.join(__dirname, '../../temp')));
+
 
 module.exports = router;

@@ -100,6 +100,58 @@ interface CreateDNCScrubbedResponse {  // ✅ Fixed
   message: string;
 }
 
+// Add this interface near your other interfaces:
+interface GetDistinctAgeRangesParams {
+  tableName: string;
+}
+
+interface GetDistinctAgeRangesResponse {
+  success: boolean;
+  ageRanges: string[];
+  count: number;
+  message?: string;
+}
+
+interface ExtractFilesParams {
+  tableName: string;
+  selectedHeaders: string[];
+  splitMode: string;
+  selectedAgeRange?: string | number;
+  fileNames: {
+    landline?: string;
+    cell?: string;
+    single?: string;
+  };
+}
+
+interface ExtractFilesResponse {
+  success: boolean;
+  splitMode: string;
+  files: {
+    landline?: {
+      filename: string;
+      path: string;
+      url: string;
+      records: number;
+      conditions: string[];
+    };
+    cell?: {
+      filename: string;
+      path: string;
+      url: string;
+      records: number;
+      conditions: string[];
+    };
+    single?: {
+      filename: string;
+      path: string;
+      url: string;
+      records: number;
+    };
+  };
+  message: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -189,6 +241,24 @@ createDNCScrubbed: builder.mutation<CreateDNCScrubbedResponse, CreateDNCScrubbed
   }),
 }),
 
+getDistinctAgeRanges: builder.query<
+  GetDistinctAgeRangesResponse,
+  GetDistinctAgeRangesParams
+>({
+  query: ({ tableName }) => ({
+    url: `/sample-automation/distinct-age-ranges/${tableName}`,
+    method: 'GET',
+  }),
+}),
+
+extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
+  query: (params) => ({
+    url: '/sample-automation/extract-files',
+    method: 'POST',
+    body: params,
+  }),
+}),
+
     // NEW: Save header mappings to database (when user edits mappings)
     saveHeaderMappings: builder.mutation<
       SaveHeaderMappingsResponse,
@@ -233,4 +303,7 @@ export const {
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
   useCreateDNCScrubbedMutation,
+  useGetDistinctAgeRangesQuery,
+  useLazyGetDistinctAgeRangesQuery,
+  useExtractFilesMutation,
 } = sampleAutomationApiSlice;

@@ -74,6 +74,15 @@ const Welcome = () => {
           </Link>
         )}
 
+        {userInfo.isInternalUser && (
+          <Link to='/sample-automation' className='quick-action-btn'>
+            <div className='quick-action-icon'>
+              <FaTachometerAlt />
+            </div>
+            Sample Automation
+          </Link>
+        )}
+
         <Link to='/topline-report' className='quick-action-btn'>
           <div className='quick-action-icon'>
             <FaChartLine />

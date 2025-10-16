@@ -7,6 +7,8 @@ import {
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
   useCreateDNCScrubbedMutation,
+  useLazyGetDistinctAgeRangesQuery,
+  useExtractFilesMutation
 } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
@@ -65,9 +67,12 @@ export const useSampleAutomationLogic = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dncScrubResult, setDncScrubResult] = useState<any>(null);
   const isCreatingDNCRef = useRef(false);
+  const [splitConfiguration, setSplitConfiguration] = useState<any>(null);
+const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
 
   const [createDNCScrubbed, { isLoading: isCreatingDNC, error: dncError }] =
     useCreateDNCScrubbedMutation();
+    const [extractFiles, { isLoading: isExtracting }] = useExtractFilesMutation();
 
   // Refs to track current vendor/client IDs without causing re-renders
   const selectedVendorIdRef = useRef(selectedVendorId);
@@ -83,6 +88,15 @@ export const useSampleAutomationLogic = () => {
   >({});
   const [checkedFiles, setCheckedFiles] = useState<Set<string>>(new Set());
   const [allowExtraHeaders, setAllowExtraHeaders] = useState(false);
+
+  const [
+  getDistinctAgeRanges,
+  { 
+    data: ageRangesData, 
+    isLoading: isLoadingAgeRanges, 
+    error: ageRangesError 
+  },
+] = useLazyGetDistinctAgeRangesQuery();
 
   const [tablePreview, setTablePreview] = useState<{
     tableName: string;
@@ -753,6 +767,7 @@ export const useSampleAutomationLogic = () => {
         setProcessStatus(`✅ ${result.message}`);
         // Fetch table preview after successful upload
         if (result.tableName) {
+          await fetchDistinctAgeRanges(result.tableName);
           console.log('Fetching preview for table:', result.tableName);
           try {
             const preview = await getTablePreview({
@@ -894,6 +909,148 @@ export const useSampleAutomationLogic = () => {
     ]
   );
 
+const handleExtractFiles = useCallback(async (config: any) => {
+  if (!processResult?.tableName) {
+    setProcessStatus('❌ No table available for extraction');
+    return;
+  }
+
+  try {
+    setProcessStatus('🔄 Extracting files...');
+
+    console.log('Extracting files with config:', config);
+
+    const result = await extractFiles({
+      tableName: processResult.tableName,
+      selectedHeaders: config.selectedHeaders,
+      splitMode: config.splitMode,
+      selectedAgeRange: config.selectedAgeRange,
+      fileNames: config.fileNames,
+    }).unwrap();
+
+    if (result.success) {
+      setProcessStatus(`✅ Files extracted successfully!`);
+      
+      // Download the files
+      if (config.splitMode === 'split') {
+        // Download both landline and cell files
+        if (result.files.landline) {
+          downloadFile(result.files.landline.url, result.files.landline.filename);
+        }
+        setTimeout(() => {
+          if (result.files.cell) {
+            downloadFile(result.files.cell.url, result.files.cell.filename);
+          }
+        }, 1000);
+      } else {
+        // Download single file
+        if (result.files.single) {
+          downloadFile(result.files.single.url, result.files.single.filename);
+        }
+      }
+      
+      console.log('Files extracted:', result);
+    } else {
+      setProcessStatus(`❌ Extraction failed: ${result.message}`);
+    }
+  } catch (error: any) {
+    console.error('Error extracting files:', error);
+    const errorMessage = error?.data?.message || error?.message || 'Failed to extract files';
+    setProcessStatus(`❌ Error extracting files: ${errorMessage}`);
+  }
+  // No finally block needed - RTK Query handles loading state automatically
+}, [processResult, extractFiles]);
+
+  // Handle split configuration changes
+const handleSplitConfigChange = useCallback(async (config: any) => {
+  console.log('Split configuration changed:', config);
+  setSplitConfiguration(config);
+  
+  // Handle extract action
+  if (config.action === 'extract') {
+    await handleExtractFiles(config);
+  }
+}, [handleExtractFiles]);
+
+// Fetch distinct age ranges from processed table
+const fetchDistinctAgeRanges = useCallback(async (tableName: string) => {
+  if (!tableName) return;
+  
+  try {
+    console.log('Fetching distinct age ranges for table:', tableName);
+    const result = await getDistinctAgeRanges({ tableName }).unwrap();
+    
+    if (result.success) {
+      setDistinctAgeRanges(result.ageRanges || []);
+      console.log('Age ranges fetched:', result.ageRanges);
+    }
+  } catch (error) {
+    console.error('Failed to fetch age ranges:', error);
+    setDistinctAgeRanges([]);
+  }
+}, [getDistinctAgeRanges]);
+
+// Generate split files based on configuration
+const generateSplitFiles = useCallback(async () => {
+  if (!splitConfiguration || !processResult?.tableName) {
+    console.error('No split configuration or table name available');
+    return;
+  }
+
+  try {
+    setProcessStatus('🔄 Generating split files...');
+
+    // You'll need to create this API endpoint
+    const response = await fetch('/api/sample-automation/generate-split-files', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tableName: processResult.tableName,
+        splitConfiguration,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setProcessStatus(`✅ Split files generated successfully!`);
+      console.log('Split files generated:', result);
+    } else {
+      setProcessStatus(`❌ Failed to generate split files: ${result.message}`);
+    }
+  } catch (error: any) {
+    console.error('Error generating split files:', error);
+    setProcessStatus(`❌ Error generating split files: ${error.message}`);
+  }
+}, [splitConfiguration, processResult]);
+
+const downloadFile = async (url: string, filename: string) => {
+  try {
+    console.log('Fetching:', url);
+    const response = await fetch(url);
+    console.log('Response status:', response.status);
+    console.log('Response headers:', [...response.headers.entries()]);
+    
+    const text = await response.text();
+    console.log('Response length:', text.length);
+    console.log('First 200 chars:', text.substring(0, 200));
+    
+    const blob = new Blob([text], { type: 'text/csv' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error('Download failed:', error);
+  }
+};
+
   return {
     // State
     selectedFiles,
@@ -985,5 +1142,18 @@ export const useSampleAutomationLogic = () => {
     handleCreateDNCScrubbed,
     isCreatingDNC,
     dncScrubResult,
+
+    // NEW: Split configuration exports
+  splitConfiguration,
+  distinctAgeRanges,
+  isLoadingAgeRanges,
+  handleSplitConfigChange,
+  generateSplitFiles,
+  fetchDistinctAgeRanges,
+  ageRangesError,
+
+  
+  isExtracting,
+  handleExtractFiles,
   };
 };

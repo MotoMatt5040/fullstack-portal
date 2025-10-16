@@ -55,6 +55,7 @@ const startServer = async () => {
 
     // Public API routes (no JWT required)
     app.use('/api', require('./routes/publicRoutes'));
+    app.use('/temp', express.static(path.join(__dirname, 'temp')));
 
     // Everything after this line requires a JWT
     app.use(verifyJWT);

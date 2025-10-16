@@ -1,4 +1,6 @@
 const sql = require('mssql');
+const path = require('path');
+const fs = require('fs').promises;
 const withDbConnection = require('../config/dbConn');
 const { promark } = require('../utils/databaseTypes');
 const {
@@ -1028,6 +1030,240 @@ const createStratifiedBatches = async (tableName, stratifyColumns = 'AGERANGE,SO
   });
 };
 
+/**
+ * Get distinct age ranges from a table
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with age ranges array
+ */
+const getDistinctAgeRanges = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Fetching distinct age ranges from table: ${tableName}`);
+
+        // First check if AGERANGE column exists
+        const columnCheckQuery = `
+          SELECT COUNT(*) as ColumnExists
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = @tableName
+          AND COLUMN_NAME = 'AGERANGE'
+        `;
+
+        const columnCheck = await pool.request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(columnCheckQuery);
+
+        if (columnCheck.recordset[0].ColumnExists === 0) {
+          console.log(`AGERANGE column not found in table ${tableName}`);
+          return {
+            ageRanges: [],
+            count: 0
+          };
+        }
+
+        // Get distinct age ranges
+        const query = `
+          SELECT DISTINCT AGERANGE
+          FROM FAJITA.dbo.[${tableName}]
+          WHERE AGERANGE IS NOT NULL 
+          AND AGERANGE != ''
+          ORDER BY AGERANGE ASC
+        `;
+
+        const result = await pool.request().query(query);
+        
+        const ageRanges = result.recordset.map(row => row.AGERANGE);
+
+        console.log(`Found ${ageRanges.length} distinct age ranges:`, ageRanges);
+
+        return {
+          ageRanges,
+          count: ageRanges.length
+        };
+      } catch (error) {
+        console.error('Error fetching distinct age ranges:', error);
+        throw new Error(`Failed to fetch distinct age ranges: ${error.message}`);
+      }
+    },
+    fnName: 'getDistinctAgeRanges',
+  });
+};
+
+/**
+ * Extract files from table with optional split configuration
+ * @param {Object} config - Extraction configuration
+ * @param {string} config.tableName - Name of the source table
+ * @param {string[]} config.selectedHeaders - Array of column names to include
+ * @param {string} config.splitMode - 'all' or 'split'
+ * @param {string|number} config.selectedAgeRange - Age threshold for split mode
+ * @param {Object} config.fileNames - Object containing file names for outputs
+ * @returns {Object} - Result with file information
+ */
+const extractFilesFromTable = async (config) => {
+  const { tableName, selectedHeaders, splitMode, selectedAgeRange, fileNames } = config;
+  
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Starting file extraction from table: ${tableName}`);
+        
+        // Build the SELECT clause with only selected headers
+        const selectClause = selectedHeaders.map(header => `[${header}]`).join(', ');
+        
+        if (splitMode === 'split') {
+          // Split mode: Create separate landline and cell files
+          const landlineQuery = `
+            SELECT ${selectClause}
+            FROM FAJITA.dbo.[${tableName}]
+            WHERE SOURCE = 1 OR (SOURCE = 3 AND AGERANGE >= ${selectedAgeRange})
+          `;
+          
+          const cellQuery = `
+            SELECT ${selectClause}
+            FROM FAJITA.dbo.[${tableName}]
+            WHERE SOURCE = 2 OR (SOURCE = 3 AND AGERANGE < ${selectedAgeRange})
+          `;
+          
+          console.log('Executing landline query:', landlineQuery);
+          const landlineResult = await pool.request().query(landlineQuery);
+          
+          console.log('Executing cell query:', cellQuery);
+          const cellResult = await pool.request().query(cellQuery);
+
+//           // ADD THESE LINES:
+// console.log('Landline result count:', landlineResult.recordset.length);
+// console.log('First few landline records:', landlineResult.recordset.slice(0, 2));
+// console.log('Cell result count:', cellResult.recordset.length);
+// console.log('First few cell records:', cellResult.recordset.slice(0, 2));
+          
+          // Convert results to CSV
+          const landlineCSV = convertToCSV(landlineResult.recordset, selectedHeaders);
+          const cellCSV = convertToCSV(cellResult.recordset, selectedHeaders);
+          
+          // Create temp directory if it doesn't exist
+          const tempDir = path.join(__dirname, '../temp');
+          await fs.mkdir(tempDir, { recursive: true });
+          
+          // Write CSV files
+          const landlineFilePath = path.join(tempDir, `${fileNames.landline}.csv`);
+          const cellFilePath = path.join(tempDir, `${fileNames.cell}.csv`);
+          
+          await fs.writeFile(landlineFilePath, landlineCSV, 'utf8');
+console.log('Landline file written to:', landlineFilePath);
+console.log('File size:', landlineCSV.length, 'characters');
+console.log('First 200 chars of CSV:', landlineCSV.substring(0, 200));
+
+await fs.writeFile(cellFilePath, cellCSV, 'utf8');
+console.log('Cell file written to:', cellFilePath);
+console.log('File size:', cellCSV.length, 'characters');
+          
+          return {
+            success: true,
+            splitMode: 'split',
+            files: {
+              landline: {
+                filename: `${fileNames.landline}.csv`,
+                path: landlineFilePath,
+                url: `/temp/${fileNames.landline}.csv`,
+                records: landlineResult.recordset.length,
+                conditions: [`SOURCE = 1`, `SOURCE = 3 AND AGERANGE >= ${selectedAgeRange}`]
+              },
+              cell: {
+                filename: `${fileNames.cell}.csv`,
+                path: cellFilePath,
+                url: `/temp/${fileNames.cell}.csv`,
+                records: cellResult.recordset.length,
+                conditions: [`SOURCE = 2`, `SOURCE = 3 AND AGERANGE < ${selectedAgeRange}`]
+              }
+            },
+            message: `Split extraction complete: ${landlineResult.recordset.length} landline records, ${cellResult.recordset.length} cell records`
+          };
+          
+        } else {
+          // All records mode: Single file with all data
+          const allQuery = `
+            SELECT ${selectClause}
+            FROM FAJITA.dbo.[${tableName}]
+          `;
+          
+          console.log('Executing all records query:', allQuery);
+          const allResult = await pool.request().query(allQuery);
+          
+          // Convert to CSV
+          const allCSV = convertToCSV(allResult.recordset, selectedHeaders);
+          
+          // Create temp directory if it doesn't exist
+          const tempDir = path.join(__dirname, '../temp');
+          await fs.mkdir(tempDir, { recursive: true });
+          
+          // Write CSV file
+          const filePath = path.join(tempDir, `${fileNames.single}.csv`);
+          await fs.writeFile(filePath, allCSV, 'utf8');
+          
+          return {
+            success: true,
+            splitMode: 'all',
+            files: {
+              single: {
+                filename: `${fileNames.single}.csv`,
+                path: filePath,
+                url: `/temp/${fileNames.single}.csv`,
+                records: allResult.recordset.length
+              }
+            },
+            message: `Extraction complete: ${allResult.recordset.length} total records`
+          };
+        }
+        
+      } catch (error) {
+        console.error('Error in extractFilesFromTable:', error);
+        throw new Error(`Failed to extract files: ${error.message}`);
+      }
+    },
+    fnName: 'extractFilesFromTable',
+  });
+};
+
+/**
+ * Convert database results to CSV format
+ * @param {Array} records - Database records
+ * @param {Array} headers - Column headers
+ * @returns {string} - CSV string
+ */
+const convertToCSV = (records, headers) => {
+  if (!records || records.length === 0) {
+    return headers.join(',') + '\n';
+  }
+  
+  // Create header row
+  const headerRow = headers.join(',');
+  
+  // Create data rows
+  const dataRows = records.map(record => {
+    return headers.map(header => {
+      const value = record[header];
+      // Handle null/undefined values and escape commas/quotes
+      if (value === null || value === undefined) {
+        return '';
+      }
+      
+      const stringValue = String(value);
+      // If value contains comma, newline, or quote, wrap in quotes and escape quotes
+      if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      
+      return stringValue;
+    }).join(',');
+  });
+  
+  return headerRow + '\n' + dataRows.join('\n');
+};
+
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -1043,4 +1279,6 @@ module.exports = {
   padTarranceRegion,
   populateAgeRange,
   createStratifiedBatches,
+  getDistinctAgeRanges,
+  extractFilesFromTable,
 };

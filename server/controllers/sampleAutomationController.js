@@ -849,6 +849,94 @@ const createDNCScrubbed = handleAsync(async (req, res) => {
   }
 });
 
+/**
+ * Get distinct age ranges from a table
+ * @route GET /api/sample-automation/distinct-age-ranges/:tableName
+ */
+const getDistinctAgeRanges = async (req, res) => {
+  try {
+    const { tableName } = req.params;
+
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Table name is required'
+      });
+    }
+
+    console.log(`Controller: Fetching distinct age ranges for table: ${tableName}`);
+
+    // Call the service
+    const result = await SampleAutomation.getDistinctAgeRanges(tableName);
+
+    res.json({
+      success: true,
+      ageRanges: result.ageRanges,
+      count: result.count,
+      tableName: tableName
+    });
+
+  } catch (error) {
+    console.error('Error in getDistinctAgeRanges controller:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch distinct age ranges',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Extract files from table with optional split configuration
+ * @route POST /api/sample-automation/extract-files
+ */
+const extractFiles = handleAsync(async (req, res) => {
+  try {
+    const { 
+      tableName, 
+      selectedHeaders, 
+      splitMode, 
+      selectedAgeRange, 
+      fileNames 
+    } = req.body;
+
+    // Validate required parameters
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Table name is required',
+      });
+    }
+
+    if (!selectedHeaders || !Array.isArray(selectedHeaders) || selectedHeaders.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected headers are required',
+      });
+    }
+
+    console.log(`Extracting files from table: ${tableName}`);
+    console.log(`Split mode: ${splitMode}`);
+    console.log(`Selected headers: ${selectedHeaders.length}`);
+
+    const result = await SampleAutomation.extractFilesFromTable({
+      tableName,
+      selectedHeaders,
+      splitMode,
+      selectedAgeRange,
+      fileNames,
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error in extractFiles controller:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to extract files',
+    });
+  }
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -865,4 +953,6 @@ module.exports = {
   uploadSingle: upload.single('file'),
   getTablePreview,
   createDNCScrubbed,
+  getDistinctAgeRanges,
+  extractFiles,
 };

@@ -3,6 +3,7 @@ import Select from 'react-select';
 import { useSampleAutomationLogic } from './useSampleAutomationLogic';
 import './SampleAutomation.css';
 import FileHeaders from './FileHeaders';
+import SampleSplitComponent from './SampleSplitComponent';
 
 const SampleAutomation: React.FC = () => {
   const {
@@ -81,6 +82,18 @@ const SampleAutomation: React.FC = () => {
     handleCreateDNCScrubbed,
     isCreatingDNC,
     dncScrubResult,
+
+
+  splitConfiguration,
+  distinctAgeRanges,
+  isLoadingAgeRanges,
+  handleSplitConfigChange,
+  generateSplitFiles,
+  fetchDistinctAgeRanges,
+  ageRangesError,
+
+  isExtracting,        // ADD THIS LINE
+  handleExtractFiles,  // ADD THIS LINE
   } = useSampleAutomationLogic();
 
   return (
@@ -348,6 +361,17 @@ const SampleAutomation: React.FC = () => {
             </small>
           </div>
         )}
+
+        {/* NEW: Sample Split Configuration Component */}
+        {processResult && processResult.tableName && (
+  <SampleSplitComponent
+  headers={processResult.headers || []}
+  ageRanges={distinctAgeRanges}
+  tableName={processResult.tableName}
+  onConfigChange={handleSplitConfigChange}
+  isExtracting={isExtracting} // ADD THIS PROP
+/>
+)}
 
         {/* Action Buttons */}
         <div className='upload-actions'>
