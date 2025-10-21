@@ -4,6 +4,7 @@ import { useSampleAutomationLogic } from './useSampleAutomationLogic';
 import './SampleAutomation.css';
 import FileHeaders from './FileHeaders';
 import SampleSplitComponent from './SampleSplitComponent';
+import MyToggle from '../../components/MyToggle';
 
 const SampleAutomation: React.FC = () => {
   const {
@@ -83,17 +84,19 @@ const SampleAutomation: React.FC = () => {
     isCreatingDNC,
     dncScrubResult,
 
+    splitConfiguration,
+    distinctAgeRanges,
+    isLoadingAgeRanges,
+    handleSplitConfigChange,
+    generateSplitFiles,
+    fetchDistinctAgeRanges,
+    ageRangesError,
 
-  splitConfiguration,
-  distinctAgeRanges,
-  isLoadingAgeRanges,
-  handleSplitConfigChange,
-  generateSplitFiles,
-  fetchDistinctAgeRanges,
-  ageRangesError,
+    isExtracting,
+    handleExtractFiles,
 
-  isExtracting,        // ADD THIS LINE
-  handleExtractFiles,  // ADD THIS LINE
+    ageCalculationMode,
+    setAgeCalculationMode,
   } = useSampleAutomationLogic();
 
   return (
@@ -269,6 +272,29 @@ const SampleAutomation: React.FC = () => {
           </div>
         </div>
 
+        {/* Age Calculation Mode Toggle */}
+        <div className='age-calculation-mode-section'>
+          <div className='age-mode-header'>
+            <label>Age Calculation Base Date:</label>
+            <div className='age-toggle-container'>
+              <MyToggle
+                active={ageCalculationMode === 'january'}
+                onClick={() => setAgeCalculationMode('january')}
+                label='January 1st'
+              />
+              <MyToggle
+                active={ageCalculationMode === 'july'}
+                onClick={() => setAgeCalculationMode('july')}
+                label='July 1st'
+              />
+            </div>
+          </div>
+          <small className='age-mode-help-text'>
+            Choose the base date for calculating age from birth year (if birth
+            year column exists and AGE/IAGE don't)
+          </small>
+        </div>
+
         {/* File Drop Zone */}
         <div
           className={`file-drop-zone ${dragActive ? 'drag-active' : ''} ${
@@ -362,17 +388,6 @@ const SampleAutomation: React.FC = () => {
           </div>
         )}
 
-        {/* NEW: Sample Split Configuration Component */}
-        {processResult && processResult.tableName && (
-  <SampleSplitComponent
-  headers={processResult.headers || []}
-  ageRanges={distinctAgeRanges}
-  tableName={processResult.tableName}
-  onConfigChange={handleSplitConfigChange}
-  isExtracting={isExtracting} // ADD THIS PROP
-/>
-)}
-
         {/* Action Buttons */}
         <div className='upload-actions'>
           <button
@@ -415,6 +430,17 @@ const SampleAutomation: React.FC = () => {
             Clear All
           </button>
         </div>
+
+        {/* NEW: Sample Split Configuration Component */}
+        {processResult && processResult.tableName && (
+          <SampleSplitComponent
+            headers={processResult.headers || []}
+            ageRanges={distinctAgeRanges}
+            tableName={processResult.tableName}
+            onConfigChange={handleSplitConfigChange}
+            isExtracting={isExtracting} // ADD THIS PROP
+          />
+        )}
 
         {/* Status Display */}
         {processStatus && (

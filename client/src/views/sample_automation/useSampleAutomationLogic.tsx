@@ -8,7 +8,8 @@ import {
   useLazyGetTablePreviewQuery,
   useCreateDNCScrubbedMutation,
   useLazyGetDistinctAgeRangesQuery,
-  useExtractFilesMutation
+  useExtractFilesMutation,
+  useCleanupTempFileMutation 
 } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
@@ -69,6 +70,8 @@ export const useSampleAutomationLogic = () => {
   const isCreatingDNCRef = useRef(false);
   const [splitConfiguration, setSplitConfiguration] = useState<any>(null);
 const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
+const [ageCalculationMode, setAgeCalculationMode] = useState<'january' | 'july'>('january');
+
 
   const [createDNCScrubbed, { isLoading: isCreatingDNC, error: dncError }] =
     useCreateDNCScrubbedMutation();
@@ -77,6 +80,8 @@ const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
   // Refs to track current vendor/client IDs without causing re-renders
   const selectedVendorIdRef = useRef(selectedVendorId);
   const selectedClientIdRef = useRef(selectedClientId);
+
+  const [cleanupTempFile] = useCleanupTempFileMutation();
 
   // Processing state
   const [processResult, setProcessResult] = useState<any>(null);
@@ -742,6 +747,8 @@ const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
       formData.append('clientId', selectedClientId.toString());
     }
 
+     formData.append('ageCalculationMode', ageCalculationMode);
+
     // Use mapped headers instead of original headers
     const headersMapping: Record<number, string[]> = {};
     selectedFiles.forEach((item, index) => {
@@ -909,30 +916,39 @@ const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
     ]
   );
 
-const handleExtractFiles = useCallback(async (config: any) => {
-  if (!processResult?.tableName) {
-    setProcessStatus('❌ No table available for extraction');
-    return;
-  }
+const downloadFile = useCallback((url, filename) => {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Clean up file after download with delay using RTK Query
+  setTimeout(async () => {
+    try {
+      const result = await cleanupTempFile(filename).unwrap();
+      if (result.success) {
+        console.log('✅ File cleanup successful:', filename);
+      } else {
+        console.log('⚠️ File cleanup failed:', result.message);
+      }
+    } catch (error) {
+      console.log('❌ Cleanup request failed:', error.message);
+    }
+  }, 3000); // 3 second delay to ensure download started
+}, [cleanupTempFile]);
 
+
+const handleExtractFiles = useCallback(async (config) => {
   try {
     setProcessStatus('🔄 Extracting files...');
-
-    console.log('Extracting files with config:', config);
-
-    const result = await extractFiles({
-      tableName: processResult.tableName,
-      selectedHeaders: config.selectedHeaders,
-      splitMode: config.splitMode,
-      selectedAgeRange: config.selectedAgeRange,
-      fileNames: config.fileNames,
-    }).unwrap();
-
+    const result = await extractFiles(config).unwrap();
+    
     if (result.success) {
-      setProcessStatus(`✅ Files extracted successfully!`);
+      setProcessStatus('✅ Files extracted successfully! Downloading...');
       
-      // Download the files
-      if (config.splitMode === 'split') {
+      if (result.splitMode === 'split') {
         // Download both landline and cell files
         if (result.files.landline) {
           downloadFile(result.files.landline.url, result.files.landline.filename);
@@ -953,13 +969,12 @@ const handleExtractFiles = useCallback(async (config: any) => {
     } else {
       setProcessStatus(`❌ Extraction failed: ${result.message}`);
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error extracting files:', error);
     const errorMessage = error?.data?.message || error?.message || 'Failed to extract files';
     setProcessStatus(`❌ Error extracting files: ${errorMessage}`);
   }
-  // No finally block needed - RTK Query handles loading state automatically
-}, [processResult, extractFiles]);
+}, [extractFiles, downloadFile]);
 
   // Handle split configuration changes
 const handleSplitConfigChange = useCallback(async (config: any) => {
@@ -1026,30 +1041,7 @@ const generateSplitFiles = useCallback(async () => {
   }
 }, [splitConfiguration, processResult]);
 
-const downloadFile = async (url: string, filename: string) => {
-  try {
-    console.log('Fetching:', url);
-    const response = await fetch(url);
-    console.log('Response status:', response.status);
-    console.log('Response headers:', [...response.headers.entries()]);
-    
-    const text = await response.text();
-    console.log('Response length:', text.length);
-    console.log('First 200 chars:', text.substring(0, 200));
-    
-    const blob = new Blob([text], { type: 'text/csv' });
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
-  } catch (error) {
-    console.error('Download failed:', error);
-  }
-};
+
 
   return {
     // State
@@ -1155,5 +1147,8 @@ const downloadFile = async (url: string, filename: string) => {
   
   isExtracting,
   handleExtractFiles,
+
+  ageCalculationMode,
+  setAgeCalculationMode,
   };
 };

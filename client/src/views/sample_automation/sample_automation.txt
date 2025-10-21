@@ -4,6 +4,7 @@ Loading data into a table view
   those are new columns
     (VTYPE, TFLAG, VEND, CALLID1, CALLID2, CALLID3, CALLID4, SOURCE)
     VTYPE = 2 ? CELL : 1 (LL)
+    vtype is 1 on landline and 2 on cells
     TFLAG = 0
     VEND = 5
     SOURCE = (we may need a cross to change this later)
@@ -40,3 +41,11 @@ when importing a data set, if an unknown variable is found prompt to update the 
 FOR TARRANCE PROJECTS
 The phone variable may be landline or cell, this is dependant on whether the CELL column is Y or N
   Using this information, we can create the LAND and CELL columns, then we can create the source
+
+  VTYPE LL = 1 CELL = 2
+
+  CD pad -> 2
+  SLUD pad -> 3
+  SLLD pad -> 3
+  CFIPS pad => 3
+  

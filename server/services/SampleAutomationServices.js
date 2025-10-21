@@ -504,8 +504,14 @@ const insertDataWithConstants = async (
  * @returns {string} - Sanitized column name
  */
 const sanitizeColumnName = (columnName) => {
+  if (!columnName || typeof columnName !== 'string') {
+    return 'UNNAMED_COLUMN';
+  }
+  
   return columnName
-    .replace(/[^a-zA-Z0-9_]/g, '_') // Replace invalid chars
+    .trim()
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .replace(/[^a-zA-Z0-9_]/g, '_') // Replace other invalid chars with underscore
     .replace(/^[0-9]/, 'col_$&') // Prefix if starts with number
     .substring(0, 128); // SQL Server column name limit
 };
@@ -1110,11 +1116,59 @@ const extractFilesFromTable = async (config) => {
       try {
         console.log(`Starting file extraction from table: ${tableName}`);
         
-        // Build the SELECT clause with only selected headers
-        const selectClause = selectedHeaders.map(header => `[${header}]`).join(', ');
+        // Build final headers list - include selected headers plus system columns
+        const finalHeaders = [...selectedHeaders];
+        
+        // Add SOURCE if not already included
+        if (!finalHeaders.includes('SOURCE')) {
+          finalHeaders.push('SOURCE');
+        }
+        
+        // Add BATCH if not already included  
+        if (!finalHeaders.includes('BATCH')) {
+          finalHeaders.push('BATCH');
+        }
+        
+        // Add VTYPE if not already included
+        if (!finalHeaders.includes('VTYPE')) {
+          finalHeaders.push('VTYPE');
+        }
+
+         const additionalColumnsQuery = `
+          SELECT COLUMN_NAME
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = 'dbo' 
+          AND TABLE_NAME = @tableName
+          AND COLUMN_NAME IN ('VFREQGEN', 'VFREQPR', '$N')
+        `;
+        
+        const additionalResult = await pool.request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(additionalColumnsQuery);
+        
+        // Add additional columns if they exist
+        additionalResult.recordset.forEach(row => {
+          if (!finalHeaders.includes(row.COLUMN_NAME)) {
+            finalHeaders.push(row.COLUMN_NAME);
+            console.log(`Added ${row.COLUMN_NAME} column to export headers`);
+          }
+        });
+        
+        // Build the SELECT clause with final headers
+        const selectClause = finalHeaders.map(header => `[${header}]`).join(', ');
         
         if (splitMode === 'split') {
-          // Split mode: Create separate landline and cell files
+          // FIRST: Update VTYPE in the table based on split logic
+          console.log(`Updating VTYPE in table based on split logic (age threshold: ${selectedAgeRange})`);
+          const vtypeUpdate = await updateVTYPEBySplit(tableName, selectedAgeRange);
+          console.log(`VTYPE updated: ${vtypeUpdate.landlineCount} landline, ${vtypeUpdate.cellCount} cell`);
+          
+          // SECOND: Create $N column based on VTYPE
+          console.log('Creating $N column based on VTYPE...');
+          const dollarNResult = await createDollarNColumn(tableName);
+          console.log(`$N column: ${dollarNResult.rowsUpdated} rows populated`);
+          
+          // THEN: Extract with the same logic (VTYPE set, $N created, WDNC already applied in controller)
           const landlineQuery = `
             SELECT ${selectClause}
             FROM FAJITA.dbo.[${tableName}]
@@ -1132,16 +1186,10 @@ const extractFilesFromTable = async (config) => {
           
           console.log('Executing cell query:', cellQuery);
           const cellResult = await pool.request().query(cellQuery);
-
-//           // ADD THESE LINES:
-// console.log('Landline result count:', landlineResult.recordset.length);
-// console.log('First few landline records:', landlineResult.recordset.slice(0, 2));
-// console.log('Cell result count:', cellResult.recordset.length);
-// console.log('First few cell records:', cellResult.recordset.slice(0, 2));
           
-          // Convert results to CSV
-          const landlineCSV = convertToCSV(landlineResult.recordset, selectedHeaders);
-          const cellCSV = convertToCSV(cellResult.recordset, selectedHeaders);
+          // Convert results to CSV using final headers
+          const landlineCSV = convertToCSV(landlineResult.recordset, finalHeaders);
+          const cellCSV = convertToCSV(cellResult.recordset, finalHeaders);
           
           // Create temp directory if it doesn't exist
           const tempDir = path.join(__dirname, '../temp');
@@ -1152,38 +1200,43 @@ const extractFilesFromTable = async (config) => {
           const cellFilePath = path.join(tempDir, `${fileNames.cell}.csv`);
           
           await fs.writeFile(landlineFilePath, landlineCSV, 'utf8');
-console.log('Landline file written to:', landlineFilePath);
-console.log('File size:', landlineCSV.length, 'characters');
-console.log('First 200 chars of CSV:', landlineCSV.substring(0, 200));
+          console.log('Landline file written to:', landlineFilePath);
 
-await fs.writeFile(cellFilePath, cellCSV, 'utf8');
-console.log('Cell file written to:', cellFilePath);
-console.log('File size:', cellCSV.length, 'characters');
+          await fs.writeFile(cellFilePath, cellCSV, 'utf8');
+          console.log('Cell file written to:', cellFilePath);
           
           return {
             success: true,
             splitMode: 'split',
+            vtypeUpdated: true,
+            vtypeStats: {
+              landlineCount: vtypeUpdate.landlineCount,
+              cellCount: vtypeUpdate.cellCount,
+              ageThreshold: selectedAgeRange
+            },
             files: {
               landline: {
                 filename: `${fileNames.landline}.csv`,
                 path: landlineFilePath,
                 url: `/temp/${fileNames.landline}.csv`,
                 records: landlineResult.recordset.length,
-                conditions: [`SOURCE = 1`, `SOURCE = 3 AND AGERANGE >= ${selectedAgeRange}`]
+                headers: finalHeaders,
+                conditions: [`SOURCE = 1`, `SOURCE = 3 AND AGERANGE >= ${selectedAgeRange}`, `All records now have VTYPE=1 in table`]
               },
               cell: {
                 filename: `${fileNames.cell}.csv`,
                 path: cellFilePath,
                 url: `/temp/${fileNames.cell}.csv`,
                 records: cellResult.recordset.length,
-                conditions: [`SOURCE = 2`, `SOURCE = 3 AND AGERANGE < ${selectedAgeRange}`]
+                headers: finalHeaders,
+                conditions: [`SOURCE = 2`, `SOURCE = 3 AND AGERANGE < ${selectedAgeRange}`, `All records now have VTYPE=2 in table`]
               }
             },
-            message: `Split extraction complete: ${landlineResult.recordset.length} landline records, ${cellResult.recordset.length} cell records`
+            message: `Split extraction complete with VTYPE updated and $N created: ${landlineResult.recordset.length} landline records (VTYPE=1), ${cellResult.recordset.length} cell records (VTYPE=2)`
           };
           
         } else {
-          // All records mode: Single file with all data
+          // All records mode: Single file with all data (no VTYPE update needed)
           const allQuery = `
             SELECT ${selectClause}
             FROM FAJITA.dbo.[${tableName}]
@@ -1192,8 +1245,8 @@ console.log('File size:', cellCSV.length, 'characters');
           console.log('Executing all records query:', allQuery);
           const allResult = await pool.request().query(allQuery);
           
-          // Convert to CSV
-          const allCSV = convertToCSV(allResult.recordset, selectedHeaders);
+          // Convert to CSV using final headers
+          const allCSV = convertToCSV(allResult.recordset, finalHeaders);
           
           // Create temp directory if it doesn't exist
           const tempDir = path.join(__dirname, '../temp');
@@ -1206,12 +1259,14 @@ console.log('File size:', cellCSV.length, 'characters');
           return {
             success: true,
             splitMode: 'all',
+            vtypeUpdated: false,
             files: {
               single: {
                 filename: `${fileNames.single}.csv`,
                 path: filePath,
                 url: `/temp/${fileNames.single}.csv`,
-                records: allResult.recordset.length
+                records: allResult.recordset.length,
+                headers: finalHeaders
               }
             },
             message: `Extraction complete: ${allResult.recordset.length} total records`
@@ -1263,6 +1318,328 @@ const convertToCSV = (records, headers) => {
   return headerRow + '\n' + dataRows.join('\n');
 };
 
+/**
+ * Calculate age from birth year and create IAGE column if AGE/IAGE don't already exist
+ * @param {string} tableName - Name of the table
+ * @param {boolean} useJanuaryFirst - Toggle for calculation base (true = Jan 1st, false = July 1st)
+ * @returns {Object} - Result with calculation statistics
+ */
+const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Calculating age from birth year in table: ${tableName}`);
+        console.log(`Using calculation base: ${useJanuaryFirst ? 'January 1st' : 'July 1st'}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .input('UseJanuaryFirst', sql.Bit, useJanuaryFirst)
+          .execute('FAJITA.dbo.sp_CalculateAgeFromBirthYear');
+
+        const data = result.recordset[0];
+        
+        if (data.Status === 'SUCCESS') {
+          console.log(`✅ Age calculation complete:`, {
+            recordsProcessed: data.RecordsProcessed,
+            recordsWithNullBirthYear: data.RecordsWithNullBirthYear,
+            recordsWithInvalidBirthYear: data.RecordsWithInvalidBirthYear,
+            birthYearColumn: data.BirthYearColumnUsed,
+            calculationBase: data.CalculationBase
+          });
+
+          return {
+            success: true,
+            status: data.Status,
+            tableName: data.TableName,
+            recordsProcessed: data.RecordsProcessed,
+            recordsWithNullBirthYear: data.RecordsWithNullBirthYear,
+            recordsWithInvalidBirthYear: data.RecordsWithInvalidBirthYear,
+            recordsWithValidAge: data.RecordsProcessed - data.RecordsWithNullBirthYear - data.RecordsWithInvalidBirthYear,
+            birthYearColumnUsed: data.BirthYearColumnUsed,
+            calculationBase: data.CalculationBase,
+            calculationBaseDate: data.CalculationBaseDate,
+            message: data.Message,
+          };
+        } else if (data.Status === 'SKIPPED') {
+          console.log(`⚠️ Age calculation skipped: ${data.Message}`);
+          
+          return {
+            success: true,
+            status: data.Status,
+            tableName: data.TableName,
+            recordsProcessed: 0,
+            recordsWithNullBirthYear: 0,
+            recordsWithInvalidBirthYear: 0,
+            recordsWithValidAge: 0,
+            message: data.Message,
+            skipped: true
+          };
+        } else {
+          console.error(`❌ Age calculation failed: ${data.Message}`);
+          
+          return {
+            success: false,
+            status: data.Status,
+            tableName: data.TableName,
+            message: data.Message,
+            error: true
+          };
+        }
+
+      } catch (error) {
+        console.error('Error calculating age from birth year:', error);
+        throw new Error(`Failed to calculate age from birth year: ${error.message}`);
+      }
+    },
+    fnName: 'calculateAgeFromBirthYear',
+  });
+};
+
+/**
+ * Pad columns using stored procedure
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with padding statistics
+ */
+const padColumns = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Padding columns in table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_PadColumns');
+
+        const stats = result.recordset[0];
+        console.log(`✅ Column padding complete:`, stats);
+
+        return {
+          success: true,
+          recordsProcessed: stats.RecordsProcessed,
+          message: `Column padding completed: ${stats.RecordsProcessed} records processed`,
+        };
+      } catch (error) {
+        console.error('Error padding columns:', error);
+        throw new Error(`Failed to pad columns: ${error.message}`);
+      }
+    },
+    fnName: 'padColumns',
+  });
+};
+
+/**
+ * Update VTYPE column based on extraction split logic
+ * @param {string} tableName - Name of the table
+ * @param {number} ageThreshold - Age threshold for split (same as used in extraction)
+ * @returns {Object} - Result with split counts
+ */
+const updateVTYPEBySplit = async (tableName, ageThreshold) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Updating VTYPE in table: ${tableName} with age threshold: ${ageThreshold}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .input('AgeThreshold', sql.Int, ageThreshold)
+          .execute('FAJITA.dbo.sp_UpdateVTYPEBySplit');
+
+        const data = result.recordset[0];
+        
+        console.log(
+          `✅ VTYPE updated based on split logic:`,
+          `Landline (VTYPE=1): ${data.LandlineCount},`,
+          `Cell (VTYPE=2): ${data.CellCount}`
+        );
+
+        return {
+          success: true,
+          tableName: data.TableName,
+          ageThreshold: data.AgeThreshold,
+          landlineCount: data.LandlineCount,
+          cellCount: data.CellCount,
+          totalUpdated: data.TotalUpdated,
+          message: `VTYPE updated: ${data.LandlineCount} landline, ${data.CellCount} cell records`,
+        };
+      } catch (error) {
+        console.error('Error updating VTYPE by split logic:', error);
+        throw new Error(`Failed to update VTYPE by split: ${error.message}`);
+      }
+    },
+    fnName: 'updateVTYPEBySplit',
+  });
+};
+
+/**
+ * Apply WDNC scrubbing to table in-place using stored procedure
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with scrubbing statistics
+ */
+const applyWDNCScrubbing = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Applying WDNC scrubbing to table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_ApplyWDNCScrubbing');
+
+        const data = result.recordset[0];
+        
+        console.log(
+          `✅ WDNC scrubbing complete:`,
+          `${data.RowsRemoved} records removed,`,
+          `${data.LandlinesCleared} landlines cleared`
+        );
+
+        return {
+          success: true,
+          tableName: data.TableName,
+          rowsOriginal: data.RowsOriginal,
+          rowsAfter: data.RowsAfter,
+          rowsRemoved: data.RowsRemoved,
+          landlinesCleared: data.LandlinesCleared,
+          message: `WDNC scrubbing complete: ${data.RowsRemoved} records removed, ${data.LandlinesCleared} landlines cleared`,
+        };
+      } catch (error) {
+        console.error('Error applying WDNC scrubbing:', error);
+        throw new Error(`Failed to apply WDNC scrubbing: ${error.message}`);
+      }
+    },
+    fnName: 'applyWDNCScrubbing',
+  });
+};
+
+/**
+ * Create and populate $N column based on VTYPE using stored procedure
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with rows updated
+ */
+const createDollarNColumn = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Creating $N column in table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_CreateDollarNColumn');
+
+        const rowsUpdated = result.recordset[0].RowsUpdated;
+        console.log(
+          `✅ $N column created and populated for ${rowsUpdated} rows in ${tableName}`
+        );
+
+        return {
+          success: true,
+          rowsUpdated: rowsUpdated,
+          message: `$N column created and populated in ${tableName}`,
+        };
+      } catch (error) {
+        console.error('Error creating $N column:', error);
+        throw new Error(`Failed to create $N column: ${error.message}`);
+      }
+    },
+    fnName: 'createDollarNColumn',
+  });
+};
+
+/**
+ * Create and populate VFREQGEN and VFREQPR columns based on previous 4 even years
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with calculation details
+ */
+const createVFREQColumns = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Creating VFREQGEN and VFREQPR columns in table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_CreateVFREQColumns');
+
+        const data = result.recordset[0];
+        console.log(
+          `✅ VFREQ columns created for ${data.RowsUpdated} rows using years: ${data.OldestYear}-${data.NewestYear}`
+        );
+        console.log(`Columns used: ${data.ColumnsUsed}`);
+
+        return {
+          success: true,
+          rowsUpdated: data.RowsUpdated,
+          yearsUsed: {
+            oldest: data.OldestYear,
+            year3: data.Year3,
+            year2: data.Year2,
+            newest: data.NewestYear
+          },
+          columnsUsed: data.ColumnsUsed,
+          message: `VFREQGEN and VFREQPR columns created using ${data.ColumnsUsed}`,
+        };
+      } catch (error) {
+        console.error('Error creating VFREQ columns:', error);
+        throw new Error(`Failed to create VFREQ columns: ${error.message}`);
+      }
+    },
+    fnName: 'createVFREQColumns',
+  });
+};
+
+/**
+ * Fix IAGE values by changing -1 to 00 using stored procedure
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with update statistics
+ */
+const fixIAGEValues = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Fixing IAGE values in table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_FixIAGEValues');
+
+        const data = result.recordset[0];
+        
+        if (data.RowsUpdated > 0) {
+          console.log(`✅ Fixed ${data.RowsUpdated} IAGE values from -1 to 00 in ${tableName}`);
+        } else {
+          console.log(`✅ No IAGE values of -1 found in ${tableName}`);
+        }
+
+        return {
+          success: true,
+          rowsUpdated: data.RowsUpdated,
+          totalIAGERows: data.TotalIAGERows,
+          message: data.RowsUpdated > 0 
+            ? `Fixed ${data.RowsUpdated} IAGE values from -1 to 00` 
+            : 'No IAGE values of -1 found',
+        };
+      } catch (error) {
+        console.error('Error fixing IAGE values:', error);
+        throw new Error(`Failed to fix IAGE values: ${error.message}`);
+      }
+    },
+    fnName: 'fixIAGEValues',
+  });
+};
 
 module.exports = {
   createTableFromFileData,
@@ -1281,4 +1658,11 @@ module.exports = {
   createStratifiedBatches,
   getDistinctAgeRanges,
   extractFilesFromTable,
+  calculateAgeFromBirthYear,
+  padColumns,
+  updateVTYPEBySplit,
+  applyWDNCScrubbing,
+  createDollarNColumn,
+  createVFREQColumns,
+  fixIAGEValues,
 };

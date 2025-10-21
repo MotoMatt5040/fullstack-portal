@@ -152,6 +152,12 @@ interface ExtractFilesResponse {
   message: string;
 }
 
+// Add cleanup interface
+interface CleanupTempFileResponse {
+  success: boolean;
+  message: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -259,6 +265,14 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
   }),
 }),
 
+    // NEW: Cleanup temp file after download
+    cleanupTempFile: builder.mutation<CleanupTempFileResponse, string>({
+      query: (filename) => ({
+        url: `/sample-automation/cleanup/${filename}`,
+        method: 'DELETE',
+      }),
+    }),
+
     // NEW: Save header mappings to database (when user edits mappings)
     saveHeaderMappings: builder.mutation<
       SaveHeaderMappingsResponse,
@@ -306,4 +320,6 @@ export const {
   useGetDistinctAgeRangesQuery,
   useLazyGetDistinctAgeRangesQuery,
   useExtractFilesMutation,
+  // NEW: Cleanup hook
+  useCleanupTempFileMutation,
 } = sampleAutomationApiSlice;

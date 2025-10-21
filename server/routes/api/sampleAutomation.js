@@ -76,6 +76,18 @@ router.route('/extract-files').post(
   sampleAutomationController.extractFiles
 );
 
+router.route('/calculate-age-from-birthyear').post(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.calculateAgeFromBirthYear
+);
+
+router.route('/cleanup/:filename').delete(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.cleanupTempFile
+);
+
+
+
 // router.use('/temp', express.static(path.join(__dirname, '../../temp')));
 
 

@@ -357,9 +357,54 @@ const processFile = async (req, res) => {
           }
         }
 
+        console.log(
+          'Creating VFREQGEN and VFREQPR columns using stored procedure...'
+        );
+        const vfreqResult = await SampleAutomation.createVFREQColumns(
+          tableResult.tableName
+        );
+        console.log(
+          `✅ VFREQ columns created: ${vfreqResult.rowsUpdated} rows calculated using years ${vfreqResult.yearsUsed.oldest}-${vfreqResult.yearsUsed.newest}`
+        );
+
         console.log('Updating SOURCE column based on LAND and CELL values...');
         await SampleAutomation.updateSourceColumn(tableResult.tableName);
         console.log('✅ SOURCE column updated successfully');
+
+        console.log('Applying WDNC scrubbing using stored procedure...');
+        const wdncResult = await SampleAutomation.applyWDNCScrubbing(
+          tableResult.tableName
+        );
+        console.log(
+          `✅ WDNC scrubbing complete: ${wdncResult.rowsRemoved} records removed, ${wdncResult.landlinesCleared} landlines cleared`
+        );
+
+        console.log('Fixing IAGE values using stored procedure...');
+const iageResult = await SampleAutomation.fixIAGEValues(tableResult.tableName);
+console.log(`✅ IAGE fix complete: ${iageResult.rowsUpdated} values changed from -1 to 00`);
+
+
+        console.log('Calculating age from birth year...');
+        try {
+          const useJanuaryFirst =
+            req.body.ageCalculationMode === 'january' ||
+            req.body.ageCalculationMode === undefined; // Default to January
+
+          const ageResult = await SampleAutomation.calculateAgeFromBirthYear(
+            tableResult.tableName,
+            useJanuaryFirst
+          );
+
+          if (ageResult.success && !ageResult.skipped) {
+            console.log(
+              `✅ Age calculation: ${ageResult.recordsWithValidAge} ages calculated`
+            );
+          } else if (ageResult.skipped) {
+            console.log('⚠️ Age calculation skipped:', ageResult.message);
+          }
+        } catch (ageError) {
+          console.error('⚠️ Age calculation failed (non-critical):', ageError);
+        }
 
         const hasAgeRangeColumn = tableResult.headers.some(
           (header) => header.name.toUpperCase() === 'AGERANGE'
@@ -425,6 +470,21 @@ const processFile = async (req, res) => {
           console.error(
             '⚠️ Stratified batch creation failed (non-critical):',
             stratifyError
+          );
+        }
+
+        console.log('Padding columns...');
+        try {
+          const paddingResult = await SampleAutomation.padColumns(
+            tableResult.tableName
+          );
+          console.log(
+            `✅ Column padding: ${paddingResult.recordsProcessed} records processed`
+          );
+        } catch (paddingError) {
+          console.error(
+            '⚠️ Column padding failed (non-critical):',
+            paddingError
           );
         }
       } catch (phoneFormatError) {
@@ -860,11 +920,13 @@ const getDistinctAgeRanges = async (req, res) => {
     if (!tableName) {
       return res.status(400).json({
         success: false,
-        message: 'Table name is required'
+        message: 'Table name is required',
       });
     }
 
-    console.log(`Controller: Fetching distinct age ranges for table: ${tableName}`);
+    console.log(
+      `Controller: Fetching distinct age ranges for table: ${tableName}`
+    );
 
     // Call the service
     const result = await SampleAutomation.getDistinctAgeRanges(tableName);
@@ -873,15 +935,14 @@ const getDistinctAgeRanges = async (req, res) => {
       success: true,
       ageRanges: result.ageRanges,
       count: result.count,
-      tableName: tableName
+      tableName: tableName,
     });
-
   } catch (error) {
     console.error('Error in getDistinctAgeRanges controller:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch distinct age ranges',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -892,12 +953,12 @@ const getDistinctAgeRanges = async (req, res) => {
  */
 const extractFiles = handleAsync(async (req, res) => {
   try {
-    const { 
-      tableName, 
-      selectedHeaders, 
-      splitMode, 
-      selectedAgeRange, 
-      fileNames 
+    const {
+      tableName,
+      selectedHeaders,
+      splitMode,
+      selectedAgeRange,
+      fileNames,
     } = req.body;
 
     // Validate required parameters
@@ -908,7 +969,11 @@ const extractFiles = handleAsync(async (req, res) => {
       });
     }
 
-    if (!selectedHeaders || !Array.isArray(selectedHeaders) || selectedHeaders.length === 0) {
+    if (
+      !selectedHeaders ||
+      !Array.isArray(selectedHeaders) ||
+      selectedHeaders.length === 0
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Selected headers are required',
@@ -937,6 +1002,131 @@ const extractFiles = handleAsync(async (req, res) => {
   }
 });
 
+/**
+ * Calculate age from birth year for a table
+ * POST /api/sample-automation/calculate-age-from-birthyear
+ */
+const calculateAgeFromBirthYear = async (req, res) => {
+  try {
+    const { tableName, useJanuaryFirst = true } = req.body;
+
+    // Validate required parameters
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Table name is required',
+      });
+    }
+
+    // Validate useJanuaryFirst parameter
+    if (typeof useJanuaryFirst !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'useJanuaryFirst must be a boolean value',
+      });
+    }
+
+    console.log(`Calculating age from birth year for table: ${tableName}`);
+    console.log(
+      `Calculation base: ${useJanuaryFirst ? 'January 1st' : 'July 1st'}`
+    );
+
+    // Call the service to calculate age
+    const result = await SampleAutomation.calculateAgeFromBirthYear(
+      tableName,
+      useJanuaryFirst
+    );
+
+    if (result.success) {
+      if (result.skipped) {
+        return res.status(200).json({
+          success: true,
+          message: result.message,
+          data: {
+            status: result.status,
+            tableName: result.tableName,
+            skipped: true,
+          },
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: `Age calculation completed: ${result.recordsWithValidAge} records processed`,
+          data: {
+            status: result.status,
+            tableName: result.tableName,
+            recordsProcessed: result.recordsProcessed,
+            recordsWithValidAge: result.recordsWithValidAge,
+            recordsWithNullBirthYear: result.recordsWithNullBirthYear,
+            recordsWithInvalidBirthYear: result.recordsWithInvalidBirthYear,
+            birthYearColumnUsed: result.birthYearColumnUsed,
+            calculationBase: result.calculationBase,
+            calculationBaseDate: result.calculationBaseDate,
+          },
+        });
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: result.message || 'Failed to calculate age from birth year',
+        error: result.error,
+      });
+    }
+  } catch (error) {
+    console.error('Error in calculateAgeFromBirthYear controller:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while calculating age from birth year',
+      error: error.message,
+    });
+  }
+};
+
+// Add this to your sampleAutomationController.js
+
+const cleanupTempFile = handleAsync(async (req, res) => {
+  const { filename } = req.params;
+
+  try {
+    const tempDir = path.join(__dirname, '../temp');
+    const filePath = path.join(tempDir, filename);
+
+    // Security check: verify file is in temp directory
+    if (!filePath.startsWith(tempDir)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file path',
+      });
+    }
+
+    // Check if file exists before trying to delete
+    await fs.access(filePath);
+    await fs.unlink(filePath);
+
+    console.log('✅ Manual cleanup completed:', filename);
+
+    res.json({
+      success: true,
+      message: `File ${filename} deleted successfully`,
+    });
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist - that's fine, consider it cleaned up
+      console.log('📁 File already deleted or does not exist:', filename);
+      res.json({
+        success: true,
+        message: 'File cleanup completed (file not found)',
+      });
+    } else {
+      console.error('❌ Cleanup error:', error.message);
+      res.status(500).json({
+        success: false,
+        message: `Failed to cleanup file: ${error.message}`,
+      });
+    }
+  }
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -955,4 +1145,6 @@ module.exports = {
   createDNCScrubbed,
   getDistinctAgeRanges,
   extractFiles,
+  calculateAgeFromBirthYear,
+  cleanupTempFile,
 };
