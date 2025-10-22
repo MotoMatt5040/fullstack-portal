@@ -42,10 +42,12 @@ FOR TARRANCE PROJECTS
 The phone variable may be landline or cell, this is dependant on whether the CELL column is Y or N
   Using this information, we can create the LAND and CELL columns, then we can create the source
 
-  VTYPE LL = 1 CELL = 2
+VTYPE LL = 1 CELL = 2
 
-  CD pad -> 2
-  SLUD pad -> 3
-  SLLD pad -> 3
-  CFIPS pad => 3
-  
+CD pad -> 2
+SLUD pad -> 3
+SLLD pad -> 3
+CFIPS pad => 3
+
+VFREQGEN
+VFREQPR -> VH24G, VH22G, VH20G, VH18G

@@ -6,7 +6,8 @@ import {
   mdiCog, 
   mdiPhone, 
   mdiCallSplit,
-  mdiCellphone 
+  mdiCellphone,
+  mdiHome
 } from '@mdi/js';
 import './SampleSplitComponent.css';
 
@@ -22,6 +23,7 @@ const SampleSplitComponent = ({
   const [splitMode, setSplitMode] = useState('all'); // 'all' or 'split'
   const [selectedAgeRange, setSelectedAgeRange] = useState('');
   const [availableAgeRanges, setAvailableAgeRanges] = useState([]);
+  const [householdingEnabled, setHouseholdingEnabled] = useState(false);
 
   // Initialize available age ranges
   useEffect(() => {
@@ -46,6 +48,7 @@ const SampleSplitComponent = ({
       selectedHeaders,
       splitMode,
       selectedAgeRange,
+      householdingEnabled, // Add this line
       splitLogic: {
         landline: {
           conditions: [
@@ -62,7 +65,7 @@ const SampleSplitComponent = ({
       }
     };
     onConfigChange(config);
-  }, [selectedHeaders, splitMode, selectedAgeRange, onConfigChange]);
+  }, [selectedHeaders, splitMode, selectedAgeRange, householdingEnabled, onConfigChange]); // Add householdingEnabled to dependencies
 
   const handleHeaderToggle = (headerName) => {
     setSelectedHeaders(prev => {
@@ -161,6 +164,7 @@ const SampleSplitComponent = ({
       selectedHeaders,
       splitMode,
       selectedAgeRange,
+      householdingEnabled, // Add this line
       tableName,
       fileNames: splitMode === 'split' 
         ? {
@@ -192,6 +196,7 @@ const SampleSplitComponent = ({
         <div className="header-summary">
           {selectedHeaders.length} of {headers.length} headers selected
           {splitMode === 'split' && ` • Split by age ${selectedAgeRange}`}
+          {householdingEnabled && ` • Householding enabled`}
         </div>
       </div>
 
@@ -213,6 +218,40 @@ const SampleSplitComponent = ({
               >
                 Landline & Cell Split
               </button>
+            </div>
+          </div>
+
+          {/* Householding Option - Available for all modes */}
+          <div className="householding-section">
+            <div className="section-header">
+              <div className="householding-toggle">
+                <input
+                  type="checkbox"
+                  id="householding-checkbox"
+                  checked={householdingEnabled}
+                  onChange={(e) => setHouseholdingEnabled(e.target.checked)}
+                  className="householding-checkbox"
+                />
+                <label htmlFor="householding-checkbox" className="householding-label">
+                  <Icon path={mdiHome} size={0.6} className="householding-icon" />
+                  Enable Householding for Landline Records
+                </label>
+              </div>
+              
+              {/* {householdingEnabled && (
+                <div className="householding-info">
+                  <div className="householding-description">
+                    <p>Householding will process records where SOURCE=1 OR (SOURCE=3 and AGERANGE≥{selectedAgeRange || 'selected threshold'}):</p>
+                    <ul>
+                      <li>Rank by IAGE ASC (youngest to oldest)</li>
+                      <li>Keep first record per phone number</li>
+                      <li>Add FNAME2, LNAME2, FNAME3, LNAME3, FNAME4, LNAME4 columns to first record</li>
+                      <li>Move 2nd, 3rd, 4th ranked records to separate duplicate tables</li>
+                      <li>Only keeps first 4 records per phone number</li>
+                    </ul>
+                  </div>
+                </div>
+              )} */}
             </div>
           </div>
 
@@ -266,6 +305,7 @@ const SampleSplitComponent = ({
               {splitMode === 'split' && (
                 <li>Age threshold: {selectedAgeRange || 'Not selected'}</li>
               )}
+              <li>Householding: {householdingEnabled ? 'Enabled' : 'Disabled'}</li>
             </ul>
           </div>
 
@@ -286,6 +326,7 @@ const SampleSplitComponent = ({
                     <div className="file-name">SAMP_{tableName}.csv</div>
                     <div className="file-description">
                       All records with {selectedHeaders.length} selected columns
+                      {householdingEnabled && ' (landline records will be householded)'}
                     </div>
                   </div>
                 </div>
@@ -297,6 +338,7 @@ const SampleSplitComponent = ({
                       <div className="file-name">LSAM_{tableName}.csv</div>
                       <div className="file-description">
                         Landline records (SOURCE=1 OR SOURCE=3 & AGERANGE≥{selectedAgeRange})
+                        {householdingEnabled && ' - Householded'}
                       </div>
                     </div>
                   </div>

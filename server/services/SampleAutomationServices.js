@@ -507,7 +507,7 @@ const sanitizeColumnName = (columnName) => {
   if (!columnName || typeof columnName !== 'string') {
     return 'UNNAMED_COLUMN';
   }
-  
+
   return columnName
     .trim()
     .replace(/\s+/g, '_') // Replace spaces with underscores
@@ -967,7 +967,11 @@ const populateAgeRange = async (tableName) => {
  * @param {number} batchCount - Number of batches to create (default 20)
  * @returns {Object} - Result with batch statistics
  */
-const createStratifiedBatches = async (tableName, stratifyColumns = 'AGERANGE,SOURCE', batchCount = 20) => {
+const createStratifiedBatches = async (
+  tableName,
+  stratifyColumns = 'AGERANGE,SOURCE',
+  batchCount = 20
+) => {
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
@@ -982,34 +986,43 @@ const createStratifiedBatches = async (tableName, stratifyColumns = 'AGERANGE,SO
           WHERE TABLE_SCHEMA = 'dbo'
           AND TABLE_NAME = @tableName
         `;
-        
-        const columnResult = await pool.request()
+
+        const columnResult = await pool
+          .request()
           .input('tableName', sql.NVarChar, tableName)
           .query(columnCheckQuery);
-        
-        const existingColumns = columnResult.recordset.map(row => row.COLUMN_NAME.toUpperCase());
-        
+
+        const existingColumns = columnResult.recordset.map((row) =>
+          row.COLUMN_NAME.toUpperCase()
+        );
+
         // Parse requested columns and filter to only those that exist
         const requestedColumns = stratifyColumns
           .split(',')
-          .map(col => col.trim().toUpperCase())
-          .filter(col => existingColumns.includes(col));
-        
+          .map((col) => col.trim().toUpperCase())
+          .filter((col) => existingColumns.includes(col));
+
         if (requestedColumns.length === 0) {
-          console.warn('⚠️ None of the requested stratify columns exist in the table. Skipping stratification.');
+          console.warn(
+            '⚠️ None of the requested stratify columns exist in the table. Skipping stratification.'
+          );
           return {
             success: false,
             batchCount: 0,
             stratifyColumns: '',
-            message: 'No valid stratify columns found - skipping batch creation',
+            message:
+              'No valid stratify columns found - skipping batch creation',
           };
         }
-        
+
         const finalStratifyColumns = requestedColumns.join(',');
-        console.log(`✓ Using existing columns for stratification: ${finalStratifyColumns}`);
+        console.log(
+          `✓ Using existing columns for stratification: ${finalStratifyColumns}`
+        );
 
         // Call stored procedure with validated columns
-        const result = await pool.request()
+        const result = await pool
+          .request()
           .input('TableName', sql.NVarChar, tableName)
           .input('StratifyColumns', sql.NVarChar, finalStratifyColumns)
           .input('BatchCount', sql.Int, batchCount)
@@ -1022,14 +1035,17 @@ const createStratifiedBatches = async (tableName, stratifyColumns = 'AGERANGE,SO
           batchCount: batchCount,
           stratifyColumns: finalStratifyColumns,
           columnsUsed: requestedColumns,
-          columnsSkipped: stratifyColumns.split(',')
-            .map(col => col.trim().toUpperCase())
-            .filter(col => !existingColumns.includes(col)),
+          columnsSkipped: stratifyColumns
+            .split(',')
+            .map((col) => col.trim().toUpperCase())
+            .filter((col) => !existingColumns.includes(col)),
           message: `Created ${batchCount} stratified batches using ${finalStratifyColumns}`,
         };
       } catch (error) {
         console.error('Error creating stratified batches:', error);
-        throw new Error(`Failed to create stratified batches: ${error.message}`);
+        throw new Error(
+          `Failed to create stratified batches: ${error.message}`
+        );
       }
     },
     fnName: 'createStratifiedBatches',
@@ -1057,7 +1073,8 @@ const getDistinctAgeRanges = async (tableName) => {
           AND COLUMN_NAME = 'AGERANGE'
         `;
 
-        const columnCheck = await pool.request()
+        const columnCheck = await pool
+          .request()
           .input('tableName', sql.NVarChar, tableName)
           .query(columnCheckQuery);
 
@@ -1065,7 +1082,7 @@ const getDistinctAgeRanges = async (tableName) => {
           console.log(`AGERANGE column not found in table ${tableName}`);
           return {
             ageRanges: [],
-            count: 0
+            count: 0,
           };
         }
 
@@ -1079,141 +1096,198 @@ const getDistinctAgeRanges = async (tableName) => {
         `;
 
         const result = await pool.request().query(query);
-        
-        const ageRanges = result.recordset.map(row => row.AGERANGE);
 
-        console.log(`Found ${ageRanges.length} distinct age ranges:`, ageRanges);
+        const ageRanges = result.recordset.map((row) => row.AGERANGE);
+
+        console.log(
+          `Found ${ageRanges.length} distinct age ranges:`,
+          ageRanges
+        );
 
         return {
           ageRanges,
-          count: ageRanges.length
+          count: ageRanges.length,
         };
       } catch (error) {
         console.error('Error fetching distinct age ranges:', error);
-        throw new Error(`Failed to fetch distinct age ranges: ${error.message}`);
+        throw new Error(
+          `Failed to fetch distinct age ranges: ${error.message}`
+        );
       }
     },
     fnName: 'getDistinctAgeRanges',
   });
 };
 
-/**
- * Extract files from table with optional split configuration
- * @param {Object} config - Extraction configuration
- * @param {string} config.tableName - Name of the source table
- * @param {string[]} config.selectedHeaders - Array of column names to include
- * @param {string} config.splitMode - 'all' or 'split'
- * @param {string|number} config.selectedAgeRange - Age threshold for split mode
- * @param {Object} config.fileNames - Object containing file names for outputs
- * @returns {Object} - Result with file information
- */
 const extractFilesFromTable = async (config) => {
-  const { tableName, selectedHeaders, splitMode, selectedAgeRange, fileNames } = config;
-  
+  const { tableName, selectedHeaders, splitMode, selectedAgeRange, fileNames } =
+    config;
+
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
       try {
         console.log(`Starting file extraction from table: ${tableName}`);
-        
+
         // Build final headers list - include selected headers plus system columns
         const finalHeaders = [...selectedHeaders];
-        
+
         // Add SOURCE if not already included
         if (!finalHeaders.includes('SOURCE')) {
           finalHeaders.push('SOURCE');
         }
-        
-        // Add BATCH if not already included  
+
+        // Add BATCH if not already included
         if (!finalHeaders.includes('BATCH')) {
           finalHeaders.push('BATCH');
         }
-        
+
         // Add VTYPE if not already included
         if (!finalHeaders.includes('VTYPE')) {
           finalHeaders.push('VTYPE');
         }
 
-         const additionalColumnsQuery = `
+        const additionalColumnsQuery = `
           SELECT COLUMN_NAME
           FROM FAJITA.INFORMATION_SCHEMA.COLUMNS 
           WHERE TABLE_SCHEMA = 'dbo' 
           AND TABLE_NAME = @tableName
           AND COLUMN_NAME IN ('VFREQGEN', 'VFREQPR', '$N')
         `;
-        
-        const additionalResult = await pool.request()
+
+        const additionalResult = await pool
+          .request()
           .input('tableName', sql.NVarChar, tableName)
           .query(additionalColumnsQuery);
-        
+
         // Add additional columns if they exist
-        additionalResult.recordset.forEach(row => {
+        additionalResult.recordset.forEach((row) => {
           if (!finalHeaders.includes(row.COLUMN_NAME)) {
             finalHeaders.push(row.COLUMN_NAME);
             console.log(`Added ${row.COLUMN_NAME} column to export headers`);
           }
         });
-        
-        // Build the SELECT clause with final headers
-        const selectClause = finalHeaders.map(header => `[${header}]`).join(', ');
-        
+
+        // DON'T BUILD selectClause HERE YET - wait until after householding adds columns
+
+        // FIRST: Update VTYPE in the table based on split logic
+        console.log(
+          `Updating VTYPE in table based on split logic (age threshold: ${selectedAgeRange})`
+        );
+        const vtypeUpdate = await updateVTYPEBySplit(
+          tableName,
+          selectedAgeRange
+        );
+        console.log(
+          `VTYPE updated: ${vtypeUpdate.landlineCount} landline, ${vtypeUpdate.cellCount} cell`
+        );
+
+        // SECOND: Create $N column based on VTYPE
+        console.log('Creating $N column based on VTYPE...');
+        const dollarNResult = await createDollarNColumn(tableName);
+        console.log(`$N column: ${dollarNResult.rowsUpdated} rows populated`);
+
+        let householdingResult = null;
+        let householdingDuplicateFiles = null;
+        if (config.householdingEnabled) {
+          console.log(
+            '🏠 Processing householding for landline records (SOURCE=1 OR SOURCE=3 with AGERANGE >= ' +
+              selectedAgeRange +
+              ')...'
+          );
+
+          try {
+            householdingResult = await processHouseholding(
+              tableName,
+              selectedAgeRange
+            );
+            console.log('✅ Householding completed successfully');
+
+            console.log('📁 Extracting householding duplicate files...');
+            householdingDuplicateFiles = await extractHouseholdingDuplicateFiles(tableName, finalHeaders);
+            console.log(`✅ Generated ${householdingDuplicateFiles.filesGenerated} householding duplicate files`);
+
+            // Add householding columns to finalHeaders
+            const householdingColumns = [
+              'FNAME2', 'LNAME2', 'FNAME3', 'LNAME3', 'FNAME4', 'LNAME4',
+              'IAGE2', 'IAGE3', 'IAGE4',
+              'GEND2', 'GEND3', 'GEND4',
+              'PARTY2', 'PARTY3', 'PARTY4',
+              'VFREQGEN2', 'VFREQGEN3', 'VFREQGEN4',
+              'VFREQPR2', 'VFREQPR3', 'VFREQPR4'
+            ];
+            householdingColumns.forEach((col) => {
+              if (!finalHeaders.includes(col)) {
+                finalHeaders.push(col);
+              }
+            });
+          } catch (error) {
+            console.error('❌ Householding failed:', error);
+            throw new Error(`Householding process failed: ${error.message}`);
+          }
+        }
+
+        // NOW BUILD selectClause AFTER householding columns have been added
+        const selectClause = finalHeaders
+          .map((header) => `[${header}]`)
+          .join(', ');
+
         if (splitMode === 'split') {
-          // FIRST: Update VTYPE in the table based on split logic
-          console.log(`Updating VTYPE in table based on split logic (age threshold: ${selectedAgeRange})`);
-          const vtypeUpdate = await updateVTYPEBySplit(tableName, selectedAgeRange);
-          console.log(`VTYPE updated: ${vtypeUpdate.landlineCount} landline, ${vtypeUpdate.cellCount} cell`);
-          
-          // SECOND: Create $N column based on VTYPE
-          console.log('Creating $N column based on VTYPE...');
-          const dollarNResult = await createDollarNColumn(tableName);
-          console.log(`$N column: ${dollarNResult.rowsUpdated} rows populated`);
-          
           // THEN: Extract with the same logic (VTYPE set, $N created, WDNC already applied in controller)
           const landlineQuery = `
             SELECT ${selectClause}
             FROM FAJITA.dbo.[${tableName}]
             WHERE SOURCE = 1 OR (SOURCE = 3 AND AGERANGE >= ${selectedAgeRange})
           `;
-          
+
           const cellQuery = `
             SELECT ${selectClause}
             FROM FAJITA.dbo.[${tableName}]
             WHERE SOURCE = 2 OR (SOURCE = 3 AND AGERANGE < ${selectedAgeRange})
           `;
-          
+
           console.log('Executing landline query:', landlineQuery);
           const landlineResult = await pool.request().query(landlineQuery);
-          
+
           console.log('Executing cell query:', cellQuery);
           const cellResult = await pool.request().query(cellQuery);
-          
+
           // Convert results to CSV using final headers
-          const landlineCSV = convertToCSV(landlineResult.recordset, finalHeaders);
+          const landlineCSV = convertToCSV(
+            landlineResult.recordset,
+            finalHeaders
+          );
           const cellCSV = convertToCSV(cellResult.recordset, finalHeaders);
-          
+
           // Create temp directory if it doesn't exist
           const tempDir = path.join(__dirname, '../temp');
           await fs.mkdir(tempDir, { recursive: true });
-          
+
           // Write CSV files
-          const landlineFilePath = path.join(tempDir, `${fileNames.landline}.csv`);
+          const landlineFilePath = path.join(
+            tempDir,
+            `${fileNames.landline}.csv`
+          );
           const cellFilePath = path.join(tempDir, `${fileNames.cell}.csv`);
-          
+
           await fs.writeFile(landlineFilePath, landlineCSV, 'utf8');
           console.log('Landline file written to:', landlineFilePath);
 
           await fs.writeFile(cellFilePath, cellCSV, 'utf8');
           console.log('Cell file written to:', cellFilePath);
-          
+
           return {
             success: true,
             splitMode: 'split',
             vtypeUpdated: true,
+            householdingProcessed: config.householdingEnabled,
             vtypeStats: {
               landlineCount: vtypeUpdate.landlineCount,
               cellCount: vtypeUpdate.cellCount,
-              ageThreshold: selectedAgeRange
+              ageThreshold: selectedAgeRange,
             },
+            householdingStats: householdingResult || null,
+            householdingDuplicateFiles: householdingDuplicateFiles || null,
             files: {
               landline: {
                 filename: `${fileNames.landline}.csv`,
@@ -1221,7 +1295,25 @@ const extractFilesFromTable = async (config) => {
                 url: `/temp/${fileNames.landline}.csv`,
                 records: landlineResult.recordset.length,
                 headers: finalHeaders,
-                conditions: [`SOURCE = 1`, `SOURCE = 3 AND AGERANGE >= ${selectedAgeRange}`, `All records now have VTYPE=1 in table`]
+                conditions: [
+                  `SOURCE = 1`,
+                  `SOURCE = 3 AND AGERANGE >= ${selectedAgeRange}`,
+                  `All records now have VTYPE=1 in table`,
+                  ...(config.householdingEnabled
+                    ? [
+                        `Householding applied: duplicates removed and FNAME2-4, LNAME2-4 added`,
+                        `${
+                          householdingResult?.duplicateCounts?.duplicate2 || 0
+                        } records moved to ${tableName}duplicate2`,
+                        `${
+                          householdingResult?.duplicateCounts?.duplicate3 || 0
+                        } records moved to ${tableName}duplicate3`,
+                        `${
+                          householdingResult?.duplicateCounts?.duplicate4 || 0
+                        } records moved to ${tableName}duplicate4`,
+                      ]
+                    : []),
+                ],
               },
               cell: {
                 filename: `${fileNames.cell}.csv`,
@@ -1229,50 +1321,88 @@ const extractFilesFromTable = async (config) => {
                 url: `/temp/${fileNames.cell}.csv`,
                 records: cellResult.recordset.length,
                 headers: finalHeaders,
-                conditions: [`SOURCE = 2`, `SOURCE = 3 AND AGERANGE < ${selectedAgeRange}`, `All records now have VTYPE=2 in table`]
-              }
+                conditions: [
+                  `SOURCE = 2`,
+                  `SOURCE = 3 AND AGERANGE < ${selectedAgeRange}`,
+                  `All records now have VTYPE=2 in table`,
+                ],
+              },
+              ...(householdingDuplicateFiles?.files || {})
             },
-            message: `Split extraction complete with VTYPE updated and $N created: ${landlineResult.recordset.length} landline records (VTYPE=1), ${cellResult.recordset.length} cell records (VTYPE=2)`
+            message: `Split extraction complete with VTYPE updated${
+              config.householdingEnabled ? ' and householding applied' : ''
+            }: ${landlineResult.recordset.length} landline records (VTYPE=1), ${
+              cellResult.recordset.length
+            } cell records (VTYPE=2)${
+              householdingResult
+                ? `. Householding processed ${householdingResult.totalProcessed} records.`
+                : ''
+            }`,
           };
-          
         } else {
           // All records mode: Single file with all data (no VTYPE update needed)
           const allQuery = `
             SELECT ${selectClause}
             FROM FAJITA.dbo.[${tableName}]
           `;
-          
+
           console.log('Executing all records query:', allQuery);
           const allResult = await pool.request().query(allQuery);
-          
+
           // Convert to CSV using final headers
           const allCSV = convertToCSV(allResult.recordset, finalHeaders);
-          
+
           // Create temp directory if it doesn't exist
           const tempDir = path.join(__dirname, '../temp');
           await fs.mkdir(tempDir, { recursive: true });
-          
+
           // Write CSV file
           const filePath = path.join(tempDir, `${fileNames.single}.csv`);
           await fs.writeFile(filePath, allCSV, 'utf8');
-          
+
           return {
             success: true,
             splitMode: 'all',
             vtypeUpdated: false,
+            householdingProcessed: config.householdingEnabled,
+            householdingStats: householdingResult || null,
+            householdingDuplicateFiles: householdingDuplicateFiles || null,
             files: {
               single: {
                 filename: `${fileNames.single}.csv`,
                 path: filePath,
                 url: `/temp/${fileNames.single}.csv`,
                 records: allResult.recordset.length,
-                headers: finalHeaders
-              }
+                headers: finalHeaders,
+                conditions: [
+                  'All records included',
+                  ...(config.householdingEnabled
+                    ? [
+                        `Householding applied to landline records (SOURCE=1 OR SOURCE=3 with AGERANGE>=${selectedAgeRange})`,
+                        `${
+                          householdingResult?.duplicateCounts?.duplicate2 || 0
+                        } records moved to ${tableName}duplicate2`,
+                        `${
+                          householdingResult?.duplicateCounts?.duplicate3 || 0
+                        } records moved to ${tableName}duplicate3`,
+                        `${
+                          householdingResult?.duplicateCounts?.duplicate4 || 0
+                        } records moved to ${tableName}duplicate4`,
+                      ]
+                    : []),
+                ],
+              },
+              ...(householdingDuplicateFiles?.files || {})
             },
-            message: `Extraction complete: ${allResult.recordset.length} total records`
+            message: `Extraction complete: ${
+              allResult.recordset.length
+            } total records${
+              householdingResult
+                ? `. Householding processed ${householdingResult.totalProcessed} landline records.`
+                : ''
+            }`,
           };
         }
-        
       } catch (error) {
         console.error('Error in extractFilesFromTable:', error);
         throw new Error(`Failed to extract files: ${error.message}`);
@@ -1292,29 +1422,35 @@ const convertToCSV = (records, headers) => {
   if (!records || records.length === 0) {
     return headers.join(',') + '\n';
   }
-  
+
   // Create header row
   const headerRow = headers.join(',');
-  
+
   // Create data rows
-  const dataRows = records.map(record => {
-    return headers.map(header => {
-      const value = record[header];
-      // Handle null/undefined values and escape commas/quotes
-      if (value === null || value === undefined) {
-        return '';
-      }
-      
-      const stringValue = String(value);
-      // If value contains comma, newline, or quote, wrap in quotes and escape quotes
-      if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-      
-      return stringValue;
-    }).join(',');
+  const dataRows = records.map((record) => {
+    return headers
+      .map((header) => {
+        const value = record[header];
+        // Handle null/undefined values and escape commas/quotes
+        if (value === null || value === undefined) {
+          return '';
+        }
+
+        const stringValue = String(value);
+        // If value contains comma, newline, or quote, wrap in quotes and escape quotes
+        if (
+          stringValue.includes(',') ||
+          stringValue.includes('\n') ||
+          stringValue.includes('"')
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+
+        return stringValue;
+      })
+      .join(',');
   });
-  
+
   return headerRow + '\n' + dataRows.join('\n');
 };
 
@@ -1330,7 +1466,11 @@ const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
     queryFn: async (pool) => {
       try {
         console.log(`Calculating age from birth year in table: ${tableName}`);
-        console.log(`Using calculation base: ${useJanuaryFirst ? 'January 1st' : 'July 1st'}`);
+        console.log(
+          `Using calculation base: ${
+            useJanuaryFirst ? 'January 1st' : 'July 1st'
+          }`
+        );
 
         const result = await pool
           .request()
@@ -1339,14 +1479,14 @@ const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
           .execute('FAJITA.dbo.sp_CalculateAgeFromBirthYear');
 
         const data = result.recordset[0];
-        
+
         if (data.Status === 'SUCCESS') {
           console.log(`✅ Age calculation complete:`, {
             recordsProcessed: data.RecordsProcessed,
             recordsWithNullBirthYear: data.RecordsWithNullBirthYear,
             recordsWithInvalidBirthYear: data.RecordsWithInvalidBirthYear,
             birthYearColumn: data.BirthYearColumnUsed,
-            calculationBase: data.CalculationBase
+            calculationBase: data.CalculationBase,
           });
 
           return {
@@ -1356,7 +1496,10 @@ const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
             recordsProcessed: data.RecordsProcessed,
             recordsWithNullBirthYear: data.RecordsWithNullBirthYear,
             recordsWithInvalidBirthYear: data.RecordsWithInvalidBirthYear,
-            recordsWithValidAge: data.RecordsProcessed - data.RecordsWithNullBirthYear - data.RecordsWithInvalidBirthYear,
+            recordsWithValidAge:
+              data.RecordsProcessed -
+              data.RecordsWithNullBirthYear -
+              data.RecordsWithInvalidBirthYear,
             birthYearColumnUsed: data.BirthYearColumnUsed,
             calculationBase: data.CalculationBase,
             calculationBaseDate: data.CalculationBaseDate,
@@ -1364,7 +1507,7 @@ const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
           };
         } else if (data.Status === 'SKIPPED') {
           console.log(`⚠️ Age calculation skipped: ${data.Message}`);
-          
+
           return {
             success: true,
             status: data.Status,
@@ -1374,23 +1517,24 @@ const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
             recordsWithInvalidBirthYear: 0,
             recordsWithValidAge: 0,
             message: data.Message,
-            skipped: true
+            skipped: true,
           };
         } else {
           console.error(`❌ Age calculation failed: ${data.Message}`);
-          
+
           return {
             success: false,
             status: data.Status,
             tableName: data.TableName,
             message: data.Message,
-            error: true
+            error: true,
           };
         }
-
       } catch (error) {
         console.error('Error calculating age from birth year:', error);
-        throw new Error(`Failed to calculate age from birth year: ${error.message}`);
+        throw new Error(
+          `Failed to calculate age from birth year: ${error.message}`
+        );
       }
     },
     fnName: 'calculateAgeFromBirthYear',
@@ -1442,7 +1586,9 @@ const updateVTYPEBySplit = async (tableName, ageThreshold) => {
     database: promark,
     queryFn: async (pool) => {
       try {
-        console.log(`Updating VTYPE in table: ${tableName} with age threshold: ${ageThreshold}`);
+        console.log(
+          `Updating VTYPE in table: ${tableName} with age threshold: ${ageThreshold}`
+        );
 
         const result = await pool
           .request()
@@ -1451,7 +1597,7 @@ const updateVTYPEBySplit = async (tableName, ageThreshold) => {
           .execute('FAJITA.dbo.sp_UpdateVTYPEBySplit');
 
         const data = result.recordset[0];
-        
+
         console.log(
           `✅ VTYPE updated based on split logic:`,
           `Landline (VTYPE=1): ${data.LandlineCount},`,
@@ -1494,7 +1640,7 @@ const applyWDNCScrubbing = async (tableName) => {
           .execute('FAJITA.dbo.sp_ApplyWDNCScrubbing');
 
         const data = result.recordset[0];
-        
+
         console.log(
           `✅ WDNC scrubbing complete:`,
           `${data.RowsRemoved} records removed,`,
@@ -1565,7 +1711,9 @@ const createVFREQColumns = async (tableName) => {
     database: promark,
     queryFn: async (pool) => {
       try {
-        console.log(`Creating VFREQGEN and VFREQPR columns in table: ${tableName}`);
+        console.log(
+          `Creating VFREQGEN and VFREQPR columns in table: ${tableName}`
+        );
 
         const result = await pool
           .request()
@@ -1585,7 +1733,7 @@ const createVFREQColumns = async (tableName) => {
             oldest: data.OldestYear,
             year3: data.Year3,
             year2: data.Year2,
-            newest: data.NewestYear
+            newest: data.NewestYear,
           },
           columnsUsed: data.ColumnsUsed,
           message: `VFREQGEN and VFREQPR columns created using ${data.ColumnsUsed}`,
@@ -1617,9 +1765,11 @@ const fixIAGEValues = async (tableName) => {
           .execute('FAJITA.dbo.sp_FixIAGEValues');
 
         const data = result.recordset[0];
-        
+
         if (data.RowsUpdated > 0) {
-          console.log(`✅ Fixed ${data.RowsUpdated} IAGE values from -1 to 00 in ${tableName}`);
+          console.log(
+            `✅ Fixed ${data.RowsUpdated} IAGE values from -1 to 00 in ${tableName}`
+          );
         } else {
           console.log(`✅ No IAGE values of -1 found in ${tableName}`);
         }
@@ -1628,9 +1778,10 @@ const fixIAGEValues = async (tableName) => {
           success: true,
           rowsUpdated: data.RowsUpdated,
           totalIAGERows: data.TotalIAGERows,
-          message: data.RowsUpdated > 0 
-            ? `Fixed ${data.RowsUpdated} IAGE values from -1 to 00` 
-            : 'No IAGE values of -1 found',
+          message:
+            data.RowsUpdated > 0
+              ? `Fixed ${data.RowsUpdated} IAGE values from -1 to 00`
+              : 'No IAGE values of -1 found',
         };
       } catch (error) {
         console.error('Error fixing IAGE values:', error);
@@ -1639,6 +1790,290 @@ const fixIAGEValues = async (tableName) => {
     },
     fnName: 'fixIAGEValues',
   });
+};
+
+/**
+ * Process householding for landline records using stored procedure
+ * This function ranks landline records by iage ASC, keeps first 4 per phone number,
+ * adds FNAME2-4, LNAME2-4 columns, and creates duplicate tables
+ * @param {string} tableName - Name of the source table
+ * @param {number} selectedAgeRange - Age range threshold for landline filtering
+ * @returns {Object} - Result with householding statistics
+ */
+const processHouseholding = async (tableName, selectedAgeRange) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(
+          `Starting householding process for table: ${tableName} with age range: ${selectedAgeRange}`
+        );
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .input('SelectedAgeRange', sql.Int, selectedAgeRange)
+          .execute('FAJITA.dbo.sp_ProcessHouseholding');
+
+        const data = result.recordset[0];
+
+        if (!data.Success) {
+          throw new Error(data.Message);
+        }
+
+        console.log(`✅ Householding completed for ${tableName}:`);
+        console.log(`   - Total records processed: ${data.TotalProcessed}`);
+        console.log(`   - Main table final count: ${data.MainTableFinalCount}`);
+        console.log(`   - Duplicate2 records: ${data.Duplicate2Count}`);
+        console.log(`   - Duplicate3 records: ${data.Duplicate3Count}`);
+        console.log(`   - Duplicate4 records: ${data.Duplicate4Count}`);
+        console.log(`   - Backup table: ${data.BackupTableName}`);
+
+        return {
+          success: true,
+          totalProcessed: data.TotalProcessed,
+          mainTableFinalCount: data.MainTableFinalCount,
+          duplicateCounts: {
+            duplicate2: data.Duplicate2Count,
+            duplicate3: data.Duplicate3Count,
+            duplicate4: data.Duplicate4Count,
+          },
+          tablesCreated: {
+            backup: data.BackupTableName,
+            duplicate2: data.Duplicate2Table,
+            duplicate3: data.Duplicate3Table,
+            duplicate4: data.Duplicate4Table,
+          },
+          message: `Householding completed: ${data.TotalProcessed} total records processed, ${data.MainTableFinalCount} kept in main table`,
+        };
+      } catch (error) {
+        console.error('Error processing householding:', error);
+        throw new Error(`Failed to process householding: ${error.message}`);
+      }
+    },
+    fnName: 'processHouseholding',
+  });
+};
+
+/**
+ * Extract CSV files from householding duplicate tables
+ * @param {string} tableName - Base table name (duplicate tables will be {tableName}duplicate2, duplicate3, duplicate4)
+ * @param {string[]} selectedHeaders - Array of column names to include in export
+ * @returns {Object} - Result with file information for each duplicate table
+ */
+const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Extracting householding duplicate files for table: ${tableName}`);
+        
+        // Build final headers list
+        const finalHeaders = [...selectedHeaders];
+        
+        // Add important columns if not already included
+        const systemColumns = [
+  'SOURCE', 'BATCH', 'VTYPE', 
+  'FNAME2', 'LNAME2', 'FNAME3', 'LNAME3', 'FNAME4', 'LNAME4',
+  'IAGE2', 'IAGE3', 'IAGE4',
+  'GEND2', 'GEND3', 'GEND4',
+  'PARTY2', 'PARTY3', 'PARTY4',
+  'VFREQGEN2', 'VFREQGEN3', 'VFREQGEN4',
+  'VFREQPR2', 'VFREQPR3', 'VFREQPR4'
+];
+        systemColumns.forEach(col => {
+          if (!finalHeaders.includes(col)) {
+            finalHeaders.push(col);
+          }
+        });
+
+        // Check for additional columns that might exist
+        const additionalColumnsQuery = `
+          SELECT COLUMN_NAME
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = 'dbo' 
+          AND TABLE_NAME = @tableName
+          AND COLUMN_NAME IN ('VFREQGEN', 'VFREQPR', '$N')
+        `;
+        
+        const additionalResult = await pool.request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(additionalColumnsQuery);
+        
+        // Add additional columns if they exist
+        additionalResult.recordset.forEach(row => {
+          if (!finalHeaders.includes(row.COLUMN_NAME)) {
+            finalHeaders.push(row.COLUMN_NAME);
+            console.log(`Added ${row.COLUMN_NAME} column to export headers`);
+          }
+        });
+        
+        const selectClause = finalHeaders.map(header => `[${header}]`).join(', ');
+        
+        // Define duplicate tables
+        const duplicateTables = [
+          { suffix: 'duplicate2', rank: 2 },
+          { suffix: 'duplicate3', rank: 3 },
+          { suffix: 'duplicate4', rank: 4 }
+        ];
+        
+        const files = {};
+        const tempDir = path.join(__dirname, '../temp');
+        await fs.mkdir(tempDir, { recursive: true });
+        
+        // Extract data from each duplicate table
+        for (const dupTable of duplicateTables) {
+          const fullTableName = `${tableName}${dupTable.suffix}`;
+          
+          // Check if table exists
+          const tableExistsQuery = `
+            SELECT COUNT(*) as TableExists
+            FROM FAJITA.INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = 'dbo'
+            AND TABLE_NAME = @tableName
+          `;
+          
+          const tableCheck = await pool.request()
+            .input('tableName', sql.NVarChar, fullTableName)
+            .query(tableExistsQuery);
+          
+          if (tableCheck.recordset[0].TableExists === 0) {
+            console.log(`Table ${fullTableName} does not exist, skipping...`);
+            continue;
+          }
+          
+          // Get record count first
+          const countQuery = `SELECT COUNT(*) as RecordCount FROM FAJITA.dbo.[${fullTableName}]`;
+          const countResult = await pool.request().query(countQuery);
+          const recordCount = countResult.recordset[0].RecordCount;
+          
+          if (recordCount === 0) {
+            console.log(`Table ${fullTableName} is empty, skipping...`);
+            continue;
+          }
+          
+          // Extract data from duplicate table
+          const extractQuery = `
+            SELECT ${selectClause}
+            FROM FAJITA.dbo.[${fullTableName}]
+          `;
+          
+          console.log(`Executing extraction query for ${fullTableName}...`);
+          const result = await pool.request().query(extractQuery);
+          
+          // Convert to CSV
+          const csv = convertToCSV(result.recordset, finalHeaders);
+          
+          // Write CSV file
+          const filename = `${tableName}_${dupTable.suffix}.csv`;
+          const filePath = path.join(tempDir, filename);
+          
+          await fs.writeFile(filePath, csv, 'utf8');
+          console.log(`${dupTable.suffix} file written to:`, filePath);
+          
+          // Add file info to results
+          files[dupTable.suffix] = {
+            filename: filename,
+            path: filePath,
+            url: `/temp/${filename}`,
+            records: result.recordset.length,
+            headers: finalHeaders,
+            rank: dupTable.rank,
+            description: `Rank ${dupTable.rank} household members (duplicate ${dupTable.rank})`
+          };
+        }
+        
+        const totalFiles = Object.keys(files).length;
+        const totalRecords = Object.values(files).reduce((sum, file) => sum + file.records, 0);
+        
+        return {
+          success: true,
+          filesGenerated: totalFiles,
+          totalRecords: totalRecords,
+          files: files,
+          message: `Successfully extracted ${totalFiles} householding duplicate files with ${totalRecords} total records`
+        };
+        
+      } catch (error) {
+        console.error('Error extracting householding duplicate files:', error);
+        throw new Error(`Failed to extract householding duplicate files: ${error.message}`);
+      }
+    },
+    fnName: 'extractHouseholdingDuplicateFiles',
+  });
+};
+
+// Add this function to your SampleAutomationServices.js file
+
+/**
+ * Calculate PARTY from RPARTYROLLUP for RNC vendor data
+ * @param {string} tableName - Name of the table
+ * @returns {Object} - Result with calculation statistics
+ */
+const calculatePartyFromRPartyRollup = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Calculating PARTY from RPARTYROLLUP in table: ${tableName}`);
+
+        const result = await pool
+          .request()
+          .input('TableName', sql.NVarChar, tableName)
+          .execute('FAJITA.dbo.sp_CalculatePartyFromRPartyRollup');
+
+        const data = result.recordset[0];
+        
+        if (data.Status === 'SUCCESS') {
+          console.log(
+            `✅ PARTY calculation complete: ${data.RowsUpdated} rows updated from RPARTYROLLUP`
+          );
+
+          return {
+            success: true,
+            status: data.Status,
+            tableName: data.TableName,
+            rowsUpdated: data.RowsUpdated,
+            totalRows: data.TotalRows,
+            message: data.Message,
+          };
+        } else if (data.Status === 'SKIPPED') {
+          console.log(`⚠️ PARTY calculation skipped: ${data.Message}`);
+          
+          return {
+            success: true,
+            status: data.Status,
+            tableName: data.TableName,
+            rowsUpdated: 0,
+            totalRows: 0,
+            message: data.Message,
+            skipped: true
+          };
+        } else {
+          console.error(`❌ PARTY calculation failed: ${data.Message}`);
+          
+          return {
+            success: false,
+            status: data.Status,
+            tableName: data.TableName,
+            message: data.Message,
+            error: true
+          };
+        }
+
+      } catch (error) {
+        console.error('Error calculating PARTY from RPARTYROLLUP:', error);
+        throw new Error(`Failed to calculate PARTY from RPARTYROLLUP: ${error.message}`);
+      }
+    },
+    fnName: 'calculatePartyFromRPartyRollup',
+  });
+};
+
+// Don't forget to add to module.exports:
+module.exports = {
+  // ... existing exports
+  calculatePartyFromRPartyRollup,
 };
 
 module.exports = {
@@ -1665,4 +2100,7 @@ module.exports = {
   createDollarNColumn,
   createVFREQColumns,
   fixIAGEValues,
+  processHouseholding,
+  extractHouseholdingDuplicateFiles,
+  calculatePartyFromRPartyRollup,
 };

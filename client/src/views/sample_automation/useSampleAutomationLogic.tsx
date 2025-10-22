@@ -948,24 +948,83 @@ const handleExtractFiles = useCallback(async (config) => {
     if (result.success) {
       setProcessStatus('✅ Files extracted successfully! Downloading...');
       
+      let downloadDelay = 0;
+      const DELAY_INCREMENT = 1000; // 1 second between downloads
+      
       if (result.splitMode === 'split') {
-        // Download both landline and cell files
+        // Download landline file
         if (result.files.landline) {
-          downloadFile(result.files.landline.url, result.files.landline.filename);
+          setTimeout(() => {
+            downloadFile(result.files.landline.url, result.files.landline.filename);
+          }, downloadDelay);
+          downloadDelay += DELAY_INCREMENT;
         }
-        setTimeout(() => {
-          if (result.files.cell) {
+        
+        // Download cell file
+        if (result.files.cell) {
+          setTimeout(() => {
             downloadFile(result.files.cell.url, result.files.cell.filename);
-          }
-        }, 1000);
+          }, downloadDelay);
+          downloadDelay += DELAY_INCREMENT;
+        }
       } else {
         // Download single file
         if (result.files.single) {
-          downloadFile(result.files.single.url, result.files.single.filename);
+          setTimeout(() => {
+            downloadFile(result.files.single.url, result.files.single.filename);
+          }, downloadDelay);
+          downloadDelay += DELAY_INCREMENT;
+        }
+      }
+      
+      // NEW: Download householding duplicate files if they exist
+      if (result.householdingDuplicateFiles && result.householdingDuplicateFiles.files) {
+        const duplicateFiles = result.householdingDuplicateFiles.files;
+        
+        // Download duplicate2 file
+        if (duplicateFiles.duplicate2) {
+          setTimeout(() => {
+            downloadFile(duplicateFiles.duplicate2.url, duplicateFiles.duplicate2.filename);
+          }, downloadDelay);
+          downloadDelay += DELAY_INCREMENT;
+        }
+        
+        // Download duplicate3 file
+        if (duplicateFiles.duplicate3) {
+          setTimeout(() => {
+            downloadFile(duplicateFiles.duplicate3.url, duplicateFiles.duplicate3.filename);
+          }, downloadDelay);
+          downloadDelay += DELAY_INCREMENT;
+        }
+        
+        // Download duplicate4 file
+        if (duplicateFiles.duplicate4) {
+          setTimeout(() => {
+            downloadFile(duplicateFiles.duplicate4.url, duplicateFiles.duplicate4.filename);
+          }, downloadDelay);
+          downloadDelay += DELAY_INCREMENT;
+        }
+        
+        // Update status message to include householding info
+        const totalDuplicateFiles = result.householdingDuplicateFiles.filesGenerated || 0;
+        const totalDuplicateRecords = result.householdingDuplicateFiles.totalRecords || 0;
+        
+        if (totalDuplicateFiles > 0) {
+          setTimeout(() => {
+            setProcessStatus(
+              `✅ Downloaded ${result.splitMode === 'split' ? '2' : '1'} main file(s) + ${totalDuplicateFiles} householding duplicate file(s) (${totalDuplicateRecords} records)`
+            );
+          }, downloadDelay);
         }
       }
       
       console.log('Files extracted:', result);
+      
+      // Clear status after a delay
+      setTimeout(() => {
+        setProcessStatus('');
+      }, downloadDelay + 5000);
+      
     } else {
       setProcessStatus(`❌ Extraction failed: ${result.message}`);
     }
@@ -974,7 +1033,7 @@ const handleExtractFiles = useCallback(async (config) => {
     const errorMessage = error?.data?.message || error?.message || 'Failed to extract files';
     setProcessStatus(`❌ Error extracting files: ${errorMessage}`);
   }
-}, [extractFiles, downloadFile]);
+}, [extractFiles, downloadFile, setProcessStatus]);
 
   // Handle split configuration changes
 const handleSplitConfigChange = useCallback(async (config: any) => {

@@ -357,6 +357,31 @@ const processFile = async (req, res) => {
           }
         }
 
+        if (vendorId === 4 || vendorId === 3) {
+          console.log(
+            'RNC vendor detected (ID: 4) - calculating PARTY from RPARTYROLLUP...'
+          );
+          try {
+            const partyResult =
+              await SampleAutomation.calculatePartyFromRPartyRollup(
+                tableResult.tableName
+              );
+
+            if (partyResult.success && !partyResult.skipped) {
+              console.log(
+                `✅ PARTY calculation complete: ${partyResult.rowsUpdated} rows updated from RPARTYROLLUP`
+              );
+            } else if (partyResult.skipped) {
+              console.log('⚠️ PARTY calculation skipped:', partyResult.message);
+            }
+          } catch (partyError) {
+            console.error(
+              '⚠️ RNC PARTY calculation failed (non-critical):',
+              partyError
+            );
+          }
+        }
+
         console.log(
           'Creating VFREQGEN and VFREQPR columns using stored procedure...'
         );
@@ -380,9 +405,12 @@ const processFile = async (req, res) => {
         );
 
         console.log('Fixing IAGE values using stored procedure...');
-const iageResult = await SampleAutomation.fixIAGEValues(tableResult.tableName);
-console.log(`✅ IAGE fix complete: ${iageResult.rowsUpdated} values changed from -1 to 00`);
-
+        const iageResult = await SampleAutomation.fixIAGEValues(
+          tableResult.tableName
+        );
+        console.log(
+          `✅ IAGE fix complete: ${iageResult.rowsUpdated} values changed from -1 to 00`
+        );
 
         console.log('Calculating age from birth year...');
         try {
@@ -958,6 +986,7 @@ const extractFiles = handleAsync(async (req, res) => {
       selectedHeaders,
       splitMode,
       selectedAgeRange,
+      householdingEnabled,
       fileNames,
     } = req.body;
 
@@ -983,12 +1012,14 @@ const extractFiles = handleAsync(async (req, res) => {
     console.log(`Extracting files from table: ${tableName}`);
     console.log(`Split mode: ${splitMode}`);
     console.log(`Selected headers: ${selectedHeaders.length}`);
+    console.log(`Householding enabled: ${householdingEnabled}`);
 
     const result = await SampleAutomation.extractFilesFromTable({
       tableName,
       selectedHeaders,
       splitMode,
       selectedAgeRange,
+      householdingEnabled,
       fileNames,
     });
 

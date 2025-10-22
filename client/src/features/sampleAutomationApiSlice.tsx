@@ -117,6 +117,7 @@ interface ExtractFilesParams {
   selectedHeaders: string[];
   splitMode: string;
   selectedAgeRange?: string | number;
+  householdingEnabled?: boolean;
   fileNames: {
     landline?: string;
     cell?: string;
@@ -127,12 +128,22 @@ interface ExtractFilesParams {
 interface ExtractFilesResponse {
   success: boolean;
   splitMode: string;
+  vtypeUpdated?: boolean;
+  householdingProcessed?: boolean; 
+  vtypeStats?: {
+    landlineCount: number;
+    cellCount: number;
+    ageThreshold: number;
+  };
+  householdingStats?: HouseholdingStats | null; 
+  householdingDuplicateFiles?: HouseholdingDuplicateFiles | null; 
   files: {
     landline?: {
       filename: string;
       path: string;
       url: string;
       records: number;
+      headers?: string[];
       conditions: string[];
     };
     cell?: {
@@ -140,6 +151,7 @@ interface ExtractFilesResponse {
       path: string;
       url: string;
       records: number;
+      headers?: string[];
       conditions: string[];
     };
     single?: {
@@ -147,7 +159,12 @@ interface ExtractFilesResponse {
       path: string;
       url: string;
       records: number;
+      headers?: string[];
+      conditions?: string[];
     };
+    duplicate2?: HouseholdingDuplicateFile;
+    duplicate3?: HouseholdingDuplicateFile;
+    duplicate4?: HouseholdingDuplicateFile;
   };
   message: string;
 }
@@ -155,6 +172,46 @@ interface ExtractFilesResponse {
 // Add cleanup interface
 interface CleanupTempFileResponse {
   success: boolean;
+  message: string;
+}
+
+// NEW: Add interfaces for householding duplicate files
+interface HouseholdingDuplicateFile {
+  filename: string;
+  path: string;
+  url: string;
+  records: number;
+  headers: string[];
+  rank: number;
+  description: string;
+}
+
+interface HouseholdingDuplicateFiles {
+  filesGenerated: number;
+  totalRecords: number;
+  files: {
+    duplicate2?: HouseholdingDuplicateFile;
+    duplicate3?: HouseholdingDuplicateFile;
+    duplicate4?: HouseholdingDuplicateFile;
+  };
+  message: string;
+  success: boolean;
+}
+
+interface HouseholdingStats {
+  totalProcessed: number;
+  mainTableFinalCount: number;
+  duplicateCounts: {
+    duplicate2: number;
+    duplicate3: number;
+    duplicate4: number;
+  };
+  tablesCreated: {
+    backup: string;
+    duplicate2: string;
+    duplicate3: string;
+    duplicate4: string;
+  };
   message: string;
 }
 
