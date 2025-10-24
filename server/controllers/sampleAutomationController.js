@@ -357,7 +357,7 @@ const processFile = async (req, res) => {
           }
         }
 
-        if (vendorId === 4 || vendorId === 3) {
+        if (vendorId === 4) {
           console.log(
             'RNC vendor detected (ID: 4) - calculating PARTY from RPARTYROLLUP...'
           );
