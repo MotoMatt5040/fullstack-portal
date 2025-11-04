@@ -4,16 +4,6 @@ const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
 const SampleAutomation = require('../services/SampleAutomationServices');
 const handleAsync = require('./asyncController');
-// const { formatPhoneNumber } = require('../utils/FormatPhoneNumber.js');
-
-// Configure multer for multiple file uploads (200MB limit per file)
-// const upload = multer({
-//   dest: 'temp_uploads/', // Temporary directory for uploads
-//   limits: {
-//     fileSize: 200 * 1024 * 1024, // 200MB limit per file
-//     files: 10, // Maximum 10 files
-//   },
-// });
 
 const upload = multer({
   storage: multer.memoryStorage(), // ⭐ Keep in memory instead of disk

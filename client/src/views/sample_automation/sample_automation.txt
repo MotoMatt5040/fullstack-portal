@@ -51,3 +51,27 @@ CFIPS pad => 3
 
 VFREQGEN
 VFREQPR -> VH24G, VH22G, VH20G, VH18G
+
+
+db schema for callids
+
+CALLIDS:
+  PhoneNumberID: Primark Key
+  PhoneNumber: Unique
+  Status: tinyint
+  DateCreated: date
+  DateUpdated: date
+CALLIDUsage:
+  ProjectID: Primary Key
+  PhoneNumberID: Foreign Key with CALLIDS
+  StartDate: date
+  EndDate: date
+  DateCreated: date
+  DateUpdated: date
+  UpdatedBy: uuid
+CallIDStatus:
+  1: Available
+  2: In Use
+  3: Flagged as spam
+  4: Flagged for removal
+  5: Removed

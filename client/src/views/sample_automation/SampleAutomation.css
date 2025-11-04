@@ -50,6 +50,43 @@
 }
 
 /* ========================================
+   AGE CALCULATION MODE SECTION
+======================================== */
+
+.age-calculation-mode-section {
+  background: var(--background-color-elevated);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.age-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.age-mode-header label {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.age-toggle-container {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.age-mode-help-text {
+  color: var(--label-text-color);
+  font-size: 0.85rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ========================================
    BASE CONTAINER AND LAYOUT
 ======================================== */
 
