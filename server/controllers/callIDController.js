@@ -257,30 +257,30 @@ const handleAssignCallIDToProject = handleAsync(async (req, res) => {
  * PUT /api/callid/usage/assign/:projectId/:phoneNumberId
  * Body: { startDate, endDate }
  */
-const handleUpdateAssignment = handleAsync(async (req, res) => {
-  const { projectId, phoneNumberId } = req.params;
-  const { startDate, endDate } = req.body;
+// const handleUpdateAssignment = handleAsync(async (req, res) => {
+//   const { projectId, phoneNumberId } = req.params;
+//   const { startDate, endDate } = req.body;
 
-  if (!projectId || !phoneNumberId) {
-    return res.status(400).json({ 
-      message: 'Project ID and Phone Number ID are required' 
-    });
-  }
+//   if (!projectId || !phoneNumberId) {
+//     return res.status(400).json({ 
+//       message: 'Project ID and Phone Number ID are required' 
+//     });
+//   }
 
-  const result = await CallIDService.updateAssignment(
-    projectId,
-    parseInt(phoneNumberId),
-    {
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined
-    }
-  );
+//   const result = await CallIDService.updateAssignment(
+//     projectId,
+//     parseInt(phoneNumberId),
+//     {
+//       startDate: startDate ? new Date(startDate) : undefined,
+//       endDate: endDate ? new Date(endDate) : undefined
+//     }
+//   );
 
-  res.status(200).json({
-    success: true,
-    message: result.Message
-  });
-});
+//   res.status(200).json({
+//     success: true,
+//     message: result.Message
+//   });
+// });
 
 /**
  * End an assignment (set end date to now)
@@ -402,6 +402,154 @@ const handleGetAvailableCallIDsForState = handleAsync(async (req, res) => {
   res.status(200).json(availableIDs);
 });
 
+// Add these functions to server/controllers/callIDController.js
+
+const {
+  getAllProjectsWithAssignments,
+  checkAssignmentConflict,
+  updateAssignment,
+  swapCallIDAssignment,
+} = require('../services/CallIDServices');
+
+/**
+ * Get all projects with their call ID assignment summary
+ * GET /api/callid/assignments/projects
+ */
+const handleGetAllProjectsWithAssignments = async (req, res) => {
+  try {
+    const projects = await getAllProjectsWithAssignments();
+    
+    res.json({
+      success: true,
+      data: projects,
+      count: projects.length
+    });
+  } catch (error) {
+    console.error('Error in handleGetAllProjectsWithAssignments:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch projects with assignments'
+    });
+  }
+};
+
+/**
+ * Check for assignment conflicts
+ * POST /api/callid/assignments/check-conflict
+ * Body: { phoneNumberId, startDate, endDate, excludeProjectId? }
+ */
+const handleCheckAssignmentConflict = async (req, res) => {
+  try {
+    const { phoneNumberId, startDate, endDate, excludeProjectId } = req.body;
+
+    if (!phoneNumberId || !startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number ID, start date, and end date are required'
+      });
+    }
+
+    const conflictCheck = await checkAssignmentConflict(
+      phoneNumberId, 
+      startDate, 
+      endDate, 
+      excludeProjectId
+    );
+    
+    res.json({
+      success: true,
+      ...conflictCheck
+    });
+  } catch (error) {
+    console.error('Error in handleCheckAssignmentConflict:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to check assignment conflict'
+    });
+  }
+};
+
+/**
+ * Update an existing assignment
+ * PUT /api/callid/assignments/:projectId/:phoneNumberId
+ * Body: { startDate, endDate }
+ */
+const handleUpdateAssignment = async (req, res) => {
+  try {
+    const { projectId, phoneNumberId } = req.params;
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date and end date are required'
+      });
+    }
+
+    const updated = await updateAssignment(projectId, parseInt(phoneNumberId), {
+      startDate,
+      endDate
+    });
+    
+    res.json({
+      success: true,
+      data: updated,
+      message: 'Assignment updated successfully'
+    });
+  } catch (error) {
+    console.error('Error in handleUpdateAssignment:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update assignment'
+    });
+  }
+};
+
+/**
+ * Swap call ID from one project to another
+ * POST /api/callid/assignments/swap
+ * Body: { fromProjectId, toProjectId, phoneNumberId, startDate?, endDate? }
+ */
+const handleSwapCallIDAssignment = async (req, res) => {
+  try {
+    const { fromProjectId, toProjectId, phoneNumberId, startDate, endDate } = req.body;
+
+    if (!fromProjectId || !toProjectId || !phoneNumberId) {
+      return res.status(400).json({
+        success: false,
+        message: 'From project ID, to project ID, and phone number ID are required'
+      });
+    }
+
+    const result = await swapCallIDAssignment(
+      fromProjectId,
+      toProjectId,
+      phoneNumberId,
+      { startDate, endDate }
+    );
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error in handleSwapCallIDAssignment:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to swap call ID assignment'
+    });
+  }
+};
+
+// Add to module.exports at the bottom of the file:
+module.exports = {
+  // ... existing exports ...
+  handleGetAllProjectsWithAssignments,
+  handleCheckAssignmentConflict,
+  handleUpdateAssignment,
+  handleSwapCallIDAssignment,
+};
+
 module.exports = {
   // Dashboard
   handleGetDashboardMetrics,
@@ -421,6 +569,11 @@ module.exports = {
   handleAssignCallIDToProject,
   handleUpdateAssignment,
   handleEndAssignment,
+  
+  handleGetAllProjectsWithAssignments,
+  handleCheckAssignmentConflict,
+  handleUpdateAssignment,
+  handleSwapCallIDAssignment,
   
   // Analytics
   handleGetUtilizationMetrics,

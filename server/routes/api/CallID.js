@@ -229,4 +229,47 @@ router.route('/lookups/available')
     callIDController.handleGetAvailableCallIDsForState
   );
 
+/**
+ * Get all projects with their assignment summaries
+ * GET /api/callid/assignments/projects
+ */
+router.route('/assignments/projects')
+  .get(
+    verifyRoles(...allowedRoles),
+    callIDController.handleGetAllProjectsWithAssignments
+  );
+
+/**
+ * Check for assignment conflicts
+ * POST /api/callid/assignments/check-conflict
+ * Body: { phoneNumberId, startDate, endDate, excludeProjectId? }
+ */
+router.route('/assignments/check-conflict')
+  .post(
+    verifyRoles(...allowedRoles),
+    callIDController.handleCheckAssignmentConflict
+  );
+
+/**
+ * Update an existing assignment (change dates)
+ * PUT /api/callid/assignments/:projectId/:phoneNumberId
+ * Body: { startDate, endDate }
+ */
+router.route('/assignments/:projectId/:phoneNumberId')
+  .put(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    callIDController.handleUpdateAssignment
+  );
+
+/**
+ * Swap a call ID from one project to another
+ * POST /api/callid/assignments/swap
+ * Body: { fromProjectId, toProjectId, phoneNumberId, startDate?, endDate? }
+ */
+router.route('/assignments/swap')
+  .post(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    callIDController.handleSwapCallIDAssignment
+  );
+
 module.exports = router;

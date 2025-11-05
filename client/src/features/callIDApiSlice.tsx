@@ -7,9 +7,8 @@ import { apiSlice } from '../app/api/apiSlice';
 
 export const callIDApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    
     // ==================== DASHBOARD ENDPOINTS ====================
-    
+
     /**
      * Get dashboard overview metrics
      */
@@ -48,12 +47,15 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
     getAllCallIDs: builder.query({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
-        
+
         if (params.status) queryParams.append('status', params.status);
         if (params.stateFIPS) queryParams.append('stateFIPS', params.stateFIPS);
-        if (params.callerName) queryParams.append('callerName', params.callerName);
-        if (params.phoneNumber) queryParams.append('phoneNumber', params.phoneNumber);
-        if (params.inUse !== undefined) queryParams.append('inUse', params.inUse);
+        if (params.callerName)
+          queryParams.append('callerName', params.callerName);
+        if (params.phoneNumber)
+          queryParams.append('phoneNumber', params.phoneNumber);
+        if (params.inUse !== undefined)
+          queryParams.append('inUse', params.inUse);
 
         const queryString = queryParams.toString();
         return `/callid/inventory${queryString ? `?${queryString}` : ''}`;
@@ -84,7 +86,11 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['CallIDInventory', 'CallIDDashboard', 'CallIDAnalytics'],
+      invalidatesTags: [
+        'CallIDInventory',
+        'CallIDDashboard',
+        'CallIDAnalytics',
+      ],
     }),
 
     /**
@@ -115,7 +121,11 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         url: `/callid/inventory/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['CallIDInventory', 'CallIDDashboard', 'CallIDAnalytics'],
+      invalidatesTags: [
+        'CallIDInventory',
+        'CallIDDashboard',
+        'CallIDAnalytics',
+      ],
     }),
 
     // ==================== USAGE/ASSIGNMENT ENDPOINTS ====================
@@ -172,19 +182,19 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
      * @param {number} params.phoneNumberId - Phone number ID
      * @param {Object} params.data - Updated fields (startDate, endDate)
      */
-    updateAssignment: builder.mutation({
-      query: ({ projectId, phoneNumberId, data }) => ({
-        url: `/callid/usage/assign/${projectId}/${phoneNumberId}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: [
-        'CallIDActiveAssignments',
-        'CallIDRecentActivity',
-        'CallIDUsage',
-        'ProjectCallIDs',
-      ],
-    }),
+    // updateAssignment: builder.mutation({
+    //   query: ({ projectId, phoneNumberId, data }) => ({
+    //     url: `/callid/usage/assign/${projectId}/${phoneNumberId}`,
+    //     method: 'PUT',
+    //     body: data,
+    //   }),
+    //   invalidatesTags: [
+    //     'CallIDActiveAssignments',
+    //     'CallIDRecentActivity',
+    //     'CallIDUsage',
+    //     'ProjectCallIDs',
+    //   ],
+    // }),
 
     /**
      * End an assignment (sets end date to now)
@@ -203,6 +213,47 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'CallIDRecentActivity',
         'CallIDUsage',
         'ProjectCallIDs',
+      ],
+    }),
+
+    getAllProjectsWithAssignments: builder.query({
+      query: () => '/callid/assignments/projects',
+      providesTags: ['ProjectAssignments'],
+    }),
+
+    checkAssignmentConflict: builder.mutation({
+      query: (data) => ({
+        url: '/callid/assignments/check-conflict',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+
+    updateAssignment: builder.mutation({
+      query: ({ projectId, phoneNumberId, ...data }) => ({
+        url: `/callid/assignments/${projectId}/${phoneNumberId}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: [
+        'CallIDs',
+        'ProjectAssignments',
+        'CallIDUsage',
+        'ActiveAssignments',
+      ],
+    }),
+
+    swapCallIDAssignment: builder.mutation({
+      query: (data) => ({
+        url: '/callid/assignments/swap',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [
+        'CallIDs',
+        'ProjectAssignments',
+        'CallIDUsage',
+        'ActiveAssignments',
       ],
     }),
 
@@ -317,6 +368,9 @@ export const {
   useAssignCallIDToProjectMutation,
   useUpdateAssignmentMutation,
   useEndAssignmentMutation,
+  useGetAllProjectsWithAssignmentsQuery,
+  useCheckAssignmentConflictMutation,
+  useSwapCallIDAssignmentMutation,
 
   // Analytics
   useGetUtilizationMetricsQuery,

@@ -34,6 +34,8 @@ import DispositionReport from './views/disposition_report/DispositionReport';
 import AIPrompting from './views/ai_prompting/AIPrompting';
 import ContactSupport from './views/support/ContactSupport';
 import SampleAutomation from './views/sample_automation/SampleAutomation';
+import CallID from './views/call_id/CallIDManagement';
+
 function App() {
   useGetRolesQuery();
 
@@ -107,6 +109,7 @@ function App() {
           <Route path='project-report' element={<ProjectReport />} />
           <Route path='production-report' element={<ProductionReport />} />
           <Route path='sample-automation' element={<SampleAutomation />} />
+          <Route path='call-id' element={<CallID />} />
           {/* <Route path='publishquotas' element={<QuotaPublishing />} /> */}
         </Route>
         <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>

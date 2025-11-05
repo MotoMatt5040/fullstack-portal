@@ -13,7 +13,11 @@ import {
   useAssignCallIDToProjectMutation,
   useEndAssignmentMutation,
   useLazyGetProjectCallIDsQuery,
+  useGetAllProjectsWithAssignmentsQuery,
+  useUpdateAssignmentMutation,
+  useSwapCallIDAssignmentMutation,
 } from '../../features/callIDApiSlice';
+
 
 /**
  * Custom hook for Call ID Management logic
@@ -36,6 +40,8 @@ const useCallIDManagementLogic = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
+  const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
+  const [showAssignToProjectModal, setShowAssignToProjectModal] = useState(false);
   const [selectedCallID, setSelectedCallID] = useState<any>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
 
@@ -89,12 +95,26 @@ const useCallIDManagementLogic = () => {
   const [getProjectHistory, { data: projectHistoryData, isLoading: historyLoading }] = 
     useLazyGetProjectCallIDsQuery();
 
+  // Projects with assignments (for assignments tab)
+  const {
+    data: projectsWithAssignmentsData,
+    isLoading: projectsLoading,
+    refetch: refetchProjects,
+  } = useGetAllProjectsWithAssignmentsQuery(undefined, {
+    skip: activeTab !== 'assignments',
+  });
+
+  // Extract the actual data array from the API response
+  const projectsWithAssignments = projectsWithAssignmentsData?.data || [];
+
   // ==================== MUTATIONS ====================
   const [createCallID, { isLoading: creating }] = useCreateCallIDMutation();
   const [updateCallID, { isLoading: updating }] = useUpdateCallIDMutation();
   const [deleteCallID, { isLoading: deleting }] = useDeleteCallIDMutation();
   const [assignCallID, { isLoading: assigning }] = useAssignCallIDToProjectMutation();
   const [endAssignment, { isLoading: ending }] = useEndAssignmentMutation();
+  const [updateAssignment, { isLoading: updatingAssignment }] = useUpdateAssignmentMutation();
+  const [swapAssignment, { isLoading: swappingAssignment }] = useSwapCallIDAssignmentMutation();
 
   // ==================== EFFECTS ====================
 
@@ -127,10 +147,12 @@ const useCallIDManagementLogic = () => {
         return dashboardLoading || assignmentsLoading || activityLoading;
       case 'inventory':
         return inventoryLoading;
+      case 'assignments':
+        return projectsLoading;
       default:
         return false;
     }
-  }, [activeTab, dashboardLoading, assignmentsLoading, activityLoading, inventoryLoading]);
+  }, [activeTab, dashboardLoading, assignmentsLoading, activityLoading, inventoryLoading, projectsLoading]);
 
   // Status options for dropdowns
   const statusOptions = useMemo(() => {
@@ -156,6 +178,22 @@ const useCallIDManagementLogic = () => {
       a.ProjectID?.toLowerCase().includes(query)
     );
   }, [activeAssignments, projectSearchQuery]);
+
+  // Filtered projects for assignments tab
+  const filteredProjects = useMemo(() => {
+    if (!projectsWithAssignments) return [];
+    
+    if (!projectSearchQuery) return projectsWithAssignments;
+    
+    return projectsWithAssignments.filter((project: any) =>
+      project.ProjectID.toLowerCase().includes(projectSearchQuery.toLowerCase())
+    );
+  }, [projectsWithAssignments, projectSearchQuery]);
+
+  // Available numbers (not currently in use)
+  const availableNumbers = useMemo(() => {
+    return callIDInventory.filter((callID: any) => !callID.CurrentlyInUse);
+  }, [callIDInventory]);
 
   // ==================== ACTIONS ====================
 
@@ -190,8 +228,14 @@ const useCallIDManagementLogic = () => {
       case 'inventory':
         getAllCallIDs(filters);
         break;
+      case 'assignments':
+        refetchProjects();
+        if (selectedProjectHistory) {
+          getProjectHistory(selectedProjectHistory);
+        }
+        break;
     }
-  }, [activeTab, filters, refetchDashboard, refetchActiveAssignments, refetchRecentActivity, getAllCallIDs]);
+  }, [activeTab, filters, refetchDashboard, refetchActiveAssignments, refetchRecentActivity, getAllCallIDs, refetchProjects, selectedProjectHistory, getProjectHistory]);
 
   // Modal actions
   const openCreateModal = useCallback(() => setShowCreateModal(true), []);
@@ -333,6 +377,130 @@ const useCallIDManagementLogic = () => {
     setSelectedProjectHistory(projectId);
   }, []);
 
+  // ==================== NEW ASSIGNMENT TAB ACTIONS ====================
+
+  /**
+   * View project call ID history
+   */
+  const handleViewProjectHistory = useCallback(
+    async (projectId: string) => {
+      setSelectedProjectHistory(projectId);
+      try {
+        const result = await getProjectHistory(projectId);
+        if (result.data) {
+          setProjectHistory(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching project history:', error);
+      }
+    },
+    [getProjectHistory]
+  );
+
+  /**
+   * Open edit assignment modal
+   */
+  const handleOpenEditAssignmentModal = useCallback((assignment: any) => {
+    setSelectedAssignment(assignment);
+    setShowEditAssignmentModal(true);
+  }, []);
+
+  /**
+   * Close edit assignment modal
+   */
+  const closeEditAssignmentModal = useCallback(() => {
+    setShowEditAssignmentModal(false);
+    setSelectedAssignment(null);
+  }, []);
+
+  /**
+   * Handle update assignment
+   */
+  const handleUpdateAssignment = useCallback(async (data: any) => {
+    try {
+      await updateAssignment(data).unwrap();
+      
+      // Refresh project history
+      if (selectedProjectHistory) {
+        await handleViewProjectHistory(selectedProjectHistory);
+      }
+      
+      closeEditAssignmentModal();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating assignment:', error);
+      alert(error.data?.message || 'Failed to update assignment');
+      return { success: false, error: error.data?.message };
+    }
+  }, [updateAssignment, selectedProjectHistory, handleViewProjectHistory, closeEditAssignmentModal]);
+
+  /**
+   * Open swap modal
+   */
+  const handleOpenSwapModal = useCallback((assignment: any) => {
+    setSelectedAssignment(assignment);
+    setShowSwapModal(true);
+  }, []);
+
+  /**
+   * Handle swap assignment
+   */
+  const handleSwapAssignment = useCallback(async (data: any) => {
+    try {
+      await swapAssignment(data).unwrap();
+      
+      // Refresh both projects
+      await refetchProjects();
+      if (selectedProjectHistory) {
+        await handleViewProjectHistory(selectedProjectHistory);
+      }
+      
+      closeSwapModal();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error swapping assignment:', error);
+      alert(error.data?.message || 'Failed to swap assignment');
+      return { success: false, error: error.data?.message };
+    }
+  }, [swapAssignment, refetchProjects, selectedProjectHistory, handleViewProjectHistory, closeSwapModal]);
+
+  /**
+   * Open assign to project modal
+   */
+  const handleOpenAssignModal = useCallback((callID: any) => {
+    setSelectedCallID(callID);
+    setShowAssignToProjectModal(true);
+  }, []);
+
+  /**
+   * Close assign to project modal
+   */
+  const closeAssignToProjectModal = useCallback(() => {
+    setShowAssignToProjectModal(false);
+    setSelectedCallID(null);
+  }, []);
+
+  /**
+   * Handle assign call ID to project
+   */
+  const handleAssignToProject = useCallback(async (data: any) => {
+    try {
+      await assignCallID(data).unwrap();
+      
+      // Refresh project history
+      if (selectedProjectHistory) {
+        await handleViewProjectHistory(selectedProjectHistory);
+      }
+      
+      closeAssignToProjectModal();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error assigning call ID:', error);
+      alert(error.data?.message || 'Failed to assign call ID');
+      return { success: false, error: error.data?.message };
+    }
+  }, [assignCallID, selectedProjectHistory, handleViewProjectHistory, closeAssignToProjectModal]);
+
   // ==================== RETURN ====================
   return {
     // State
@@ -359,6 +527,7 @@ const useCallIDManagementLogic = () => {
     callIDInventory,
     statusOptions,
     stateOptions,
+    availableNumbers,
 
     // Loading states
     isLoading,
@@ -392,6 +561,28 @@ const useCallIDManagementLogic = () => {
     handleSwapSubmit,
     handleEndAssignmentClick,
     handleViewHistory,
+
+    // Assignments tab
+    projectsWithAssignments: filteredProjects,
+    projectsLoading,
+    projectHistoryLoading: historyLoading,
+    handleViewProjectHistory,
+    
+    // Assignment modals
+    showEditAssignmentModal,
+    handleOpenEditAssignmentModal,
+    closeEditAssignmentModal,
+    handleUpdateAssignment,
+    updatingAssignment,
+    
+    handleOpenSwapModal,
+    handleSwapAssignment,
+    swappingAssignment,
+    
+    showAssignToProjectModal,
+    handleOpenAssignModal,
+    closeAssignToProjectModal,
+    handleAssignToProject,
   };
 };
 

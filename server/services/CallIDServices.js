@@ -528,34 +528,34 @@ const assignCallIDToProject = async (assignmentData) => {
  * @param {Object} updates - Fields to update
  * @returns {Object} Result
  */
-const updateAssignment = async (projectId, phoneNumberId, updates) => {
-  const { startDate, endDate } = updates;
+// const updateAssignment = async (projectId, phoneNumberId, updates) => {
+//   const { startDate, endDate } = updates;
 
-  const query = `
-    UPDATE FAJITA.dbo.CallIDUsage
-    SET 
-      StartDate = COALESCE(@startDate, StartDate),
-      EndDate = COALESCE(@endDate, EndDate)
-    WHERE ProjectID = @projectId AND PhoneNumberID = @phoneNumberId
+//   const query = `
+//     UPDATE FAJITA.dbo.CallIDUsage
+//     SET 
+//       StartDate = COALESCE(@startDate, StartDate),
+//       EndDate = COALESCE(@endDate, EndDate)
+//     WHERE ProjectID = @projectId AND PhoneNumberID = @phoneNumberId
     
-    SELECT 1 as Success, 'Assignment updated successfully' as Message
-  `;
+//     SELECT 1 as Success, 'Assignment updated successfully' as Message
+//   `;
 
-  return withDbConnection({
-    database: promark,
-    queryFn: async (pool) => {
-      const result = await pool.request()
-        .input('projectId', sql.NVarChar(20), projectId)
-        .input('phoneNumberId', sql.Int, phoneNumberId)
-        .input('startDate', sql.DateTime, startDate || null)
-        .input('endDate', sql.DateTime, endDate || null)
-        .query(query);
-      return result.recordset[0];
-    },
-    fnName: 'updateAssignment',
-    attempts: 3
-  });
-};
+//   return withDbConnection({
+//     database: promark,
+//     queryFn: async (pool) => {
+//       const result = await pool.request()
+//         .input('projectId', sql.NVarChar(20), projectId)
+//         .input('phoneNumberId', sql.Int, phoneNumberId)
+//         .input('startDate', sql.DateTime, startDate || null)
+//         .input('endDate', sql.DateTime, endDate || null)
+//         .query(query);
+//       return result.recordset[0];
+//     },
+//     fnName: 'updateAssignment',
+//     attempts: 3
+//   });
+// };
 
 /**
  * End an assignment (set end date to now)
@@ -870,6 +870,195 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
   });
 };
 
+
+/**
+ * Get all projects that have ever used call IDs (with current assignment info)
+ * @returns {Array} Projects with their current call ID assignments
+ */
+const getAllProjectsWithAssignments = async () => {
+  const query = `
+    SELECT DISTINCT
+      u.ProjectID,
+      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate THEN 1 END) as ActiveAssignments,
+      COUNT(u.PhoneNumberID) as TotalAssignments,
+      MIN(u.StartDate) as FirstUsed,
+      MAX(u.EndDate) as LastUsed
+    FROM FAJITA.dbo.CallIDUsage u
+    GROUP BY u.ProjectID
+    ORDER BY u.ProjectID
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request().query(query);
+      return result.recordset;
+    },
+    fnName: 'getAllProjectsWithAssignments',
+    attempts: 3
+  });
+};
+
+/**
+ * Check if a call ID is available for assignment (no conflicts)
+ * @param {Number} phoneNumberId - Phone number ID
+ * @param {String} startDate - Assignment start date
+ * @param {String} endDate - Assignment end date
+ * @param {String} excludeProjectId - Optional: Exclude this project from conflict check (for updates)
+ * @returns {Object} Conflict check result
+ */
+const checkAssignmentConflict = async (phoneNumberId, startDate, endDate, excludeProjectId = null) => {
+  const query = `
+    SELECT 
+      u.ProjectID,
+      u.StartDate,
+      u.EndDate,
+      c.PhoneNumber
+    FROM FAJITA.dbo.CallIDUsage u
+    INNER JOIN FAJITA.dbo.CallIDs c ON u.PhoneNumberID = c.PhoneNumberID
+    WHERE u.PhoneNumberID = @phoneNumberId
+      ${excludeProjectId ? 'AND u.ProjectID != @excludeProjectId' : ''}
+      AND (
+        (@startDate BETWEEN u.StartDate AND u.EndDate)
+        OR (@endDate BETWEEN u.StartDate AND u.EndDate)
+        OR (u.StartDate BETWEEN @startDate AND @endDate)
+        OR (u.EndDate BETWEEN @startDate AND @endDate)
+      )
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const request = pool.request()
+        .input('phoneNumberId', sql.Int, phoneNumberId)
+        .input('startDate', sql.DateTime, startDate)
+        .input('endDate', sql.DateTime, endDate);
+      
+      if (excludeProjectId) {
+        request.input('excludeProjectId', sql.NVarChar(20), excludeProjectId);
+      }
+      
+      const result = await request.query(query);
+      
+      return {
+        hasConflict: result.recordset.length > 0,
+        conflicts: result.recordset
+      };
+    },
+    fnName: 'checkAssignmentConflict',
+    attempts: 3
+  });
+};
+
+/**
+ * Update an existing assignment (change dates)
+ * @param {String} projectId - Project ID
+ * @param {Number} phoneNumberId - Phone number ID
+ * @param {Object} updates - New start/end dates
+ * @returns {Object} Updated assignment
+ */
+const updateAssignment = async (projectId, phoneNumberId, updates) => {
+  const { startDate, endDate } = updates;
+
+  // Check for conflicts first (excluding current project)
+  const conflictCheck = await checkAssignmentConflict(phoneNumberId, startDate, endDate, projectId);
+  
+  if (conflictCheck.hasConflict) {
+    throw new Error(`Assignment conflict: This number is already assigned to project ${conflictCheck.conflicts[0].ProjectID} during this period`);
+  }
+
+  const query = `
+    UPDATE FAJITA.dbo.CallIDUsage
+    SET 
+      StartDate = @startDate,
+      EndDate = @endDate
+    WHERE ProjectID = @projectId 
+      AND PhoneNumberID = @phoneNumberId
+    
+    SELECT 
+      u.ProjectID,
+      u.PhoneNumberID,
+      c.PhoneNumber,
+      c.CallerName,
+      s.StateAbbr,
+      u.StartDate,
+      u.EndDate
+    FROM FAJITA.dbo.CallIDUsage u
+    INNER JOIN FAJITA.dbo.CallIDs c ON u.PhoneNumberID = c.PhoneNumberID
+    INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
+    WHERE u.ProjectID = @projectId 
+      AND u.PhoneNumberID = @phoneNumberId
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request()
+        .input('projectId', sql.NVarChar(20), projectId)
+        .input('phoneNumberId', sql.Int, phoneNumberId)
+        .input('startDate', sql.DateTime, startDate)
+        .input('endDate', sql.DateTime, endDate)
+        .query(query);
+      
+      return result.recordset[0];
+    },
+    fnName: 'updateAssignment',
+    attempts: 3
+  });
+};
+
+/**
+ * Swap a call ID assignment from one project to another
+ * @param {String} fromProjectId - Source project ID
+ * @param {String} toProjectId - Destination project ID
+ * @param {Number} phoneNumberId - Phone number ID to swap
+ * @param {Object} newDates - Optional new start/end dates for destination project
+ * @returns {Object} Swap result
+ */
+const swapCallIDAssignment = async (fromProjectId, toProjectId, phoneNumberId, newDates = {}) => {
+  const { startDate = new Date(), endDate } = newDates;
+
+  const query = `
+    BEGIN TRANSACTION
+    
+    -- End the assignment from the source project
+    UPDATE FAJITA.dbo.CallIDUsage
+    SET EndDate = DATEADD(second, -1, @startDate)
+    WHERE ProjectID = @fromProjectId 
+      AND PhoneNumberID = @phoneNumberId
+      AND GETDATE() BETWEEN StartDate AND EndDate
+    
+    -- Create new assignment for destination project
+    INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, PhoneNumberID, StartDate, EndDate)
+    VALUES (@toProjectId, @phoneNumberId, @startDate, @endDate)
+    
+    COMMIT TRANSACTION
+    
+    SELECT 'Success' as Result
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request()
+        .input('fromProjectId', sql.NVarChar(20), fromProjectId)
+        .input('toProjectId', sql.NVarChar(20), toProjectId)
+        .input('phoneNumberId', sql.Int, phoneNumberId)
+        .input('startDate', sql.DateTime, startDate)
+        .input('endDate', sql.DateTime, endDate || new Date('2099-12-31'))
+        .query(query);
+      
+      return {
+        success: true,
+        message: `Call ID swapped from ${fromProjectId} to ${toProjectId}`
+      };
+    },
+    fnName: 'swapCallIDAssignment',
+    attempts: 3
+  });
+};
+
+
 module.exports = {
   // Dashboard
   getDashboardMetrics,
@@ -900,5 +1089,11 @@ module.exports = {
   // Lookups
   getAllStatusCodes,
   getAllStates,
-  getAvailableCallIDsForState
+  getAvailableCallIDsForState,
+
+  // Assignments
+  getAllProjectsWithAssignments,
+  checkAssignmentConflict,
+  updateAssignment,
+  swapCallIDAssignment,
 };

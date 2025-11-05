@@ -13,6 +13,13 @@ import {
   mdiPencil,
   mdiDelete,
   mdiClose,
+  mdiMagnify,
+  mdiCalendarStart,
+  mdiCalendarEnd,
+  mdiInformationOutline,
+  mdiFolderOpen,
+  mdiPhoneOff,
+  mdiLoading,
 } from '@mdi/js';
 import useCallIDManagementLogic from './useCallIDManagementLogic';
 import {
@@ -21,6 +28,11 @@ import {
   DeleteCallIDModal,
   AssignCallIDModal,
 } from './CallIDModals';
+import {
+  EditAssignmentModal,
+  SwapAssignmentModal,
+  AssignToProjectModal,
+} from './AssignmentModals';
 import './CallIDManagement.css';
 
 const CallIDManagement: React.FC = () => {
@@ -46,6 +58,7 @@ const CallIDManagement: React.FC = () => {
     callIDInventory,
     statusOptions,
     stateOptions,
+    availableNumbers,
     isLoading,
     inventoryFetching,
     creating,
@@ -75,6 +88,23 @@ const CallIDManagement: React.FC = () => {
     handleSwapSubmit,
     handleEndAssignmentClick,
     handleViewHistory,
+    // Assignments tab specific
+    projectsWithAssignments,
+    projectsLoading,
+    projectHistoryLoading,
+    handleViewProjectHistory,
+    showEditAssignmentModal,
+    handleOpenEditAssignmentModal,
+    closeEditAssignmentModal,
+    handleUpdateAssignment,
+    updatingAssignment,
+    handleOpenSwapModal,
+    handleSwapAssignment,
+    swappingAssignment,
+    showAssignToProjectModal,
+    handleOpenAssignModal,
+    closeAssignToProjectModal,
+    handleAssignToProject,
   } = useCallIDManagementLogic();
 
   // ==================== RENDER FUNCTIONS ====================
@@ -537,106 +567,118 @@ const CallIDManagement: React.FC = () => {
     </div>
   );
 
-  /**
-   * Render assignments tab
-   */
-  const renderAssignmentsTab = () => (
-    <div className="assignments-content">
-      {/* Search by Project */}
-      <div className="assignments-search">
-        <div className="search-group">
-          <label>Search by Project ID</label>
-          <input
-            type="text"
-            placeholder="Enter project ID..."
-            value={projectSearchQuery}
-            onChange={(e) => setProjectSearchQuery(e.target.value)}
-            className="search-input"
-          />
-        </div>
+
+/**
+ * Render assignments tab
+ */
+const renderAssignmentsTab = () => (
+  <div className="assignments-content">
+    {/* Search by Project */}
+    <div className="assignments-search">
+      <div className="search-group">
+        <label>Search by Project ID</label>
+        <input
+          type="text"
+          placeholder="Enter project ID..."
+          value={projectSearchQuery}
+          onChange={(e) => setProjectSearchQuery(e.target.value)}
+          className="search-input"
+        />
+      </div>
+    </div>
+
+    {/* Active Assignments Table */}
+    <div className="assignments-section">
+      <div className="section-header-bar">
+        <h3>Active Assignments</h3>
+        <span className="count-badge">
+          {filteredActiveAssignments.length} active
+        </span>
       </div>
 
-      {/* Active Assignments Table */}
+      {filteredActiveAssignments.length === 0 ? (
+        <div className="empty-state">
+          <Icon path={mdiSwapHorizontal} size={3} color="#ccc" />
+          <p>No active assignments</p>
+        </div>
+      ) : (
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Project ID</th>
+                <th>Phone Number</th>
+                <th>Caller Name</th>
+                <th>State</th>
+                <th>Start Date</th>
+                <th>Days Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredActiveAssignments.map((assignment: any, index: number) => (
+                <tr key={index}>
+                  <td 
+                    className="project-id clickable"
+                    onClick={() => handleViewHistory(assignment.ProjectID)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {assignment.ProjectID}
+                  </td>
+                  <td className="phone-number">{formatPhoneNumber(assignment.PhoneNumber)}</td>
+                  <td>{assignment.CallerName}</td>
+                  <td>
+                    <span className="state-badge">{assignment.StateAbbr}</span>
+                  </td>
+                  <td>{formatDate(assignment.StartDate)}</td>
+                  <td>
+                    <span className={`days-badge ${getDaysBadgeClass(assignment.DaysActive)}`}>
+                      {assignment.DaysActive} days
+                    </span>
+                  </td>
+                  <td className="actions-cell">
+                    <div className="action-buttons">
+                      <button
+                        onClick={() => handleSwapNumber(assignment)}
+                        className="btn-action btn-swap"
+                        title="Swap Phone Number"
+                      >
+                        <Icon path={mdiSwapHorizontal} size={0.7} />
+                      </button>
+                      <button
+                        onClick={() => handleEndAssignmentClick(assignment)}
+                        className="btn-action btn-end"
+                        title="End Assignment"
+                      >
+                        <Icon path={mdiClose} size={0.7} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+
+    {/* Assignment History */}
+    {selectedProjectHistory && (
       <div className="assignments-section">
         <div className="section-header-bar">
-          <h3>Active Assignments</h3>
-          <span className="count-badge">
-            {activeAssignments.length} active
-          </span>
+          <h3>Assignment History - {selectedProjectHistory}</h3>
+          <button
+            onClick={() => setSelectedProjectHistory(null)}
+            className="btn-secondary-small"
+          >
+            Clear
+          </button>
         </div>
-
-        {activeAssignments.length === 0 ? (
+        {projectHistory.length === 0 ? (
           <div className="empty-state">
-            <Icon path={mdiSwapHorizontal} size={3} color="#ccc" />
-            <p>No active assignments</p>
+            <p>No assignment history for this project</p>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Project ID</th>
-                  <th>Phone Number</th>
-                  <th>Caller Name</th>
-                  <th>State</th>
-                  <th>Start Date</th>
-                  <th>Days Active</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredActiveAssignments.map((assignment: any, index: number) => (
-                  <tr key={index}>
-                    <td className="project-id">{assignment.ProjectID}</td>
-                    <td className="phone-number">{formatPhoneNumber(assignment.PhoneNumber)}</td>
-                    <td>{assignment.CallerName}</td>
-                    <td>
-                      <span className="state-badge">{assignment.StateAbbr}</span>
-                    </td>
-                    <td>{formatDate(assignment.StartDate)}</td>
-                    <td>
-                      <span className={`days-badge ${getDaysBadgeClass(assignment.DaysActive)}`}>
-                        {assignment.DaysActive} days
-                      </span>
-                    </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleSwapNumber(assignment)}
-                          className="btn-action btn-swap"
-                          title="Swap Phone Number"
-                        >
-                          <Icon path={mdiSwapHorizontal} size={0.7} />
-                        </button>
-                        <button
-                          onClick={() => handleEndAssignmentClick(assignment)}
-                          className="btn-action btn-end"
-                          title="End Assignment"
-                        >
-                          <Icon path={mdiClose} size={0.7} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Assignment History */}
-      {selectedProjectHistory && (
-        <div className="assignments-section">
-          <div className="section-header-bar">
-            <h3>Assignment History - {selectedProjectHistory}</h3>
-            <button
-              onClick={() => setSelectedProjectHistory(null)}
-              className="btn-secondary-small"
-            >
-              Clear
-            </button>
-          </div>
           <div className="history-timeline">
             {projectHistory.map((item: any, index: number) => (
               <div key={index} className="history-item">
@@ -656,10 +698,14 @@ const CallIDManagement: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    )}
+  </div>
+);
+
+
+
 
   /**
    * Render analytics tab (placeholder for now)
@@ -779,6 +825,32 @@ const CallIDManagement: React.FC = () => {
         onClose={closeAssignModal}
         onAssign={handleAssignCallID}
         callID={selectedCallID}
+        isLoading={assigning}
+      />
+
+      {/* Assignment Management Modals */}
+      <EditAssignmentModal
+        isOpen={showEditAssignmentModal}
+        onClose={closeEditAssignmentModal}
+        onUpdate={handleUpdateAssignment}
+        assignment={selectedAssignment}
+        isLoading={updatingAssignment}
+      />
+
+      <SwapAssignmentModal
+        isOpen={showSwapModal}
+        onClose={closeSwapModal}
+        onSwap={handleSwapAssignment}
+        assignment={selectedAssignment}
+        isLoading={swappingAssignment}
+      />
+
+      <AssignToProjectModal
+        isOpen={showAssignToProjectModal}
+        onClose={closeAssignToProjectModal}
+        onAssign={handleAssignToProject}
+        projectId={selectedProjectHistory}
+        availableCallIDs={availableNumbers}
         isLoading={assigning}
       />
     </section>
