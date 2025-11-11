@@ -216,6 +216,20 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
+    reassignCallID: builder.mutation({
+  query: (data) => ({
+    url: '/callid/assignments/reassign',
+    method: 'POST',
+    body: data,
+  }),
+  invalidatesTags: [
+    'CallIDInventory',
+    'CallIDActiveAssignments',
+    'ProjectAssignments',
+    'CallIDUsage',
+  ],
+}),
+
     getAllProjectsWithAssignments: builder.query({
       query: () => '/callid/assignments/projects',
       providesTags: ['ProjectAssignments'],
@@ -254,6 +268,47 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'ProjectAssignments',
         'CallIDUsage',
         'ActiveAssignments',
+      ],
+    }),
+
+     /**
+     * Update a specific slot for a project
+     * @param {Object} data
+     * @param {string} data.projectId - Project ID
+     * @param {string} data.slotName - CallIDL1, CallIDL2, CallIDC1, or CallIDC2
+     * @param {number} data.phoneNumberId - Phone number ID to assign (or null to clear)
+     */
+    updateProjectSlot: builder.mutation({
+      query: (data) => ({
+        url: '/callid/projects/slots',
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: [
+        'CallIDInventory',
+        'CallIDActiveAssignments',
+        'CallIDDashboard',
+        'CallIDRecentActivity',
+      ],
+    }),
+
+    /**
+     * Remove/clear a specific slot
+     * @param {Object} data
+     * @param {string} data.projectId - Project ID
+     * @param {string} data.slotName - CallIDL1, CallIDL2, CallIDC1, or CallIDC2
+     */
+    removeProjectSlot: builder.mutation({
+      query: (data) => ({
+        url: '/callid/projects/slots',
+        method: 'DELETE',
+        body: data,
+      }),
+      invalidatesTags: [
+        'CallIDInventory',
+        'CallIDActiveAssignments',
+        'CallIDDashboard',
+        'CallIDRecentActivity',
       ],
     }),
 
@@ -371,6 +426,9 @@ export const {
   useGetAllProjectsWithAssignmentsQuery,
   useCheckAssignmentConflictMutation,
   useSwapCallIDAssignmentMutation,
+  useReassignCallIDMutation,
+  useUpdateProjectSlotMutation,
+  useRemoveProjectSlotMutation,
 
   // Analytics
   useGetUtilizationMetricsQuery,

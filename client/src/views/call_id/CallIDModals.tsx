@@ -66,48 +66,50 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className='modal-overlay' onClick={onClose}>
+      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+        <div className='modal-header'>
           <h2>Add New Call ID</h2>
-          <button onClick={onClose} className="modal-close">
+          <button onClick={onClose} className='modal-close'>
             <Icon path={mdiClose} size={1} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
+        <form onSubmit={handleSubmit} className='modal-form'>
+          <div className='form-group'>
             <label>Phone Number *</label>
             <input
-              type="text"
+              type='text'
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-              placeholder="5125551234"
+              onChange={(e) =>
+                setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))
+              }
+              placeholder='5125551234'
               maxLength={10}
               required
-              className="form-input"
+              className='form-input'
             />
             <small>{phoneNumber.length}/10 digits</small>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>Caller Name *</label>
             <input
-              type="text"
+              type='text'
               value={callerName}
               onChange={(e) => setCallerName(e.target.value.slice(0, 25))}
               maxLength={25}
               required
-              className="form-input"
+              className='form-input'
             />
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>Status *</label>
             <select
               value={status}
               onChange={(e) => setStatus(Number(e.target.value))}
-              className="form-select"
+              className='form-select'
               required
             >
               {statusOptions.map((opt) => (
@@ -118,15 +120,15 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
             </select>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>State *</label>
             <select
               value={stateFIPS}
               onChange={(e) => setStateFIPS(e.target.value)}
-              className="form-select"
+              className='form-select'
               required
             >
-              <option value="">Select a state...</option>
+              <option value=''>Select a state...</option>
               {stateOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -135,13 +137,18 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
             </select>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className='error-message'>{error}</div>}
 
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn-secondary" disabled={isLoading}>
+          <div className='modal-actions'>
+            <button
+              type='button'
+              onClick={onClose}
+              className='btn-secondary'
+              disabled={isLoading}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isLoading}>
+            <button type='submit' className='btn-primary' disabled={isLoading}>
               {isLoading ? 'Creating...' : 'Create Call ID'}
             </button>
           </div>
@@ -154,7 +161,10 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
 interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (id: number, data: any) => Promise<{ success: boolean; error?: string }>;
+  onUpdate: (
+    id: number,
+    data: any
+  ) => Promise<{ success: boolean; error?: string }>;
   callID: any;
   statusOptions: Array<{ value: number; label: string }>;
   stateOptions: Array<{ value: string; label: string }>;
@@ -202,45 +212,45 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
   if (!isOpen || !callID) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className='modal-overlay' onClick={onClose}>
+      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+        <div className='modal-header'>
           <h2>Edit Call ID</h2>
-          <button onClick={onClose} className="modal-close">
+          <button onClick={onClose} className='modal-close'>
             <Icon path={mdiClose} size={1} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
+        <form onSubmit={handleSubmit} className='modal-form'>
+          <div className='form-group'>
             <label>Phone Number</label>
             <input
-              type="text"
+              type='text'
               value={callID.PhoneNumber}
               disabled
-              className="form-input disabled"
+              className='form-input disabled'
             />
             <small>Phone number cannot be changed</small>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>Caller Name *</label>
             <input
-              type="text"
+              type='text'
               value={callerName}
               onChange={(e) => setCallerName(e.target.value.slice(0, 25))}
               maxLength={25}
               required
-              className="form-input"
+              className='form-input'
             />
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>Status *</label>
             <select
               value={status}
               onChange={(e) => setStatus(Number(e.target.value))}
-              className="form-select"
+              className='form-select'
               required
             >
               {statusOptions.map((opt) => (
@@ -251,12 +261,12 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
             </select>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>State *</label>
             <select
               value={stateFIPS}
               onChange={(e) => setStateFIPS(e.target.value)}
-              className="form-select"
+              className='form-select'
               required
             >
               {stateOptions.map((opt) => (
@@ -267,13 +277,18 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
             </select>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className='error-message'>{error}</div>}
 
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn-secondary" disabled={isLoading}>
+          <div className='modal-actions'>
+            <button
+              type='button'
+              onClick={onClose}
+              className='btn-secondary'
+              disabled={isLoading}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isLoading}>
+            <button type='submit' className='btn-primary' disabled={isLoading}>
               {isLoading ? 'Updating...' : 'Update Call ID'}
             </button>
           </div>
@@ -311,32 +326,45 @@ export const DeleteCallIDModal: React.FC<DeleteModalProps> = ({
   if (!isOpen || !callID) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className='modal-overlay' onClick={onClose}>
+      <div
+        className='modal-content modal-small'
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className='modal-header'>
           <h2>Delete Call ID</h2>
-          <button onClick={onClose} className="modal-close">
+          <button onClick={onClose} className='modal-close'>
             <Icon path={mdiClose} size={1} />
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className='modal-body'>
           <p>Are you sure you want to delete this call ID?</p>
-          <div className="delete-details">
-            <strong>Phone:</strong> {callID.PhoneNumber}<br />
-            <strong>Name:</strong> {callID.CallerName}<br />
+          <div className='delete-details'>
+            <strong>Phone:</strong> {callID.PhoneNumber}
+            <br />
+            <strong>Name:</strong> {callID.CallerName}
+            <br />
             <strong>State:</strong> {callID.StateAbbr}
           </div>
-          <p className="warning-text">This action cannot be undone.</p>
+          <p className='warning-text'>This action cannot be undone.</p>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className='error-message'>{error}</div>}
         </div>
 
-        <div className="modal-actions">
-          <button onClick={onClose} className="btn-secondary" disabled={isLoading}>
+        <div className='modal-actions'>
+          <button
+            onClick={onClose}
+            className='btn-secondary'
+            disabled={isLoading}
+          >
             Cancel
           </button>
-          <button onClick={handleDelete} className="btn-danger" disabled={isLoading}>
+          <button
+            onClick={handleDelete}
+            className='btn-danger'
+            disabled={isLoading}
+          >
             {isLoading ? 'Deleting...' : 'Delete'}
           </button>
         </div>
@@ -344,8 +372,7 @@ export const DeleteCallIDModal: React.FC<DeleteModalProps> = ({
     </div>
   );
 };
-
-interface AssignModalProps {
+interface AssignCallIDModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAssign: (data: any) => Promise<{ success: boolean; error?: string }>;
@@ -353,7 +380,7 @@ interface AssignModalProps {
   isLoading: boolean;
 }
 
-export const AssignCallIDModal: React.FC<AssignModalProps> = ({
+export const AssignCallIDModal: React.FC<AssignCallIDModalProps> = ({
   isOpen,
   onClose,
   onAssign,
@@ -361,15 +388,13 @@ export const AssignCallIDModal: React.FC<AssignModalProps> = ({
   isLoading,
 }) => {
   const [projectId, setProjectId] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState('');
+  const [slotName, setSlotName] = useState('CallIDL1');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setProjectId('');
-      setStartDate(new Date().toISOString().split('T')[0]);
-      setEndDate('');
+      setSlotName('CallIDL1');
       setError('');
     }
   }, [isOpen]);
@@ -379,15 +404,19 @@ export const AssignCallIDModal: React.FC<AssignModalProps> = ({
     setError('');
 
     if (!projectId.trim()) {
-      setError('Project ID is required');
+      setError('Please enter a project ID');
+      return;
+    }
+
+    if (!slotName) {
+      setError('Please select a slot');
       return;
     }
 
     const result = await onAssign({
       projectId: projectId.trim(),
+      slotName: slotName,
       phoneNumberId: callID.PhoneNumberID,
-      startDate,
-      endDate: endDate || undefined,
     });
 
     if (!result.success) {
@@ -395,73 +424,76 @@ export const AssignCallIDModal: React.FC<AssignModalProps> = ({
     }
   };
 
-  if (!isOpen || !callID) return null;
+  if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Assign to Project</h2>
-          <button onClick={onClose} className="modal-close">
+    <div className='modal-overlay' onClick={onClose}>
+      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+        <div className='modal-header'>
+          <h2>Assign Call ID to Project</h2>
+          <button onClick={onClose} className='modal-close'>
             <Icon path={mdiClose} size={1} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
-            <label>Phone Number</label>
-            <input
-              type="text"
-              value={callID.PhoneNumber}
-              disabled
-              className="form-input disabled"
-            />
+        <form onSubmit={handleSubmit} className='modal-form'>
+          {error && (
+            <div className='error-message'>
+              <Icon path={mdiAlert} size={0.8} />
+              {error}
+            </div>
+          )}
+
+          <div className='phone-info'>
+            <p>
+              <strong>Phone Number:</strong> {callID?.PhoneNumber}
+            </p>
+            <p>
+              <strong>Caller Name:</strong> {callID?.CallerName}
+            </p>
+            <p>
+              <strong>State:</strong> {callID?.StateAbbr}
+            </p>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <label>Project ID *</label>
             <input
-              type="text"
+              type='text'
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value.slice(0, 20))}
-              placeholder="e.g., PRJ001"
-              maxLength={20}
+              onChange={(e) => setProjectId(e.target.value)}
+              placeholder='Enter project ID'
               required
-              className="form-input"
+              className='form-input'
             />
           </div>
 
-          <div className="form-group">
-            <label>Start Date *</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+          <div className='form-group'>
+            <label>Assign to Slot *</label>
+            <select
+              value={slotName}
+              onChange={(e) => setSlotName(e.target.value)}
               required
-              className="form-input"
-            />
+              className='form-select'
+            >
+              <option value='CallIDL1'>CALLIDL1 (Landline 1)</option>
+              <option value='CallIDL2'>CALLIDL2 (Landline 2)</option>
+              <option value='CallIDC1'>CALLIDC1 (Cell 1)</option>
+              <option value='CallIDC2'>CALLIDC2 (Cell 2)</option>
+            </select>
           </div>
 
-          <div className="form-group">
-            <label>End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              min={startDate}
-              className="form-input"
-            />
-            <small>Leave empty for indefinite assignment</small>
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn-secondary" disabled={isLoading}>
+          <div className='modal-actions'>
+            <button
+              type='button'
+              onClick={onClose}
+              className='btn-secondary'
+              disabled={isLoading}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isLoading}>
-              {isLoading ? 'Assigning...' : 'Assign to Project'}
+            <button type='submit' className='btn-primary' disabled={isLoading}>
+              {isLoading ? 'Assigning...' : 'Assign to Slot'}
             </button>
           </div>
         </form>

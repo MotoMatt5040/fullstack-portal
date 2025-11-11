@@ -16,8 +16,14 @@ import {
   useGetAllProjectsWithAssignmentsQuery,
   useUpdateAssignmentMutation,
   useSwapCallIDAssignmentMutation,
+  useGetUtilizationMetricsQuery,
+  useGetMostUsedCallIDsQuery,
+  useGetIdleCallIDsQuery,
+  useGetStateCoverageQuery,
+  useGetUsageTimelineQuery,
+  useReassignCallIDMutation,
+  useUpdateProjectSlotMutation,
 } from '../../features/callIDApiSlice';
-
 
 /**
  * Custom hook for Call ID Management logic
@@ -25,7 +31,12 @@ import {
  */
 const useCallIDManagementLogic = () => {
   // ==================== STATE ====================
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'assignments' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<
+    'dashboard' | 'inventory' | 'assignments' | 'analytics'
+  >('dashboard');
+  const [idleDaysFilter, setIdleDaysFilter] = useState(30);
+  const [mostUsedLimit, setMostUsedLimit] = useState(10);
+  const [timelineMonths, setTimelineMonths] = useState(6);
   const [filters, setFilters] = useState({
     status: '',
     stateFIPS: '',
@@ -41,13 +52,21 @@ const useCallIDManagementLogic = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
-  const [showAssignToProjectModal, setShowAssignToProjectModal] = useState(false);
+  const [showAssignToProjectModal, setShowAssignToProjectModal] =
+    useState(false);
   const [selectedCallID, setSelectedCallID] = useState<any>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+  const [showProjectSlotsModal, setShowProjectSlotsModal] = useState(false);
+  const [selectedProjectSlots, setSelectedProjectSlots] = useState<
+    string | null
+  >(null);
+  const [currentProjectSlots, setCurrentProjectSlots] = useState<any[]>([]);
 
   // Assignments tab state
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
-  const [selectedProjectHistory, setSelectedProjectHistory] = useState<string | null>(null);
+  const [selectedProjectHistory, setSelectedProjectHistory] = useState<
+    string | null
+  >(null);
   const [projectHistory, setProjectHistory] = useState<any[]>([]);
 
   // ==================== API QUERIES ====================
@@ -92,8 +111,10 @@ const useCallIDManagementLogic = () => {
   const { data: states = [] } = useGetAllStatesQuery();
 
   // Project history (lazy loaded)
-  const [getProjectHistory, { data: projectHistoryData, isLoading: historyLoading }] = 
-    useLazyGetProjectCallIDsQuery();
+  const [
+    getProjectHistory,
+    { data: projectHistoryData, isLoading: historyLoading },
+  ] = useLazyGetProjectCallIDsQuery();
 
   // Projects with assignments (for assignments tab)
   const {
@@ -103,27 +124,73 @@ const useCallIDManagementLogic = () => {
   } = useGetAllProjectsWithAssignmentsQuery(undefined, {
     skip: activeTab !== 'assignments',
   });
+  const [reassignCallID, { isLoading: reassigning }] =
+    useReassignCallIDMutation();
 
   // Extract the actual data array from the API response
   const projectsWithAssignments = projectsWithAssignmentsData?.data || [];
+
+  // Analytics data
+  const {
+    data: utilizationMetrics,
+    isLoading: utilizationLoading,
+    refetch: refetchUtilization,
+  } = useGetUtilizationMetricsQuery(undefined, {
+    skip: activeTab !== 'analytics',
+  });
+
+  const {
+    data: mostUsedCallIDs = [],
+    isLoading: mostUsedLoading,
+    refetch: refetchMostUsed,
+  } = useGetMostUsedCallIDsQuery(mostUsedLimit, {
+    skip: activeTab !== 'analytics',
+  });
+
+  const {
+    data: idleCallIDs = [],
+    isLoading: idleLoading,
+    refetch: refetchIdle,
+  } = useGetIdleCallIDsQuery(idleDaysFilter, {
+    skip: activeTab !== 'analytics',
+  });
+
+  const {
+    data: stateCoverage = [],
+    isLoading: coverageLoading,
+    refetch: refetchCoverage,
+  } = useGetStateCoverageQuery(undefined, {
+    skip: activeTab !== 'analytics',
+  });
+
+  const {
+    data: usageTimeline = [],
+    isLoading: timelineLoading,
+    refetch: refetchTimeline,
+  } = useGetUsageTimelineQuery(timelineMonths, {
+    skip: activeTab !== 'analytics',
+  });
 
   // ==================== MUTATIONS ====================
   const [createCallID, { isLoading: creating }] = useCreateCallIDMutation();
   const [updateCallID, { isLoading: updating }] = useUpdateCallIDMutation();
   const [deleteCallID, { isLoading: deleting }] = useDeleteCallIDMutation();
-  const [assignCallID, { isLoading: assigning }] = useAssignCallIDToProjectMutation();
+  const [assignCallID, { isLoading: assigning }] =
+    useAssignCallIDToProjectMutation();
   const [endAssignment, { isLoading: ending }] = useEndAssignmentMutation();
-  const [updateAssignment, { isLoading: updatingAssignment }] = useUpdateAssignmentMutation();
-  const [swapAssignment, { isLoading: swappingAssignment }] = useSwapCallIDAssignmentMutation();
+  const [updateAssignment, { isLoading: updatingAssignment }] =
+    useUpdateAssignmentMutation();
+  const [swapAssignment, { isLoading: swappingAssignment }] =
+    useSwapCallIDAssignmentMutation();
+  const [updateProjectSlot, { isLoading: updatingSlot }] =
+    useUpdateProjectSlotMutation();
 
   // ==================== EFFECTS ====================
 
   // Load inventory when inventory tab is active
   useEffect(() => {
-    if (activeTab === 'inventory') {
-      getAllCallIDs(filters);
-    }
-  }, [activeTab, filters, getAllCallIDs]);
+    getAllCallIDs(filters);
+  }, [filters, getAllCallIDs]);
 
   // Load project history when selected
   useEffect(() => {
@@ -149,10 +216,30 @@ const useCallIDManagementLogic = () => {
         return inventoryLoading;
       case 'assignments':
         return projectsLoading;
+      case 'analytics':
+        return (
+          utilizationLoading ||
+          mostUsedLoading ||
+          idleLoading ||
+          coverageLoading ||
+          timelineLoading
+        );
       default:
         return false;
     }
-  }, [activeTab, dashboardLoading, assignmentsLoading, activityLoading, inventoryLoading, projectsLoading]);
+  }, [
+    activeTab,
+    dashboardLoading,
+    assignmentsLoading,
+    activityLoading,
+    inventoryLoading,
+    projectsLoading,
+    utilizationLoading,
+    mostUsedLoading,
+    idleLoading,
+    coverageLoading,
+    timelineLoading,
+  ]);
 
   // Status options for dropdowns
   const statusOptions = useMemo(() => {
@@ -174,7 +261,7 @@ const useCallIDManagementLogic = () => {
   const filteredActiveAssignments = useMemo(() => {
     if (!projectSearchQuery.trim()) return activeAssignments;
     const query = projectSearchQuery.toLowerCase();
-    return activeAssignments.filter((a: any) => 
+    return activeAssignments.filter((a: any) =>
       a.ProjectID?.toLowerCase().includes(query)
     );
   }, [activeAssignments, projectSearchQuery]);
@@ -182,9 +269,9 @@ const useCallIDManagementLogic = () => {
   // Filtered projects for assignments tab
   const filteredProjects = useMemo(() => {
     if (!projectsWithAssignments) return [];
-    
+
     if (!projectSearchQuery) return projectsWithAssignments;
-    
+
     return projectsWithAssignments.filter((project: any) =>
       project.ProjectID.toLowerCase().includes(projectSearchQuery.toLowerCase())
     );
@@ -197,9 +284,12 @@ const useCallIDManagementLogic = () => {
 
   // ==================== ACTIONS ====================
 
-  const handleTabChange = useCallback((tab: 'dashboard' | 'inventory' | 'assignments' | 'analytics') => {
-    setActiveTab(tab);
-  }, []);
+  const handleTabChange = useCallback(
+    (tab: 'dashboard' | 'inventory' | 'assignments' | 'analytics') => {
+      setActiveTab(tab);
+    },
+    []
+  );
 
   const handleFilterChange = useCallback((filterName: string, value: any) => {
     setFilters((prev) => ({
@@ -234,8 +324,30 @@ const useCallIDManagementLogic = () => {
           getProjectHistory(selectedProjectHistory);
         }
         break;
+      case 'analytics':
+        refetchUtilization();
+        refetchMostUsed();
+        refetchIdle();
+        refetchCoverage();
+        refetchTimeline();
+        break;
     }
-  }, [activeTab, filters, refetchDashboard, refetchActiveAssignments, refetchRecentActivity, getAllCallIDs, refetchProjects, selectedProjectHistory, getProjectHistory]);
+  }, [
+    activeTab,
+    filters,
+    refetchDashboard,
+    refetchActiveAssignments,
+    refetchRecentActivity,
+    getAllCallIDs,
+    refetchProjects,
+    selectedProjectHistory,
+    getProjectHistory,
+    refetchUtilization,
+    refetchMostUsed,
+    refetchIdle,
+    refetchCoverage,
+    refetchTimeline,
+  ]);
 
   // Modal actions
   const openCreateModal = useCallback(() => setShowCreateModal(true), []);
@@ -269,64 +381,100 @@ const useCallIDManagementLogic = () => {
   }, []);
 
   // CRUD actions
-  const handleCreateCallID = useCallback(async (data: any) => {
-    try {
-      await createCallID(data).unwrap();
-      closeCreateModal();
-      handleRefresh();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Failed to create call ID:', error);
-      return { success: false, error: error?.data?.message || 'Failed to create call ID' };
-    }
-  }, [createCallID, closeCreateModal, handleRefresh]);
+  const handleCreateCallID = useCallback(
+    async (data: any) => {
+      try {
+        await createCallID(data).unwrap();
+        closeCreateModal();
+        handleRefresh();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Failed to create call ID:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to create call ID',
+        };
+      }
+    },
+    [createCallID, closeCreateModal, handleRefresh]
+  );
 
-  const handleUpdateCallID = useCallback(async (id: number, data: any) => {
-    try {
-      await updateCallID({ id, data }).unwrap();
-      closeEditModal();
-      handleRefresh();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Failed to update call ID:', error);
-      return { success: false, error: error?.data?.message || 'Failed to update call ID' };
-    }
-  }, [updateCallID, closeEditModal, handleRefresh]);
+  const handleUpdateCallID = useCallback(
+    async (id: number, data: any) => {
+      try {
+        await updateCallID({ id, data }).unwrap();
+        closeEditModal();
+        handleRefresh();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Failed to update call ID:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to update call ID',
+        };
+      }
+    },
+    [updateCallID, closeEditModal, handleRefresh]
+  );
 
-  const handleDeleteCallID = useCallback(async (id: number) => {
-    try {
-      await deleteCallID(id).unwrap();
-      closeDeleteModal();
-      handleRefresh();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Failed to delete call ID:', error);
-      return { success: false, error: error?.data?.message || 'Failed to delete call ID' };
-    }
-  }, [deleteCallID, closeDeleteModal, handleRefresh]);
+  const handleDeleteCallID = useCallback(
+    async (id: number) => {
+      try {
+        await deleteCallID(id).unwrap();
+        closeDeleteModal();
+        handleRefresh();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Failed to delete call ID:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to delete call ID',
+        };
+      }
+    },
+    [deleteCallID, closeDeleteModal, handleRefresh]
+  );
 
-  const handleAssignCallID = useCallback(async (data: any) => {
-    try {
-      await assignCallID(data).unwrap();
-      closeAssignModal();
-      handleRefresh();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Failed to assign call ID:', error);
-      return { success: false, error: error?.data?.message || 'Failed to assign call ID' };
-    }
-  }, [assignCallID, closeAssignModal, handleRefresh]);
+  const handleAssignCallID = useCallback(
+    async (data: any) => {
+      try {
+        // Use the updateProjectSlot mutation instead
+        await updateProjectSlot({
+          projectId: data.projectId,
+          slotName: data.slotName,
+          phoneNumberId: data.phoneNumberId,
+        }).unwrap();
 
-  const handleEndAssignment = useCallback(async (projectId: string, phoneNumberId: number) => {
-    try {
-      await endAssignment({ projectId, phoneNumberId }).unwrap();
-      handleRefresh();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Failed to end assignment:', error);
-      return { success: false, error: error?.data?.message || 'Failed to end assignment' };
-    }
-  }, [endAssignment, handleRefresh]);
+        closeAssignModal();
+        handleRefresh();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Failed to assign call ID:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to assign call ID',
+        };
+      }
+    },
+    [updateProjectSlot, closeAssignModal, handleRefresh]
+  );
+
+  const handleEndAssignment = useCallback(
+    async (projectId: string, phoneNumberId: number) => {
+      try {
+        await endAssignment({ projectId, phoneNumberId }).unwrap();
+        handleRefresh();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Failed to end assignment:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to end assignment',
+        };
+      }
+    },
+    [endAssignment, handleRefresh]
+  );
 
   const handleSwapNumber = useCallback((assignment: any) => {
     setSelectedAssignment(assignment);
@@ -338,50 +486,53 @@ const useCallIDManagementLogic = () => {
     setSelectedAssignment(null);
   }, []);
 
-  const handleEndAssignmentClick = useCallback(async (assignment: any) => {
-    if (window.confirm(`End assignment for ${assignment.ProjectID}?`)) {
-      const result = await handleEndAssignment(assignment.ProjectID, assignment.PhoneNumberID);
-      if (!result.success) {
-        alert(result.error);
+  const handleEndAssignmentClick = useCallback(
+    async (assignment: any) => {
+      if (window.confirm(`End assignment for ${assignment.ProjectID}?`)) {
+        const result = await handleEndAssignment(
+          assignment.ProjectID,
+          assignment.PhoneNumberID
+        );
+        if (!result.success) {
+          alert(result.error);
+        }
       }
-    }
-  }, [handleEndAssignment]);
+    },
+    [handleEndAssignment]
+  );
 
-  const handleSwapSubmit = useCallback(async (newPhoneNumberId: number) => {
-    if (!selectedAssignment) return { success: false, error: 'No assignment selected' };
+  const handleSwapSubmit = useCallback(
+    async (newPhoneNumberId: number) => {
+      if (!selectedAssignment)
+        return { success: false, error: 'No assignment selected' };
 
-    try {
-      // End current assignment
-      await endAssignment({
-        projectId: selectedAssignment.ProjectID,
-        phoneNumberId: selectedAssignment.PhoneNumberID,
-      }).unwrap();
+      try {
+        await reassignCallID({
+          projectId: selectedAssignment.ProjectID,
+          oldPhoneNumberId: selectedAssignment.PhoneNumberID,
+          newPhoneNumberId: newPhoneNumberId,
+        }).unwrap();
 
-      // Assign new number
-      await assignCallID({
-        projectId: selectedAssignment.ProjectID,
-        phoneNumberId: newPhoneNumberId,
-        startDate: new Date().toISOString(),
-      }).unwrap();
-
-      closeSwapModal();
-      handleRefresh();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Failed to swap number:', error);
-      return { success: false, error: error?.data?.message || 'Failed to swap number' };
-    }
-  }, [selectedAssignment, endAssignment, assignCallID, closeSwapModal, handleRefresh]);
+        closeSwapModal();
+        handleRefresh();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Failed to reassign number:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to reassign number',
+        };
+      }
+    },
+    [selectedAssignment, reassignCallID, closeSwapModal, handleRefresh]
+  );
 
   const handleViewHistory = useCallback((projectId: string) => {
     setSelectedProjectHistory(projectId);
   }, []);
 
-  // ==================== NEW ASSIGNMENT TAB ACTIONS ====================
+  // ==================== ASSIGNMENT TAB ACTIONS ====================
 
-  /**
-   * View project call ID history
-   */
   const handleViewProjectHistory = useCallback(
     async (projectId: string) => {
       setSelectedProjectHistory(projectId);
@@ -397,109 +548,200 @@ const useCallIDManagementLogic = () => {
     [getProjectHistory]
   );
 
-  /**
-   * Open edit assignment modal
-   */
   const handleOpenEditAssignmentModal = useCallback((assignment: any) => {
     setSelectedAssignment(assignment);
     setShowEditAssignmentModal(true);
   }, []);
 
-  /**
-   * Close edit assignment modal
-   */
   const closeEditAssignmentModal = useCallback(() => {
     setShowEditAssignmentModal(false);
     setSelectedAssignment(null);
   }, []);
 
-  /**
-   * Handle update assignment
-   */
-  const handleUpdateAssignment = useCallback(async (data: any) => {
-    try {
-      await updateAssignment(data).unwrap();
-      
-      // Refresh project history
-      if (selectedProjectHistory) {
-        await handleViewProjectHistory(selectedProjectHistory);
-      }
-      
-      closeEditAssignmentModal();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Error updating assignment:', error);
-      alert(error.data?.message || 'Failed to update assignment');
-      return { success: false, error: error.data?.message };
-    }
-  }, [updateAssignment, selectedProjectHistory, handleViewProjectHistory, closeEditAssignmentModal]);
+  const handleUpdateAssignment = useCallback(
+    async (data: any) => {
+      try {
+        await updateAssignment(data).unwrap();
 
-  /**
-   * Open swap modal
-   */
+        if (selectedProjectHistory) {
+          await handleViewProjectHistory(selectedProjectHistory);
+        }
+
+        closeEditAssignmentModal();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error updating assignment:', error);
+        alert(error.data?.message || 'Failed to update assignment');
+        return { success: false, error: error.data?.message };
+      }
+    },
+    [
+      updateAssignment,
+      selectedProjectHistory,
+      handleViewProjectHistory,
+      closeEditAssignmentModal,
+    ]
+  );
+
   const handleOpenSwapModal = useCallback((assignment: any) => {
     setSelectedAssignment(assignment);
     setShowSwapModal(true);
   }, []);
 
-  /**
-   * Handle swap assignment
-   */
-  const handleSwapAssignment = useCallback(async (data: any) => {
-    try {
-      await swapAssignment(data).unwrap();
-      
-      // Refresh both projects
-      await refetchProjects();
-      if (selectedProjectHistory) {
-        await handleViewProjectHistory(selectedProjectHistory);
-      }
-      
-      closeSwapModal();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Error swapping assignment:', error);
-      alert(error.data?.message || 'Failed to swap assignment');
-      return { success: false, error: error.data?.message };
-    }
-  }, [swapAssignment, refetchProjects, selectedProjectHistory, handleViewProjectHistory, closeSwapModal]);
+  const handleSwapAssignment = useCallback(
+    async (data: any) => {
+      try {
+        await swapAssignment(data).unwrap();
 
-  /**
-   * Open assign to project modal
-   */
+        await refetchProjects();
+        if (selectedProjectHistory) {
+          await handleViewProjectHistory(selectedProjectHistory);
+        }
+
+        closeSwapModal();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error swapping assignment:', error);
+        alert(error.data?.message || 'Failed to swap assignment');
+        return { success: false, error: error.data?.message };
+      }
+    },
+    [
+      swapAssignment,
+      refetchProjects,
+      selectedProjectHistory,
+      handleViewProjectHistory,
+      closeSwapModal,
+    ]
+  );
+
   const handleOpenAssignModal = useCallback((callID: any) => {
     setSelectedCallID(callID);
     setShowAssignToProjectModal(true);
   }, []);
 
-  /**
-   * Close assign to project modal
-   */
   const closeAssignToProjectModal = useCallback(() => {
     setShowAssignToProjectModal(false);
     setSelectedCallID(null);
   }, []);
 
-  /**
-   * Handle assign call ID to project
-   */
-  const handleAssignToProject = useCallback(async (data: any) => {
-    try {
-      await assignCallID(data).unwrap();
-      
-      // Refresh project history
-      if (selectedProjectHistory) {
-        await handleViewProjectHistory(selectedProjectHistory);
+  const handleAssignToProject = useCallback(
+    async (data: any) => {
+      try {
+        await assignCallID(data).unwrap();
+
+        if (selectedProjectHistory) {
+          await handleViewProjectHistory(selectedProjectHistory);
+        }
+
+        closeAssignToProjectModal();
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error assigning call ID:', error);
+        alert(error.data?.message || 'Failed to assign call ID');
+        return { success: false, error: error.data?.message };
       }
-      
-      closeAssignToProjectModal();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Error assigning call ID:', error);
-      alert(error.data?.message || 'Failed to assign call ID');
-      return { success: false, error: error.data?.message };
-    }
-  }, [assignCallID, selectedProjectHistory, handleViewProjectHistory, closeAssignToProjectModal]);
+    },
+    [
+      assignCallID,
+      selectedProjectHistory,
+      handleViewProjectHistory,
+      closeAssignToProjectModal,
+    ]
+  );
+
+  const handleManageProjectSlots = useCallback(
+    (projectId: string, currentAssignments: any[]) => {
+      setSelectedProjectSlots(projectId);
+      setCurrentProjectSlots(currentAssignments);
+      setShowProjectSlotsModal(true);
+      // Load inventory for slot assignment
+      getAllCallIDs({ inUse: 'false' });
+    },
+    [getAllCallIDs]
+  );
+
+  const closeProjectSlotsModal = useCallback(() => {
+    setShowProjectSlotsModal(false);
+    setSelectedProjectSlots(null);
+    setCurrentProjectSlots([]);
+  }, []);
+
+  const handleAssignSlot = useCallback(
+    async (data: any) => {
+      try {
+        await assignCallID(data).unwrap();
+
+        // Refresh data
+        await refetchActiveAssignments();
+
+        // Reload current slots
+        if (selectedProjectSlots) {
+          const updatedAssignments = await refetchActiveAssignments();
+          if (updatedAssignments.data) {
+            const projectAssignments = updatedAssignments.data.filter(
+              (a: any) => a.ProjectID === selectedProjectSlots
+            );
+            setCurrentProjectSlots(projectAssignments);
+          }
+        }
+
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error assigning slot:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to assign slot',
+        };
+      }
+    },
+    [assignCallID, refetchActiveAssignments, selectedProjectSlots]
+  );
+
+  const handleRemoveSlot = useCallback(
+    async (projectId: string, phoneNumberId: number) => {
+      try {
+        await endAssignment({ projectId, phoneNumberId }).unwrap();
+
+        // Refresh data
+        await refetchActiveAssignments();
+
+        // Reload current slots
+        if (selectedProjectSlots) {
+          const updatedAssignments = await refetchActiveAssignments();
+          if (updatedAssignments.data) {
+            const projectAssignments = updatedAssignments.data.filter(
+              (a: any) => a.ProjectID === selectedProjectSlots
+            );
+            setCurrentProjectSlots(projectAssignments);
+          }
+        }
+
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error removing slot:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to remove slot',
+        };
+      }
+    },
+    [endAssignment, refetchActiveAssignments, selectedProjectSlots]
+  );
+
+  // ==================== ANALYTICS FILTER ACTIONS ====================
+
+  const handleIdleDaysChange = useCallback((days: number) => {
+    setIdleDaysFilter(days);
+  }, []);
+
+  const handleMostUsedLimitChange = useCallback((limit: number) => {
+    setMostUsedLimit(limit);
+  }, []);
+
+  const handleTimelineMonthsChange = useCallback((months: number) => {
+    setTimelineMonths(months);
+  }, []);
 
   // ==================== RETURN ====================
   return {
@@ -529,6 +771,16 @@ const useCallIDManagementLogic = () => {
     stateOptions,
     availableNumbers,
 
+    // Analytics data
+    utilizationMetrics,
+    mostUsedCallIDs,
+    idleCallIDs,
+    stateCoverage,
+    usageTimeline,
+    idleDaysFilter,
+    mostUsedLimit,
+    timelineMonths,
+
     // Loading states
     isLoading,
     inventoryFetching,
@@ -537,6 +789,7 @@ const useCallIDManagementLogic = () => {
     deleting,
     assigning,
     ending,
+    reassigning,
 
     // Actions
     handleTabChange,
@@ -567,22 +820,35 @@ const useCallIDManagementLogic = () => {
     projectsLoading,
     projectHistoryLoading: historyLoading,
     handleViewProjectHistory,
-    
+
     // Assignment modals
     showEditAssignmentModal,
     handleOpenEditAssignmentModal,
     closeEditAssignmentModal,
     handleUpdateAssignment,
     updatingAssignment,
-    
+
     handleOpenSwapModal,
     handleSwapAssignment,
     swappingAssignment,
-    
+
     showAssignToProjectModal,
     handleOpenAssignModal,
     closeAssignToProjectModal,
     handleAssignToProject,
+
+    // Analytics actions
+    handleIdleDaysChange,
+    handleMostUsedLimitChange,
+    handleTimelineMonthsChange,
+    // Project slots modal
+    showProjectSlotsModal,
+    selectedProjectSlots,
+    currentProjectSlots,
+    handleManageProjectSlots,
+    closeProjectSlotsModal,
+    handleAssignSlot,
+    handleRemoveSlot,
   };
 };
 

@@ -220,13 +220,8 @@ const handleGetProjectCallIDs = handleAsync(async (req, res) => {
   res.status(200).json(callIDs);
 });
 
-/**
- * Assign a call ID to a project
- * POST /api/callid/usage/assign
- * Body: { projectId, phoneNumberId, startDate, endDate }
- */
 const handleAssignCallIDToProject = handleAsync(async (req, res) => {
-  const { projectId, phoneNumberId, startDate, endDate } = req.body;
+  const { projectId, phoneNumberId, startDate, endDate, callIdSlot } = req.body;
 
   // Validation
   if (!projectId || !phoneNumberId) {
@@ -239,7 +234,8 @@ const handleAssignCallIDToProject = handleAsync(async (req, res) => {
     projectId,
     phoneNumberId: parseInt(phoneNumberId),
     startDate: startDate ? new Date(startDate) : undefined,
-    endDate: endDate ? new Date(endDate) : undefined
+    endDate: endDate ? new Date(endDate) : undefined,
+    callIdSlot: callIdSlot ? parseInt(callIdSlot) : null
   });
 
   if (!result.Success) {
@@ -541,20 +537,87 @@ const handleSwapCallIDAssignment = async (req, res) => {
   }
 };
 
-// Add to module.exports at the bottom of the file:
-module.exports = {
-  // ... existing exports ...
-  handleGetAllProjectsWithAssignments,
-  handleCheckAssignmentConflict,
-  handleUpdateAssignment,
-  handleSwapCallIDAssignment,
-};
+const handleReassignCallID = handleAsync(async (req, res) => {
+  const { projectId, oldPhoneNumberId, newPhoneNumberId } = req.body;
+
+  console.log('Reassign request body:', req.body); // Debug log
+
+  if (!projectId || !oldPhoneNumberId || !newPhoneNumberId) {
+    return res.status(400).json({ 
+      message: 'Project ID, old phone number ID, and new phone number ID are required',
+      received: { projectId, oldPhoneNumberId, newPhoneNumberId }
+    });
+  }
+
+  const result = await CallIDService.reassignCallID({
+    projectId,
+    oldPhoneNumberId: parseInt(oldPhoneNumberId),
+    newPhoneNumberId: parseInt(newPhoneNumberId)
+  });
+
+  res.status(200).json({
+    success: true,
+    message: result.message
+  });
+});
+
+const handleUpdateProjectSlot = handleAsync(async (req, res) => {
+  const { projectId, slotName, phoneNumberId } = req.body;
+
+  if (!projectId || !slotName) {
+    return res.status(400).json({ 
+      message: 'Project ID and slot name are required' 
+    });
+  }
+
+  // Validate slot name
+  const validSlots = ['CallIDL1', 'CallIDL2', 'CallIDC1', 'CallIDC2'];
+  if (!validSlots.includes(slotName)) {
+    return res.status(400).json({ 
+      message: 'Invalid slot name. Must be CallIDL1, CallIDL2, CallIDC1, or CallIDC2' 
+    });
+  }
+
+  const result = await CallIDService.updateProjectSlot(
+    projectId,
+    slotName,
+    phoneNumberId ? parseInt(phoneNumberId) : null
+  );
+
+  res.status(200).json({
+    success: true,
+    message: result.Message
+  });
+});
+
+const handleRemoveProjectSlot = handleAsync(async (req, res) => {
+  const { projectId, slotName } = req.body;
+
+  if (!projectId || !slotName) {
+    return res.status(400).json({ 
+      message: 'Project ID and slot name are required' 
+    });
+  }
+
+  const result = await CallIDService.removeProjectSlot(projectId, slotName);
+
+  res.status(200).json({
+    success: true,
+    message: result.Message
+  });
+});
 
 module.exports = {
   // Dashboard
   handleGetDashboardMetrics,
   handleGetCurrentActiveAssignments,
   handleGetRecentActivity,
+  
+  handleGetAllProjectsWithAssignments,
+  handleCheckAssignmentConflict,
+  handleUpdateAssignment,
+  handleSwapCallIDAssignment,
+  handleReassignCallID,
   
   // Inventory
   handleGetAllCallIDs,
@@ -574,6 +637,9 @@ module.exports = {
   handleCheckAssignmentConflict,
   handleUpdateAssignment,
   handleSwapCallIDAssignment,
+  handleReassignCallID,
+  handleUpdateProjectSlot,
+  handleRemoveProjectSlot,
   
   // Analytics
   handleGetUtilizationMetrics,

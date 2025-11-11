@@ -272,4 +272,32 @@ router.route('/assignments/swap')
     callIDController.handleSwapCallIDAssignment
   );
 
+router.route('/assignments/reassign')
+  .post(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    callIDController.handleReassignCallID
+  );
+
+/**
+ * Update a specific slot for a project
+ * PUT /api/callid/projects/slots
+ * Body: { projectId, slotName, phoneNumberId }
+ */
+router.route('/projects/slots')
+  .put(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    callIDController.handleUpdateProjectSlot
+  );
+
+/**
+ * Remove/clear a specific slot
+ * DELETE /api/callid/projects/slots
+ * Body: { projectId, slotName }
+ */
+router.route('/projects/slots')
+  .delete(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    callIDController.handleRemoveProjectSlot
+  );
+
 module.exports = router;

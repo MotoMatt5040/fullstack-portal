@@ -11,7 +11,6 @@ const { promark } = require('../utils/databaseTypes');
 
 /**
  * Get dashboard metrics including totals and breakdowns
- * @returns {Object} Dashboard metrics
  */
 const getDashboardMetrics = async () => {
   const query = `
@@ -26,18 +25,19 @@ const getDashboardMetrics = async () => {
     -- Total call IDs
     SELECT COUNT(*) as TotalCallIDs FROM FAJITA.dbo.CallIDs
     
-    -- Currently active projects (using call IDs right now)
-    SELECT COUNT(DISTINCT ProjectID) as ActiveProjects
+    -- Currently active projects
+    SELECT COUNT(*) as ActiveProjects
     FROM FAJITA.dbo.CallIDUsage
     WHERE GETDATE() BETWEEN StartDate AND EndDate
+      AND (CallIDL1 IS NOT NULL OR CallIDL2 IS NOT NULL OR CallIDC1 IS NOT NULL OR CallIDC2 IS NOT NULL)
     
     -- Available numbers (not currently assigned)
     SELECT COUNT(*) as AvailableNumbers
     FROM FAJITA.dbo.CallIDs c
     WHERE NOT EXISTS (
       SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-      WHERE u.PhoneNumberID = c.PhoneNumberID
-        AND GETDATE() BETWEEN u.StartDate AND u.EndDate
+      WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+        AND (c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2))
     )
     
     -- Numbers by state
@@ -56,7 +56,6 @@ const getDashboardMetrics = async () => {
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       
-      // Parse multiple result sets
       const statusBreakdown = result.recordsets[0];
       const totalCallIDs = result.recordsets[1][0].TotalCallIDs;
       const activeProjects = result.recordsets[2][0].ActiveProjects;
@@ -77,26 +76,81 @@ const getDashboardMetrics = async () => {
 };
 
 /**
- * Get currently active assignments (projects using call IDs right now)
- * @returns {Array} Active assignments
+ * Get currently active assignments - UNPIVOTED to show each slot as a row
  */
 const getCurrentActiveAssignments = async () => {
   const query = `
     SELECT 
       u.ProjectID,
-      c.PhoneNumber,
-      c.CallerName,
-      s.StateAbbr,
-      s.StateName,
+      'CallIDL1' as SlotName,
+      1 as SlotNumber,
+      u.CallIDL1 as PhoneNumberID,
+      c1.PhoneNumber,
+      c1.CallerName,
+      s1.StateAbbr,
       u.StartDate,
-      DATEDIFF(day, u.StartDate, GETDATE()) as DaysActive,
-      cs.StatusDescription as Status
+      DATEDIFF(day, u.StartDate, GETDATE()) as DaysActive
     FROM FAJITA.dbo.CallIDUsage u
-    INNER JOIN FAJITA.dbo.CallIDs c ON u.PhoneNumberID = c.PhoneNumberID
-    INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
-    LEFT JOIN FAJITA.dbo.CallIDStatus cs ON c.Status = cs.StatusCode
+    LEFT JOIN FAJITA.dbo.CallIDs c1 ON u.CallIDL1 = c1.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.States s1 ON c1.StateFIPS = s1.StateFIPS
     WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
-    ORDER BY u.StartDate DESC
+      AND u.CallIDL1 IS NOT NULL
+    
+    UNION ALL
+    
+    SELECT 
+      u.ProjectID,
+      'CallIDL2' as SlotName,
+      2 as SlotNumber,
+      u.CallIDL2 as PhoneNumberID,
+      c2.PhoneNumber,
+      c2.CallerName,
+      s2.StateAbbr,
+      u.StartDate,
+      DATEDIFF(day, u.StartDate, GETDATE()) as DaysActive
+    FROM FAJITA.dbo.CallIDUsage u
+    LEFT JOIN FAJITA.dbo.CallIDs c2 ON u.CallIDL2 = c2.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.States s2 ON c2.StateFIPS = s2.StateFIPS
+    WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+      AND u.CallIDL2 IS NOT NULL
+    
+    UNION ALL
+    
+    SELECT 
+      u.ProjectID,
+      'CallIDC1' as SlotName,
+      3 as SlotNumber,
+      u.CallIDC1 as PhoneNumberID,
+      c3.PhoneNumber,
+      c3.CallerName,
+      s3.StateAbbr,
+      u.StartDate,
+      DATEDIFF(day, u.StartDate, GETDATE()) as DaysActive
+    FROM FAJITA.dbo.CallIDUsage u
+    LEFT JOIN FAJITA.dbo.CallIDs c3 ON u.CallIDC1 = c3.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.States s3 ON c3.StateFIPS = s3.StateFIPS
+    WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+      AND u.CallIDC1 IS NOT NULL
+    
+    UNION ALL
+    
+    SELECT 
+      u.ProjectID,
+      'CallIDC2' as SlotName,
+      4 as SlotNumber,
+      u.CallIDC2 as PhoneNumberID,
+      c4.PhoneNumber,
+      c4.CallerName,
+      s4.StateAbbr,
+      u.StartDate,
+      DATEDIFF(day, u.StartDate, GETDATE()) as DaysActive
+    FROM FAJITA.dbo.CallIDUsage u
+    LEFT JOIN FAJITA.dbo.CallIDs c4 ON u.CallIDC2 = c4.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.States s4 ON c4.StateFIPS = s4.StateFIPS
+    WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+      AND u.CallIDC2 IS NOT NULL
+    
+    ORDER BY ProjectID, SlotNumber
   `;
 
   return withDbConnection({
@@ -111,26 +165,42 @@ const getCurrentActiveAssignments = async () => {
 };
 
 /**
- * Get recent activity (last 20 assignments/changes)
- * @returns {Array} Recent activity
+ * Get recent activity - Using only StartDate and EndDate
  */
 const getRecentActivity = async () => {
   const query = `
-    SELECT TOP 20
-      u.ProjectID,
-      c.PhoneNumber,
-      c.CallerName,
-      s.StateAbbr,
-      u.StartDate,
-      u.EndDate,
+    WITH RecentChanges AS (
+      SELECT TOP 20
+        u.ProjectID,
+        u.StartDate,
+        u.EndDate,
+        u.CallIDL1,
+        u.CallIDL2,
+        u.CallIDC1,
+        u.CallIDC2
+      FROM FAJITA.dbo.CallIDUsage u
+      ORDER BY u.StartDate DESC
+    )
+    SELECT 
+      rc.ProjectID,
+      COALESCE(c1.PhoneNumber, c2.PhoneNumber, c3.PhoneNumber, c4.PhoneNumber) as PhoneNumber,
+      COALESCE(c1.CallerName, c2.CallerName, c3.CallerName, c4.CallerName) as CallerName,
+      COALESCE(s1.StateAbbr, s2.StateAbbr, s3.StateAbbr, s4.StateAbbr) as StateAbbr,
+      rc.StartDate,
+      rc.EndDate,
       CASE 
-        WHEN u.EndDate >= GETDATE() THEN 'Active'
+        WHEN rc.EndDate >= GETDATE() THEN 'Active'
         ELSE 'Ended'
       END as AssignmentStatus
-    FROM FAJITA.dbo.CallIDUsage u
-    INNER JOIN FAJITA.dbo.CallIDs c ON u.PhoneNumberID = c.PhoneNumberID
-    INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
-    ORDER BY u.StartDate DESC
+    FROM RecentChanges rc
+    LEFT JOIN FAJITA.dbo.CallIDs c1 ON rc.CallIDL1 = c1.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c2 ON rc.CallIDL2 = c2.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c3 ON rc.CallIDC1 = c3.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c4 ON rc.CallIDC2 = c4.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.States s1 ON c1.StateFIPS = s1.StateFIPS
+    LEFT JOIN FAJITA.dbo.States s2 ON c2.StateFIPS = s2.StateFIPS
+    LEFT JOIN FAJITA.dbo.States s3 ON c3.StateFIPS = s3.StateFIPS
+    LEFT JOIN FAJITA.dbo.States s4 ON c4.StateFIPS = s4.StateFIPS
   `;
 
   return withDbConnection({
@@ -148,8 +218,6 @@ const getRecentActivity = async () => {
 
 /**
  * Get all call IDs with optional filters
- * @param {Object} filters - Filter options
- * @returns {Array} Call IDs
  */
 const getAllCallIDs = async (filters = {}) => {
   let whereConditions = [];
@@ -163,14 +231,14 @@ const getAllCallIDs = async (filters = {}) => {
   if (filters.inUse === 'true') {
     whereConditions.push(`EXISTS (
       SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-      WHERE u.PhoneNumberID = c.PhoneNumberID
-        AND GETDATE() BETWEEN u.StartDate AND u.EndDate
+      WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+        AND c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2)
     )`);
   } else if (filters.inUse === 'false') {
     whereConditions.push(`NOT EXISTS (
       SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-      WHERE u.PhoneNumberID = c.PhoneNumberID
-        AND GETDATE() BETWEEN u.StartDate AND u.EndDate
+      WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+        AND c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2)
     )`);
   }
 
@@ -193,16 +261,16 @@ const getAllCallIDs = async (filters = {}) => {
       CASE 
         WHEN EXISTS (
           SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-          WHERE u.PhoneNumberID = c.PhoneNumberID
-            AND GETDATE() BETWEEN u.StartDate AND u.EndDate
+          WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+            AND c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2)
         ) THEN 1
         ELSE 0
       END as CurrentlyInUse,
       (
         SELECT TOP 1 ProjectID 
         FROM FAJITA.dbo.CallIDUsage u
-        WHERE u.PhoneNumberID = c.PhoneNumberID
-          AND GETDATE() BETWEEN u.StartDate AND u.EndDate
+        WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
+          AND c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2)
       ) as ActiveProjectID
     FROM FAJITA.dbo.CallIDs c
     INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
@@ -431,33 +499,46 @@ const getCallIDUsageHistory = async (phoneNumberId) => {
 };
 
 /**
- * Get all call IDs used by a specific project
- * @param {String} projectId - Project ID
- * @returns {Array} Project's call IDs
+ * Get project with all its call ID slots
  */
 const getProjectCallIDs = async (projectId) => {
   const query = `
     SELECT 
       u.ProjectID,
-      u.PhoneNumberID,
-      c.PhoneNumber,
-      c.CallerName,
-      s.StateAbbr,
-      s.StateName,
-      cs.StatusDescription,
+      u.CallIDL1,
+      u.CallIDL2,
+      u.CallIDC1,
+      u.CallIDC2,
       u.StartDate,
       u.EndDate,
+      c1.PhoneNumber as PhoneNumberL1,
+      c1.CallerName as CallerNameL1,
+      s1.StateAbbr as StateAbbrL1,
+      c2.PhoneNumber as PhoneNumberL2,
+      c2.CallerName as CallerNameL2,
+      s2.StateAbbr as StateAbbrL2,
+      c3.PhoneNumber as PhoneNumberC1,
+      c3.CallerName as CallerNameC1,
+      s3.StateAbbr as StateAbbrC1,
+      c4.PhoneNumber as PhoneNumberC2,
+      c4.CallerName as CallerNameC2,
+      s4.StateAbbr as StateAbbrC2,
       DATEDIFF(day, u.StartDate, u.EndDate) as DurationDays,
       CASE 
         WHEN u.EndDate >= GETDATE() THEN 'Active'
         ELSE 'Ended'
       END as Status
     FROM FAJITA.dbo.CallIDUsage u
-    INNER JOIN FAJITA.dbo.CallIDs c ON u.PhoneNumberID = c.PhoneNumberID
-    INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
-    LEFT JOIN FAJITA.dbo.CallIDStatus cs ON c.Status = cs.StatusCode
+    LEFT JOIN FAJITA.dbo.CallIDs c1 ON u.CallIDL1 = c1.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c2 ON u.CallIDL2 = c2.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c3 ON u.CallIDC1 = c3.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c4 ON u.CallIDC2 = c4.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.States s1 ON c1.StateFIPS = s1.StateFIPS
+    LEFT JOIN FAJITA.dbo.States s2 ON c2.StateFIPS = s2.StateFIPS
+    LEFT JOIN FAJITA.dbo.States s3 ON c3.StateFIPS = s3.StateFIPS
+    LEFT JOIN FAJITA.dbo.States s4 ON c4.StateFIPS = s4.StateFIPS
     WHERE u.ProjectID = @projectId
-    ORDER BY u.StartDate ASC
+    ORDER BY u.StartDate DESC
   `;
 
   return withDbConnection({
@@ -474,12 +555,10 @@ const getProjectCallIDs = async (projectId) => {
 };
 
 /**
- * Assign a call ID to a project
- * @param {Object} assignmentData - Assignment data
- * @returns {Object} Created assignment
+ * Assign a call ID to a project WITH SLOT
  */
 const assignCallIDToProject = async (assignmentData) => {
-  const { projectId, phoneNumberId, startDate, endDate } = assignmentData;
+  const { projectId, phoneNumberId, startDate, endDate, callIdSlot } = assignmentData;
 
   const query = `
     -- Check for conflicts (same number assigned to different project in overlapping time)
@@ -498,9 +577,25 @@ const assignCallIDToProject = async (assignmentData) => {
       RETURN
     END
     
+    -- Check if slot is already occupied for this project
+    IF @callIdSlot IS NOT NULL AND EXISTS (
+      SELECT 1 FROM FAJITA.dbo.CallIDUsage
+      WHERE ProjectID = @projectId
+        AND CallIDSlot = @callIdSlot
+        AND (
+          (@startDate BETWEEN StartDate AND EndDate)
+          OR (@endDate BETWEEN StartDate AND EndDate)
+          OR (StartDate BETWEEN @startDate AND @endDate)
+        )
+    )
+    BEGIN
+      SELECT 0 as Success, 'This slot is already occupied for this project during this time period' as Message
+      RETURN
+    END
+    
     -- Insert the assignment
-    INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, PhoneNumberID, StartDate, EndDate)
-    VALUES (@projectId, @phoneNumberId, @startDate, @endDate)
+    INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, PhoneNumberID, StartDate, EndDate, CallIDSlot)
+    VALUES (@projectId, @phoneNumberId, @startDate, @endDate, @callIdSlot)
     
     SELECT 1 as Success, 'Assignment created successfully' as Message
   `;
@@ -512,7 +607,8 @@ const assignCallIDToProject = async (assignmentData) => {
         .input('projectId', sql.NVarChar(20), projectId)
         .input('phoneNumberId', sql.Int, phoneNumberId)
         .input('startDate', sql.DateTime, startDate || new Date())
-        .input('endDate', sql.DateTime, endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)) // Default 1 year
+        .input('endDate', sql.DateTime, endDate || new Date('2099-12-31'))
+        .input('callIdSlot', sql.TinyInt, callIdSlot || null)
         .query(query);
       return result.recordset[0];
     },
@@ -558,16 +654,15 @@ const assignCallIDToProject = async (assignmentData) => {
 // };
 
 /**
- * End an assignment (set end date to now)
- * @param {String} projectId - Project ID
- * @param {Number} phoneNumberId - Phone number ID
- * @returns {Object} Result
+ * End an assignment WITH SLOT INFO
  */
 const endAssignment = async (projectId, phoneNumberId) => {
   const query = `
     UPDATE FAJITA.dbo.CallIDUsage
     SET EndDate = GETDATE()
-    WHERE ProjectID = @projectId AND PhoneNumberID = @phoneNumberId
+    WHERE ProjectID = @projectId 
+      AND PhoneNumberID = @phoneNumberId
+      AND EndDate > GETDATE()
     
     SELECT 1 as Success, 'Assignment ended successfully' as Message
   `;
@@ -582,6 +677,59 @@ const endAssignment = async (projectId, phoneNumberId) => {
       return result.recordset[0];
     },
     fnName: 'endAssignment',
+    attempts: 3
+  });
+};
+
+/**
+ * FIXED: Reassign a call ID to use a different phone number
+ * This preserves the slot and swaps out the phone number
+ */
+const reassignCallID = async (data) => {
+  const { projectId, oldPhoneNumberId, newPhoneNumberId } = data;
+  
+  const query = `
+    BEGIN TRANSACTION
+    
+    -- Get the slot from the current assignment
+    DECLARE @slot TINYINT
+    SELECT @slot = CallIDSlot
+    FROM FAJITA.dbo.CallIDUsage
+    WHERE ProjectID = @projectId 
+      AND PhoneNumberID = @oldPhoneNumberId
+      AND EndDate > GETDATE()
+    
+    -- End current assignment
+    UPDATE FAJITA.dbo.CallIDUsage
+    SET EndDate = GETDATE()
+    WHERE ProjectID = @projectId 
+      AND PhoneNumberID = @oldPhoneNumberId
+      AND EndDate > GETDATE()
+    
+    -- Create new assignment with same slot
+    INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, PhoneNumberID, StartDate, EndDate, CallIDSlot)
+    VALUES (@projectId, @newPhoneNumberId, GETDATE(), '2099-12-31', @slot)
+    
+    COMMIT TRANSACTION
+    
+    SELECT 'Success' as Result
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      await pool.request()
+        .input('projectId', sql.NVarChar(20), projectId)
+        .input('oldPhoneNumberId', sql.Int, oldPhoneNumberId)
+        .input('newPhoneNumberId', sql.Int, newPhoneNumberId)
+        .query(query);
+      
+      return {
+        success: true,
+        message: 'Call ID reassigned successfully'
+      };
+    },
+    fnName: 'reassignCallID',
     attempts: 3
   });
 };
@@ -705,7 +853,7 @@ const getIdleCallIDs = async (days = 30) => {
 };
 
 /**
- * Get state coverage analysis
+ * Get state coverage analysis - FIXED VERSION
  * @returns {Array} State coverage data
  */
 const getStateCoverage = async () => {
@@ -714,22 +862,21 @@ const getStateCoverage = async () => {
       s.StateAbbr,
       s.StateName,
       COUNT(c.PhoneNumberID) as TotalNumbers,
-      SUM(CASE 
-        WHEN EXISTS (
-          SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-          WHERE u.PhoneNumberID = c.PhoneNumberID
-            AND GETDATE() BETWEEN u.StartDate AND u.EndDate
-        ) THEN 1 ELSE 0
+      COUNT(CASE 
+        WHEN u.PhoneNumberID IS NOT NULL 
+        THEN 1 
       END) as InUseNumbers,
-      SUM(CASE 
-        WHEN NOT EXISTS (
-          SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-          WHERE u.PhoneNumberID = c.PhoneNumberID
-            AND GETDATE() BETWEEN u.StartDate AND u.EndDate
-        ) THEN 1 ELSE 0
+      COUNT(CASE 
+        WHEN u.PhoneNumberID IS NULL 
+        THEN 1 
       END) as AvailableNumbers
     FROM FAJITA.dbo.States s
-    LEFT JOIN FAJITA.dbo.CallIDs c ON s.StateFIPS = c.StateFIPS
+    INNER JOIN FAJITA.dbo.CallIDs c ON s.StateFIPS = c.StateFIPS
+    LEFT JOIN (
+      SELECT DISTINCT PhoneNumberID
+      FROM FAJITA.dbo.CallIDUsage
+      WHERE GETDATE() BETWEEN StartDate AND EndDate
+    ) u ON c.PhoneNumberID = u.PhoneNumberID
     GROUP BY s.StateAbbr, s.StateName
     HAVING COUNT(c.PhoneNumberID) > 0
     ORDER BY TotalNumbers DESC
@@ -872,13 +1019,17 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
 
 
 /**
- * Get all projects that have ever used call IDs (with current assignment info)
- * @returns {Array} Projects with their current call ID assignments
+ * Get projects with their CURRENT slot assignments
  */
 const getAllProjectsWithAssignments = async () => {
   const query = `
     SELECT DISTINCT
       u.ProjectID,
+      -- Count active assignments by slot
+      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 1 THEN 1 END) as Slot1Active,
+      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 2 THEN 1 END) as Slot2Active,
+      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 3 THEN 1 END) as Slot3Active,
+      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 4 THEN 1 END) as Slot4Active,
       COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate THEN 1 END) as ActiveAssignments,
       COUNT(u.PhoneNumberID) as TotalAssignments,
       MIN(u.StartDate) as FirstUsed,
@@ -1058,6 +1209,84 @@ const swapCallIDAssignment = async (fromProjectId, toProjectId, phoneNumberId, n
   });
 };
 
+/**
+ * Update a specific slot for a project
+ */
+const updateProjectSlot = async (projectId, slotName, phoneNumberId) => {
+  // Validate slot name
+  const validSlots = ['CallIDL1', 'CallIDL2', 'CallIDC1', 'CallIDC2'];
+  if (!validSlots.includes(slotName)) {
+    throw new Error('Invalid slot name');
+  }
+
+  const query = `
+    -- Check if project has an active usage row
+    IF NOT EXISTS (
+      SELECT 1 FROM FAJITA.dbo.CallIDUsage
+      WHERE ProjectID = @projectId
+        AND GETDATE() BETWEEN StartDate AND EndDate
+    )
+    BEGIN
+      -- Create new usage row
+      INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, ${slotName}, StartDate, EndDate)
+      VALUES (@projectId, @phoneNumberId, GETDATE(), '2099-12-31')
+    END
+    ELSE
+    BEGIN
+      -- Update existing row
+      UPDATE FAJITA.dbo.CallIDUsage
+      SET ${slotName} = @phoneNumberId
+      WHERE ProjectID = @projectId
+        AND GETDATE() BETWEEN StartDate AND EndDate
+    END
+    
+    SELECT 1 as Success, 'Slot updated successfully' as Message
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request()
+        .input('projectId', sql.NVarChar(20), projectId)
+        .input('phoneNumberId', sql.Int, phoneNumberId)
+        .query(query);
+      return result.recordset[0];
+    },
+    fnName: 'updateProjectSlot',
+    attempts: 3
+  });
+};
+
+/**
+ * Remove a phone number from a specific slot
+ */
+const removeProjectSlot = async (projectId, slotName) => {
+  const validSlots = ['CallIDL1', 'CallIDL2', 'CallIDC1', 'CallIDC2'];
+  if (!validSlots.includes(slotName)) {
+    throw new Error('Invalid slot name');
+  }
+
+  const query = `
+    UPDATE FAJITA.dbo.CallIDUsage
+    SET ${slotName} = NULL
+    WHERE ProjectID = @projectId
+      AND GETDATE() BETWEEN StartDate AND EndDate
+    
+    SELECT 1 as Success, 'Slot cleared successfully' as Message
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request()
+        .input('projectId', sql.NVarChar(20), projectId)
+        .query(query);
+      return result.recordset[0];
+    },
+    fnName: 'removeProjectSlot',
+    attempts: 3
+  });
+};
 
 module.exports = {
   // Dashboard
@@ -1078,6 +1307,7 @@ module.exports = {
   assignCallIDToProject,
   updateAssignment,
   endAssignment,
+  reassignCallID,
   
   // Analytics
   getUtilizationMetrics,
@@ -1096,4 +1326,6 @@ module.exports = {
   checkAssignmentConflict,
   updateAssignment,
   swapCallIDAssignment,
+  updateProjectSlot,
+  removeProjectSlot
 };
