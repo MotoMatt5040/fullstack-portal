@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  useGetProjectsQuery,
+  useGetProjectsNumberingQuery,
   useCreateProjectMutation,
   useUpdateProjectMutation,
   useDeleteProjectMutation,
@@ -43,7 +43,7 @@ export const useProjectNumberingLogic = () => {
     isFetching,
     error,
     refetch,
-  } = useGetProjectsQuery({
+  } = useGetProjectsNumberingQuery({
     page,
     limit,
     sortBy,

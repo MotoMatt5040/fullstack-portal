@@ -3,7 +3,7 @@ import { apiSlice } from '../app/api/apiSlice';
 export const projectNumberingApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get all projects with pagination and search
-    getProjects: builder.query({
+    getProjectsNumbering: builder.query({
       query: ({ page = 1, limit = 75, sortBy = 'projectID', sortOrder = 'DESC', search = '' }) => ({
         url: `/project-numbering?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`,
         method: 'GET',
@@ -78,8 +78,8 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetProjectsQuery,
-  useLazyGetProjectsQuery,
+  useGetProjectsNumberingQuery,
+  useLazyGetProjectsNumberingQuery,
   useGetNextProjectNumberQuery,
   useGetProjectByNumberQuery,
   useCreateProjectMutation,

@@ -58,6 +58,16 @@ const Welcome = () => {
             <div className="quick-action-icon"><FaChartLine /></div>
             Production Report
           </Link> */}
+
+        {userInfo.isInternalUser && (
+          <Link to='/project-numbering' className='quick-action-btn'>
+            <div className='quick-action-icon'>
+              <FaCodeBranch />
+            </div>
+            Project Numbering
+          </Link>
+        )}
+
         <Link to='/quota-management' className='quick-action-btn'>
           <div className='quick-action-icon'>
             <FaChartLine />

@@ -3,8 +3,9 @@ import { FaTimes } from 'react-icons/fa';
 import { useGetNextProjectNumberQuery } from '../../features/projectNumberingApiSlice';
 
 const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData }) => {
-  const { data: nextNumberData } = useGetNextProjectNumberQuery(undefined, {
-    skip: mode === 'edit',
+  // Force refetch when modal opens by using the skip option and refetch function
+  const { data: nextNumberData, refetch } = useGetNextProjectNumberQuery(undefined, {
+    skip: mode === 'edit' || !isOpen, // Skip if editing or modal is closed
   });
 
   const [formData, setFormData] = useState({
@@ -23,6 +24,13 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
   });
 
   const [errors, setErrors] = useState({});
+
+  // Refetch the next project number whenever the modal opens in create mode
+  useEffect(() => {
+    if (isOpen && mode === 'create') {
+      refetch();
+    }
+  }, [isOpen, mode, refetch]);
 
   useEffect(() => {
     if (mode === 'edit' && initialData) {
@@ -93,7 +101,13 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       return;
     }
 
-    const result = await onSubmit(formData);
+    // Add projectID to the form data before submitting
+    const dataToSubmit = {
+      ...formData,
+      projectID: nextProjectNumber,
+    };
+
+    const result = await onSubmit(dataToSubmit);
     
     if (result.success) {
       // Reset form if creating
@@ -195,6 +209,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
               {errors.NSize && <span className="error-text">{errors.NSize}</span>}
             </div>
 
+            <br/>
+
             {/* Client Estimated Time */}
             <div className="form-group">
               <label htmlFor="clientTime">Client Estimated Time (min)</label>
@@ -294,6 +310,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                 placeholder="e.g., XYZ"
               />
             </div>
+
+            <br/>
 
             {/* Contact Name */}
             <div className="form-group">

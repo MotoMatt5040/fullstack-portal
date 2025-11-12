@@ -3,18 +3,19 @@ const withDbConnection = require('../config/dbConn');
 const { promark } = require('../utils/databaseTypes');
 
 /**
- * Get the next available project ID
+ * Get the next available project ID (MAX + 1)
  */
 const getNextProjectNumber = async () => {
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
-      const result = await pool
-        .request()
-        .query('SELECT MAX(projectID) as maxNumber FROM FAJITA.dbo.Projects');
+      const query = `
+        SELECT ISNULL(MAX(projectID) + 1, 1) as nextNumber 
+        FROM FAJITA.dbo.Projects
+      `;
       
-      const maxNumber = result.recordset[0].maxNumber || 0;
-      return maxNumber + 1;
+      const result = await pool.request().query(query);
+      return result.recordset[0].nextNumber;
     },
     fnName: 'getNextProjectNumber',
   });
@@ -27,7 +28,17 @@ const createProject = async (projectData, username) => {
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
+      // You MUST get the projectID from the front-end or a previous call
+      const { projectID } = projectData;
+
+      if (!projectID) {
+        throw new Error('projectID is required to create a project');
+      }
+
       const request = pool.request();
+      
+      // ✅ 1. Add projectID as an input
+      request.input('projectID', sql.Int, projectID);
       
       request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
       request.input('projectName', sql.NVarChar, projectData.projectName);
@@ -43,20 +54,30 @@ const createProject = async (projectData, username) => {
       request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
       request.input('createdBy', sql.NVarChar, username);
       
+      // ✅ 2. Update the INSERT query
       const result = await request.query(`
         INSERT INTO FAJITA.dbo.Projects 
-        (clientProjectID, projectName, NSize, clientTime, promarkTime, openends, 
-         startDate, endDate, client, contactName, contactNumber, dataProcessing, createdBy, updatedBy)
+        (
+          projectID, -- <-- ADDED
+          clientProjectID, projectName, NSize, clientTime, promarkTime, openends, 
+          startDate, endDate, client, contactName, contactNumber, dataProcessing, 
+          createdBy, updatedBy
+        )
         VALUES 
-        (@clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends, 
-         @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing, @createdBy, @createdBy);
+        (
+          @projectID, -- <-- ADDED
+          @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends, 
+          @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing, 
+          @createdBy, @createdBy
+        );
         
-        SELECT SCOPE_IDENTITY() as id;
+        -- ✅ 3. Return the ID that was passed in
+        SELECT @projectID as id;
       `);
       
-      const projectID = result.recordset[0].id;
+      const newId = result.recordset[0].id;
       
-      return { id: projectID, projectID: projectID };
+      return { id: newId, projectID: newId };
     },
     fnName: 'createProject',
   });

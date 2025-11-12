@@ -74,45 +74,45 @@ const ProjectsTable = ({
         <thead>
           <tr>
             <th className="col-actions">Actions</th>
-            <th className="col-sortable" onClick={() => onSort('number')}>
-              # {getSortIcon('number')}
+            <th className="col-sortable" onClick={() => onSort('projectID')}>
+              # {getSortIcon('projectID')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('client_proj_id')}>
-              Client Proj ID {getSortIcon('client_proj_id')}
+            <th className="col-sortable" onClick={() => onSort('clientProjectID')}>
+              Client Proj ID {getSortIcon('clientProjectID')}
             </th>
-            <th className="col-sortable col-name" onClick={() => onSort('name')}>
-              Project Name {getSortIcon('name')}
+            <th className="col-sortable col-name" onClick={() => onSort('projectName')}>
+              Project Name {getSortIcon('projectName')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('ne')}>
-              N= {getSortIcon('ne')}
+            <th className="col-sortable" onClick={() => onSort('NSize')}>
+              N= {getSortIcon('NSize')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('client_time')}>
-              Client Time {getSortIcon('client_time')}
+            {/* <th className="col-sortable" onClick={() => onSort('clientTime')}>
+              Client Time {getSortIcon('clientTime')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('promark_time')}>
-              Promark Time {getSortIcon('promark_time')}
+            <th className="col-sortable" onClick={() => onSort('promarkTime')}>
+              Promark Time {getSortIcon('promarkTime')}
+            </th> */}
+            <th className="col-sortable" onClick={() => onSort('dataProcessing')}>
+              DP {getSortIcon('dataProcessing')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('DP')}>
-              DP {getSortIcon('DP')}
+            <th className="col-sortable" onClick={() => onSort('startDate')}>
+              Start Date {getSortIcon('startDate')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('start_date')}>
-              Start Date {getSortIcon('start_date')}
-            </th>
-            <th className="col-sortable" onClick={() => onSort('end_date')}>
-              End Date {getSortIcon('end_date')}
+            <th className="col-sortable" onClick={() => onSort('endDate')}>
+              End Date {getSortIcon('endDate')}
             </th>
             <th className="col-sortable" onClick={() => onSort('client')}>
               Client {getSortIcon('client')}
             </th>
-            <th className="col-sortable" onClick={() => onSort('contact_name')}>
-              Contact {getSortIcon('contact_name')}
+            <th className="col-sortable" onClick={() => onSort('contactName')}>
+              Contact {getSortIcon('contactName')}
             </th>
             <th>Contact #</th>
           </tr>
         </thead>
         <tbody>
           {projects.map((project) => (
-            <tr key={project.id} className={getRowClass(project.start_date)}>
+            <tr key={project.projectID} className={getRowClass(project.startDate)}>
               <td className="col-actions">
                 <div className="action-buttons">
                   <button
@@ -131,22 +131,22 @@ const ProjectsTable = ({
                   </button>
                 </div>
               </td>
-              <td>{project.number}</td>
-              <td>{project.client_proj_id || '-'}</td>
-              <td className="col-name">{project.name}</td>
-              <td>{project.ne || '-'}</td>
-              <td>{project.client_time || '-'}</td>
-              <td>{project.promark_time || '-'}</td>
+              <td>{project.projectID}</td>
+              <td>{project.clientProjectID || '-'}</td>
+              <td className="col-name">{project.projectName}</td>
+              <td>{project.NSize || '-'}</td>
+              {/* <td>{project.clientTime || '-'}</td> */}
+              {/* <td>{project.promarkTime || '-'}</td> */}
               <td>
-                <span className={`badge ${project.DP ? 'badge-yes' : 'badge-no'}`}>
-                  {project.DP ? 'Yes' : 'No'}
+                <span className={`badge ${project.dataProcessing ? 'badge-yes' : 'badge-no'}`}>
+                  {project.dataProcessing ? 'Yes' : 'No'}
                 </span>
               </td>
-              <td>{formatDate(project.start_date)}</td>
-              <td>{formatDate(project.end_date)}</td>
+              <td>{formatDate(project.startDate)}</td>
+              <td>{formatDate(project.endDate)}</td>
               <td>{project.client || '-'}</td>
-              <td>{project.contact_name || '-'}</td>
-              <td>{project.contact_number || '-'}</td>
+              <td>{project.contactName || '-'}</td>
+              <td>{project.contactNumber || '-'}</td>
             </tr>
           ))}
         </tbody>
