@@ -3,9 +3,8 @@ import { FaTimes } from 'react-icons/fa';
 import { useGetNextProjectNumberQuery } from '../../features/projectNumberingApiSlice';
 
 const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData }) => {
-  // Force refetch when modal opens by using the skip option and refetch function
   const { data: nextNumberData, refetch } = useGetNextProjectNumberQuery(undefined, {
-    skip: mode === 'edit' || !isOpen, // Skip if editing or modal is closed
+    skip: mode === 'edit' || !isOpen,
   });
 
   const [formData, setFormData] = useState({
@@ -25,7 +24,6 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
   const [errors, setErrors] = useState({});
 
-  // Refetch the next project number whenever the modal opens in create mode
   useEffect(() => {
     if (isOpen && mode === 'create') {
       refetch();
@@ -57,7 +55,6 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       ...prev,
       [name]: type === 'checkbox' ? (checked ? 1 : 0) : value,
     }));
-    // Clear error for this field
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -101,7 +98,6 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       return;
     }
 
-    // Add projectID to the form data before submitting
     const dataToSubmit = {
       ...formData,
       projectID: nextProjectNumber,
@@ -110,7 +106,6 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     const result = await onSubmit(dataToSubmit);
     
     if (result.success) {
-      // Reset form if creating
       if (mode === 'create') {
         setFormData({
           clientProjectID: '',
@@ -130,12 +125,6 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     }
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target.classList.contains('modal-backdrop')) {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   const nextProjectNumber = mode === 'create' ? nextNumberData?.nextNumber : initialData?.projectID;
@@ -152,32 +141,47 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-grid">
-            {/* Project ID - Read Only */}
-            <div className="form-group">
-              <label>Project ID</label>
-              <input
-                type="text"
-                value={nextProjectNumber || 'Loading...'}
-                disabled
-                className="input-disabled"
-              />
-            </div>
+            {/* Row 1: Project ID, Client Project ID, Client */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>Project ID</label>
+                <input
+                  type="text"
+                  value={nextProjectNumber || 'Loading...'}
+                  disabled
+                  className="input-disabled"
+                  name={"projectID"}
+                />
+              </div>
 
-            {/* Client Project ID */}
-            <div className="form-group">
-              <label htmlFor="clientProjectID">Client Project ID</label>
-              <input
-                type="text"
-                id="clientProjectID"
-                name="clientProjectID"
-                value={formData.clientProjectID}
-                onChange={handleChange}
-                maxLength={50}
-              />
+              <div className="form-group">
+                <label htmlFor="clientProjectID">Client Project ID</label>
+                <input
+                  type="text"
+                  id="clientProjectID"
+                  name="clientProjectID"
+                  value={formData.clientProjectID}
+                  onChange={handleChange}
+                  maxLength={50}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="client">Client</label>
+                <input
+                  type="text"
+                  id="client"
+                  name="client"
+                  value={formData.client}
+                  onChange={handleChange}
+                  maxLength={10}
+                  placeholder="XYZ"
+                />
+              </div>
             </div>
 
             {/* Project Name */}
-            <div className="form-group full-width">
+            <div className="form-group">
               <label htmlFor="projectName">
                 Project Name <span className="required">*</span>
               </label>
@@ -194,150 +198,137 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
               {errors.projectName && <span className="error-text">{errors.projectName}</span>}
             </div>
 
-            {/* N= */}
-            <div className="form-group">
-              <label htmlFor="NSize">N=</label>
-              <input
-                type="number"
-                id="NSize"
-                name="NSize"
-                value={formData.NSize}
-                onChange={handleChange}
-                min="0"
-                className={errors.NSize ? 'input-error' : ''}
-              />
-              {errors.NSize && <span className="error-text">{errors.NSize}</span>}
+            {/* Compact grid and dates side by side */}
+            <div className="compact-and-dates-row">
+              {/* Compact grid for N=, LOI, and toggles */}
+              <div className="form-group compact-grid">
+                <div className="compact-row">
+                  <div className="compact-field nsize-field">
+                    <label htmlFor="NSize">N=</label>
+                    <input
+                      type="number"
+                      id="NSize"
+                      name="NSize"
+                      value={formData.NSize}
+                      onChange={handleChange}
+                      min="0"
+                      className={errors.NSize ? 'input-error' : ''}
+                    />
+                    {errors.NSize && <span className="error-text">{errors.NSize}</span>}
+                  </div>
+                  <div className="compact-field">
+                    <label htmlFor="clientTime">Client LOI</label>
+                    <input
+                      type="number"
+                      id="clientTime"
+                      name="clientTime"
+                      value={formData.clientTime}
+                      onChange={handleChange}
+                      step="0.01"
+                      min="0"
+                      className={errors.clientTime ? 'input-error' : ''}
+                    />
+                  </div>
+                  <div className="compact-field">
+                    <label htmlFor="promarkTime">Promark LOI</label>
+                    <input
+                      type="number"
+                      id="promarkTime"
+                      name="promarkTime"
+                      value={formData.promarkTime}
+                      onChange={handleChange}
+                      step="0.01"
+                      min="0"
+                      className={errors.promarkTime ? 'input-error' : ''}
+                    />
+                  </div>
+                </div>
+                <div className="compact-row">
+                  <div className="checkbox-field">
+                    <label htmlFor="dataProcessing">
+                      <input
+                        type="checkbox"
+                        id="dataProcessing"
+                        name="dataProcessing"
+                        checked={formData.dataProcessing === 1}
+                        onChange={handleChange}
+                      />
+                      Promark DP
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="openends">
+                      <input
+                        type="checkbox"
+                        id="openends"
+                        name="openends"
+                        checked={formData.openends === 'y'}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            openends: e.target.checked ? 'y' : 'n'
+                          }));
+                        }}
+                      />
+                      Open-Ends
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="form-group dates-group">
+                <div className="date-field">
+                  <label htmlFor="startDate">Start Date</label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="date-field">
+                  <label htmlFor="endDate">End Date</label>
+                  <input
+                    type="date"
+                    id="endDate"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleChange}
+                    className={errors.endDate ? 'input-error' : ''}
+                  />
+                  {errors.endDate && <span className="error-text">{errors.endDate}</span>}
+                </div>
+              </div>
             </div>
 
-            <br/>
+            {/* Row: Contact Name and Contact Number */}
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="contactName">Contact Name</label>
+                <input
+                  type="text"
+                  id="contactName"
+                  name="contactName"
+                  value={formData.contactName}
+                  onChange={handleChange}
+                  maxLength={255}
+                />
+              </div>
 
-            {/* Client Estimated Time */}
-            <div className="form-group">
-              <label htmlFor="clientTime">Client Estimated Time (min)</label>
-              <input
-                type="number"
-                id="clientTime"
-                name="clientTime"
-                value={formData.clientTime}
-                onChange={handleChange}
-                step="0.01"
-                min="0"
-                className={errors.clientTime ? 'input-error' : ''}
-              />
-              {errors.clientTime && <span className="error-text">{errors.clientTime}</span>}
-            </div>
-
-            {/* Promark Estimated Time */}
-            <div className="form-group">
-              <label htmlFor="promarkTime">Promark Estimated Time (min)</label>
-              <input
-                type="number"
-                id="promarkTime"
-                name="promarkTime"
-                value={formData.promarkTime}
-                onChange={handleChange}
-                step="0.01"
-                min="0"
-                className={errors.promarkTime ? 'input-error' : ''}
-              />
-              {errors.promarkTime && <span className="error-text">{errors.promarkTime}</span>}
-            </div>
-
-            {/* Promark DP */}
-            <div className="form-group">
-              <label htmlFor="dataProcessing">Promark DP</label>
-              <select
-                id="dataProcessing"
-                name="dataProcessing"
-                value={formData.dataProcessing}
-                onChange={handleChange}
-              >
-                <option value={0}>No</option>
-                <option value={1}>Yes</option>
-              </select>
-            </div>
-
-            {/* Open-Ends */}
-            <div className="form-group">
-              <label htmlFor="openends">Open-Ends</label>
-              <select
-                id="openends"
-                name="openends"
-                value={formData.openends}
-                onChange={handleChange}
-              >
-                <option value="n">No</option>
-                <option value="y">Yes</option>
-              </select>
-            </div>
-
-            {/* Start Date */}
-            <div className="form-group">
-              <label htmlFor="startDate">Start Date</label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* End Date */}
-            <div className="form-group">
-              <label htmlFor="endDate">End Date</label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleChange}
-                className={errors.endDate ? 'input-error' : ''}
-              />
-              {errors.endDate && <span className="error-text">{errors.endDate}</span>}
-            </div>
-
-            {/* Client */}
-            <div className="form-group">
-              <label htmlFor="client">Client (Code)</label>
-              <input
-                type="text"
-                id="client"
-                name="client"
-                value={formData.client}
-                onChange={handleChange}
-                maxLength={10}
-                placeholder="e.g., XYZ"
-              />
-            </div>
-
-            <br/>
-
-            {/* Contact Name */}
-            <div className="form-group">
-              <label htmlFor="contactName">Contact Name</label>
-              <input
-                type="text"
-                id="contactName"
-                name="contactName"
-                value={formData.contactName}
-                onChange={handleChange}
-                maxLength={255}
-              />
-            </div>
-
-            {/* Contact Number */}
-            <div className="form-group">
-              <label htmlFor="contactNumber">Contact Number</label>
-              <input
-                type="tel"
-                id="contactNumber"
-                name="contactNumber"
-                value={formData.contactNumber}
-                onChange={handleChange}
-                maxLength={20}
-                placeholder="e.g., 512-345-9720"
-              />
+              <div className="form-group">
+                <label htmlFor="contactNumber">Contact Number</label>
+                <input
+                  type="tel"
+                  id="contactNumber"
+                  name="contactNumber"
+                  value={formData.contactNumber}
+                  onChange={handleChange}
+                  maxLength={20}
+                  placeholder="e.g., 512-345-9720"
+                />
+              </div>
             </div>
           </div>
 
