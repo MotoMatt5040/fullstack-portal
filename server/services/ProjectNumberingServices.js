@@ -28,60 +28,78 @@ const createProject = async (projectData, username) => {
   return withDbConnection({
     database: fajita,
     queryFn: async (pool) => {
-      // You MUST get the projectID from the front-end or a previous call
-      const { projectID } = projectData;
+      const { projectID, sampleTypes } = projectData;
 
       if (!projectID) {
         throw new Error('projectID is required to create a project');
       }
 
-      const request = pool.request();
+      const transaction = pool.transaction();
       
-      // ✅ 1. Add projectID as an input
-      request.input('projectID', sql.Int, projectID);
-      
-      request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
-      request.input('projectName', sql.NVarChar, projectData.projectName);
-      request.input('NSize', sql.Int, projectData.NSize || null);
-      request.input('clientTime', sql.Decimal(10, 2), projectData.clientTime || null);
-      request.input('promarkTime', sql.Decimal(10, 2), projectData.promarkTime || null);
-      request.input('openends', sql.Char(1), projectData.openends || 'n');
-      request.input('startDate', sql.Date, projectData.startDate || null);
-      request.input('endDate', sql.Date, projectData.endDate || null);
-      request.input('client', sql.NVarChar, projectData.client || null);
-      request.input('contactName', sql.NVarChar, projectData.contactName || null);
-      request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
-      request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
-      request.input('projectType', sql.Int, projectData.projectType || null);
-      request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
-      request.input('createdBy', sql.NVarChar, username);
-      
-      // ✅ 2. Update the INSERT query
-      const result = await request.query(`
-        INSERT INTO dbo.Projects 
-        (
-          projectID, 
-          clientProjectID, projectName, NSize, clientTime, promarkTime, openends, 
-          startDate, endDate, client, contactName, contactNumber, dataProcessing, 
-          projectType, multiCallID,
-          createdBy, updatedBy
-        )
-        VALUES 
-        (
-          @projectID, 
-          @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends, 
-          @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing, 
-          @projectType, @multiCallID,
-          @createdBy, @createdBy
-        );
+      try {
+        await transaction.begin();
         
-        -- ✅ 3. Return the ID that was passed in
-        SELECT @projectID as id;
-      `);
-      
-      const newId = result.recordset[0].id;
-      
-      return { id: newId, projectID: newId };
+        const request = transaction.request();
+        
+        request.input('projectID', sql.Int, projectID);
+        request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
+        request.input('projectName', sql.NVarChar, projectData.projectName);
+        request.input('NSize', sql.Int, projectData.NSize || null);
+        request.input('clientTime', sql.Decimal(10, 2), projectData.clientTime || null);
+        request.input('promarkTime', sql.Decimal(10, 2), projectData.promarkTime || null);
+        request.input('openends', sql.Char(1), projectData.openends || 'n');
+        request.input('startDate', sql.Date, projectData.startDate || null);
+        request.input('endDate', sql.Date, projectData.endDate || null);
+        request.input('client', sql.NVarChar, projectData.client || null);
+        request.input('contactName', sql.NVarChar, projectData.contactName || null);
+        request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
+        request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
+        request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
+        request.input('createdBy', sql.NVarChar, username);
+        
+        const result = await request.query(`
+          INSERT INTO dbo.Projects 
+          (
+            projectID, 
+            clientProjectID, projectName, NSize, clientTime, promarkTime, openends, 
+            startDate, endDate, client, contactName, contactNumber, dataProcessing, 
+            multiCallID,
+            createdBy, updatedBy
+          )
+          VALUES 
+          (
+            @projectID, 
+            @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends, 
+            @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing, 
+            @multiCallID,
+            @createdBy, @createdBy
+          );
+          
+          SELECT @projectID as id;
+        `);
+        
+        const newId = result.recordset[0].id;
+        
+        // Insert sample types if provided
+        if (sampleTypes && Array.isArray(sampleTypes) && sampleTypes.length > 0) {
+          for (const sampleTypeID of sampleTypes) {
+            await transaction.request()
+              .input('projectID', sql.Int, projectID)
+              .input('sampleTypeID', sql.Int, sampleTypeID)
+              .query(`
+                INSERT INTO dbo.ProjectSampleTypes (projectID, sampleTypeID)
+                VALUES (@projectID, @sampleTypeID)
+              `);
+          }
+        }
+        
+        await transaction.commit();
+        
+        return { id: newId, projectID: newId };
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
     },
     fnName: 'createProject',
   });
@@ -124,29 +142,52 @@ const getAllProjects = async (options = {}) => {
       const allowedSortColumns = [
         'projectID', 'clientProjectID', 'projectName', 'NSize', 'clientTime', 
         'promarkTime', 'startDate', 'endDate', 'client', 
-        'contactName', 'contactNumber', 'dataProcessing', 'projectType', 'multiCallID'
+        'contactName', 'contactNumber', 'dataProcessing', 'multiCallID'
       ];
       const validSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'projectID';
       const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
       
       const query = `
         SELECT 
-          projectID, clientProjectID, projectName, NSize, clientTime, promarkTime, 
-          openends, startDate, endDate, client, contactName, contactNumber, 
-          dataProcessing, projectType, multiCallID, dateCreated, dateUpdated, createdBy, updatedBy
-        FROM dbo.Projects
+          p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime, 
+          p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
+          p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
+          (
+            SELECT sampleTypeID
+            FROM dbo.ProjectSampleTypes pst
+            WHERE pst.projectID = p.projectID
+            FOR JSON PATH
+          ) as sampleTypesJSON
+        FROM dbo.Projects p
         ${whereClause}
         ORDER BY ${validSortBy} ${validSortOrder}
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY;
         
-        SELECT COUNT(*) as total FROM dbo.Projects ${whereClause};
+        SELECT COUNT(*) as total FROM dbo.Projects p ${whereClause};
       `;
       
       const result = await request.query(query);
       
+      // Parse the JSON sample types for each project
+      const projects = result.recordsets[0].map(project => {
+        let sampleTypes = [];
+        if (project.sampleTypesJSON) {
+          try {
+            sampleTypes = JSON.parse(project.sampleTypesJSON).map(st => st.sampleTypeID);
+          } catch (e) {
+            sampleTypes = [];
+          }
+        }
+        return {
+          ...project,
+          sampleTypes,
+          sampleTypesJSON: undefined, // Remove the JSON string from response
+        };
+      });
+      
       return {
-        projects: result.recordsets[0],
+        projects,
         total: result.recordsets[1][0].total,
         page,
         limit,
@@ -169,14 +210,28 @@ const getProjectByNumber = async (projectID) => {
         .input('projectID', sql.Int, projectID)
         .query(`
           SELECT 
-            projectID, clientProjectID, projectName, NSize, clientTime, promarkTime, 
-            openends, startDate, endDate, client, contactName, contactNumber, 
-            dataProcessing, projectType, multiCallID, dateCreated, dateUpdated, createdBy, updatedBy
-          FROM dbo.Projects
-          WHERE projectID = @projectID
+            p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime, 
+            p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
+            p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy
+          FROM dbo.Projects p
+          WHERE p.projectID = @projectID;
+          
+          SELECT sampleTypeID
+          FROM dbo.ProjectSampleTypes
+          WHERE projectID = @projectID;
         `);
       
-      return result.recordset[0] || null;
+      if (!result.recordsets[0][0]) {
+        return null;
+      }
+      
+      const project = result.recordsets[0][0];
+      const sampleTypes = result.recordsets[1].map(st => st.sampleTypeID);
+      
+      return {
+        ...project,
+        sampleTypes,
+      };
     },
     fnName: 'getProjectByNumber',
   });
@@ -189,47 +244,74 @@ const updateProject = async (projectID, projectData, username) => {
   return withDbConnection({
     database: fajita,
     queryFn: async (pool) => {
-      const request = pool.request();
+      const transaction = pool.transaction();
       
-      request.input('projectID', sql.Int, projectID);
-      request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
-      request.input('projectName', sql.NVarChar, projectData.projectName);
-      request.input('NSize', sql.Int, projectData.NSize || null);
-      request.input('clientTime', sql.Decimal(10, 2), projectData.clientTime || null);
-      request.input('promarkTime', sql.Decimal(10, 2), projectData.promarkTime || null);
-      request.input('openends', sql.Char(1), projectData.openends || 'n');
-      request.input('startDate', sql.Date, projectData.startDate || null);
-      request.input('endDate', sql.Date, projectData.endDate || null);
-      request.input('client', sql.NVarChar, projectData.client || null);
-      request.input('contactName', sql.NVarChar, projectData.contactName || null);
-      request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
-      request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
-      request.input('projectType', sql.Int, projectData.projectType || null);
-      request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
-      request.input('updatedBy', sql.NVarChar, username);
-      
-      await request.query(`
-        UPDATE dbo.Projects
-        SET 
-          clientProjectID = @clientProjectID,
-          projectName = @projectName,
-          NSize = @NSize,
-          clientTime = @clientTime,
-          promarkTime = @promarkTime,
-          openends = @openends,
-          startDate = @startDate,
-          endDate = @endDate,
-          client = @client,
-          contactName = @contactName,
-          contactNumber = @contactNumber,
-          dataProcessing = @dataProcessing,
-          projectType = @projectType,
-          multiCallID = @multiCallID,
-          updatedBy = @updatedBy
-        WHERE projectID = @projectID
-      `);
-      
-      return true;
+      try {
+        await transaction.begin();
+        
+        const request = transaction.request();
+        
+        request.input('projectID', sql.Int, projectID);
+        request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
+        request.input('projectName', sql.NVarChar, projectData.projectName);
+        request.input('NSize', sql.Int, projectData.NSize || null);
+        request.input('clientTime', sql.Decimal(10, 2), projectData.clientTime || null);
+        request.input('promarkTime', sql.Decimal(10, 2), projectData.promarkTime || null);
+        request.input('openends', sql.Char(1), projectData.openends || 'n');
+        request.input('startDate', sql.Date, projectData.startDate || null);
+        request.input('endDate', sql.Date, projectData.endDate || null);
+        request.input('client', sql.NVarChar, projectData.client || null);
+        request.input('contactName', sql.NVarChar, projectData.contactName || null);
+        request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
+        request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
+        request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
+        request.input('updatedBy', sql.NVarChar, username);
+        
+        await request.query(`
+          UPDATE dbo.Projects
+          SET 
+            clientProjectID = @clientProjectID,
+            projectName = @projectName,
+            NSize = @NSize,
+            clientTime = @clientTime,
+            promarkTime = @promarkTime,
+            openends = @openends,
+            startDate = @startDate,
+            endDate = @endDate,
+            client = @client,
+            contactName = @contactName,
+            contactNumber = @contactNumber,
+            dataProcessing = @dataProcessing,
+            multiCallID = @multiCallID,
+            updatedBy = @updatedBy
+          WHERE projectID = @projectID
+        `);
+        
+        // Delete existing sample types
+        await transaction.request()
+          .input('projectID', sql.Int, projectID)
+          .query(`DELETE FROM dbo.ProjectSampleTypes WHERE projectID = @projectID`);
+        
+        // Insert new sample types if provided
+        if (projectData.sampleTypes && Array.isArray(projectData.sampleTypes) && projectData.sampleTypes.length > 0) {
+          for (const sampleTypeID of projectData.sampleTypes) {
+            await transaction.request()
+              .input('projectID', sql.Int, projectID)
+              .input('sampleTypeID', sql.Int, sampleTypeID)
+              .query(`
+                INSERT INTO dbo.ProjectSampleTypes (projectID, sampleTypeID)
+                VALUES (@projectID, @sampleTypeID)
+              `);
+          }
+        }
+        
+        await transaction.commit();
+        
+        return true;
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
     },
     fnName: 'updateProject',
   });
@@ -242,6 +324,7 @@ const deleteProject = async (projectID) => {
   return withDbConnection({
     database: fajita,
     queryFn: async (pool) => {
+      // CASCADE DELETE will handle ProjectSampleTypes
       const result = await pool
         .request()
         .input('projectID', sql.Int, projectID)
@@ -265,58 +348,77 @@ const searchProjects = async (criteria) => {
       
       if (criteria.projectID) {
         request.input('projectID', sql.Int, criteria.projectID);
-        conditions.push('projectID = @projectID');
+        conditions.push('p.projectID = @projectID');
       }
       
       if (criteria.clientProjectID) {
         request.input('clientProjectID', sql.NVarChar, `%${criteria.clientProjectID}%`);
-        conditions.push('clientProjectID LIKE @clientProjectID');
+        conditions.push('p.clientProjectID LIKE @clientProjectID');
       }
       
       if (criteria.projectName) {
         request.input('projectName', sql.NVarChar, `%${criteria.projectName}%`);
-        conditions.push('projectName LIKE @projectName');
+        conditions.push('p.projectName LIKE @projectName');
       }
       
       if (criteria.client) {
         request.input('client', sql.NVarChar, `%${criteria.client}%`);
-        conditions.push('client LIKE @client');
+        conditions.push('p.client LIKE @client');
       }
       
       if (criteria.startDateFrom) {
         request.input('startDateFrom', sql.Date, criteria.startDateFrom);
-        conditions.push('startDate >= @startDateFrom');
+        conditions.push('p.startDate >= @startDateFrom');
       }
       
       if (criteria.startDateTo) {
         request.input('startDateTo', sql.Date, criteria.startDateTo);
-        conditions.push('startDate <= @startDateTo');
+        conditions.push('p.startDate <= @startDateTo');
       }
       
       if (criteria.contactName) {
         request.input('contactName', sql.NVarChar, `%${criteria.contactName}%`);
-        conditions.push('contactName LIKE @contactName');
-      }
-      
-      if (criteria.projectType) {
-        request.input('projectType', sql.Int, criteria.projectType);
-        conditions.push('projectType = @projectType');
+        conditions.push('p.contactName LIKE @contactName');
       }
       
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       
       const query = `
         SELECT 
-          projectID, clientProjectID, projectName, NSize, clientTime, promarkTime, 
-          openends, startDate, endDate, client, contactName, contactNumber, 
-          dataProcessing, projectType, multiCallID, dateCreated, dateUpdated, createdBy, updatedBy
-        FROM dbo.Projects
+          p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime, 
+          p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
+          p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
+          (
+            SELECT sampleTypeID
+            FROM dbo.ProjectSampleTypes pst
+            WHERE pst.projectID = p.projectID
+            FOR JSON PATH
+          ) as sampleTypesJSON
+        FROM dbo.Projects p
         ${whereClause}
-        ORDER BY projectID DESC
+        ORDER BY p.projectID DESC
       `;
       
       const result = await request.query(query);
-      return result.recordset;
+      
+      // Parse the JSON sample types for each project
+      const projects = result.recordset.map(project => {
+        let sampleTypes = [];
+        if (project.sampleTypesJSON) {
+          try {
+            sampleTypes = JSON.parse(project.sampleTypesJSON).map(st => st.sampleTypeID);
+          } catch (e) {
+            sampleTypes = [];
+          }
+        }
+        return {
+          ...project,
+          sampleTypes,
+          sampleTypesJSON: undefined,
+        };
+      });
+      
+      return projects;
     },
     fnName: 'searchProjects',
   });

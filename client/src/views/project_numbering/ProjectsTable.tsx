@@ -34,15 +34,31 @@ const ProjectsTable = ({
     }
   };
 
-  const getProjectTypeName = (projectType) => {
-    const projectTypeMap = {
-      1: 'Landline',
-      2: 'Cell',
-      3: 'Web',
-      4: 'Phone',
-      5: 'Mix',
-    };
-    return projectTypeMap[projectType] || '-';
+  const getSampleTypeDisplay = (sampleTypes) => {
+    if (!sampleTypes || sampleTypes.length === 0) {
+      return '-';
+    }
+
+    const hasPhone = sampleTypes.includes(1) || sampleTypes.includes(2);
+    const hasWeb = sampleTypes.includes(3) || sampleTypes.includes(4) || 
+                   sampleTypes.includes(5) || sampleTypes.includes(6);
+
+    // If has both phone and web types, it's mixed
+    if (hasPhone && hasWeb) {
+      return 'Mix';
+    }
+
+    // If only phone types (1 or 2)
+    if (hasPhone && !hasWeb) {
+      return 'Phone';
+    }
+
+    // If only web types (3, 4, 5, or 6)
+    if (hasWeb && !hasPhone) {
+      return 'Web';
+    }
+
+    return '-';
   };
 
   const getRowClass = (startDate) => {
@@ -103,9 +119,7 @@ const ProjectsTable = ({
             <th className="col-sortable" onClick={() => onSort('promarkTime')}>
               Promark Time {getSortIcon('promarkTime')}
             </th> */}
-            <th className="col-sortable" onClick={() => onSort('projectType')}>
-              Type {getSortIcon('projectType')}
-            </th>
+            <th>Type</th>
             <th className="col-sortable" onClick={() => onSort('dataProcessing')}>
               DP {getSortIcon('dataProcessing')}
             </th>
@@ -154,7 +168,7 @@ const ProjectsTable = ({
               <td>{project.NSize || '-'}</td>
               {/* <td>{project.clientTime || '-'}</td> */}
               {/* <td>{project.promarkTime || '-'}</td> */}
-              <td>{getProjectTypeName(project.projectType)}</td>
+              <td>{getSampleTypeDisplay(project.sampleTypes)}</td>
               <td>
                 <span className={`badge ${project.dataProcessing ? 'badge-yes' : 'badge-no'}`}>
                   {project.dataProcessing ? 'Yes' : 'No'}

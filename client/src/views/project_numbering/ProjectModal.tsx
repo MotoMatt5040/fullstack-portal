@@ -20,10 +20,15 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     contactName: '',
     contactNumber: '',
     dataProcessing: 0,
-    landline: false,
-    cell: false,
-    web: false,
     multiCallID: 0,
+    sampleTypes: {
+      landline: false,    // 1
+      cell: false,        // 2
+      webPanel: false,    // 3
+      text: false,        // 4
+      email: false,       // 5
+      postalMail: false,  // 6
+    },
   });
 
   const [errors, setErrors] = useState({});
@@ -36,21 +41,15 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
   useEffect(() => {
     if (mode === 'edit' && initialData) {
-      // Determine which checkboxes should be checked based on projectType
-      const projectType = initialData.projectType;
-      let landline = false, cell = false, web = false;
-      
-      if (projectType === 1) landline = true;
-      else if (projectType === 2) cell = true;
-      else if (projectType === 3) web = true;
-      else if (projectType === 4) {
-        landline = true;
-        cell = true;
-      } else if (projectType === 5) {
-        landline = true;
-        cell = true;
-        web = true;
-      }
+      // Convert sampleTypes array to checkbox states
+      const sampleTypes = {
+        landline: initialData.sampleTypes?.includes(1) || false,
+        cell: initialData.sampleTypes?.includes(2) || false,
+        webPanel: initialData.sampleTypes?.includes(3) || false,
+        text: initialData.sampleTypes?.includes(4) || false,
+        email: initialData.sampleTypes?.includes(5) || false,
+        postalMail: initialData.sampleTypes?.includes(6) || false,
+      };
 
       setFormData({
         clientProjectID: initialData.clientProjectID || '',
@@ -65,10 +64,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
         contactName: initialData.contactName || '',
         contactNumber: initialData.contactNumber || '',
         dataProcessing: initialData.dataProcessing ? 1 : 0,
-        landline,
-        cell,
-        web,
         multiCallID: initialData.multiCallID ? 1 : 0,
+        sampleTypes,
       });
     }
   }, [mode, initialData]);
@@ -77,29 +74,36 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (name === 'landline' || name === 'cell' || name === 'web' ? checked : (checked ? 1 : 0)) : value,
+      [name]: type === 'checkbox' ? (checked ? 1 : 0) : value,
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
-  const calculateProjectType = () => {
-    const { landline, cell, web } = formData;
+  const handleSampleTypeChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      sampleTypes: {
+        ...prev.sampleTypes,
+        [name]: checked,
+      },
+    }));
+  };
+
+  const getSampleTypesArray = () => {
+    const { sampleTypes } = formData;
+    const result = [];
     
-    // All three checked = Mix (5)
-    if (landline && cell && web) return 5;
-    // Landline + Cell = Phone (4)
-    if (landline && cell && !web) return 4;
-    // Only Web = Web (3)
-    if (web && !landline && !cell) return 3;
-    // Only Cell = Cell (2)
-    if (cell && !landline && !web) return 2;
-    // Only Landline = Landline (1)
-    if (landline && !cell && !web) return 1;
+    if (sampleTypes.landline) result.push(1);
+    if (sampleTypes.cell) result.push(2);
+    if (sampleTypes.webPanel) result.push(3);
+    if (sampleTypes.text) result.push(4);
+    if (sampleTypes.email) result.push(5);
+    if (sampleTypes.postalMail) result.push(6);
     
-    // None checked = null
-    return null;
+    return result;
   };
 
   const validate = () => {
@@ -140,16 +144,24 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       return;
     }
 
-    const projectType = calculateProjectType();
+    const sampleTypesArray = getSampleTypesArray();
 
     const dataToSubmit = {
-      ...formData,
       projectID: nextProjectNumber,
-      projectType,
-      // Remove the checkbox fields as they're not needed in the DB
-      landline: undefined,
-      cell: undefined,
-      web: undefined,
+      clientProjectID: formData.clientProjectID,
+      projectName: formData.projectName,
+      NSize: formData.NSize,
+      clientTime: formData.clientTime,
+      promarkTime: formData.promarkTime,
+      openends: formData.openends,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      client: formData.client,
+      contactName: formData.contactName,
+      contactNumber: formData.contactNumber,
+      dataProcessing: formData.dataProcessing,
+      multiCallID: formData.multiCallID,
+      sampleTypes: sampleTypesArray,
     };
 
     const result = await onSubmit(dataToSubmit);
@@ -169,10 +181,15 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
           contactName: '',
           contactNumber: '',
           dataProcessing: 0,
-          landline: false,
-          cell: false,
-          web: false,
           multiCallID: 0,
+          sampleTypes: {
+            landline: false,
+            cell: false,
+            webPanel: false,
+            text: false,
+            email: false,
+            postalMail: false,
+          },
         });
       }
     }
@@ -296,6 +313,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                     />
                   </div>
                 </div>
+                
+                {/* Row 1: Promark DP, Open-Ends */}
                 <div className="compact-row">
                   <div className="checkbox-field">
                     <label htmlFor="dataProcessing">
@@ -309,6 +328,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                       Promark DP
                     </label>
                   </div>
+                  <div className="checkbox-field"></div>
                   <div className="checkbox-field">
                     <label htmlFor="openends">
                       <input
@@ -326,6 +346,9 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                       Open-Ends
                     </label>
                   </div>
+                  
+                </div>
+                <div className='compact-row'>
                   <div className="checkbox-field">
                     <label htmlFor="multiCallID">
                       <input
@@ -339,6 +362,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                     </label>
                   </div>
                 </div>
+                <label>STypes:</label>
+                {/* Row 2: Sample Types - Landline, Cell, Web Panel */}
                 <div className="compact-row">
                   <div className="checkbox-field">
                     <label htmlFor="landline">
@@ -346,8 +371,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="landline"
                         name="landline"
-                        checked={formData.landline}
-                        onChange={handleChange}
+                        checked={formData.sampleTypes.landline}
+                        onChange={handleSampleTypeChange}
                       />
                       Landline
                     </label>
@@ -358,22 +383,62 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="cell"
                         name="cell"
-                        checked={formData.cell}
-                        onChange={handleChange}
+                        checked={formData.sampleTypes.cell}
+                        onChange={handleSampleTypeChange}
                       />
                       Cell
                     </label>
                   </div>
                   <div className="checkbox-field">
-                    <label htmlFor="web">
+                    <label htmlFor="webPanel">
                       <input
                         type="checkbox"
-                        id="web"
-                        name="web"
-                        checked={formData.web}
-                        onChange={handleChange}
+                        id="webPanel"
+                        name="webPanel"
+                        checked={formData.sampleTypes.webPanel}
+                        onChange={handleSampleTypeChange}
                       />
-                      Web
+                      Web Panel
+                    </label>
+                  </div>
+                </div>
+                
+                {/* Row 3: Sample Types - Text, Email, Postal Mail */}
+                <div className="compact-row">
+                  <div className="checkbox-field">
+                    <label htmlFor="text">
+                      <input
+                        type="checkbox"
+                        id="text"
+                        name="text"
+                        checked={formData.sampleTypes.text}
+                        onChange={handleSampleTypeChange}
+                      />
+                      Text
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="email">
+                      <input
+                        type="checkbox"
+                        id="email"
+                        name="email"
+                        checked={formData.sampleTypes.email}
+                        onChange={handleSampleTypeChange}
+                      />
+                      Email
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="postalMail">
+                      <input
+                        type="checkbox"
+                        id="postalMail"
+                        name="postalMail"
+                        checked={formData.sampleTypes.postalMail}
+                        onChange={handleSampleTypeChange}
+                      />
+                      Postal Mail
                     </label>
                   </div>
                 </div>
