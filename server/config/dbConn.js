@@ -23,6 +23,22 @@ const dbConfigs = {
 		},
 		requestTimeout: 300000,
 	},
+	fajita: {
+		user: process.env.PROMARK_DB_USER,
+		password: process.env.PROMARK_DB_PASSWORD,
+		server: process.env.PROMARK_DB_SERVER,
+		database: 'FAJITA',
+		options: {
+			encrypt: true,
+			trustServerCertificate: true,
+		},
+		pool: {
+			max: 50,
+			idleTimeoutMillis: 30000,
+			acquireTimeoutMillis: 60000,
+		},
+		requestTimeout: 300000,
+	},
 	voxco: {
 		user: process.env.VOXCO_DB_USER,
 		password: VOXCO_PASSWORD,

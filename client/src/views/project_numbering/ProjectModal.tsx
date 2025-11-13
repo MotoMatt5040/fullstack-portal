@@ -20,6 +20,10 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     contactName: '',
     contactNumber: '',
     dataProcessing: 0,
+    landline: false,
+    cell: false,
+    web: false,
+    multiCallID: 0,
   });
 
   const [errors, setErrors] = useState({});
@@ -32,6 +36,22 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
   useEffect(() => {
     if (mode === 'edit' && initialData) {
+      // Determine which checkboxes should be checked based on projectType
+      const projectType = initialData.projectType;
+      let landline = false, cell = false, web = false;
+      
+      if (projectType === 1) landline = true;
+      else if (projectType === 2) cell = true;
+      else if (projectType === 3) web = true;
+      else if (projectType === 4) {
+        landline = true;
+        cell = true;
+      } else if (projectType === 5) {
+        landline = true;
+        cell = true;
+        web = true;
+      }
+
       setFormData({
         clientProjectID: initialData.clientProjectID || '',
         projectName: initialData.projectName || '',
@@ -45,6 +65,10 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
         contactName: initialData.contactName || '',
         contactNumber: initialData.contactNumber || '',
         dataProcessing: initialData.dataProcessing ? 1 : 0,
+        landline,
+        cell,
+        web,
+        multiCallID: initialData.multiCallID ? 1 : 0,
       });
     }
   }, [mode, initialData]);
@@ -53,11 +77,29 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (checked ? 1 : 0) : value,
+      [name]: type === 'checkbox' ? (name === 'landline' || name === 'cell' || name === 'web' ? checked : (checked ? 1 : 0)) : value,
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const calculateProjectType = () => {
+    const { landline, cell, web } = formData;
+    
+    // All three checked = Mix (5)
+    if (landline && cell && web) return 5;
+    // Landline + Cell = Phone (4)
+    if (landline && cell && !web) return 4;
+    // Only Web = Web (3)
+    if (web && !landline && !cell) return 3;
+    // Only Cell = Cell (2)
+    if (cell && !landline && !web) return 2;
+    // Only Landline = Landline (1)
+    if (landline && !cell && !web) return 1;
+    
+    // None checked = null
+    return null;
   };
 
   const validate = () => {
@@ -98,9 +140,16 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       return;
     }
 
+    const projectType = calculateProjectType();
+
     const dataToSubmit = {
       ...formData,
       projectID: nextProjectNumber,
+      projectType,
+      // Remove the checkbox fields as they're not needed in the DB
+      landline: undefined,
+      cell: undefined,
+      web: undefined,
     };
 
     const result = await onSubmit(dataToSubmit);
@@ -120,6 +169,10 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
           contactName: '',
           contactNumber: '',
           dataProcessing: 0,
+          landline: false,
+          cell: false,
+          web: false,
+          multiCallID: 0,
         });
       }
     }
@@ -271,6 +324,56 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         }}
                       />
                       Open-Ends
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="multiCallID">
+                      <input
+                        type="checkbox"
+                        id="multiCallID"
+                        name="multiCallID"
+                        checked={formData.multiCallID === 1}
+                        onChange={handleChange}
+                      />
+                      Multi Call ID
+                    </label>
+                  </div>
+                </div>
+                <div className="compact-row">
+                  <div className="checkbox-field">
+                    <label htmlFor="landline">
+                      <input
+                        type="checkbox"
+                        id="landline"
+                        name="landline"
+                        checked={formData.landline}
+                        onChange={handleChange}
+                      />
+                      Landline
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="cell">
+                      <input
+                        type="checkbox"
+                        id="cell"
+                        name="cell"
+                        checked={formData.cell}
+                        onChange={handleChange}
+                      />
+                      Cell
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="web">
+                      <input
+                        type="checkbox"
+                        id="web"
+                        name="web"
+                        checked={formData.web}
+                        onChange={handleChange}
+                      />
+                      Web
                     </label>
                   </div>
                 </div>

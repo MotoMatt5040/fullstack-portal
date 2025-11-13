@@ -34,6 +34,17 @@ const ProjectsTable = ({
     }
   };
 
+  const getProjectTypeName = (projectType) => {
+    const projectTypeMap = {
+      1: 'Landline',
+      2: 'Cell',
+      3: 'Web',
+      4: 'Phone',
+      5: 'Mix',
+    };
+    return projectTypeMap[projectType] || '-';
+  };
+
   const getRowClass = (startDate) => {
     if (!startDate) return '';
     
@@ -92,8 +103,14 @@ const ProjectsTable = ({
             <th className="col-sortable" onClick={() => onSort('promarkTime')}>
               Promark Time {getSortIcon('promarkTime')}
             </th> */}
+            <th className="col-sortable" onClick={() => onSort('projectType')}>
+              Type {getSortIcon('projectType')}
+            </th>
             <th className="col-sortable" onClick={() => onSort('dataProcessing')}>
               DP {getSortIcon('dataProcessing')}
+            </th>
+            <th className="col-sortable" onClick={() => onSort('multiCallID')}>
+              Multi Call {getSortIcon('multiCallID')}
             </th>
             <th className="col-sortable" onClick={() => onSort('startDate')}>
               Start Date {getSortIcon('startDate')}
@@ -137,9 +154,15 @@ const ProjectsTable = ({
               <td>{project.NSize || '-'}</td>
               {/* <td>{project.clientTime || '-'}</td> */}
               {/* <td>{project.promarkTime || '-'}</td> */}
+              <td>{getProjectTypeName(project.projectType)}</td>
               <td>
                 <span className={`badge ${project.dataProcessing ? 'badge-yes' : 'badge-no'}`}>
                   {project.dataProcessing ? 'Yes' : 'No'}
+                </span>
+              </td>
+              <td>
+                <span className={`badge ${project.multiCallID ? 'badge-yes' : 'badge-no'}`}>
+                  {project.multiCallID ? 'Yes' : 'No'}
                 </span>
               </td>
               <td>{formatDate(project.startDate)}</td>

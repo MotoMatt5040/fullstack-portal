@@ -1,17 +1,17 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { promark } = require('../utils/databaseTypes');
+const { fajita } = require('../utils/databaseTypes');
 
 /**
  * Get the next available project ID (MAX + 1)
  */
 const getNextProjectNumber = async () => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const query = `
         SELECT ISNULL(MAX(projectID) + 1, 1) as nextNumber 
-        FROM FAJITA.dbo.Projects
+        FROM dbo.Projects
       `;
       
       const result = await pool.request().query(query);
@@ -26,7 +26,7 @@ const getNextProjectNumber = async () => {
  */
 const createProject = async (projectData, username) => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       // You MUST get the projectID from the front-end or a previous call
       const { projectID } = projectData;
@@ -52,22 +52,26 @@ const createProject = async (projectData, username) => {
       request.input('contactName', sql.NVarChar, projectData.contactName || null);
       request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
       request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
+      request.input('projectType', sql.Int, projectData.projectType || null);
+      request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
       request.input('createdBy', sql.NVarChar, username);
       
       // ✅ 2. Update the INSERT query
       const result = await request.query(`
-        INSERT INTO FAJITA.dbo.Projects 
+        INSERT INTO dbo.Projects 
         (
-          projectID, -- <-- ADDED
+          projectID, 
           clientProjectID, projectName, NSize, clientTime, promarkTime, openends, 
           startDate, endDate, client, contactName, contactNumber, dataProcessing, 
+          projectType, multiCallID,
           createdBy, updatedBy
         )
         VALUES 
         (
-          @projectID, -- <-- ADDED
+          @projectID, 
           @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends, 
           @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing, 
+          @projectType, @multiCallID,
           @createdBy, @createdBy
         );
         
@@ -96,7 +100,7 @@ const getAllProjects = async (options = {}) => {
   } = options;
   
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const offset = (page - 1) * limit;
       const request = pool.request();
@@ -120,7 +124,7 @@ const getAllProjects = async (options = {}) => {
       const allowedSortColumns = [
         'projectID', 'clientProjectID', 'projectName', 'NSize', 'clientTime', 
         'promarkTime', 'startDate', 'endDate', 'client', 
-        'contactName', 'contactNumber', 'dataProcessing'
+        'contactName', 'contactNumber', 'dataProcessing', 'projectType', 'multiCallID'
       ];
       const validSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'projectID';
       const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
@@ -129,14 +133,14 @@ const getAllProjects = async (options = {}) => {
         SELECT 
           projectID, clientProjectID, projectName, NSize, clientTime, promarkTime, 
           openends, startDate, endDate, client, contactName, contactNumber, 
-          dataProcessing, dateCreated, dateUpdated, createdBy, updatedBy
-        FROM FAJITA.dbo.Projects
+          dataProcessing, projectType, multiCallID, dateCreated, dateUpdated, createdBy, updatedBy
+        FROM dbo.Projects
         ${whereClause}
         ORDER BY ${validSortBy} ${validSortOrder}
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY;
         
-        SELECT COUNT(*) as total FROM FAJITA.dbo.Projects ${whereClause};
+        SELECT COUNT(*) as total FROM dbo.Projects ${whereClause};
       `;
       
       const result = await request.query(query);
@@ -158,7 +162,7 @@ const getAllProjects = async (options = {}) => {
  */
 const getProjectByNumber = async (projectID) => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -167,8 +171,8 @@ const getProjectByNumber = async (projectID) => {
           SELECT 
             projectID, clientProjectID, projectName, NSize, clientTime, promarkTime, 
             openends, startDate, endDate, client, contactName, contactNumber, 
-            dataProcessing, dateCreated, dateUpdated, createdBy, updatedBy
-          FROM FAJITA.dbo.Projects
+            dataProcessing, projectType, multiCallID, dateCreated, dateUpdated, createdBy, updatedBy
+          FROM dbo.Projects
           WHERE projectID = @projectID
         `);
       
@@ -183,7 +187,7 @@ const getProjectByNumber = async (projectID) => {
  */
 const updateProject = async (projectID, projectData, username) => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const request = pool.request();
       
@@ -200,10 +204,12 @@ const updateProject = async (projectID, projectData, username) => {
       request.input('contactName', sql.NVarChar, projectData.contactName || null);
       request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
       request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
+      request.input('projectType', sql.Int, projectData.projectType || null);
+      request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
       request.input('updatedBy', sql.NVarChar, username);
       
       await request.query(`
-        UPDATE FAJITA.dbo.Projects
+        UPDATE dbo.Projects
         SET 
           clientProjectID = @clientProjectID,
           projectName = @projectName,
@@ -217,6 +223,8 @@ const updateProject = async (projectID, projectData, username) => {
           contactName = @contactName,
           contactNumber = @contactNumber,
           dataProcessing = @dataProcessing,
+          projectType = @projectType,
+          multiCallID = @multiCallID,
           updatedBy = @updatedBy
         WHERE projectID = @projectID
       `);
@@ -232,12 +240,12 @@ const updateProject = async (projectID, projectData, username) => {
  */
 const deleteProject = async (projectID) => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const result = await pool
         .request()
         .input('projectID', sql.Int, projectID)
-        .query('DELETE FROM FAJITA.dbo.Projects WHERE projectID = @projectID');
+        .query('DELETE FROM dbo.Projects WHERE projectID = @projectID');
       
       return result.rowsAffected[0] > 0;
     },
@@ -250,7 +258,7 @@ const deleteProject = async (projectID) => {
  */
 const searchProjects = async (criteria) => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const request = pool.request();
       const conditions = [];
@@ -290,14 +298,19 @@ const searchProjects = async (criteria) => {
         conditions.push('contactName LIKE @contactName');
       }
       
+      if (criteria.projectType) {
+        request.input('projectType', sql.Int, criteria.projectType);
+        conditions.push('projectType = @projectType');
+      }
+      
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       
       const query = `
         SELECT 
           projectID, clientProjectID, projectName, NSize, clientTime, promarkTime, 
           openends, startDate, endDate, client, contactName, contactNumber, 
-          dataProcessing, dateCreated, dateUpdated, createdBy, updatedBy
-        FROM FAJITA.dbo.Projects
+          dataProcessing, projectType, multiCallID, dateCreated, dateUpdated, createdBy, updatedBy
+        FROM dbo.Projects
         ${whereClause}
         ORDER BY projectID DESC
       `;
@@ -314,15 +327,16 @@ const searchProjects = async (criteria) => {
  */
 const getProjectStats = async () => {
   return withDbConnection({
-    database: promark,
+    database: fajita,
     queryFn: async (pool) => {
       const result = await pool.request().query(`
         SELECT 
           COUNT(*) as totalProjects,
           COUNT(CASE WHEN openends = 'y' THEN 1 END) as projectsWithOpenEnds,
           COUNT(CASE WHEN dataProcessing = 1 THEN 1 END) as projectsWithDP,
-          COUNT(CASE WHEN startDate >= DATEADD(month, -1, GETDATE()) THEN 1 END) as recentProjects
-        FROM FAJITA.dbo.Projects
+          COUNT(CASE WHEN startDate >= DATEADD(month, -1, GETDATE()) THEN 1 END) as recentProjects,
+          COUNT(CASE WHEN multiCallID = 1 THEN 1 END) as projectsWithMultiCallID
+        FROM dbo.Projects
       `);
       
       return result.recordset[0];
