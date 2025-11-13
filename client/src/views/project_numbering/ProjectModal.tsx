@@ -21,7 +21,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     contactNumber: '',
     dataProcessing: 0,
     multiCallID: 0,
-    sampleTypes: {
+    modes: {
       landline: false,    // 1
       cell: false,        // 2
       webPanel: false,    // 3
@@ -41,14 +41,14 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
   useEffect(() => {
     if (mode === 'edit' && initialData) {
-      // Convert sampleTypes array to checkbox states
-      const sampleTypes = {
-        landline: initialData.sampleTypes?.includes(1) || false,
-        cell: initialData.sampleTypes?.includes(2) || false,
-        webPanel: initialData.sampleTypes?.includes(3) || false,
-        text: initialData.sampleTypes?.includes(4) || false,
-        email: initialData.sampleTypes?.includes(5) || false,
-        postalMail: initialData.sampleTypes?.includes(6) || false,
+      // Convert modes array to checkbox states
+      const modes = {
+        landline: initialData.modes?.includes(1) || false,
+        cell: initialData.modes?.includes(2) || false,
+        webPanel: initialData.modes?.includes(3) || false,
+        text: initialData.modes?.includes(4) || false,
+        email: initialData.modes?.includes(5) || false,
+        postalMail: initialData.modes?.includes(6) || false,
       };
 
       setFormData({
@@ -65,7 +65,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
         contactNumber: initialData.contactNumber || '',
         dataProcessing: initialData.dataProcessing ? 1 : 0,
         multiCallID: initialData.multiCallID ? 1 : 0,
-        sampleTypes,
+        modes,
       });
     }
   }, [mode, initialData]);
@@ -81,27 +81,27 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     }
   };
 
-  const handleSampleTypeChange = (e) => {
+  const handleModeChange = (e) => {
     const { name, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      sampleTypes: {
-        ...prev.sampleTypes,
+      modes: {
+        ...prev.modes,
         [name]: checked,
       },
     }));
   };
 
-  const getSampleTypesArray = () => {
-    const { sampleTypes } = formData;
+  const getModesArray = () => {
+    const { modes } = formData;
     const result = [];
     
-    if (sampleTypes.landline) result.push(1);
-    if (sampleTypes.cell) result.push(2);
-    if (sampleTypes.webPanel) result.push(3);
-    if (sampleTypes.text) result.push(4);
-    if (sampleTypes.email) result.push(5);
-    if (sampleTypes.postalMail) result.push(6);
+    if (modes.landline) result.push(1);
+    if (modes.cell) result.push(2);
+    if (modes.webPanel) result.push(3);
+    if (modes.text) result.push(4);
+    if (modes.email) result.push(5);
+    if (modes.postalMail) result.push(6);
     
     return result;
   };
@@ -144,7 +144,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       return;
     }
 
-    const sampleTypesArray = getSampleTypesArray();
+    const modesArray = getModesArray();
 
     const dataToSubmit = {
       projectID: nextProjectNumber,
@@ -161,7 +161,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       contactNumber: formData.contactNumber,
       dataProcessing: formData.dataProcessing,
       multiCallID: formData.multiCallID,
-      sampleTypes: sampleTypesArray,
+      modes: modesArray,
     };
 
     const result = await onSubmit(dataToSubmit);
@@ -182,7 +182,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
           contactNumber: '',
           dataProcessing: 0,
           multiCallID: 0,
-          sampleTypes: {
+          modes: {
             landline: false,
             cell: false,
             webPanel: false,
@@ -362,8 +362,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                     </label>
                   </div>
                 </div>
-                <label>STypes:</label>
-                {/* Row 2: Sample Types - Landline, Cell, Web Panel */}
+                <label>Modes:</label>
+                {/* Row 2: Modes - Landline, Cell, Web Panel */}
                 <div className="compact-row">
                   <div className="checkbox-field">
                     <label htmlFor="landline">
@@ -371,8 +371,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="landline"
                         name="landline"
-                        checked={formData.sampleTypes.landline}
-                        onChange={handleSampleTypeChange}
+                        checked={formData.modes.landline}
+                        onChange={handleModeChange}
                       />
                       Landline
                     </label>
@@ -383,8 +383,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="cell"
                         name="cell"
-                        checked={formData.sampleTypes.cell}
-                        onChange={handleSampleTypeChange}
+                        checked={formData.modes.cell}
+                        onChange={handleModeChange}
                       />
                       Cell
                     </label>
@@ -395,15 +395,15 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="webPanel"
                         name="webPanel"
-                        checked={formData.sampleTypes.webPanel}
-                        onChange={handleSampleTypeChange}
+                        checked={formData.modes.webPanel}
+                        onChange={handleModeChange}
                       />
                       Web Panel
                     </label>
                   </div>
                 </div>
                 
-                {/* Row 3: Sample Types - Text, Email, Postal Mail */}
+                {/* Row 3: Modes - Text, Email, Postal Mail */}
                 <div className="compact-row">
                   <div className="checkbox-field">
                     <label htmlFor="text">
@@ -411,8 +411,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="text"
                         name="text"
-                        checked={formData.sampleTypes.text}
-                        onChange={handleSampleTypeChange}
+                        checked={formData.modes.text}
+                        onChange={handleModeChange}
                       />
                       Text
                     </label>
@@ -423,8 +423,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="email"
                         name="email"
-                        checked={formData.sampleTypes.email}
-                        onChange={handleSampleTypeChange}
+                        checked={formData.modes.email}
+                        onChange={handleModeChange}
                       />
                       Email
                     </label>
@@ -435,8 +435,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         type="checkbox"
                         id="postalMail"
                         name="postalMail"
-                        checked={formData.sampleTypes.postalMail}
-                        onChange={handleSampleTypeChange}
+                        checked={formData.modes.postalMail}
+                        onChange={handleModeChange}
                       />
                       Postal Mail
                     </label>

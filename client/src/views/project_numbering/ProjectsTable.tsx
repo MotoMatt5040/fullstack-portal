@@ -34,26 +34,26 @@ const ProjectsTable = ({
     }
   };
 
-  const getSampleTypeDisplay = (sampleTypes) => {
-    if (!sampleTypes || sampleTypes.length === 0) {
+  const getModeDisplay = (modes) => {
+    if (!modes || modes.length === 0) {
       return '-';
     }
 
-    const hasPhone = sampleTypes.includes(1) || sampleTypes.includes(2);
-    const hasWeb = sampleTypes.includes(3) || sampleTypes.includes(4) || 
-                   sampleTypes.includes(5) || sampleTypes.includes(6);
+    const hasPhone = modes.includes(1) || modes.includes(2);
+    const hasWeb = modes.includes(3) || modes.includes(4) || 
+                   modes.includes(5) || modes.includes(6);
 
-    // If has both phone and web types, it's mixed
+    // If has both phone and web modes, it's mixed
     if (hasPhone && hasWeb) {
       return 'Mix';
     }
 
-    // If only phone types (1 or 2)
+    // If only phone modes (1 or 2)
     if (hasPhone && !hasWeb) {
       return 'Phone';
     }
 
-    // If only web types (3, 4, 5, or 6)
+    // If only web modes (3, 4, 5, or 6)
     if (hasWeb && !hasPhone) {
       return 'Web';
     }
@@ -119,7 +119,7 @@ const ProjectsTable = ({
             <th className="col-sortable" onClick={() => onSort('promarkTime')}>
               Promark Time {getSortIcon('promarkTime')}
             </th> */}
-            <th>Type</th>
+            <th>Mode</th>
             <th className="col-sortable" onClick={() => onSort('dataProcessing')}>
               DP {getSortIcon('dataProcessing')}
             </th>
@@ -168,7 +168,7 @@ const ProjectsTable = ({
               <td>{project.NSize || '-'}</td>
               {/* <td>{project.clientTime || '-'}</td> */}
               {/* <td>{project.promarkTime || '-'}</td> */}
-              <td>{getSampleTypeDisplay(project.sampleTypes)}</td>
+              <td>{getModeDisplay(project.modes)}</td>
               <td>
                 <span className={`badge ${project.dataProcessing ? 'badge-yes' : 'badge-no'}`}>
                   {project.dataProcessing ? 'Yes' : 'No'}

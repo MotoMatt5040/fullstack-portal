@@ -28,7 +28,7 @@ const createProject = async (projectData, username) => {
   return withDbConnection({
     database: fajita,
     queryFn: async (pool) => {
-      const { projectID, sampleTypes } = projectData;
+      const { projectID, modes } = projectData;
 
       if (!projectID) {
         throw new Error('projectID is required to create a project');
@@ -80,15 +80,15 @@ const createProject = async (projectData, username) => {
         
         const newId = result.recordset[0].id;
         
-        // Insert sample types if provided
-        if (sampleTypes && Array.isArray(sampleTypes) && sampleTypes.length > 0) {
-          for (const sampleTypeID of sampleTypes) {
+        // Insert modes if provided
+        if (modes && Array.isArray(modes) && modes.length > 0) {
+          for (const modeID of modes) {
             await transaction.request()
               .input('projectID', sql.Int, projectID)
-              .input('sampleTypeID', sql.Int, sampleTypeID)
+              .input('modeID', sql.Int, modeID)
               .query(`
-                INSERT INTO dbo.ProjectSampleTypes (projectID, sampleTypeID)
-                VALUES (@projectID, @sampleTypeID)
+                INSERT INTO dbo.ProjectModes (projectID, modeID)
+                VALUES (@projectID, @modeID)
               `);
           }
         }
@@ -153,11 +153,11 @@ const getAllProjects = async (options = {}) => {
           p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
           p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
           (
-            SELECT sampleTypeID
-            FROM dbo.ProjectSampleTypes pst
-            WHERE pst.projectID = p.projectID
+            SELECT modeID
+            FROM dbo.ProjectModes pm
+            WHERE pm.projectID = p.projectID
             FOR JSON PATH
-          ) as sampleTypesJSON
+          ) as modesJSON
         FROM dbo.Projects p
         ${whereClause}
         ORDER BY ${validSortBy} ${validSortOrder}
@@ -169,20 +169,20 @@ const getAllProjects = async (options = {}) => {
       
       const result = await request.query(query);
       
-      // Parse the JSON sample types for each project
+      // Parse the JSON modes for each project
       const projects = result.recordsets[0].map(project => {
-        let sampleTypes = [];
-        if (project.sampleTypesJSON) {
+        let modes = [];
+        if (project.modesJSON) {
           try {
-            sampleTypes = JSON.parse(project.sampleTypesJSON).map(st => st.sampleTypeID);
+            modes = JSON.parse(project.modesJSON).map(m => m.modeID);
           } catch (e) {
-            sampleTypes = [];
+            modes = [];
           }
         }
         return {
           ...project,
-          sampleTypes,
-          sampleTypesJSON: undefined, // Remove the JSON string from response
+          modes,
+          modesJSON: undefined, // Remove the JSON string from response
         };
       });
       
@@ -216,8 +216,8 @@ const getProjectByNumber = async (projectID) => {
           FROM dbo.Projects p
           WHERE p.projectID = @projectID;
           
-          SELECT sampleTypeID
-          FROM dbo.ProjectSampleTypes
+          SELECT modeID
+          FROM dbo.ProjectModes
           WHERE projectID = @projectID;
         `);
       
@@ -226,11 +226,11 @@ const getProjectByNumber = async (projectID) => {
       }
       
       const project = result.recordsets[0][0];
-      const sampleTypes = result.recordsets[1].map(st => st.sampleTypeID);
+      const modes = result.recordsets[1].map(m => m.modeID);
       
       return {
         ...project,
-        sampleTypes,
+        modes,
       };
     },
     fnName: 'getProjectByNumber',
@@ -287,20 +287,20 @@ const updateProject = async (projectID, projectData, username) => {
           WHERE projectID = @projectID
         `);
         
-        // Delete existing sample types
+        // Delete existing modes
         await transaction.request()
           .input('projectID', sql.Int, projectID)
-          .query(`DELETE FROM dbo.ProjectSampleTypes WHERE projectID = @projectID`);
+          .query(`DELETE FROM dbo.ProjectModes WHERE projectID = @projectID`);
         
-        // Insert new sample types if provided
-        if (projectData.sampleTypes && Array.isArray(projectData.sampleTypes) && projectData.sampleTypes.length > 0) {
-          for (const sampleTypeID of projectData.sampleTypes) {
+        // Insert new modes if provided
+        if (projectData.modes && Array.isArray(projectData.modes) && projectData.modes.length > 0) {
+          for (const modeID of projectData.modes) {
             await transaction.request()
               .input('projectID', sql.Int, projectID)
-              .input('sampleTypeID', sql.Int, sampleTypeID)
+              .input('modeID', sql.Int, modeID)
               .query(`
-                INSERT INTO dbo.ProjectSampleTypes (projectID, sampleTypeID)
-                VALUES (@projectID, @sampleTypeID)
+                INSERT INTO dbo.ProjectModes (projectID, modeID)
+                VALUES (@projectID, @modeID)
               `);
           }
         }
@@ -324,7 +324,7 @@ const deleteProject = async (projectID) => {
   return withDbConnection({
     database: fajita,
     queryFn: async (pool) => {
-      // CASCADE DELETE will handle ProjectSampleTypes
+      // CASCADE DELETE will handle ProjectModes
       const result = await pool
         .request()
         .input('projectID', sql.Int, projectID)
@@ -389,11 +389,11 @@ const searchProjects = async (criteria) => {
           p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
           p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
           (
-            SELECT sampleTypeID
-            FROM dbo.ProjectSampleTypes pst
-            WHERE pst.projectID = p.projectID
+            SELECT modeID
+            FROM dbo.ProjectModes pm
+            WHERE pm.projectID = p.projectID
             FOR JSON PATH
-          ) as sampleTypesJSON
+          ) as modesJSON
         FROM dbo.Projects p
         ${whereClause}
         ORDER BY p.projectID DESC
@@ -401,20 +401,20 @@ const searchProjects = async (criteria) => {
       
       const result = await request.query(query);
       
-      // Parse the JSON sample types for each project
+      // Parse the JSON modes for each project
       const projects = result.recordset.map(project => {
-        let sampleTypes = [];
-        if (project.sampleTypesJSON) {
+        let modes = [];
+        if (project.modesJSON) {
           try {
-            sampleTypes = JSON.parse(project.sampleTypesJSON).map(st => st.sampleTypeID);
+            modes = JSON.parse(project.modesJSON).map(m => m.modeID);
           } catch (e) {
-            sampleTypes = [];
+            modes = [];
           }
         }
         return {
           ...project,
-          sampleTypes,
-          sampleTypesJSON: undefined,
+          modes,
+          modesJSON: undefined,
         };
       });
       
