@@ -1147,12 +1147,16 @@ const extractFilesFromTable = async (config) => {
           finalHeaders.push('VTYPE');
         }
 
+        if (!finalHeaders.includes('$N')) {
+          finalHeaders.push('$N');
+        }
+
         const additionalColumnsQuery = `
           SELECT COLUMN_NAME
           FROM FAJITA.INFORMATION_SCHEMA.COLUMNS 
           WHERE TABLE_SCHEMA = 'dbo' 
           AND TABLE_NAME = @tableName
-          AND COLUMN_NAME IN ('VFREQGEN', 'VFREQPR', '$N')
+          AND COLUMN_NAME IN ('VFREQGEN', 'VFREQPR')
         `;
 
         const additionalResult = await pool
