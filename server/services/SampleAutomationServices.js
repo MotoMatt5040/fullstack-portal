@@ -1231,6 +1231,99 @@ const extractFilesFromTable = async (config) => {
           }
         }
 
+        // AFTER householding, BEFORE stratification
+
+if (splitMode === 'split') {
+  console.log('Creating SPLIT_GROUP column for split stratification...');
+  
+  try {
+    // First, check if SPLIT_GROUP column exists and drop it if it does
+    const checkColumnSQL = `
+      IF EXISTS (
+        SELECT 1 
+        FROM FAJITA.INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = 'dbo' 
+        AND TABLE_NAME = @tableName
+        AND COLUMN_NAME = 'SPLIT_GROUP'
+      )
+      BEGIN
+        ALTER TABLE FAJITA.dbo.[${tableName}] DROP COLUMN SPLIT_GROUP
+      END
+    `;
+    
+    await pool.request()
+      .input('tableName', sql.NVarChar, tableName)
+      .query(checkColumnSQL);
+    
+    // Add SPLIT_GROUP column
+    const addColumnSQL = `
+      ALTER TABLE FAJITA.dbo.[${tableName}] ADD SPLIT_GROUP VARCHAR(10) NULL
+    `;
+    
+    await pool.request().query(addColumnSQL);
+    console.log('✅ SPLIT_GROUP column added');
+    
+    // Populate SPLIT_GROUP based on exact extraction split logic
+    const populateSQL = `
+      UPDATE FAJITA.dbo.[${tableName}]
+      SET SPLIT_GROUP = CASE
+        WHEN SOURCE = 1 OR (SOURCE = 3 AND AGERANGE >= @selectedAgeRange) THEN 'LANDLINE'
+        WHEN SOURCE = 2 OR (SOURCE = 3 AND AGERANGE < @selectedAgeRange) THEN 'CELL'
+        ELSE 'UNKNOWN'
+      END
+    `;
+    
+    await pool.request()
+      .input('selectedAgeRange', sql.Int, selectedAgeRange)
+      .query(populateSQL);
+    
+    console.log('✅ SPLIT_GROUP column populated based on split logic');
+    
+  } catch (splitGroupError) {
+    console.error('Error creating SPLIT_GROUP column:', splitGroupError);
+    throw splitGroupError;
+  }
+}
+
+// NOW stratify with SPLIT_GROUP included if in split mode
+console.log('Creating stratified batches...');
+try {
+  let stratifyColumns = 'IAGE,GEND,PARTY,ETHNICITY,IZIP';
+  
+  // If split mode, include SPLIT_GROUP in stratification
+  if (splitMode === 'split') {
+    stratifyColumns = 'SPLIT_GROUP,' + stratifyColumns;
+    console.log('Split mode - stratifying separately for LANDLINE and CELL groups');
+  }
+
+  const stratifyResult = await createStratifiedBatches(
+    tableName,
+    stratifyColumns,
+    20
+  );
+  
+  if (stratifyResult.success) {
+    console.log(
+      `✅ Stratified batches created: ${stratifyResult.batchCount} batches`
+    );
+    console.log(
+      `   Columns used: ${stratifyResult.columnsUsed.join(', ')}`
+    );
+    if (stratifyResult.columnsSkipped.length > 0) {
+      console.log(
+        `   Columns skipped (not in table): ${stratifyResult.columnsSkipped.join(', ')}`
+      );
+    }
+  } else {
+    console.log('⚠️ Stratification skipped - no valid columns found');
+  }
+} catch (stratifyError) {
+  console.error(
+    '⚠️ Stratified batch creation failed (non-critical):',
+    stratifyError
+  );
+}
+
         // NOW BUILD selectClause AFTER householding columns have been added
         const selectClause = finalHeaders
           .map((header) => `[${header}]`)

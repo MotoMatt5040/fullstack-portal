@@ -456,40 +456,40 @@ const processFile = async (req, res) => {
           );
         }
 
-        console.log('Creating stratified batches...');
-        try {
-          // Define desired stratify columns (may not all exist)
-          let stratifyColumns = 'IAGE,GEND,PARTY,ETHNICITY,IZIP'; // List all desired columns
+        // console.log('Creating stratified batches...');
+        // try {
+        //   // Define desired stratify columns (may not all exist)
+        //   let stratifyColumns = 'IAGE,GEND,PARTY,ETHNICITY,IZIP'; // List all desired columns
 
-          const stratifyResult = await SampleAutomation.createStratifiedBatches(
-            tableResult.tableName,
-            stratifyColumns,
-            20
-          );
+        //   const stratifyResult = await SampleAutomation.createStratifiedBatches(
+        //     tableResult.tableName,
+        //     stratifyColumns,
+        //     20
+        //   );
 
-          if (stratifyResult.success) {
-            console.log(
-              `✅ Stratified batches created: ${stratifyResult.batchCount} batches`
-            );
-            console.log(
-              `   Columns used: ${stratifyResult.columnsUsed.join(', ')}`
-            );
-            if (stratifyResult.columnsSkipped.length > 0) {
-              console.log(
-                `   Columns skipped (not in table): ${stratifyResult.columnsSkipped.join(
-                  ', '
-                )}`
-              );
-            }
-          } else {
-            console.log('⚠️ Stratification skipped - no valid columns found');
-          }
-        } catch (stratifyError) {
-          console.error(
-            '⚠️ Stratified batch creation failed (non-critical):',
-            stratifyError
-          );
-        }
+        //   if (stratifyResult.success) {
+        //     console.log(
+        //       `✅ Stratified batches created: ${stratifyResult.batchCount} batches`
+        //     );
+        //     console.log(
+        //       `   Columns used: ${stratifyResult.columnsUsed.join(', ')}`
+        //     );
+        //     if (stratifyResult.columnsSkipped.length > 0) {
+        //       console.log(
+        //         `   Columns skipped (not in table): ${stratifyResult.columnsSkipped.join(
+        //           ', '
+        //         )}`
+        //       );
+        //     }
+        //   } else {
+        //     console.log('⚠️ Stratification skipped - no valid columns found');
+        //   }
+        // } catch (stratifyError) {
+        //   console.error(
+        //     '⚠️ Stratified batch creation failed (non-critical):',
+        //     stratifyError
+        //   );
+        // }
 
         console.log('Padding columns...');
         try {
