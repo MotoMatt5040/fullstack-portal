@@ -24,13 +24,11 @@ const ProjectsTable = ({
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
-      const date = new Date(dateString);
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const year = date.getFullYear();
+      // Parse YYYY-MM-DD string directly without Date object
+      const [year, month, day] = dateString.split('T')[0].split('-');
       return `${month}/${day}/${year}`;
     } catch {
-      return dateString;
+      return '-';
     }
   };
 
