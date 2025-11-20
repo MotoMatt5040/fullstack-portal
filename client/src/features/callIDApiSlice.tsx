@@ -56,6 +56,8 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
           queryParams.append('phoneNumber', params.phoneNumber);
         if (params.inUse !== undefined)
           queryParams.append('inUse', params.inUse);
+        if (params.page) queryParams.append('page', params.page);
+        if (params.limit) queryParams.append('limit', params.limit);
 
         const queryString = queryParams.toString();
         return `/callid/inventory${queryString ? `?${queryString}` : ''}`;
@@ -174,27 +176,6 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'ProjectCallIDs',
       ],
     }),
-
-    /**
-     * Update an existing assignment
-     * @param {Object} params
-     * @param {string} params.projectId - Project ID
-     * @param {number} params.phoneNumberId - Phone number ID
-     * @param {Object} params.data - Updated fields (startDate, endDate)
-     */
-    // updateAssignment: builder.mutation({
-    //   query: ({ projectId, phoneNumberId, data }) => ({
-    //     url: `/callid/usage/assign/${projectId}/${phoneNumberId}`,
-    //     method: 'PUT',
-    //     body: data,
-    //   }),
-    //   invalidatesTags: [
-    //     'CallIDActiveAssignments',
-    //     'CallIDRecentActivity',
-    //     'CallIDUsage',
-    //     'ProjectCallIDs',
-    //   ],
-    // }),
 
     /**
      * End an assignment (sets end date to now)

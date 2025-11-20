@@ -43,16 +43,18 @@ const handleGetAllCallIDs = handleAsync(async (req, res) => {
     stateFIPS: req.query.stateFIPS,
     callerName: req.query.callerName,
     phoneNumber: req.query.phoneNumber,
-    inUse: req.query.inUse
+    inUse: req.query.inUse,
+    page: req.query.page,
+    limit: req.query.limit
   };
 
   // Remove undefined filters
-  Object.keys(filters).forEach(key => 
+  Object.keys(filters).forEach(key =>
     filters[key] === undefined && delete filters[key]
   );
 
-  const callIDs = await CallIDService.getAllCallIDs(filters);
-  res.status(200).json(callIDs);
+  const result = await CallIDService.getAllCallIDs(filters);
+  res.status(200).json(result);
 });
 
 /**
@@ -92,8 +94,24 @@ const handleCreateCallID = handleAsync(async (req, res) => {
 
   // Validate phone number format (10 digits)
   if (!/^\d{10}$/.test(phoneNumber)) {
-    return res.status(400).json({ 
-      message: 'Phone number must be exactly 10 digits' 
+    return res.status(400).json({
+      message: 'Phone number must be exactly 10 digits'
+    });
+  }
+
+  // Validate US phone number (area code cannot start with 0 or 1)
+  const areaCode = phoneNumber.substring(0, 3);
+  if (areaCode[0] === '0' || areaCode[0] === '1') {
+    return res.status(400).json({
+      message: 'Invalid phone number: area code cannot start with 0 or 1'
+    });
+  }
+
+  // Validate exchange code (second group cannot start with 0 or 1)
+  const exchangeCode = phoneNumber.substring(3, 6);
+  if (exchangeCode[0] === '0' || exchangeCode[0] === '1') {
+    return res.status(400).json({
+      message: 'Invalid phone number: exchange code cannot start with 0 or 1'
     });
   }
 
@@ -247,36 +265,6 @@ const handleAssignCallIDToProject = handleAsync(async (req, res) => {
     message: result.Message
   });
 });
-
-/**
- * Update an existing assignment
- * PUT /api/callid/usage/assign/:projectId/:phoneNumberId
- * Body: { startDate, endDate }
- */
-// const handleUpdateAssignment = handleAsync(async (req, res) => {
-//   const { projectId, phoneNumberId } = req.params;
-//   const { startDate, endDate } = req.body;
-
-//   if (!projectId || !phoneNumberId) {
-//     return res.status(400).json({ 
-//       message: 'Project ID and Phone Number ID are required' 
-//     });
-//   }
-
-//   const result = await CallIDService.updateAssignment(
-//     projectId,
-//     parseInt(phoneNumberId),
-//     {
-//       startDate: startDate ? new Date(startDate) : undefined,
-//       endDate: endDate ? new Date(endDate) : undefined
-//     }
-//   );
-
-//   res.status(200).json({
-//     success: true,
-//     message: result.Message
-//   });
-// });
 
 /**
  * End an assignment (set end date to now)
@@ -612,42 +600,36 @@ module.exports = {
   handleGetDashboardMetrics,
   handleGetCurrentActiveAssignments,
   handleGetRecentActivity,
-  
-  handleGetAllProjectsWithAssignments,
-  handleCheckAssignmentConflict,
-  handleUpdateAssignment,
-  handleSwapCallIDAssignment,
-  handleReassignCallID,
-  
+
   // Inventory
   handleGetAllCallIDs,
   handleGetCallIDById,
   handleCreateCallID,
   handleUpdateCallID,
   handleDeleteCallID,
-  
+
   // Usage/Assignments
   handleGetCallIDUsageHistory,
   handleGetProjectCallIDs,
   handleAssignCallIDToProject,
   handleUpdateAssignment,
   handleEndAssignment,
-  
-  handleGetAllProjectsWithAssignments,
-  handleCheckAssignmentConflict,
-  handleUpdateAssignment,
-  handleSwapCallIDAssignment,
   handleReassignCallID,
   handleUpdateProjectSlot,
   handleRemoveProjectSlot,
-  
+
+  // Advanced Assignments
+  handleGetAllProjectsWithAssignments,
+  handleCheckAssignmentConflict,
+  handleSwapCallIDAssignment,
+
   // Analytics
   handleGetUtilizationMetrics,
   handleGetMostUsedCallIDs,
   handleGetIdleCallIDs,
   handleGetStateCoverage,
   handleGetUsageTimeline,
-  
+
   // Lookups
   handleGetAllStatusCodes,
   handleGetAllStates,

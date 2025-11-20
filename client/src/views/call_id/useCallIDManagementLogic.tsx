@@ -100,11 +100,15 @@ const useCallIDManagementLogic = () => {
   const [
     getAllCallIDs,
     {
-      data: callIDInventory = [],
+      data: callIDResponse,
       isLoading: inventoryLoading,
       isFetching: inventoryFetching,
     },
   ] = useLazyGetAllCallIDsQuery();
+
+  // Extract data and pagination from response
+  const callIDInventory = callIDResponse?.data || [];
+  const paginationInfo = callIDResponse?.pagination;
 
   // Lookups
   const { data: statusCodes = [] } = useGetAllStatusCodesQuery();

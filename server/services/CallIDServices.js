@@ -221,12 +221,12 @@ const getRecentActivity = async () => {
  */
 const getAllCallIDs = async (filters = {}) => {
   let whereConditions = [];
-  
+
   if (filters.status) whereConditions.push(`c.Status = @status`);
   if (filters.stateFIPS) whereConditions.push(`c.StateFIPS = @stateFIPS`);
   if (filters.callerName) whereConditions.push(`c.CallerName LIKE @callerName`);
   if (filters.phoneNumber) whereConditions.push(`c.PhoneNumber LIKE @phoneNumber`);
-  
+
   // Filter by "currently in use"
   if (filters.inUse === 'true') {
     whereConditions.push(`EXISTS (
@@ -242,12 +242,27 @@ const getAllCallIDs = async (filters = {}) => {
     )`);
   }
 
-  const whereClause = whereConditions.length > 0 
-    ? `WHERE ${whereConditions.join(' AND ')}` 
+  const whereClause = whereConditions.length > 0
+    ? `WHERE ${whereConditions.join(' AND ')}`
     : '';
 
+  // Pagination parameters
+  const page = parseInt(filters.page) || 1;
+  const limit = parseInt(filters.limit) || 50;
+  const offset = (page - 1) * limit;
+
+  // Count query for total records
+  const countQuery = `
+    SELECT COUNT(*) as TotalCount
+    FROM FAJITA.dbo.CallIDs c
+    INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
+    LEFT JOIN FAJITA.dbo.CallIDStatus cs ON c.Status = cs.StatusCode
+    ${whereClause}
+  `;
+
+  // Main query with pagination
   const query = `
-    SELECT 
+    SELECT
       c.PhoneNumberID,
       c.PhoneNumber,
       c.Status,
@@ -258,7 +273,7 @@ const getAllCallIDs = async (filters = {}) => {
       s.StateName,
       c.DateCreated,
       c.DateUpdated,
-      CASE 
+      CASE
         WHEN EXISTS (
           SELECT 1 FROM FAJITA.dbo.CallIDUsage u
           WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
@@ -267,7 +282,7 @@ const getAllCallIDs = async (filters = {}) => {
         ELSE 0
       END as CurrentlyInUse,
       (
-        SELECT TOP 1 ProjectID 
+        SELECT TOP 1 ProjectID
         FROM FAJITA.dbo.CallIDUsage u
         WHERE GETDATE() BETWEEN u.StartDate AND u.EndDate
           AND c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2)
@@ -277,20 +292,40 @@ const getAllCallIDs = async (filters = {}) => {
     LEFT JOIN FAJITA.dbo.CallIDStatus cs ON c.Status = cs.StatusCode
     ${whereClause}
     ORDER BY c.DateCreated DESC
+    OFFSET @offset ROWS
+    FETCH NEXT @limit ROWS ONLY
   `;
 
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
       const request = pool.request();
-      
+
       if (filters.status) request.input('status', sql.TinyInt, filters.status);
       if (filters.stateFIPS) request.input('stateFIPS', sql.Char(2), filters.stateFIPS);
       if (filters.callerName) request.input('callerName', sql.NVarChar, `%${filters.callerName}%`);
       if (filters.phoneNumber) request.input('phoneNumber', sql.NVarChar, `%${filters.phoneNumber}%`);
 
+      // Get total count
+      const countResult = await request.query(countQuery);
+      const totalCount = countResult.recordset[0].TotalCount;
+
+      // Get paginated data
+      request.input('offset', sql.Int, offset);
+      request.input('limit', sql.Int, limit);
       const result = await request.query(query);
-      return result.recordset;
+
+      return {
+        data: result.recordset,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNextPage: page < Math.ceil(totalCount / limit),
+          hasPreviousPage: page > 1
+        }
+      };
     },
     fnName: 'getAllCallIDs',
     attempts: 3
@@ -1023,15 +1058,18 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
  */
 const getAllProjectsWithAssignments = async () => {
   const query = `
-    SELECT DISTINCT
+    SELECT
       u.ProjectID,
-      -- Count active assignments by slot
-      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 1 THEN 1 END) as Slot1Active,
-      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 2 THEN 1 END) as Slot2Active,
-      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 3 THEN 1 END) as Slot3Active,
-      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDSlot = 4 THEN 1 END) as Slot4Active,
-      COUNT(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate THEN 1 END) as ActiveAssignments,
-      COUNT(u.PhoneNumberID) as TotalAssignments,
+      -- Count active assignments by slot (check if slot is filled and date is current)
+      SUM(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDL1 IS NOT NULL THEN 1 ELSE 0 END) as Slot1Active,
+      SUM(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDL2 IS NOT NULL THEN 1 ELSE 0 END) as Slot2Active,
+      SUM(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDC1 IS NOT NULL THEN 1 ELSE 0 END) as Slot3Active,
+      SUM(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate AND u.CallIDC2 IS NOT NULL THEN 1 ELSE 0 END) as Slot4Active,
+      -- Count rows where at least one slot is active
+      SUM(CASE WHEN GETDATE() BETWEEN u.StartDate AND u.EndDate
+               AND (u.CallIDL1 IS NOT NULL OR u.CallIDL2 IS NOT NULL OR u.CallIDC1 IS NOT NULL OR u.CallIDC2 IS NOT NULL)
+          THEN 1 ELSE 0 END) as ActiveAssignments,
+      COUNT(*) as TotalAssignments,
       MIN(u.StartDate) as FirstUsed,
       MAX(u.EndDate) as LastUsed
     FROM FAJITA.dbo.CallIDUsage u

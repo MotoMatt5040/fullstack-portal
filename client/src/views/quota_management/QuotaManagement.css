@@ -5,16 +5,20 @@
 .quota-table-container {
   position: relative;
   max-height: 80vh;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   border: 1px solid var(--border-color-soft);
   border-radius: 8px;
   box-shadow: var(--box-shadow-elevated);
+  -webkit-overflow-scrolling: touch;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .quota-management-table {
   width: auto;
+  min-width: fit-content;
   margin: 0;
-  max-width: 100%;
 
   border-collapse: separate;
   border-spacing: 0;
@@ -100,15 +104,18 @@ tr.active td {
 }
 
 .quota-management-select .my-select__control {
-  min-width: 70vw;
+  min-width: 200px;
+  width: 100%;
 }
 
 .quota-management-select .my-select__container {
-  min-width: 70vw;
+  min-width: 200px;
+  width: 100%;
 }
 
 .quota-management-select .my-select__menu {
-  min-width: 70vw;
+  min-width: 200px;
+  width: 100%;
 }
 
 /* =================================================================
@@ -167,30 +174,64 @@ tr.active td {
    Responsive adjustments for sticky headers
    ================================================================= */
 
-/* Very small screens */
+/* Very small screens (Mobile) */
 @media (max-width: 480px) {
   .quota-management-table {
-    font-size: 0.5rem;
+    font-size: 0.6rem;
+  }
+
+  .quota-management-table thead th {
+    padding: 0.4rem 0.25rem;
+  }
+
+  .quota-management-table tbody td {
+    padding: 0.4rem 0.25rem;
   }
 
   .quota-management-table thead tr:first-child th {
-    top: calc(4rem - 2px); 
+    top: 60px;
   }
 
   .quota-management-table thead tr:nth-child(2) th {
-    top: calc(4rem - 2px + 2 * 0.5rem + 4px);
+    top: calc(60px + 1.6rem);
   }
 
   .quota-management-table thead tr:nth-child(3) th {
-    top: calc(4rem - 2px + 4 * 0.5rem + 8px);
+    top: calc(60px + 3.2rem);
   }
 
-  .quota-management-table tbody tr:first-child td {
-    top: calc(4rem - 2px + 6 * 0.5rem + 12px);
+  .quota-table-container {
+    max-height: 65vh;
+    margin: 0.5rem;
+  }
+
+  .quota-management-select .my-select__control {
+    min-width: 150px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Small screens (Mobile Landscape / Small Tablets) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .quota-management-table {
+    font-size: 0.7rem;
+  }
+
+  .quota-management-table thead th {
+    padding: 0.5rem 0.35rem;
+  }
+
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.35rem;
   }
 
   .quota-table-container {
     max-height: 70vh;
+  }
+
+  .quota-management-select .my-select__control {
+    min-width: 180px;
+    font-size: 0.8rem;
   }
 }
 

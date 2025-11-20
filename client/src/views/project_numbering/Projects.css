@@ -261,7 +261,7 @@
 .projects-table {
   width: auto;
   border-collapse: collapse;
-  font-size: 0.69rem;
+  font-size: 0.9rem;
   table-layout: auto;
   text-align: left;
 }
@@ -277,7 +277,7 @@
   text-align: left;
   font-weight: 600;
   white-space: nowrap;
-  font-size: 0.69rem;
+  font-size: 0.9rem;
 }
 
 .col-sortable {
@@ -316,7 +316,7 @@
 .projects-table td {
   padding: 0.5rem 0.5rem;
   color: var(--text-color);
-  font-size: 0.69rem;
+  font-size: 0.9rem;
   white-space: nowrap;
   text-align: left;
 }
@@ -860,7 +860,7 @@
 
 @media (min-width: 480px) {
   .projects-table {
-    font-size: 0.69rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -870,12 +870,12 @@
   }
 
   .projects-table {
-    font-size: 0.6rem;
+    font-size: 0.95rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.5rem 0.6rem;
+    padding: 0.6rem 0.7rem;
   }
 }
 
@@ -885,12 +885,12 @@
   }
 
   .projects-table {
-    font-size: 0.65rem;
+    font-size: 1rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.5rem 0.7rem;
+    padding: 0.6rem 0.8rem;
   }
 }
 
@@ -904,55 +904,55 @@
   }
 
   .projects-table {
-    font-size: 0.7rem;
+    font-size: 1.05rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.65rem 0.9rem;
   }
 }
 
 @media (min-width: 1440px) {
   .projects-table {
-    font-size: 0.75rem;
+    font-size: 1.1rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.5rem 0.8rem;
+    padding: 0.7rem 1rem;
   }
 }
 
 @media (min-width: 1600px) {
   .projects-table {
-    font-size: 0.8rem;
+    font-size: 1.15rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.5rem 0.9rem;
+    padding: 0.75rem 1.1rem;
   }
 }
 
 @media (min-width: 1920px) {
   .projects-table {
-    font-size: 0.85rem;
+    font-size: 1.2rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.6rem 1rem;
+    padding: 0.8rem 1.2rem;
   }
 }
 
 @media (min-width: 2560px) {
   .projects-table {
-    font-size: 1rem;
+    font-size: 1.3rem;
   }
 
   .projects-table th,
   .projects-table td {
-    padding: 0.7rem 1.1rem;
+    padding: 0.9rem 1.3rem;
   }
 }

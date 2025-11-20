@@ -43,27 +43,39 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
   }, [isNavVisible, onToggleNav]);
 
   return (
-    <aside className='navbar-container'>
-      <div
-        ref={clickableRef}
-        className={`navbar-clickable-area ${isNavVisible ? 'open' : ''}`}
-        onClick={toggleNav}
-      >
-        <Icon path={mdiMenu} size={1.5} className='hamburger-icon' />
-      </div>
+    <>
+      <aside className='navbar-container'>
+        <div
+          ref={clickableRef}
+          className={`navbar-clickable-area ${isNavVisible ? 'open' : ''}`}
+          onClick={toggleNav}
+          aria-label="Toggle navigation menu"
+          role="button"
+          tabIndex={0}
+        >
+          <Icon path={mdiMenu} size={1.5} className='hamburger-icon' />
+        </div>
+      </aside>
 
+      {/* Overlay */}
+      <div
+        className={`navbar-overlay ${isNavVisible ? 'visible' : ''}`}
+        onClick={toggleNav}
+      />
+
+      {/* Slide-out Navigation */}
       <nav
         ref={navRef}
         className={`navbar ${isNavVisible ? 'visible' : 'hidden'}`}
       >
         <ul>
-          <li><Link to='/'>Home</Link></li>
-          <li><Link to='/about'>About</Link></li>
-          <li><Link to='/contact'>Contact</Link></li>
+          <li><Link to='/' onClick={() => setIsNavVisible(false)}>Home</Link></li>
+          <li><Link to='/about' onClick={() => setIsNavVisible(false)}>About</Link></li>
+          <li><Link to='/contact' onClick={() => setIsNavVisible(false)}>Contact</Link></li>
         </ul>
         <Settings />
       </nav>
-    </aside>
+    </>
   );
 };
 
