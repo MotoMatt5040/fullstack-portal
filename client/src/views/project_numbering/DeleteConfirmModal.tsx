@@ -9,17 +9,11 @@ const DeleteConfirmModal = ({
   projectName,
   projectID,
 }) => {
-  const handleBackdropClick = (e) => {
-    if (e.target.classList.contains('modal-overlay')) {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleBackdropClick}>
-      <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div className="modal-content modal-small" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header modal-header-danger">
           <h2>
             <FaExclamationTriangle /> Confirm Delete

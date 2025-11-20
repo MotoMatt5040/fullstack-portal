@@ -50,13 +50,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   const modalRoot = document.getElementById('modal-root') || document.body;
 
   return ReactDOM.createPortal(
-    <div 
+    <div
       className={`modal-backdrop ${isVisible ? 'modal-backdrop--visible' : ''}`}
-      onClick={onClose} // Click anywhere to close
+      onMouseDown={onClose}
     >
-      <div 
+      <div
         className={`modal-container ${isVisible ? 'modal-container--visible' : ''}`}
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <button 
           className="modal-close-button" 

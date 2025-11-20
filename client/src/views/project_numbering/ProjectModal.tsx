@@ -200,8 +200,8 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
   const nextProjectNumber = mode === 'create' ? nextNumberData?.nextNumber : initialData?.projectID;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{mode === 'create' ? 'Add New Project' : 'Edit Project'}</h2>
           <button className="modal-close" onClick={onClose}>

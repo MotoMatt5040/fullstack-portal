@@ -1,7 +1,7 @@
 // client/src/views/callid_management/CallIDModals.tsx
 import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
-import { mdiClose } from '@mdi/js';
+import { mdiClose, mdiAlert } from '@mdi/js';
 import './CallIDModals.css';
 
 interface CreateModalProps {
@@ -66,8 +66,8 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Add New Call ID</h2>
           <button onClick={onClose} className='modal-close'>
@@ -212,8 +212,8 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
   if (!isOpen || !callID) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Edit Call ID</h2>
           <button onClick={onClose} className='modal-close'>
@@ -326,11 +326,8 @@ export const DeleteCallIDModal: React.FC<DeleteModalProps> = ({
   if (!isOpen || !callID) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div
-        className='modal-content modal-small'
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content modal-small' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Delete Call ID</h2>
           <button onClick={onClose} className='modal-close'>
@@ -427,8 +424,8 @@ export const AssignCallIDModal: React.FC<AssignCallIDModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Assign Call ID to Project</h2>
           <button onClick={onClose} className='modal-close'>

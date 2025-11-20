@@ -46,17 +46,11 @@ const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
     });
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target.classList.contains('modal-overlay')) {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleBackdropClick}>
-      <div className="modal-content modal-medium" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div className="modal-content modal-medium" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>
             <FaSearch /> Advanced Search
