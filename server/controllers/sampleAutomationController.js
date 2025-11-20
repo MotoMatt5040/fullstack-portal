@@ -1075,6 +1075,10 @@ const extractFiles = handleAsync(async (req, res) => {
       console.log(`Client ID: ${clientId}`);
     }
 
+    // Get userId from authenticated user
+    const userId = req.user;
+    console.log(`User ID: ${userId}`);
+
     const result = await SampleAutomation.extractFilesFromTable({
       tableName,
       selectedHeaders,
@@ -1084,6 +1088,7 @@ const extractFiles = handleAsync(async (req, res) => {
       fileType,
       fileNames,
       clientId,
+      userId,
     });
 
     console.log(`📤 Sending response to frontend:`);

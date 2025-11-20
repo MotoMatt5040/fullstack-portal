@@ -9,6 +9,58 @@ const {
 } = require('../config/promarkConstants');
 
 /**
+ * Get user-specific temp directory path
+ * @param {string} userId - User identifier (email/username)
+ * @returns {string} - Path to user-specific temp directory
+ */
+const getUserTempDir = (userId) => {
+  // Sanitize userId to create valid directory name (replace @ and . with _)
+  const sanitizedUserId = userId.replace(/[@.]/g, '_');
+  return path.join(__dirname, '../temp', sanitizedUserId);
+};
+
+/**
+ * Clean up user-specific temp directory (remove if exists)
+ * @param {string} userId - User identifier (email/username)
+ */
+const cleanupUserTempDir = async (userId) => {
+  const userTempDir = getUserTempDir(userId);
+  try {
+    await fs.rm(userTempDir, { recursive: true, force: true });
+    console.log(`🗑️  Cleaned up temp directory for user: ${userId}`);
+  } catch (error) {
+    // Ignore errors if directory doesn't exist
+    console.log(`Note: Could not clean up temp directory: ${error.message}`);
+  }
+};
+
+/**
+ * Ensure user-specific temp directory exists
+ * @param {string} userId - User identifier (email/username)
+ * @returns {string} - Path to user-specific temp directory
+ */
+const ensureUserTempDir = async (userId) => {
+  const userTempDir = getUserTempDir(userId);
+  await fs.mkdir(userTempDir, { recursive: true });
+  console.log(`📁 Created temp directory for user: ${userId}`);
+  return userTempDir;
+};
+
+/**
+ * Get URL for temp file
+ * @param {string} filename - File name
+ * @param {string} userId - User identifier (optional)
+ * @returns {string} - URL path to file
+ */
+const getTempFileUrl = (filename, userId) => {
+  if (userId) {
+    const sanitizedUserId = userId.replace(/[@.]/g, '_');
+    return `/temp/${sanitizedUserId}/${filename}`;
+  }
+  return `/temp/${filename}`;
+};
+
+/**
  * Create a SQL table from processed file data with Promark internal variables
  * @param {Object} processedData - Data from file processor containing headers and data
  * @param {string} tableName - Base name for the table
@@ -1173,16 +1225,25 @@ const getDistinctAgeRanges = async (tableName) => {
 };
 
 const extractFilesFromTable = async (config) => {
-  const { tableName, selectedHeaders, splitMode, selectedAgeRange, fileNames, clientId } =
+  const { tableName, selectedHeaders, splitMode, selectedAgeRange, fileNames, clientId, userId } =
     config;
 
-  return withDbConnection({
-    database: promark,
-    queryFn: async (pool) => {
-      try {
+  // Clean up existing user temp directory before starting
+  if (userId) {
+    await cleanupUserTempDir(userId);
+  }
+
+  try {
+    const result = await withDbConnection({
+      database: promark,
+      queryFn: async (pool) => {
+        try {
         console.log(`Starting file extraction from table: ${tableName}`);
         if (clientId) {
           console.log(`Client ID: ${clientId}`);
+        }
+        if (userId) {
+          console.log(`User ID: ${userId}`);
         }
 
         // Build final headers list - include selected headers plus system columns
@@ -1198,8 +1259,9 @@ const extractFilesFromTable = async (config) => {
           finalHeaders.push('BATCH');
         }
 
-        // Add VTYPE if not already included
-        if (!finalHeaders.includes('VTYPE')) {
+        // Add VTYPE only if we're in split mode (it will be created/used)
+        // In single file mode, VTYPE is not needed
+        if (splitMode === 'split' && !finalHeaders.includes('VTYPE')) {
           finalHeaders.push('VTYPE');
         }
 
@@ -1231,21 +1293,32 @@ const extractFilesFromTable = async (config) => {
         // DON'T BUILD selectClause HERE YET - wait until after householding adds columns
 
         // FIRST: Update VTYPE in the table based on split logic
-        console.log(
-          `Updating VTYPE in table based on split logic (age threshold: ${selectedAgeRange})`
-        );
-        const vtypeUpdate = await updateVTYPEBySplit(
-          tableName,
-          selectedAgeRange,
-          clientId
-        );
-        console.log(
-          `VTYPE updated: ${vtypeUpdate.landlineCount} landline, ${vtypeUpdate.cellCount} cell`
-        );
+        // Only update VTYPE if we're in split mode
+        let vtypeUpdate = null;
+        if (splitMode === 'split') {
+          console.log(
+            `Updating VTYPE in table based on split logic (age threshold: ${selectedAgeRange})`
+          );
+          vtypeUpdate = await updateVTYPEBySplit(
+            tableName,
+            selectedAgeRange,
+            clientId
+          );
+          console.log(
+            `VTYPE updated: ${vtypeUpdate.landlineCount} landline, ${vtypeUpdate.cellCount} cell`
+          );
+        } else {
+          console.log(`Skipping VTYPE update for non-split mode (mode: ${splitMode})`);
+        }
 
         // SECOND: Create $N column based on VTYPE or fileType
         console.log('Creating $N column based on VTYPE or fileType...');
-        const dollarNResult = await createDollarNColumn(tableName, config.fileType, clientId);
+        console.log(`Split mode: ${splitMode}, fileType: ${config.fileType}`);
+        // For split mode, pass null for fileType so stored procedure uses VTYPE
+        // For single mode (all), pass fileType so it uses the specified column
+        const fileTypeForDollarN = splitMode === 'split' ? null : config.fileType;
+        console.log(`Calling createDollarNColumn with fileType: ${fileTypeForDollarN}, clientId: ${clientId}`);
+        const dollarNResult = await createDollarNColumn(tableName, fileTypeForDollarN, clientId);
         console.log(`$N column: ${dollarNResult.rowsUpdated} rows populated`);
 
         let householdingResult = null;
@@ -1319,7 +1392,7 @@ const extractFilesFromTable = async (config) => {
             console.log('📁 Extracting householding duplicate files...');
             // Filter out BATCH since it doesn't exist in householding tables
             const householdingHeaders = finalHeaders.filter(h => h !== 'BATCH');
-            householdingDuplicateFiles = await extractHouseholdingDuplicateFiles(tableName, householdingHeaders);
+            householdingDuplicateFiles = await extractHouseholdingDuplicateFiles(tableName, householdingHeaders, userId);
             console.log(`✅ Generated ${householdingDuplicateFiles.filesGenerated} householding duplicate files`);
           } catch (error) {
             console.error('❌ Householding failed:', error);
@@ -1434,9 +1507,11 @@ const extractFilesFromTable = async (config) => {
           );
           const cellCSV = convertToCSV(cellResult.recordset, cellHeaders);
 
-          // Create temp directory if it doesn't exist
-          const tempDir = path.join(__dirname, '../temp');
-          await fs.mkdir(tempDir, { recursive: true });
+          // Create user-specific temp directory
+          const tempDir = userId ? await ensureUserTempDir(userId) : path.join(__dirname, '../temp');
+          if (!userId) {
+            await fs.mkdir(tempDir, { recursive: true });
+          }
 
           // Write CSV files
           const landlineFilePath = path.join(
@@ -1463,7 +1538,7 @@ const extractFilesFromTable = async (config) => {
             landline: {
               filename: `${fileNames.landline}.csv`,
               path: landlineFilePath,
-              url: `/temp/${fileNames.landline}.csv`,
+              url: getTempFileUrl(`${fileNames.landline}.csv`, userId),
               records: landlineResult.recordset.length,
               headers: landlineHeaders,
               conditions: [
@@ -1489,7 +1564,7 @@ const extractFilesFromTable = async (config) => {
             cell: {
               filename: `${fileNames.cell}.csv`,
               path: cellFilePath,
-              url: `/temp/${fileNames.cell}.csv`,
+              url: getTempFileUrl(`${fileNames.cell}.csv`, userId),
               records: cellResult.recordset.length,
               headers: cellHeaders,
               conditions: [
@@ -1547,9 +1622,11 @@ const extractFilesFromTable = async (config) => {
           // Convert to CSV using final headers
           const allCSV = convertToCSV(allResult.recordset, finalHeaders);
 
-          // Create temp directory if it doesn't exist
-          const tempDir = path.join(__dirname, '../temp');
-          await fs.mkdir(tempDir, { recursive: true });
+          // Create user-specific temp directory
+          const tempDir = userId ? await ensureUserTempDir(userId) : path.join(__dirname, '../temp');
+          if (!userId) {
+            await fs.mkdir(tempDir, { recursive: true });
+          }
 
           // Determine filename based on fileType
           // fileNames.single should already have the correct prefix from frontend
@@ -1576,7 +1653,7 @@ const extractFilesFromTable = async (config) => {
               single: {
                 filename: `${finalFilename}.csv`,
                 path: filePath,
-                url: `/temp/${finalFilename}.csv`,
+                url: getTempFileUrl(`${finalFilename}.csv`, userId),
                 records: allResult.recordset.length,
                 headers: finalHeaders,
                 conditions: [
@@ -1609,13 +1686,22 @@ const extractFilesFromTable = async (config) => {
             }`,
           };
         }
-      } catch (error) {
-        console.error('Error in extractFilesFromTable:', error);
-        throw new Error(`Failed to extract files: ${error.message}`);
-      }
-    },
-    fnName: 'extractFilesFromTable',
-  });
+        } catch (error) {
+          console.error('Error in extractFilesFromTable:', error);
+          throw new Error(`Failed to extract files: ${error.message}`);
+        }
+      },
+      fnName: 'extractFilesFromTable',
+    });
+
+    // Return result to caller before cleanup
+    return result;
+  } finally {
+    // Always clean up user temp directory after extraction (success or failure)
+    if (userId) {
+      await cleanupUserTempDir(userId);
+    }
+  }
 };
 
 /**
@@ -2122,6 +2208,8 @@ const createDollarNColumn = async (tableName, fileType = null, clientId = null) 
         }
 
         // Standard logic for all other clients
+        console.log(`Calling stored procedure sp_CreateDollarNColumn with TableName: ${tableName}, FileType: ${fileType}`);
+
         const result = await pool
           .request()
           .input('TableName', sql.NVarChar, tableName)
@@ -2394,9 +2482,10 @@ const processHouseholding = async (tableName, selectedAgeRange) => {
  * Extract CSV files from householding duplicate tables
  * @param {string} tableName - Base table name (duplicate tables will be {tableName}duplicate2, duplicate3, duplicate4)
  * @param {string[]} selectedHeaders - Array of column names to include in export
+ * @param {string} userId - User identifier for temp directory
  * @returns {Object} - Result with file information for each duplicate table
  */
-const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders) => {
+const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders, userId) => {
   return withDbConnection({
     database: promark,
     queryFn: async (pool) => {
@@ -2472,7 +2561,9 @@ const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders) => 
         ];
         
         const files = {};
-        const tempDir = path.join(__dirname, '../temp');
+        // Use user-specific temp directory
+        const tempDir = userId ? getUserTempDir(userId) : path.join(__dirname, '../temp');
+        // Directory should already exist from extractFilesFromTable, but ensure it
         await fs.mkdir(tempDir, { recursive: true });
         
         // Extract data from each duplicate table
@@ -2529,7 +2620,7 @@ const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders) => 
           files[dupTable.suffix] = {
             filename: filename,
             path: filePath,
-            url: `/temp/${filename}`,
+            url: getTempFileUrl(filename, userId),
             records: result.recordset.length,
             headers: finalHeaders,
             rank: dupTable.rank,
