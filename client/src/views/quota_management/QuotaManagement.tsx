@@ -148,11 +148,13 @@ const QuotaManagement = (props: Props) => {
           </div>
 
           {selectedProject && Object.keys(quotas).length > 0 && (
-            <QuotaManagementTable
-              id={`${selectedProject}-quotas`}
-              quotaData={quotas}
-              visibleStypes={visibleStypes}
-            />
+            <div className='quota-table-container'>
+              <QuotaManagementTable
+                id={`${selectedProject}-quotas`}
+                quotaData={quotas}
+                visibleStypes={visibleStypes}
+              />
+            </div>
           )}
 
           {!selectedProject && (
