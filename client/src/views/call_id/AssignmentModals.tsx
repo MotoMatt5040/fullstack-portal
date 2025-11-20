@@ -6,6 +6,8 @@ import {
   mdiSwapHorizontal,
   mdiAlert,
   mdiInformationOutline,
+  mdiPhone,
+  mdiPhoneOff,
 } from '@mdi/js';
 import './CallIDModals.css';
 
@@ -99,8 +101,8 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Edit Assignment Dates</h2>
           <button onClick={onClose} className='modal-close'>
@@ -216,8 +218,8 @@ export const SwapAssignmentModal: React.FC<SwapAssignmentModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <div className='header-with-icon'>
             <Icon path={mdiSwapHorizontal} size={1} />
@@ -368,8 +370,8 @@ export const AssignToProjectModal: React.FC<AssignToProjectModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Assign Call ID to Project</h2>
           <button onClick={onClose} className='modal-close'>
@@ -575,11 +577,8 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='modal-overlay' onClick={onClose}>
-      <div
-        className='modal-content modal-large'
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className='modal-overlay' onMouseDown={onClose}>
+      <div className='modal-content modal-large' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
           <h2>Manage Call ID Slots - {projectId}</h2>
           <button onClick={onClose} className='modal-close'>

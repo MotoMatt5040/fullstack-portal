@@ -40,34 +40,456 @@ const generateSessionId = () => {
   );
 };
 
-// Main processing function for single or multiple files
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Sanitize header name - remove ALL whitespace and convert to uppercase
+ */
+const sanitizeHeaderName = (headerName) => {
+  if (!headerName || typeof headerName !== 'string') {
+    return '';
+  }
+  // Remove ALL whitespace (leading, trailing, AND internal) and uppercase
+  return headerName.replace(/\s+/g, '').toUpperCase();
+};
+
+/**
+ * Sanitize array of header names
+ */
+const sanitizeHeaders = (headers) => {
+  return headers.map(h => sanitizeHeaderName(h));
+};
+
+/**
+ * Validate file extension
+ */
+const validateFileExtension = (filename) => {
+  const fileExtension = path.extname(filename).toLowerCase();
+  
+  if (!fileExtension || fileExtension === '.') {
+    throw new Error(`File "${filename}" must have a valid extension. Supported types: ${FileProcessorFactory.getSupportedExtensions().join(', ')}`);
+  }
+
+  if (!FileProcessorFactory.isSupported(fileExtension)) {
+    throw new Error(`Unsupported file type: ${fileExtension}. Supported types: ${FileProcessorFactory.getSupportedExtensions().join(', ')}`);
+  }
+
+  return fileExtension;
+};
+
+/**
+ * Register file IDs for project tracking
+ */
+const registerFileIds = async (filesToProcess, projectId, requestedFileId, username) => {
+  const fileIds = [];
+  
+  for (let i = 0; i < filesToProcess.length; i++) {
+    const file = filesToProcess[i];
+    const originalFilename = file.originalname;
+    
+    try {
+      // Get next FileID or use requested one
+      const fileIdResult = await SampleAutomation.getNextFileID(
+        projectId,
+        requestedFileId ? parseInt(requestedFileId) + i : null
+      );
+      
+      const fileId = fileIdResult.nextFileID;
+      
+      // Register the file
+      await SampleAutomation.registerProjectFile(
+        projectId,
+        fileId,
+        originalFilename,
+        null, // Will update with table name later
+        username || 'system'
+      );
+      
+      fileIds.push(fileId);
+      console.log(`Registered FileID ${fileId} for file: ${originalFilename}`);
+      
+    } catch (fileIdError) {
+      throw new Error(`FileID error for "${originalFilename}": ${fileIdError.message}`);
+    }
+  }
+  
+  return fileIds;
+};
+
+/**
+ * Process a single file and extract data with headers
+ */
+const processSingleFile = async (file, fileIndex, customHeaders, fileId) => {
+  const originalFilename = file.originalname;
+  const fileExtension = validateFileExtension(originalFilename);
+  const fileName = path.basename(originalFilename, fileExtension);
+
+  // Create processor and process the file
+  const processor = FileProcessorFactory.createFromBuffer(
+    file.buffer,
+    fileName,
+    fileExtension
+  );
+  const processResult = await processor.process();
+
+  // ⭐ SANITIZE HEADERS - Remove whitespace from detected headers
+  processResult.headers = processResult.headers.map(header => ({
+    ...header,
+    name: sanitizeHeaderName(header.name),
+  }));
+
+  console.log(`File ${fileIndex + 1} raw headers:`, processResult.headers.map(h => h.name));
+
+  // Apply custom header mappings if provided
+  let finalHeaders = processResult.headers;
+  
+  if (customHeaders[fileIndex]) {
+    const result = applyCustomHeaders(processResult, customHeaders[fileIndex]);
+    finalHeaders = result.finalHeaders;
+    processResult.data = result.normalizedData;
+  } else {
+    // No custom headers - sanitize and uppercase
+    finalHeaders = finalHeaders.map((h) => ({
+      ...h,
+      name: sanitizeHeaderName(h.name),
+      originalName: h.name,
+    }));
+  }
+
+  // ⭐ Add FILE column to each row
+  for (let j = 0; j < processResult.data.length; j++) {
+    processResult.data[j].FILE = fileId;
+  }
+
+  return {
+    data: processResult.data,
+    headers: finalHeaders,
+    totalRows: processResult.totalRows,
+    filename: originalFilename,
+  };
+};
+
+/**
+ * Apply custom header mappings to processed data
+ */
+const applyCustomHeaders = (processResult, customHeadersForFile) => {
+  console.log('Applying mapped headers:', customHeadersForFile);
+  
+  // ⭐ Sanitize custom headers
+  const sanitizedCustomHeaders = sanitizeHeaders(customHeadersForFile);
+  
+  // Create header mapping
+  const headerMapping = {};
+  sanitizedCustomHeaders.forEach((mappedName, index) => {
+    const originalHeader = processResult.headers[index];
+    if (originalHeader) {
+      headerMapping[sanitizeHeaderName(originalHeader.name)] = mappedName;
+    }
+  });
+
+  // Normalize data with mapped headers
+  const normalizedData = [];
+  for (let rowIdx = 0; rowIdx < processResult.data.length; rowIdx++) {
+    const row = processResult.data[rowIdx];
+    const normalizedRow = {};
+
+    for (const originalKey in row) {
+      const sanitizedKey = sanitizeHeaderName(originalKey);
+      const mappedKey = headerMapping[sanitizedKey] || sanitizedKey;
+      normalizedRow[mappedKey] = row[originalKey];
+    }
+
+    normalizedData.push(normalizedRow);
+  }
+
+  // Create final headers with mapped names
+  let finalHeaders = sanitizedCustomHeaders.map((mappedName, headerIndex) => ({
+    name: mappedName,
+    type: processResult.headers[headerIndex]?.type || 'TEXT',
+    originalName: processResult.headers[headerIndex]?.name,
+  }));
+
+  // Handle extra headers beyond custom ones
+  if (processResult.headers.length > sanitizedCustomHeaders.length) {
+    const extraHeaders = processResult.headers.slice(sanitizedCustomHeaders.length);
+    
+    extraHeaders.forEach((header) => {
+      // Map extra headers in the data as well
+      normalizedData.forEach((row) => {
+        const sanitizedName = sanitizeHeaderName(header.name);
+        if (row[header.name] !== undefined) {
+          row[sanitizedName] = row[header.name];
+        }
+      });
+    });
+
+    finalHeaders.push(
+      ...extraHeaders.map((h) => ({
+        ...h,
+        name: sanitizeHeaderName(h.name),
+        originalName: h.name,
+      }))
+    );
+  }
+
+  return { finalHeaders, normalizedData };
+};
+
+/**
+ * Add file tracking columns for multi-file uploads
+ */
+const addFileTrackingColumns = (data, filename, fileIndex, isMultiFile) => {
+  if (!isMultiFile) return data;
+  
+  return data.map(row => ({
+    ...row,
+    _source_file: filename,
+    _file_index: fileIndex + 1,
+  }));
+};
+
+/**
+ * Process all uploaded files
+ */
+const processAllFiles = async (filesToProcess, customHeaders, fileIds) => {
+  let allProcessedData = [];
+  const allHeaders = new Map();
+  let totalOriginalRows = 0;
+  const processedFileNames = [];
+
+  for (let i = 0; i < filesToProcess.length; i++) {
+    const file = filesToProcess[i];
+    const fileId = fileIds[i];
+
+    try {
+      const result = await processSingleFile(file, i, customHeaders, fileId);
+      
+      // Add file tracking if multiple files
+      const trackedData = addFileTrackingColumns(
+        result.data,
+        result.filename,
+        i,
+        filesToProcess.length > 1
+      );
+
+      allProcessedData = allProcessedData.concat(trackedData);
+      totalOriginalRows += result.totalRows;
+      processedFileNames.push(result.filename);
+
+      // Track all unique headers across files
+      result.headers.forEach((header) => {
+        if (!allHeaders.has(header.name)) {
+          allHeaders.set(header.name, header);
+        }
+      });
+
+      console.log(
+        `File ${i + 1} processed: ${result.totalRows} rows, ${result.headers.length} columns`
+      );
+      
+    } catch (fileError) {
+      console.error(`Error processing file ${file.originalname}:`, fileError);
+      throw new Error(`Error processing file "${file.originalname}": ${fileError.message}`);
+    }
+  }
+
+  return {
+    allProcessedData,
+    allHeaders,
+    totalOriginalRows,
+    processedFileNames,
+  };
+};
+
+/**
+ * Build final headers with tracking columns
+ */
+const buildFinalHeaders = (allHeaders, isMultiFile) => {
+  const finalHeaders = Array.from(allHeaders.values());
+  
+  // ⭐ Add FILE column to headers
+  finalHeaders.push({ name: 'FILE', type: 'INTEGER', originalName: 'FILE' });
+  
+  if (isMultiFile) {
+    finalHeaders.push(
+      { name: '_source_file', type: 'TEXT', originalName: '_source_file' },
+      { name: '_file_index', type: 'INTEGER', originalName: '_file_index' }
+    );
+  }
+
+  return finalHeaders;
+};
+
+/**
+ * Run post-processing steps on the created table
+ */
+const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMode, fileType, tableHeaders) => {
+  try {
+    console.log('Starting post-processing...');
+    
+    // Format phone numbers
+    console.log('Formatting phone numbers...');
+    await SampleAutomation.formatPhoneNumbersInTable(tableName);
+    console.log('✅ Phone numbers formatted');
+
+    // Tarrance-specific processing (ClientID 102)
+    if (clientId === 102) {
+      console.log('Tarrance client detected - routing phones...');
+      const routingResult = await SampleAutomation.routeTarrancePhones(tableName);
+      console.log(`✅ Tarrance routing: ${routingResult.totalRouted} phones routed`);
+
+      const paddingResult = await SampleAutomation.padTarranceRegion(tableName);
+      console.log(`✅ Tarrance REGN padding: ${paddingResult.recordsPadded} records`);
+    }
+
+    // RNC vendor-specific processing (VendorID 4)
+    if (vendorId === 4) {
+      try {
+        console.log('RNC vendor detected - calculating PARTY...');
+        const partyResult = await SampleAutomation.calculatePartyFromRPartyRollup(tableName);
+
+        if (partyResult.success && !partyResult.skipped) {
+          console.log(`✅ PARTY calculation: ${partyResult.rowsUpdated} rows updated`);
+        }
+      } catch (partyError) {
+        console.error('⚠️ RNC PARTY calculation failed (non-critical):', partyError.message);
+        // Continue with rest of post-processing
+      }
+    }
+
+    // L2 vendor-specific processing (VendorID 1)
+    if (vendorId === 1) {
+      try {
+        console.log('L2 vendor detected - formatting RDATE...');
+        const rdateResult = await SampleAutomation.formatRDateColumn(tableName);
+
+        if (rdateResult.skipped) {
+          console.log(`⏭️ RDATE formatting: ${rdateResult.message}`);
+        } else {
+          console.log(`✅ RDATE formatting: ${rdateResult.rowsUpdated} rows updated`);
+        }
+      } catch (rdateError) {
+        console.error('⚠️ L2 RDATE formatting failed (non-critical):', rdateError.message);
+        // Continue with rest of post-processing
+      }
+    }
+
+    // Create VFREQ columns
+    console.log('Creating VFREQ columns...');
+    const vfreqResult = await SampleAutomation.createVFREQColumns(tableName);
+    if (vfreqResult.skipped) {
+      console.log(`⏭️ VFREQ columns: ${vfreqResult.message}`);
+    } else {
+      console.log(`✅ VFREQ columns: ${vfreqResult.rowsUpdated} rows calculated`);
+    }
+
+    // Update SOURCE column
+    console.log('Updating SOURCE column...');
+    await SampleAutomation.updateSourceColumn(tableName);
+    console.log('✅ SOURCE column updated');
+
+    // Apply WDNC scrubbing
+    console.log('Applying WDNC scrubbing...');
+    const wdncResult = await SampleAutomation.applyWDNCScrubbing(tableName);
+    console.log(`✅ WDNC scrubbing: ${wdncResult.rowsRemoved} removed, ${wdncResult.landlinesCleared} cleared`);
+
+    // Convert AGE to IAGE if AGE column exists
+    console.log('Converting AGE to IAGE...');
+    const convertAgeResult = await SampleAutomation.convertAgeToIAge(tableName);
+    let iageCalculated = false;
+
+    if (convertAgeResult.status === 'SUCCESS' && convertAgeResult.rowsUpdated > 0) {
+      console.log(`✅ AGE to IAGE: ${convertAgeResult.rowsUpdated} values converted`);
+      iageCalculated = true;
+    } else {
+      console.log(`⚠️ AGE to IAGE: ${convertAgeResult.message}`);
+    }
+
+    // Fix IAGE values
+    console.log('Fixing IAGE values...');
+    const iageResult = await SampleAutomation.fixIAGEValues(tableName);
+    console.log(`✅ IAGE fix: ${iageResult.rowsUpdated} values changed`);
+
+    // Only calculate from birthyear if we didn't get IAGE from AGE
+    if (!iageCalculated) {
+      console.log('Calculating age from birth year...');
+      const useJanuaryFirst = ageCalculationMode === 'january' || ageCalculationMode === undefined;
+      const ageResult = await SampleAutomation.calculateAgeFromBirthYear(tableName, useJanuaryFirst);
+
+      if (ageResult.success && !ageResult.skipped) {
+        console.log(`✅ Age from birthyear: ${ageResult.recordsWithValidAge} ages calculated`);
+      }
+    } else {
+      console.log('⏭️ Skipping birthyear calculation - IAGE already populated from AGE column');
+    }
+
+    // Always populate AGERANGE from IAGE (even if AGERANGENEW exists)
+    console.log('Populating AGERANGE from IAGE...');
+    const ageRangeResult = await SampleAutomation.populateAgeRange(tableName);
+    console.log(`✅ AGERANGE: ${ageRangeResult.recordsWithAgeRange} records matched`);
+
+
+    // Pad columns
+    console.log('Padding columns...');
+    const paddingResult = await SampleAutomation.padColumns(tableName);
+    console.log(`✅ Column padding: ${paddingResult.recordsProcessed} records processed`);
+
+    console.log('✅ All post-processing complete');
+    
+  } catch (error) {
+    console.error('⚠️ Post-processing error (non-critical):', error);
+    // Don't throw - post-processing failures shouldn't kill the whole request
+  }
+};
+
+/**
+ * Update file tracking records with table name
+ */
+const updateFileTracking = async (projectId, fileIds, tableName) => {
+  try {
+    console.log('Updating file tracking records...');
+    
+    for (let i = 0; i < fileIds.length; i++) {
+      await SampleAutomation.updateProjectFileTableName(
+        parseInt(projectId),
+        fileIds[i],
+        tableName
+      );
+      console.log(`Updated FileID ${fileIds[i]} with table name`);
+    }
+    
+  } catch (error) {
+    console.error('⚠️ Failed to update file tracking (non-critical):', error);
+    // Don't throw - tracking failures shouldn't kill the request
+  }
+};
+
+// ============================================================================
+// MAIN CONTROLLER FUNCTION
+// ============================================================================
+
 const processFile = async (req, res) => {
   try {
     console.log('=== Processing Request ===');
     console.log('Files received:', req.files ? req.files.length : 0);
-    console.log('Single file:', req.file ? 'Yes' : 'No');
 
-    // EXTRACT CUSTOM HEADERS FROM REQUEST
-    const customHeaders = req.body.customHeaders
-      ? JSON.parse(req.body.customHeaders)
-      : {};
+    // Extract request parameters
+    const customHeaders = req.body.customHeaders ? JSON.parse(req.body.customHeaders) : {};
     const vendorId = req.body.vendorId ? parseInt(req.body.vendorId) : null;
     const clientId = req.body.clientId ? parseInt(req.body.clientId) : null;
+    const { projectId, requestedFileId, ageCalculationMode, fileType } = req.body;
 
-    console.log(
-      'Custom headers received:',
-      Object.keys(customHeaders).length > 0 ? 'Yes' : 'No'
-    );
     console.log('Vendor/Client context:', { vendorId, clientId });
+    console.log('Custom headers provided:', Object.keys(customHeaders).length > 0);
+    console.log('File type:', fileType);
 
-    // Handle both single file (req.file) and multiple files (req.files)
+    // Validate files
     let filesToProcess = [];
-
     if (req.files && req.files.length > 0) {
-      // Multiple files
       filesToProcess = req.files;
     } else if (req.file) {
-      // Single file (backward compatibility)
       filesToProcess = [req.file];
     } else {
       return res.status(400).json({
@@ -75,8 +497,6 @@ const processFile = async (req, res) => {
         message: 'No files uploaded',
       });
     }
-
-    const { projectId } = req.body;
 
     if (!projectId) {
       await cleanupFiles(filesToProcess);
@@ -86,201 +506,53 @@ const processFile = async (req, res) => {
       });
     }
 
-    console.log(
-      `Processing ${filesToProcess.length} file(s) for project ${projectId}...`
-    );
+    console.log(`Processing ${filesToProcess.length} file(s) for project ${projectId}...`);
 
-    // Process each file and collect the data
-    let allProcessedData = [];
-    const allHeaders = new Map(); // Track all unique headers across files
-    let totalOriginalRows = 0;
-    const processedFileNames = [];
-
-    for (let i = 0; i < filesToProcess.length; i++) {
-      const file = filesToProcess[i];
-      const originalFilename = file.originalname;
-      const uploadedFilePath = file.path;
-
-      // Get file extension and validate
-      const fileExtension = path.extname(originalFilename).toLowerCase();
-
-      if (!fileExtension || fileExtension === '.') {
-        await cleanupFiles(filesToProcess);
-        return res.status(400).json({
-          success: false,
-          message: `File "${originalFilename}" must have a valid extension. Supported types: ${FileProcessorFactory.getSupportedExtensions().join(
-            ', '
-          )}`,
-        });
-      }
-
-      if (!FileProcessorFactory.isSupported(fileExtension)) {
-        await cleanupFiles(filesToProcess);
-        return res.status(400).json({
-          success: false,
-          message: `Unsupported file type: ${fileExtension}. Supported types: ${FileProcessorFactory.getSupportedExtensions().join(
-            ', '
-          )}`,
-        });
-      }
-
-      try {
-        // Create processor and process the file
-        const fileName = path.basename(originalFilename, fileExtension);
-        // const processor = FileProcessorFactory.create(
-        //   uploadedFilePath,
-        //   fileName,
-        //   fileExtension
-        // );
-        // Instead of reading from file.path
-        const processor = FileProcessorFactory.createFromBuffer(
-          file.buffer, // Direct buffer access
-          fileName,
-          fileExtension
-        );
-        const processResult = await processor.process();
-
-        // APPLY CUSTOM HEADERS (now mapped headers from database)
-        let finalHeaders = processResult.headers;
-        if (customHeaders[i]) {
-          console.log(
-            `Applying mapped headers for file ${i + 1}:`,
-            customHeaders[i]
-          );
-          // Create normalized data with proper column mapping AND phone formatting in ONE PASS
-          const headerMapping = {};
-
-          // Map original column names to mapped names
-          customHeaders[i].forEach((mappedName, index) => {
-            const originalHeader = processResult.headers[index];
-            if (originalHeader) {
-              headerMapping[originalHeader.name.toUpperCase()] =
-                mappedName.toUpperCase();
-            }
-          });
-
-          // ADD THIS - Map data without phone formatting (will be done by stored procedure)
-          const normalizedData = [];
-
-          for (let rowIdx = 0; rowIdx < processResult.data.length; rowIdx++) {
-            const row = processResult.data[rowIdx];
-            const normalizedRow = {};
-
-            for (const originalKey in row) {
-              const mappedKey =
-                headerMapping[originalKey.toUpperCase()] ||
-                originalKey.toUpperCase();
-              normalizedRow[mappedKey] = row[originalKey];
-            }
-
-            normalizedData.push(normalizedRow);
-          }
-
-          // Update processResult to use normalized data
-          processResult.data = normalizedData;
-
-          // Create final headers with mapped names
-          finalHeaders = customHeaders[i].map((mappedName, headerIndex) => ({
-            name: mappedName.toUpperCase(),
-            type: processResult.headers[headerIndex]?.type || 'TEXT',
-            originalName: processResult.headers[headerIndex]?.name,
-          }));
-
-          // Handle extra headers beyond custom ones
-          if (processResult.headers.length > customHeaders[i].length) {
-            const extraHeaders = processResult.headers.slice(
-              customHeaders[i].length
-            );
-            extraHeaders.forEach((header) => {
-              // Map extra headers in the data as well
-              normalizedData.forEach((row) => {
-                if (row[header.name] !== undefined) {
-                  // Keep extra headers with original names
-                  row[header.name] = row[header.name];
-                }
-              });
-            });
-
-            finalHeaders.push(
-              ...extraHeaders.map((h) => ({
-                ...h,
-                originalName: h.name,
-              }))
-            );
-          }
-        } else {
-          // No custom headers - add originalName for consistency
-          finalHeaders = finalHeaders.map((h) => ({
-            ...h,
-            originalName: h.name,
-          }));
-        }
-
-        // Add source tracking if multiple files
-        if (filesToProcess.length > 1) {
-          for (let j = 0; j < processResult.data.length; j++) {
-            processResult.data[j]._source_file = originalFilename;
-            processResult.data[j]._file_index = i + 1;
-          }
-        }
-
-        // ✅ Memory-efficient: Direct concatenation
-        allProcessedData = allProcessedData.concat(processResult.data);
-
-        totalOriginalRows += processResult.totalRows;
-        processedFileNames.push(originalFilename);
-
-        // Track all unique headers across files (using mapped names)
-        finalHeaders.forEach((header) => {
-          if (!allHeaders.has(header.name)) {
-            allHeaders.set(header.name, header);
-          }
-        });
-
-        console.log(
-          `File ${i + 1} processed: ${processResult.totalRows} rows, ${
-            finalHeaders.length
-          } columns`
-        );
-        if (customHeaders[i]) {
-          console.log(`Mapped headers applied: ${customHeaders[i].join(', ')}`);
-        }
-      } catch (fileError) {
-        console.error(`Error processing file ${originalFilename}:`, fileError);
-        await cleanupFiles(filesToProcess);
-        return res.status(400).json({
-          success: false,
-          message: `Error processing file "${originalFilename}": ${fileError.message}`,
-        });
-      }
-    }
-
-    // Add source tracking columns to headers if multiple files
-    const finalHeaders = Array.from(allHeaders.values());
-    if (filesToProcess.length > 1) {
-      finalHeaders.push(
-        { name: '_source_file', type: 'TEXT', originalName: '_source_file' },
-        { name: '_file_index', type: 'INTEGER', originalName: '_file_index' }
+    // Register file IDs
+    let fileIds;
+    try {
+      fileIds = await registerFileIds(
+        filesToProcess,
+        projectId,
+        requestedFileId,
+        req.user?.username
       );
+    } catch (fileIdError) {
+      await cleanupFiles(filesToProcess);
+      return res.status(400).json({
+        success: false,
+        message: fileIdError.message,
+      });
     }
 
-    // Clean up uploaded files after processing
+    // Process all files
+    let processedFiles;
+    try {
+      processedFiles = await processAllFiles(filesToProcess, customHeaders, fileIds);
+    } catch (processingError) {
+      await cleanupFiles(filesToProcess);
+      return res.status(400).json({
+        success: false,
+        message: processingError.message,
+      });
+    }
+
+    const { allProcessedData, allHeaders, totalOriginalRows, processedFileNames } = processedFiles;
+
+    // Build final headers
+    const finalHeaders = buildFinalHeaders(allHeaders, filesToProcess.length > 1);
+
+    // Clean up uploaded files
     await cleanupFiles(filesToProcess);
 
-    console.log(`Processing Summary:`);
+    // Log summary
+    console.log('Processing Summary:');
     console.log(`- Files processed: ${filesToProcess.length}`);
     console.log(`- Total rows: ${allProcessedData.length}`);
-    console.log(`- File columns: ${finalHeaders.length}`);
-    console.log(
-      `- Mapped headers used: ${
-        Object.keys(customHeaders).length > 0 ? 'Yes' : 'No'
-      }`
-    );
-    console.log(
-      `- Vendor/Client context: ${vendorId || 'None'}/${clientId || 'None'}`
-    );
+    console.log(`- Columns: ${finalHeaders.length}`);
+    console.log(`- Mapped headers used: ${Object.keys(customHeaders).length > 0}`);
 
-    // Create dataset (merged if multiple files, single if one file)
+    // Create dataset
     const processedData = {
       headers: finalHeaders,
       data: allProcessedData,
@@ -288,274 +560,78 @@ const processFile = async (req, res) => {
       sourceFiles: processedFileNames,
     };
 
-    console.log(
-      'Creating SQL table with mapped headers and Promark internal variables...'
-    );
-
+    // Create SQL table
     try {
-      // Create table name based on file count
-      const baseTableName =
-        filesToProcess.length > 1
-          ? `merged_${filesToProcess.length}_files`
-          : path.basename(
-              processedFileNames[0],
-              path.extname(processedFileNames[0])
-            );
+      console.log('Creating SQL table...');
+      
+      const baseTableName = filesToProcess.length > 1
+        ? `merged_${filesToProcess.length}_files`
+        : path.basename(processedFileNames[0], path.extname(processedFileNames[0]));
 
-      // Create SQL table from processed data (service will add Promark constants automatically)
       const tableResult = await SampleAutomation.createTableFromFileData(
         processedData,
         baseTableName
       );
-      console.log(
-        'Table created successfully with mapped headers and Promark constants:',
-        tableResult.tableName
+      
+      console.log('✅ Table created:', tableResult.tableName);
+
+      // Update file tracking
+      await updateFileTracking(projectId, fileIds, tableResult.tableName);
+
+      // Run post-processing
+      await runPostProcessing(
+        tableResult.tableName,
+        clientId,
+        vendorId,
+        ageCalculationMode,
+        fileType,
+        tableResult.headers
       );
 
-      try {
-        console.log(
-          'Formatting phone numbers in table using stored procedure...'
-        );
-        await SampleAutomation.formatPhoneNumbersInTable(tableResult.tableName);
-        console.log('✅ Phone numbers formatted successfully');
+      // Refresh headers after post-processing (AGERANGE may have been added)
+      const updatedHeaders = await SampleAutomation.getTableHeaders(tableResult.tableName);
 
-        // ⭐ Route Tarrance phones BEFORE updating SOURCE (ClientID 102)
-        if (clientId === 102) {
-          console.log(
-            'Tarrance client detected (ID: 102) - routing PHONE to LAND/CELL based on WPHONE...'
-          );
-          try {
-            const routingResult = await SampleAutomation.routeTarrancePhones(
-              tableResult.tableName
-            );
-            console.log(
-              `✅ Tarrance phone routing complete: ${routingResult.totalRouted} phones routed (${routingResult.landlineCount} landlines, ${routingResult.cellCount} cells)`
-            );
+      // Fetch distinct age ranges after post-processing completes
+      const distinctAgeRangesResult = await SampleAutomation.getDistinctAgeRanges(tableResult.tableName);
 
-            console.log('Padding Tarrance REGN column to width 2...');
-            const paddingResult = await SampleAutomation.padTarranceRegion(
-              tableResult.tableName
-            );
-            console.log(
-              `✅ Tarrance REGN padding complete: ${paddingResult.recordsPadded} records padded`
-            );
-          } catch (tarranceError) {
-            console.error(
-              '⚠️ Tarrance-specific processing failed:',
-              tarranceError
-            );
-          }
-        }
-
-        if (vendorId === 4) {
-          console.log(
-            'RNC vendor detected (ID: 4) - calculating PARTY from RPARTYROLLUP...'
-          );
-          try {
-            const partyResult =
-              await SampleAutomation.calculatePartyFromRPartyRollup(
-                tableResult.tableName
-              );
-
-            if (partyResult.success && !partyResult.skipped) {
-              console.log(
-                `✅ PARTY calculation complete: ${partyResult.rowsUpdated} rows updated from RPARTYROLLUP`
-              );
-            } else if (partyResult.skipped) {
-              console.log('⚠️ PARTY calculation skipped:', partyResult.message);
-            }
-          } catch (partyError) {
-            console.error(
-              '⚠️ RNC PARTY calculation failed (non-critical):',
-              partyError
-            );
-          }
-        }
-
-        console.log(
-          'Creating VFREQGEN and VFREQPR columns using stored procedure...'
-        );
-        const vfreqResult = await SampleAutomation.createVFREQColumns(
-          tableResult.tableName
-        );
-        console.log(
-          `✅ VFREQ columns created: ${vfreqResult.rowsUpdated} rows calculated using years ${vfreqResult.yearsUsed.oldest}-${vfreqResult.yearsUsed.newest}`
-        );
-
-        console.log('Updating SOURCE column based on LAND and CELL values...');
-        await SampleAutomation.updateSourceColumn(tableResult.tableName);
-        console.log('✅ SOURCE column updated successfully');
-
-        console.log('Applying WDNC scrubbing using stored procedure...');
-        const wdncResult = await SampleAutomation.applyWDNCScrubbing(
-          tableResult.tableName
-        );
-        console.log(
-          `✅ WDNC scrubbing complete: ${wdncResult.rowsRemoved} records removed, ${wdncResult.landlinesCleared} landlines cleared`
-        );
-
-        console.log('Fixing IAGE values using stored procedure...');
-        const iageResult = await SampleAutomation.fixIAGEValues(
-          tableResult.tableName
-        );
-        console.log(
-          `✅ IAGE fix complete: ${iageResult.rowsUpdated} values changed from -1 to 00`
-        );
-
-        console.log('Calculating age from birth year...');
-        try {
-          const useJanuaryFirst =
-            req.body.ageCalculationMode === 'january' ||
-            req.body.ageCalculationMode === undefined; // Default to January
-
-          const ageResult = await SampleAutomation.calculateAgeFromBirthYear(
-            tableResult.tableName,
-            useJanuaryFirst
-          );
-
-          if (ageResult.success && !ageResult.skipped) {
-            console.log(
-              `✅ Age calculation: ${ageResult.recordsWithValidAge} ages calculated`
-            );
-          } else if (ageResult.skipped) {
-            console.log('⚠️ Age calculation skipped:', ageResult.message);
-          }
-        } catch (ageError) {
-          console.error('⚠️ Age calculation failed (non-critical):', ageError);
-        }
-
-        const hasAgeRangeColumn = tableResult.headers.some(
-          (header) => header.name.toUpperCase() === 'AGERANGE'
-        );
-
-        if (!hasAgeRangeColumn) {
-          console.log(
-            'AGERANGE column not found in uploaded data - populating from IAGE...'
-          );
-          try {
-            const ageRangeResult = await SampleAutomation.populateAgeRange(
-              tableResult.tableName
-            );
-            console.log(
-              `✅ AGERANGE populated: ${ageRangeResult.recordsWithAgeRange} records matched`
-            );
-            if (ageRangeResult.recordsWithoutAgeRange > 0) {
-              console.log(
-                `⚠️ ${ageRangeResult.recordsWithoutAgeRange} records with IAGE did not match any age range`
-              );
-            }
-          } catch (ageRangeError) {
-            console.error(
-              '⚠️ Age range population failed (non-critical):',
-              ageRangeError
-            );
-          }
-        } else {
-          console.log(
-            '✓ AGERANGE column already exists in uploaded data - skipping population'
-          );
-        }
-
-        // console.log('Creating stratified batches...');
-        // try {
-        //   // Define desired stratify columns (may not all exist)
-        //   let stratifyColumns = 'IAGE,GEND,PARTY,ETHNICITY,IZIP'; // List all desired columns
-
-        //   const stratifyResult = await SampleAutomation.createStratifiedBatches(
-        //     tableResult.tableName,
-        //     stratifyColumns,
-        //     20
-        //   );
-
-        //   if (stratifyResult.success) {
-        //     console.log(
-        //       `✅ Stratified batches created: ${stratifyResult.batchCount} batches`
-        //     );
-        //     console.log(
-        //       `   Columns used: ${stratifyResult.columnsUsed.join(', ')}`
-        //     );
-        //     if (stratifyResult.columnsSkipped.length > 0) {
-        //       console.log(
-        //         `   Columns skipped (not in table): ${stratifyResult.columnsSkipped.join(
-        //           ', '
-        //         )}`
-        //       );
-        //     }
-        //   } else {
-        //     console.log('⚠️ Stratification skipped - no valid columns found');
-        //   }
-        // } catch (stratifyError) {
-        //   console.error(
-        //     '⚠️ Stratified batch creation failed (non-critical):',
-        //     stratifyError
-        //   );
-        // }
-
-        console.log('Padding columns...');
-        try {
-          const paddingResult = await SampleAutomation.padColumns(
-            tableResult.tableName
-          );
-          console.log(
-            `✅ Column padding: ${paddingResult.recordsProcessed} records processed`
-          );
-        } catch (paddingError) {
-          console.error(
-            '⚠️ Column padding failed (non-critical):',
-            paddingError
-          );
-        }
-      } catch (phoneFormatError) {
-        console.error(
-          '⚠️ Post-processing failed (non-critical):',
-          phoneFormatError
-        );
-      }
-
-      // Generate session ID
+      // Generate response
       const sessionId = generateSessionId();
-
-      // Send success response
-      const responseMessage =
-        filesToProcess.length > 1
-          ? `Successfully merged ${filesToProcess.length} files and created table ${tableResult.tableName} with ${tableResult.rowsInserted} total rows using mapped headers and Promark internal variables`
-          : `Successfully processed ${processedFileNames[0]} and created table ${tableResult.tableName} with ${tableResult.rowsInserted} rows using mapped headers and Promark internal variables`;
+      const responseMessage = filesToProcess.length > 1
+        ? `Successfully merged ${filesToProcess.length} files into table ${tableResult.tableName}`
+        : `Successfully processed ${processedFileNames[0]} into table ${tableResult.tableName}`;
 
       res.json({
         success: true,
         sessionId: sessionId,
-        headers: tableResult.headers, // Includes mapped headers + Promark constants
+        headers: updatedHeaders,
         tableName: tableResult.tableName,
         rowsInserted: tableResult.rowsInserted,
         totalRows: tableResult.totalRows,
         filesProcessed: filesToProcess.length,
         sourceFiles: processedFileNames,
+        fileIds: fileIds,
         message: responseMessage,
-        fileTypes: [
-          ...new Set(
-            filesToProcess.map((f) =>
-              path.extname(f.originalname).toLowerCase()
-            )
-          ),
-        ],
+        fileTypes: [...new Set(filesToProcess.map(f => path.extname(f.originalname).toLowerCase()))],
         originalFilenames: processedFileNames,
         projectId: projectId,
         vendorId: vendorId,
         clientId: clientId,
         promarkConstantsAdded: tableResult.promarkConstantsAdded,
         mappedHeadersUsed: Object.keys(customHeaders).length > 0,
+        distinctAgeRanges: distinctAgeRangesResult.ageRanges,
       });
+      
     } catch (sqlError) {
       console.error('SQL table creation failed:', sqlError);
-
       return res.status(500).json({
         success: false,
-        message: `Files processed successfully but SQL table creation failed: ${sqlError.message}`,
+        message: `Files processed but table creation failed: ${sqlError.message}`,
         filesProcessed: filesToProcess.length,
         totalRowsProcessed: allProcessedData.length,
         error: sqlError.message,
       });
     }
+    
   } catch (error) {
     console.error('Error in file processing:', error);
 
@@ -808,7 +884,6 @@ const handleGetClientsAndVendors = handleAsync(async (req, res) => {
   res.status(200).json(data);
 });
 
-// Add this method to your sampleAutomationController.js
 const detectHeaders = handleAsync(async (req, res) => {
   try {
     if (!req.file) {
@@ -823,27 +898,21 @@ const detectHeaders = handleAsync(async (req, res) => {
     const fileName = path.basename(file.originalname, fileExtension);
 
     if (!FileProcessorFactory.isSupported(fileExtension)) {
-      // await fs.unlink(file.path).catch(console.error);
       return res.status(400).json({
         success: false,
         message: `Unsupported file type: ${fileExtension}`,
       });
     }
 
-    // const processor = FileProcessorFactory.create(
-    //   file.path,
-    //   fileName,
-    //   fileExtension
-    // );
     const processor = FileProcessorFactory.createFromBuffer(
       file.buffer,
       fileName,
       fileExtension
     );
     const result = await processor.process();
-    const headerNames = result.headers.map((h) => h.name);
-
-    // await fs.unlink(file.path).catch(console.error);
+    
+    // ⭐ SANITIZE HEADERS - Remove whitespace and uppercase
+    const headerNames = result.headers.map((h) => sanitizeHeaderName(h.name));
 
     res.json({
       success: true,
@@ -851,9 +920,6 @@ const detectHeaders = handleAsync(async (req, res) => {
       message: `Detected ${headerNames.length} headers`,
     });
   } catch (error) {
-    // if (req.file) {
-    //   await fs.unlink(req.file.path).catch(console.error);
-    // }
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to detect headers',
@@ -977,7 +1043,9 @@ const extractFiles = handleAsync(async (req, res) => {
       splitMode,
       selectedAgeRange,
       householdingEnabled,
+      fileType,
       fileNames,
+      clientId,
     } = req.body;
 
     // Validate required parameters
@@ -1003,6 +1071,9 @@ const extractFiles = handleAsync(async (req, res) => {
     console.log(`Split mode: ${splitMode}`);
     console.log(`Selected headers: ${selectedHeaders.length}`);
     console.log(`Householding enabled: ${householdingEnabled}`);
+    if (clientId) {
+      console.log(`Client ID: ${clientId}`);
+    }
 
     const result = await SampleAutomation.extractFilesFromTable({
       tableName,
@@ -1010,8 +1081,14 @@ const extractFiles = handleAsync(async (req, res) => {
       splitMode,
       selectedAgeRange,
       householdingEnabled,
+      fileType,
       fileNames,
+      clientId,
     });
+
+    console.log(`📤 Sending response to frontend:`);
+    console.log(`  - result.files keys:`, Object.keys(result.files || {}));
+    console.log(`  - result.householdingDuplicateFiles:`, result.householdingDuplicateFiles);
 
     res.json(result);
   } catch (error) {

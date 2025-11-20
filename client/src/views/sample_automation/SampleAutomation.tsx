@@ -97,6 +97,12 @@ const SampleAutomation: React.FC = () => {
 
     ageCalculationMode,
     setAgeCalculationMode,
+
+    requestedFileId,
+    setRequestedFileId,
+
+    fileType,
+    setFileType,
   } = useSampleAutomationLogic();
 
   return (
@@ -232,67 +238,41 @@ const SampleAutomation: React.FC = () => {
               Please try again.
             </div>
           )}
-
-          <div className='selection-status'>
-            <span className='selection-indicator'>
-              {selectedVendorId && selectedClientId ? (
-                <>
-                  Header mappings will be applied for{' '}
-                  <strong>
-                    {vendors.find((v) => v.value === selectedVendorId)?.label}
-                  </strong>
-                  {' → '}
-                  <strong>
-                    {clients.find((c) => c.value === selectedClientId)?.label}
-                  </strong>
-                </>
-              ) : selectedVendorId ? (
-                <>
-                  Header mappings will be applied for vendor:{' '}
-                  <strong>
-                    {vendors.find((v) => v.value === selectedVendorId)?.label}
-                  </strong>
-                  {' (no client selected)'}
-                </>
-              ) : selectedClientId ? (
-                <>
-                  Header mappings will be applied for client:{' '}
-                  <strong>
-                    {clients.find((c) => c.value === selectedClientId)?.label}
-                  </strong>
-                  {' (no vendor selected)'}
-                </>
-              ) : (
-                <span style={{ color: '#6c757d', fontStyle: 'italic' }}>
-                  No vendor or client selected - using fallback mappings where
-                  available
-                </span>
-              )}
-            </span>
-          </div>
         </div>
 
-        {/* Age Calculation Mode Toggle */}
-        <div className='age-calculation-mode-section'>
-          <div className='age-mode-header'>
-            <label>Age Calculation Base Date:</label>
-            <div className='age-toggle-container'>
-              <MyToggle
-                active={ageCalculationMode === 'january'}
-                onClick={() => setAgeCalculationMode('january')}
-                label='January 1st'
-              />
-              <MyToggle
-                active={ageCalculationMode === 'july'}
-                onClick={() => setAgeCalculationMode('july')}
-                label='July 1st'
-              />
+        {/* Age Calculation and File ID Row */}
+        <div className='age-fileid-row'>
+          <div className='age-calculation-mode-section'>
+            <div className='age-mode-header'>
+              <label>Age Base Date:</label>
+              <div className='age-toggle-container'>
+                <MyToggle
+                  active={ageCalculationMode === 'january'}
+                  onClick={() => setAgeCalculationMode('january')}
+                  label='Jan 1st'
+                />
+                <MyToggle
+                  active={ageCalculationMode === 'july'}
+                  onClick={() => setAgeCalculationMode('july')}
+                  label='Jul 1st'
+                />
+              </div>
             </div>
           </div>
-          <small className='age-mode-help-text'>
-            Choose the base date for calculating age from birth year (if birth
-            year column exists and AGE/IAGE don't)
-          </small>
+
+          <div className='fileid-section'>
+            <label htmlFor='requested-fileid'>File ID:</label>
+            <input
+              id='requested-fileid'
+              type='number'
+              min='1'
+              value={requestedFileId}
+              onChange={(e) => setRequestedFileId(e.target.value)}
+              placeholder='Auto'
+              className='fileid-input'
+              disabled={isProcessing || isLoading}
+            />
+          </div>
         </div>
 
         {/* File Drop Zone */}
@@ -438,7 +418,10 @@ const SampleAutomation: React.FC = () => {
             ageRanges={distinctAgeRanges}
             tableName={processResult.tableName}
             onConfigChange={handleSplitConfigChange}
-            isExtracting={isExtracting} // ADD THIS PROP
+            isExtracting={isExtracting}
+            fileType={fileType}
+            setFileType={setFileType}
+            clientId={selectedClientId}
           />
         )}
 

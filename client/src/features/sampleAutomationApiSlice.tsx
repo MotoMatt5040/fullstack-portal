@@ -11,6 +11,7 @@ interface ProcessFileResponse {
   message: string;
   fileType?: string;
   originalFilename?: string;
+  distinctAgeRanges?: number[];
 }
 
 interface Client {
@@ -118,6 +119,7 @@ interface ExtractFilesParams {
   splitMode: string;
   selectedAgeRange?: string | number;
   householdingEnabled?: boolean;
+  clientId?: number | null;
   fileNames: {
     landline?: string;
     cell?: string;

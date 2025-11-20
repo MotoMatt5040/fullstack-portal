@@ -71,6 +71,8 @@ export const useSampleAutomationLogic = () => {
   const [splitConfiguration, setSplitConfiguration] = useState<any>(null);
 const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
 const [ageCalculationMode, setAgeCalculationMode] = useState<'january' | 'july'>('january');
+const [requestedFileId, setRequestedFileId] = useState<string>('');
+const [fileType, setFileType] = useState<'landline' | 'cell'>('landline');
 
 
   const [createDNCScrubbed, { isLoading: isCreatingDNC, error: dncError }] =
@@ -740,6 +742,10 @@ const [ageCalculationMode, setAgeCalculationMode] = useState<'january' | 'july'>
 
     formData.append('projectId', selectedProjectId);
 
+    if (requestedFileId && requestedFileId.trim() !== '') {
+    formData.append('requestedFileId', requestedFileId.trim());
+  }
+
     if (selectedVendorId) {
       formData.append('vendorId', selectedVendorId.toString());
     }
@@ -748,6 +754,7 @@ const [ageCalculationMode, setAgeCalculationMode] = useState<'january' | 'july'>
     }
 
      formData.append('ageCalculationMode', ageCalculationMode);
+     formData.append('fileType', fileType);
 
     // Use mapped headers instead of original headers
     const headersMapping: Record<number, string[]> = {};
@@ -772,9 +779,14 @@ const [ageCalculationMode, setAgeCalculationMode] = useState<'january' | 'july'>
       if (result.success) {
         setProcessResult(result);
         setProcessStatus(`✅ ${result.message}`);
+
+        // Set distinct age ranges from response (already fetched after post-processing)
+        if (result.distinctAgeRanges) {
+          setDistinctAgeRanges(result.distinctAgeRanges);
+        }
+
         // Fetch table preview after successful upload
         if (result.tableName) {
-          await fetchDistinctAgeRanges(result.tableName);
           console.log('Fetching preview for table:', result.tableName);
           try {
             const preview = await getTablePreview({
@@ -814,6 +826,7 @@ const [ageCalculationMode, setAgeCalculationMode] = useState<'january' | 'july'>
     validationSummary,
     selectedVendorId,
     selectedClientId,
+    requestedFileId,
     allowExtraHeaders,
     getTablePreview,
   ]);
@@ -1039,12 +1052,17 @@ const handleExtractFiles = useCallback(async (config) => {
 const handleSplitConfigChange = useCallback(async (config: any) => {
   console.log('Split configuration changed:', config);
   setSplitConfiguration(config);
-  
+
   // Handle extract action
   if (config.action === 'extract') {
-    await handleExtractFiles(config);
+    // Add clientId to config for Tarrance client detection
+    const configWithClient = {
+      ...config,
+      clientId: selectedClientId
+    };
+    await handleExtractFiles(configWithClient);
   }
-}, [handleExtractFiles]);
+}, [handleExtractFiles, selectedClientId]);
 
 // Fetch distinct age ranges from processed table
 const fetchDistinctAgeRanges = useCallback(async (tableName: string) => {
@@ -1209,5 +1227,11 @@ const generateSplitFiles = useCallback(async () => {
 
   ageCalculationMode,
   setAgeCalculationMode,
+
+  requestedFileId,
+  setRequestedFileId,
+
+  fileType,
+  setFileType,
   };
 };
