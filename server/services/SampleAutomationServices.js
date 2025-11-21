@@ -1233,10 +1233,9 @@ const extractFilesFromTable = async (config) => {
     await cleanupUserTempDir(userId);
   }
 
-  try {
-    const result = await withDbConnection({
-      database: promark,
-      queryFn: async (pool) => {
+  const result = await withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
         try {
         console.log(`Starting file extraction from table: ${tableName}`);
         if (clientId) {
@@ -1513,17 +1512,18 @@ const extractFilesFromTable = async (config) => {
             await fs.mkdir(tempDir, { recursive: true });
           }
 
-          // Write CSV files
+          // Write CSV files with UTF-8 BOM for Excel compatibility
+          const BOM = '\uFEFF';
           const landlineFilePath = path.join(
             tempDir,
             `${fileNames.landline}.csv`
           );
           const cellFilePath = path.join(tempDir, `${fileNames.cell}.csv`);
 
-          await fs.writeFile(landlineFilePath, landlineCSV, 'utf8');
+          await fs.writeFile(landlineFilePath, BOM + landlineCSV, 'utf8');
           console.log('Landline file written to:', landlineFilePath);
 
-          await fs.writeFile(cellFilePath, cellCSV, 'utf8');
+          await fs.writeFile(cellFilePath, BOM + cellCSV, 'utf8');
           console.log('Cell file written to:', cellFilePath);
 
           console.log(`📦 Preparing to merge householding duplicate files...`);
@@ -1638,9 +1638,10 @@ const extractFilesFromTable = async (config) => {
             finalFilename = finalFilename.replace(/^SAMP_/, `${prefix}_`);
           }
 
-          // Write CSV file
+          // Write CSV file with UTF-8 BOM for Excel compatibility
+          const BOM = '\uFEFF';
           const filePath = path.join(tempDir, `${finalFilename}.csv`);
-          await fs.writeFile(filePath, allCSV, 'utf8');
+          await fs.writeFile(filePath, BOM + allCSV, 'utf8');
 
           return {
             success: true,
@@ -1694,25 +1695,22 @@ const extractFilesFromTable = async (config) => {
       fnName: 'extractFilesFromTable',
     });
 
-    // Return result to caller before cleanup
-    return result;
-  } finally {
-    // Always clean up user temp directory after extraction (success or failure)
-    if (userId) {
-      await cleanupUserTempDir(userId);
-    }
-  }
+  return result;
 };
 
 /**
  * Convert database results to CSV format
  * @param {Array} records - Database records
  * @param {Array} headers - Column headers
- * @returns {string} - CSV string
+ * @returns {string} - CSV string with UTF-8 BOM
  */
 const convertToCSV = (records, headers) => {
+  // Use CRLF (\r\n) for line endings per CSV RFC 4180 standard
+  // This ensures consistent behavior across Windows and Linux
+  const CRLF = '\r\n';
+
   if (!records || records.length === 0) {
-    return headers.join(',') + '\n';
+    return headers.join(',') + CRLF;
   }
 
   // Create header row
@@ -1729,9 +1727,11 @@ const convertToCSV = (records, headers) => {
         }
 
         const stringValue = String(value);
-        // If value contains comma, newline, or quote, wrap in quotes and escape quotes
+        // If value contains comma, newline (LF or CR), or quote, wrap in quotes and escape quotes
+        // Check for both \r and \n to handle data from different platforms
         if (
           stringValue.includes(',') ||
+          stringValue.includes('\r') ||
           stringValue.includes('\n') ||
           stringValue.includes('"')
         ) {
@@ -1743,7 +1743,7 @@ const convertToCSV = (records, headers) => {
       .join(',');
   });
 
-  return headerRow + '\n' + dataRows.join('\n');
+  return headerRow + CRLF + dataRows.join(CRLF);
 };
 
 /**
@@ -2608,12 +2608,13 @@ const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders, use
           
           // Convert to CSV
           const csv = convertToCSV(result.recordset, finalHeaders);
-          
-          // Write CSV file
+
+          // Write CSV file with UTF-8 BOM for Excel compatibility
+          const BOM = '\uFEFF';
           const filename = `${tableName}_${dupTable.suffix}.csv`;
           const filePath = path.join(tempDir, filename);
-          
-          await fs.writeFile(filePath, csv, 'utf8');
+
+          await fs.writeFile(filePath, BOM + csv, 'utf8');
           console.log(`${dupTable.suffix} file written to:`, filePath);
           
           // Add file info to results
