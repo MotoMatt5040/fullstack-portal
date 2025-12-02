@@ -13,7 +13,7 @@ import {
 } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
-import { selectUser } from '../../features/auth/authSlice';
+import { selectUser, selectCurrentToken } from '../../features/auth/authSlice';
 
 const EXTERNAL_ROLE_ID = 4;
 
@@ -59,6 +59,9 @@ interface FileHeaderData {
 }
 
 export const useSampleAutomationLogic = () => {
+  // Get auth token from Redux store
+  const token = useSelector(selectCurrentToken);
+
   // State management
   const [selectedFiles, setSelectedFiles] = useState<FileWrapper[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -929,28 +932,54 @@ const [fileType, setFileType] = useState<'landline' | 'cell'>('landline');
     ]
   );
 
-const downloadFile = useCallback((url, filename) => {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Clean up file after download with delay using RTK Query
-  setTimeout(async () => {
-    try {
-      const result = await cleanupTempFile(filename).unwrap();
-      if (result.success) {
-        console.log('✅ File cleanup successful:', filename);
-      } else {
-        console.log('⚠️ File cleanup failed:', result.message);
-      }
-    } catch (error) {
-      console.log('❌ Cleanup request failed:', error.message);
+const downloadFile = useCallback(async (url, filename) => {
+  try {
+    // Make authenticated request with token from Redux store
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.statusText}`);
     }
-  }, 3000); // 3 second delay to ensure download started
-}, [cleanupTempFile]);
+
+    // Get the blob from response
+    const blob = await response.blob();
+
+    // Create download link
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up the blob URL
+    window.URL.revokeObjectURL(downloadUrl);
+
+    // Clean up file after download with delay using RTK Query
+    setTimeout(async () => {
+      try {
+        const result = await cleanupTempFile(filename).unwrap();
+        if (result.success) {
+          console.log('✅ File cleanup successful:', filename);
+        } else {
+          console.log('⚠️ File cleanup failed:', result.message);
+        }
+      } catch (error) {
+        console.log('❌ Cleanup request failed:', error.message);
+      }
+    }, 3000); // 3 second delay to ensure download started
+  } catch (error) {
+    console.error('❌ Download failed:', error);
+    throw error;
+  }
+}, [token, cleanupTempFile]);
 
 
 const handleExtractFiles = useCallback(async (config) => {

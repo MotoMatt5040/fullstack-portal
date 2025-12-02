@@ -1187,6 +1187,49 @@ const calculateAgeFromBirthYear = async (req, res) => {
 
 // Add this to your sampleAutomationController.js
 
+const downloadTempFile = handleAsync(async (req, res) => {
+  const userId = req.user;
+  const filename = req.params[0]; // Get the full path after /download/
+
+  try {
+    // Sanitize userId
+    const sanitizedUserId = userId.replace(/[@.]/g, '_');
+    const userTempDir = path.join(__dirname, '../temp', sanitizedUserId);
+    const filePath = path.join(userTempDir, filename);
+
+    // Security check: verify file is in user's temp directory
+    if (!filePath.startsWith(userTempDir)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file path',
+      });
+    }
+
+    // Check if file exists
+    await fs.access(filePath);
+
+    // Set proper headers for download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filename)}"`);
+
+    // Send the file
+    res.sendFile(filePath);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.log('📁 File not found:', filename);
+      return res.status(404).json({
+        success: false,
+        message: 'File not found',
+      });
+    }
+    console.error('Error downloading file:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download file',
+    });
+  }
+});
+
 const cleanupTempFile = handleAsync(async (req, res) => {
   const { filename } = req.params;
 
@@ -1249,5 +1292,6 @@ module.exports = {
   getDistinctAgeRanges,
   extractFiles,
   calculateAgeFromBirthYear,
+  downloadTempFile,
   cleanupTempFile,
 };

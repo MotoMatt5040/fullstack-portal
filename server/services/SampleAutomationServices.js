@@ -54,10 +54,9 @@ const ensureUserTempDir = async (userId) => {
  */
 const getTempFileUrl = (filename, userId) => {
   if (userId) {
-    const sanitizedUserId = userId.replace(/[@.]/g, '_');
-    return `/temp/${sanitizedUserId}/${filename}`;
+    return `/api/sample-automation/download/${filename}`;
   }
-  return `/temp/${filename}`;
+  return `/api/sample-automation/download/${filename}`;
 };
 
 /**

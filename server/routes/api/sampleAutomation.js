@@ -81,6 +81,11 @@ router.route('/calculate-age-from-birthyear').post(
   sampleAutomationController.calculateAgeFromBirthYear
 );
 
+router.route('/download/*').get(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.downloadTempFile
+);
+
 router.route('/cleanup/:filename').delete(
   verifyRoles(...allowedRoles),
   sampleAutomationController.cleanupTempFile
