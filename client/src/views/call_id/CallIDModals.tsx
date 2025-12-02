@@ -386,12 +386,16 @@ export const AssignCallIDModal: React.FC<AssignCallIDModalProps> = ({
 }) => {
   const [projectId, setProjectId] = useState('');
   const [slotName, setSlotName] = useState('CallIDL1');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setProjectId('');
       setSlotName('CallIDL1');
+      setStartDate(new Date().toISOString().split('T')[0]);
+      setEndDate('');
       setError('');
     }
   }, [isOpen]);
@@ -410,10 +414,27 @@ export const AssignCallIDModal: React.FC<AssignCallIDModalProps> = ({
       return;
     }
 
+    if (!startDate) {
+      setError('Please select a start date');
+      return;
+    }
+
+    if (!endDate) {
+      setError('Please select an end date');
+      return;
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      setError('End date must be after start date');
+      return;
+    }
+
     const result = await onAssign({
       projectId: projectId.trim(),
       slotName: slotName,
       phoneNumberId: callID.PhoneNumberID,
+      startDate: startDate,
+      endDate: endDate,
     });
 
     if (!result.success) {
@@ -478,6 +499,31 @@ export const AssignCallIDModal: React.FC<AssignCallIDModalProps> = ({
               <option value='CallIDC1'>CALLIDC1 (Cell 1)</option>
               <option value='CallIDC2'>CALLIDC2 (Cell 2)</option>
             </select>
+          </div>
+
+          <div className='form-row'>
+            <div className='form-group'>
+              <label>Start Date *</label>
+              <input
+                type='date'
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+                className='form-input'
+              />
+            </div>
+
+            <div className='form-group'>
+              <label>End Date *</label>
+              <input
+                type='date'
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate}
+                className='form-input'
+                required
+              />
+            </div>
           </div>
 
           <div className='modal-actions'>

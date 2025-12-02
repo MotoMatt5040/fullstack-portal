@@ -484,11 +484,18 @@ interface ProjectSlotsModalProps {
   onClose: () => void;
   projectId: string;
   currentAssignments: any; // Single row with CallIDL1, CallIDL2, CallIDC1, CallIDC2
+  assignmentDetails: any[]; // Array of full assignment objects with dates
   availableCallIDs: any[];
   onUpdateSlot: (
     projectId: string,
     slotName: string,
     phoneNumberId: number | null
+  ) => Promise<{ success: boolean; error?: string }>;
+  onUpdateDates: (
+    projectId: string,
+    phoneNumberId: number,
+    startDate: string,
+    endDate: string
   ) => Promise<{ success: boolean; error?: string }>;
   isLoading: boolean;
 }
@@ -498,8 +505,10 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
   onClose,
   projectId,
   currentAssignments,
+  assignmentDetails,
   availableCallIDs,
   onUpdateSlot,
+  onUpdateDates,
   isLoading,
 }) => {
   const [slots, setSlots] = useState<{ [key: string]: number | null }>({
@@ -508,6 +517,8 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
     CallIDC1: null,
     CallIDC2: null,
   });
+  const [projectStartDate, setProjectStartDate] = useState('');
+  const [projectEndDate, setProjectEndDate] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -518,8 +529,25 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
         CallIDC1: currentAssignments.CallIDC1 || null,
         CallIDC2: currentAssignments.CallIDC2 || null,
       });
+
+      // Populate project dates from the first assignment (they should all be the same)
+      if (assignmentDetails && assignmentDetails.length > 0) {
+        const firstAssignment = assignmentDetails[0];
+        setProjectStartDate(firstAssignment.StartDate ? firstAssignment.StartDate.split('T')[0] : '');
+
+        // Check if end date is the old default (2099-12-31), NULL, or invalid and treat it as empty
+        const endDateStr = firstAssignment.EndDate ? firstAssignment.EndDate.split('T')[0] : '';
+        if (!firstAssignment.EndDate || endDateStr.startsWith('2099-12-31') || endDateStr.startsWith('2099') || endDateStr === '1900-01-01') {
+          setProjectEndDate(''); // Don't show 2099, NULL, or invalid dates
+        } else {
+          setProjectEndDate(endDateStr);
+        }
+      } else {
+        setProjectStartDate('');
+        setProjectEndDate('');
+      }
     }
-  }, [isOpen, currentAssignments]);
+  }, [isOpen, currentAssignments, assignmentDetails]);
 
   const slotInfo: {
     [key: string]: { label: string; type: string; color: number };
@@ -543,15 +571,29 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
   };
 
   const handleSaveSlot = async (slotName: string) => {
+    console.log('[ProjectSlotsModal] handleSaveSlot called with:', slotName);
     const newPhoneNumberId = slots[slotName];
     const currentPhoneNumberId = currentAssignments?.[slotName];
 
+    console.log('[ProjectSlotsModal] newPhoneNumberId:', newPhoneNumberId);
+    console.log('[ProjectSlotsModal] currentPhoneNumberId:', currentPhoneNumberId);
+    console.log('[ProjectSlotsModal] projectId:', projectId);
+
     if (newPhoneNumberId === currentPhoneNumberId) {
+      console.log('[ProjectSlotsModal] No changes detected, returning early');
       setError('No changes to save');
       return;
     }
 
-    const result = await onUpdateSlot(projectId, slotName, newPhoneNumberId);
+    // Check if dates are set
+    if (!projectStartDate || !projectEndDate) {
+      setError('Please set project start and end dates before assigning slots');
+      return;
+    }
+
+    console.log('[ProjectSlotsModal] Calling onUpdateSlot with dates:', { projectStartDate, projectEndDate });
+    const result = await onUpdateSlot(projectId, slotName, newPhoneNumberId, projectStartDate, projectEndDate);
+    console.log('[ProjectSlotsModal] onUpdateSlot result:', result);
 
     if (!result.success) {
       setError(result.error || 'Failed to update slot');
@@ -571,6 +613,43 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
         setSlots((prev) => ({ ...prev, [slotName]: null }));
         setError('');
       }
+    }
+  };
+
+  const handleSaveProjectDates = async () => {
+    if (!projectStartDate) {
+      setError('Start date is required');
+      return;
+    }
+
+    if (!projectEndDate) {
+      setError('End date is required');
+      return;
+    }
+
+    if (new Date(projectEndDate) < new Date(projectStartDate)) {
+      setError('End date must be after start date');
+      return;
+    }
+
+    // Find any assigned phone number (we just need one to identify the project row)
+    const anyPhoneNumberId = Object.values(currentAssignments).find(id => id !== null);
+
+    if (!anyPhoneNumberId) {
+      setError('No phone numbers assigned to update');
+      return;
+    }
+
+    try {
+      const result = await onUpdateDates(projectId, anyPhoneNumberId as number, projectStartDate, projectEndDate);
+
+      if (!result.success) {
+        setError(result.error || 'Failed to update dates');
+      } else {
+        setError('');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update dates');
     }
   };
 
@@ -672,6 +751,58 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
                 </div>
               );
             })}
+          </div>
+
+          {/* Project-wide date management */}
+          <div className='project-dates-section'>
+            <h3>Project Assignment Dates</h3>
+            <p className='section-description'>
+              These dates apply to all call IDs assigned to this project
+            </p>
+            {!projectEndDate && assignmentDetails && assignmentDetails.length > 0 && (
+              <div className='warning-message' style={{
+                padding: '10px',
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffc107',
+                borderRadius: '4px',
+                marginBottom: '15px',
+                color: '#856404'
+              }}>
+                <strong>⚠️ End date required:</strong> This project has an old default end date. Please set a proper end date.
+              </div>
+            )}
+            <div className='date-inputs-row'>
+              <div className='date-field'>
+                <label>Start Date *</label>
+                <input
+                  type='date'
+                  value={projectStartDate}
+                  onChange={(e) => setProjectStartDate(e.target.value)}
+                  className='form-input'
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <div className='date-field'>
+                <label>End Date *</label>
+                <input
+                  type='date'
+                  value={projectEndDate}
+                  onChange={(e) => setProjectEndDate(e.target.value)}
+                  min={projectStartDate}
+                  className='form-input'
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <button
+                onClick={handleSaveProjectDates}
+                className='btn-primary'
+                disabled={isLoading || !projectStartDate || !projectEndDate}
+              >
+                Update All Dates
+              </button>
+            </div>
           </div>
         </div>
 

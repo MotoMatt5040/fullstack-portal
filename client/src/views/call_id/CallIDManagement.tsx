@@ -131,6 +131,7 @@ const CallIDManagement: React.FC = () => {
     closeProjectSlotsModal,
     handleAssignSlot,
     handleRemoveSlot,
+    handleUpdateSlotDates,
   } = useCallIDManagementLogic();
 
   // ==================== RENDER FUNCTIONS ====================
@@ -259,13 +260,11 @@ const CallIDManagement: React.FC = () => {
   const renderStateDistribution = () => {
     if (!dashboardMetrics?.stateDistribution) return null;
 
-    const topStates = dashboardMetrics.stateDistribution.slice(0, 10);
-
     return (
       <div className='dashboard-section'>
-        <h3 className='section-title'>Top States (by Call ID Count)</h3>
+        <h3 className='section-title'>All States (by Call ID Count)</h3>
         <div className='state-distribution'>
-          {topStates.map((state: any, index: number) => (
+          {dashboardMetrics.stateDistribution.map((state: any, index: number) => (
             <div key={index} className='state-item'>
               <span className='state-label'>
                 {state.StateAbbr} - {state.StateName}
@@ -363,7 +362,7 @@ const CallIDManagement: React.FC = () => {
       <div className='dashboard-section'>
         <h3 className='section-title'>Recent Activity (Last 20)</h3>
         <div className='activity-list'>
-          {[...recentActivity].reverse().map((activity: any, index: number) => (
+          {recentActivity.map((activity: any, index: number) => (
             <div key={index} className='activity-item'>
               <div className='activity-main'>
                 <span className='activity-project'>{activity.ProjectID}</span>
@@ -403,10 +402,11 @@ const CallIDManagement: React.FC = () => {
           {renderStatusBreakdown()}
           {renderStateDistribution()}
         </div>
-        <div className='dashboard-column wide'>{renderActiveAssignments()}</div>
+        <div className='dashboard-column wide'>
+          {renderActiveAssignments()}
+          {renderRecentActivity()}
+        </div>
       </div>
-
-      {renderRecentActivity()}
     </div>
   );
 
@@ -626,8 +626,10 @@ const CallIDManagement: React.FC = () => {
         projectsMap.set(assignment.ProjectID, {
           ProjectID: assignment.ProjectID,
           StartDate: assignment.StartDate,
+          EndDate: assignment.EndDate,
           DaysActive: assignment.DaysActive,
           slots: {},
+          assignments: [],
         });
       }
 
@@ -638,6 +640,7 @@ const CallIDManagement: React.FC = () => {
         CallerName: assignment.CallerName,
         StateAbbr: assignment.StateAbbr,
       };
+      project.assignments.push(assignment);
     });
 
     const projects = Array.from(projectsMap.values());
@@ -681,6 +684,7 @@ const CallIDManagement: React.FC = () => {
                     <th>CALLIDC1</th>
                     <th>CALLIDC2</th>
                     <th>Start Date</th>
+                    <th>End Date</th>
                     <th>Days Active</th>
                     <th>Actions</th>
                   </tr>
@@ -767,6 +771,7 @@ const CallIDManagement: React.FC = () => {
                         </td>
 
                         <td>{formatDate(project.StartDate)}</td>
+                        <td>{project.EndDate ? formatDate(project.EndDate) : 'No End Date'}</td>
                         <td>
                           <span
                             className={`days-badge ${getDaysBadgeClass(
@@ -1003,14 +1008,14 @@ const CallIDManagement: React.FC = () => {
 
           {/* State Coverage */}
           <div className='dashboard-section'>
-            <h3 className='section-title'>State Coverage</h3>
+            <h3 className='section-title'>State Coverage (All States)</h3>
             {stateCoverage.length === 0 ? (
               <div className='empty-state'>
                 <p>No coverage data available</p>
               </div>
             ) : (
               <div className='coverage-list'>
-                {stateCoverage.slice(0, 10).map((state: any, index: number) => {
+                {stateCoverage.map((state: any, index: number) => {
                   const totalNumbers = state.TotalNumbers || 0;
                   const inUse = state.InUseNumbers || 0;
                   const available = state.AvailableNumbers || 0;
@@ -1186,12 +1191,11 @@ const CallIDManagement: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
   };
 
   const getDaysBadgeClass = (days: number) => {
@@ -1319,10 +1323,18 @@ const CallIDManagement: React.FC = () => {
         isOpen={showProjectSlotsModal}
         onClose={closeProjectSlotsModal}
         projectId={selectedProjectSlots || ''}
-        currentSlots={currentProjectSlots}
+        currentAssignments={
+          currentProjectSlots.reduce((acc: any, assignment: any) => {
+            if (assignment.SlotName) {
+              acc[assignment.SlotName] = assignment.PhoneNumberID;
+            }
+            return acc;
+          }, {})
+        }
+        assignmentDetails={currentProjectSlots}
         availableCallIDs={availableNumbers}
-        onAssignSlot={handleAssignSlot}
-        onRemoveSlot={handleRemoveSlot}
+        onUpdateSlot={handleAssignSlot}
+        onUpdateDates={handleUpdateSlotDates}
         isLoading={assigning || ending}
       />
     </section>

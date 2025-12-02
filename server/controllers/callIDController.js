@@ -550,27 +550,34 @@ const handleReassignCallID = handleAsync(async (req, res) => {
 });
 
 const handleUpdateProjectSlot = handleAsync(async (req, res) => {
-  const { projectId, slotName, phoneNumberId } = req.body;
+  console.log('[handleUpdateProjectSlot] Request body:', req.body);
+  const { projectId, slotName, phoneNumberId, startDate, endDate } = req.body;
 
   if (!projectId || !slotName) {
-    return res.status(400).json({ 
-      message: 'Project ID and slot name are required' 
+    console.log('[handleUpdateProjectSlot] Missing projectId or slotName');
+    return res.status(400).json({
+      message: 'Project ID and slot name are required'
     });
   }
 
   // Validate slot name
   const validSlots = ['CallIDL1', 'CallIDL2', 'CallIDC1', 'CallIDC2'];
   if (!validSlots.includes(slotName)) {
-    return res.status(400).json({ 
-      message: 'Invalid slot name. Must be CallIDL1, CallIDL2, CallIDC1, or CallIDC2' 
+    console.log('[handleUpdateProjectSlot] Invalid slot name:', slotName);
+    return res.status(400).json({
+      message: 'Invalid slot name. Must be CallIDL1, CallIDL2, CallIDC1, or CallIDC2'
     });
   }
 
+  console.log('[handleUpdateProjectSlot] Calling service with:', { projectId, slotName, phoneNumberId, startDate, endDate });
   const result = await CallIDService.updateProjectSlot(
     projectId,
     slotName,
-    phoneNumberId ? parseInt(phoneNumberId) : null
+    phoneNumberId ? parseInt(phoneNumberId) : null,
+    startDate,
+    endDate
   );
+  console.log('[handleUpdateProjectSlot] Service result:', result);
 
   res.status(200).json({
     success: true,

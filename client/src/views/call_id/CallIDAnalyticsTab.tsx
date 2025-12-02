@@ -40,12 +40,11 @@ const CallIDAnalyticsTab: React.FC<AnalyticsTabProps> = ({
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
   };
 
   const getMonthLabel = (month: number) => {

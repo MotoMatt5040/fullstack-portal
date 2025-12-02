@@ -81,20 +81,38 @@ const useCallIDManagementLogic = () => {
   });
 
   const {
-    data: activeAssignments = [],
+    data: activeAssignmentsRaw = [],
     isLoading: assignmentsLoading,
     refetch: refetchActiveAssignments,
   } = useGetCurrentActiveAssignmentsQuery(undefined, {
     skip: activeTab !== 'dashboard',
   });
 
+  // Sort active assignments by StartDate (newest first)
+  const activeAssignments = useMemo(() => {
+    return [...activeAssignmentsRaw].sort((a, b) => {
+      const dateA = new Date(a.StartDate).getTime();
+      const dateB = new Date(b.StartDate).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+  }, [activeAssignmentsRaw]);
+
   const {
-    data: recentActivity = [],
+    data: recentActivityRaw = [],
     isLoading: activityLoading,
     refetch: refetchRecentActivity,
   } = useGetRecentActivityQuery(undefined, {
     skip: activeTab !== 'dashboard',
   });
+
+  // Sort recent activity by StartDate (newest first)
+  const recentActivity = useMemo(() => {
+    return [...recentActivityRaw].sort((a, b) => {
+      const dateA = new Date(a.StartDate).getTime();
+      const dateB = new Date(b.StartDate).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+  }, [recentActivityRaw]);
 
   // Inventory data (lazy loaded when inventory tab is active)
   const [
@@ -447,6 +465,8 @@ const useCallIDManagementLogic = () => {
           projectId: data.projectId,
           slotName: data.slotName,
           phoneNumberId: data.phoneNumberId,
+          startDate: data.startDate,
+          endDate: data.endDate,
         }).unwrap();
 
         closeAssignModal();
@@ -672,34 +692,54 @@ const useCallIDManagementLogic = () => {
   }, []);
 
   const handleAssignSlot = useCallback(
-    async (data: any) => {
+    async (
+      projectId: string,
+      slotName: string,
+      phoneNumberId: number | null,
+      startDate?: string,
+      endDate?: string
+    ) => {
+      console.log('[handleAssignSlot] Called with:', { projectId, slotName, phoneNumberId, startDate, endDate });
       try {
-        await assignCallID(data).unwrap();
+        console.log('[handleAssignSlot] Calling updateProjectSlot mutation...');
+        const result = await updateProjectSlot({
+          projectId,
+          slotName,
+          phoneNumberId,
+          startDate,
+          endDate,
+        }).unwrap();
+        console.log('[handleAssignSlot] updateProjectSlot result:', result);
 
         // Refresh data
+        console.log('[handleAssignSlot] Refreshing active assignments...');
         await refetchActiveAssignments();
 
         // Reload current slots
         if (selectedProjectSlots) {
+          console.log('[handleAssignSlot] Reloading current project slots...');
           const updatedAssignments = await refetchActiveAssignments();
           if (updatedAssignments.data) {
             const projectAssignments = updatedAssignments.data.filter(
               (a: any) => a.ProjectID === selectedProjectSlots
             );
+            console.log('[handleAssignSlot] Updated project assignments:', projectAssignments);
             setCurrentProjectSlots(projectAssignments);
           }
         }
 
+        console.log('[handleAssignSlot] Success!');
         return { success: true };
       } catch (error: any) {
-        console.error('Error assigning slot:', error);
+        console.error('[handleAssignSlot] Error:', error);
+        console.error('[handleAssignSlot] Error data:', error?.data);
         return {
           success: false,
           error: error?.data?.message || 'Failed to assign slot',
         };
       }
     },
-    [assignCallID, refetchActiveAssignments, selectedProjectSlots]
+    [updateProjectSlot, refetchActiveAssignments, selectedProjectSlots]
   );
 
   const handleRemoveSlot = useCallback(
@@ -731,6 +771,49 @@ const useCallIDManagementLogic = () => {
       }
     },
     [endAssignment, refetchActiveAssignments, selectedProjectSlots]
+  );
+
+  const handleUpdateSlotDates = useCallback(
+    async (
+      projectId: string,
+      phoneNumberId: number,
+      startDate: string,
+      endDate: string
+    ) => {
+      try {
+        await updateAssignment({
+          projectId,
+          phoneNumberId,
+          startDate,
+          endDate,
+        }).unwrap();
+
+        // Refresh data - only if query is active
+        try {
+          const updatedAssignments = await refetchActiveAssignments();
+
+          // Reload current slots
+          if (selectedProjectSlots && updatedAssignments.data) {
+            const projectAssignments = updatedAssignments.data.filter(
+              (a: any) => a.ProjectID === selectedProjectSlots
+            );
+            setCurrentProjectSlots(projectAssignments);
+          }
+        } catch (refetchError) {
+          // Ignore refetch errors - the query may not be active
+          console.log('Could not refetch assignments (query not active)');
+        }
+
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error updating slot dates:', error);
+        return {
+          success: false,
+          error: error?.data?.message || 'Failed to update dates',
+        };
+      }
+    },
+    [updateAssignment, refetchActiveAssignments, selectedProjectSlots]
   );
 
   // ==================== ANALYTICS FILTER ACTIONS ====================
@@ -853,6 +936,7 @@ const useCallIDManagementLogic = () => {
     closeProjectSlotsModal,
     handleAssignSlot,
     handleRemoveSlot,
+    handleUpdateSlotDates,
   };
 };
 
