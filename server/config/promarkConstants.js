@@ -24,26 +24,26 @@ const PROMARK_INTERNAL_VARIABLES = {
   //   defaultValue: 1,
   //   description: 'Sample source: 1=LL_ONLY, 2=CELL_ONLY, 3=BOTH'
   // },
-  // CALLID1: { 
-  //   type: 'TEXT', 
-  //   defaultValue: null,
-  //   description: 'Call ID 1 - for tracking purposes'
-  // },
-  // CALLID2: { 
-  //   type: 'TEXT', 
-  //   defaultValue: null,
-  //   description: 'Call ID 2 - for tracking purposes'
-  // },
-  // CALLID3: { 
-  //   type: 'TEXT', 
-  //   defaultValue: null,
-  //   description: 'Call ID 3 - for tracking purposes'
-  // },
-  // CALLID4: { 
-  //   type: 'TEXT', 
-  //   defaultValue: null,
-  //   description: 'Call ID 4 - for tracking purposes'
-  // }
+  CALLIDL1: { 
+    type: 'TEXT', 
+    defaultValue: '0000000000',
+    description: 'Call ID 1 - for tracking purposes'
+  },
+  CALLIDL2: { 
+    type: 'TEXT', 
+    defaultValue: '0000000000',
+    description: 'Call ID 2 - for tracking purposes'
+  },
+  CALLIDC1: { 
+    type: 'TEXT', 
+    defaultValue: '0000000000',
+    description: 'Call ID 3 - for tracking purposes'
+  },
+  CALLIDC2: { 
+    type: 'TEXT', 
+    defaultValue: '0000000000',
+    description: 'Call ID 4 - for tracking purposes'
+  }
 };
 
 /**
