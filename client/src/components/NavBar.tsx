@@ -60,7 +60,10 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
       {/* Overlay */}
       <div
         className={`navbar-overlay ${isNavVisible ? 'visible' : ''}`}
-        onClick={toggleNav}
+        onMouseDown={() => {
+          setIsNavVisible(false);
+          onToggleNav(false);
+        }}
       />
 
       {/* Slide-out Navigation */}
