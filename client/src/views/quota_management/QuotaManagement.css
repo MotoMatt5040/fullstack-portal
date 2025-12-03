@@ -1,97 +1,123 @@
 /* =================================================================
-   Unified Quota Management Table Stylesheet
+   Quota Management - Modern Flat Design
    ================================================================= */
 
-.quota-table-data-container {
-  width: 100%;
-  overflow: visible;
-}
-
-.quota-table-container {
-  position: relative;
-  max-height: 80vh;
-  overflow-x: auto;
-  overflow-y: auto;
-  border: 1px solid var(--border-color-soft);
-  border-radius: 8px;
-  box-shadow: var(--box-shadow-elevated);
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
+.quota-management {
+  padding: 1.5rem;
   max-width: 100%;
-
-  /* Add scroll snap for better mobile experience */
-  scroll-snap-type: x proximity;
 }
 
-/* Scroll indicator shadows - Only show on mobile by default */
-@media (max-width: 767px) {
-  .quota-table-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 30px;
-    height: 100%;
-    background: linear-gradient(to left, rgba(0, 0, 0, 0.15), transparent);
-    pointer-events: none;
-    z-index: 5;
-  }
+/* =================================================================
+   Header
+   ================================================================= */
+.quota-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
 }
 
-/* Enhanced scrollbar for mobile browsers */
-.quota-table-container::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
+.quota-header-left h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.quota-table-container::-webkit-scrollbar-track {
-  background: var(--background-color);
-  border-radius: 4px;
+.quota-subtitle {
+  color: var(--label-text-color);
+  font-size: 0.875rem;
+  margin: 0;
 }
 
-.quota-table-container::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
+/* =================================================================
+   Controls
+   ================================================================= */
+.quota-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.quota-table-container::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-color);
+.quota-select {
+  min-width: 350px;
 }
 
-/* Firefox scrollbar styling */
-.quota-table-container {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) var(--background-color);
+.quota-select .my-select__control {
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  background: var(--input-background);
+  min-height: 38px;
 }
 
+.quota-select .my-select__control:hover {
+  border-color: var(--accent-color);
+}
+
+.quota-select .my-select__control--is-focused {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.1);
+}
+
+.quota-updating {
+  color: var(--accent-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* =================================================================
+   States
+   ================================================================= */
+.quota-loading,
+.quota-error,
+.quota-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--label-text-color);
+  font-size: 0.9rem;
+}
+
+.quota-error {
+  color: #dc2626;
+}
+
+/* =================================================================
+   Table
+   ================================================================= */
 .quota-management-table {
   width: auto;
   min-width: fit-content;
   margin: 0;
-
   border-collapse: separate;
   border-spacing: 0;
   text-align: center;
-
-  font-size: calc(0.35rem + 0.4vw);
-
+  font-size: calc(0.4rem + 0.35vw);
   color: var(--text-color);
-  background-color: var(--background-color-table);
-  border-radius: 0;
-  overflow: visible;
+  background-color: transparent;
 }
 
 .quota-management-table thead {
-  background-color: var(--table-header-background, #444);
-  color: var(--table-header-color, #fff);
+  background: transparent;
 }
 
 .quota-management-table thead th {
-  padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
-  font-weight: bold;
+  padding: 0.5rem 0.625rem;
+  font-weight: 500;
   white-space: normal;
-  border-bottom: 2px solid var(--border-color-soft);
-  background-color: var(--table-header-background, #444);
+  border: none;
+  border-bottom: 1px solid var(--border-color-soft);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
   position: sticky;
   z-index: 11;
 }
@@ -99,48 +125,48 @@
 .quota-management-table thead tr:first-child th {
   top: 0;
   z-index: 13;
+  font-weight: 600;
+  opacity: 0.7;
 }
 
 .quota-management-table thead tr:nth-child(2) th {
-  top: calc(2 * (0.15rem + 0.25vw) + 2 * (0.09rem + 0.3vw) + 2px);
+  top: calc(0.7rem + 1rem + 1px);
   z-index: 12;
 }
 
 .quota-management-table thead tr:nth-child(3) th {
-  top: calc(4 * (0.15rem + 0.25vw) + 4 * (0.09rem + 0.3vw) + 4px);
+  top: calc(2 * (0.7rem + 1rem + 1px));
   z-index: 11;
 }
 
-.quota-management-table
-  thead
-  tr:first-child
-  th:is(:nth-child(2), :nth-child(3)),
-.quota-management-table
-  thead
-  tr:nth-child(2)
-  th:is(:nth-child(3), :nth-child(6)) {
-  border-left: 3px solid var(--border-color);
+/* Group borders in header */
+.quota-management-table thead tr:first-child th:is(:nth-child(2), :nth-child(3)),
+.quota-management-table thead tr:nth-child(2) th:is(:nth-child(3), :nth-child(6)) {
+  border-left: 2px solid var(--border-color);
 }
 
+/* =================================================================
+   Table Body with Zebra Striping
+   ================================================================= */
 .quota-management-table tbody td {
-  padding: calc(0.15rem + 0.25vw) calc(0.09rem + 0.3vw);
-  border-bottom: 1px solid var(--table-border-color, #666);
+  padding: 0.5rem 0.625rem;
+  border: none;
+  border-bottom: 1px solid var(--border-color-soft);
   white-space: nowrap;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.1s ease;
 }
 
-/* .quota-management-select .my-select__option--is-selected {
-  background-color: var(--background-color-elevated) !important;
-  color: var(--text-color) !important;
-} */
-
-.quota-management-table tbody tr:hover td,
-tr.active td {
-  background-color: var(--table-row-hover-background, #999);
+.quota-management-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
+/* Zebra striping */
 .quota-management-table tbody tr:nth-child(even) td {
-  background-color: var(--zebra-stripe-color);
+  background-color: var(--background-color-muted);
+}
+
+.quota-management-table tbody tr:hover td {
+  background-color: var(--background-color-elevated);
 }
 
 .quota-management-table .cell-label {
@@ -148,258 +174,100 @@ tr.active td {
   font-weight: 500;
 }
 
-.quota-management-table tbody td:last-child {
-  border-right: none;
-}
-
-.quota-management-select .my-select__control {
-  min-width: 200px;
-  width: 100%;
-}
-
-.quota-management-select .my-select__container {
-  min-width: 200px;
-  width: 100%;
-}
-
-.quota-management-select .my-select__menu {
-  min-width: 200px;
-  width: 100%;
-}
-
 /* =================================================================
-   Critical Status Cell Styling (Preserved from original)
+   Status Cell Styling
    ================================================================= */
 .quota-management-table td.cell-status {
   color: #fff;
-  font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+  font-weight: 600;
+  font-size: 0.75rem;
 }
 
 .quota-management-table td.cell-status.open {
-  background-color: rgba(67, 177, 123, 0.8);
+  background-color: rgba(16, 185, 129, 0.85) !important;
 }
 
 .quota-management-table td.cell-status.closed {
-  background-color: rgba(237, 33, 28, 0.8);
+  background-color: rgba(220, 38, 38, 0.85) !important;
 }
 
 .quota-management-table td.cell-status.half-open {
-  background-color: rgba(239, 163, 43, 0.8);
+  background-color: rgba(245, 158, 11, 0.85) !important;
   color: #000;
 }
 
 /* =================================================================
-   Column & Group Borders (Preserved from original)
+   Column & Group Borders
    ================================================================= */
-.quota-management-table colgroup {
-  border-left: 2px solid var(--border-color-soft);
-}
-
-.quota-management-table col.col-label {
-  border-right: 3px solid var(--border-color-soft);
-}
-
 .quota-management-table .total-column {
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .quota-management-table .group-border-left {
-  border-left: 3px solid var(--border-color);
+  border-left: 2px solid var(--border-color);
 }
 
 .quota-management-table .bold {
-  font-weight: bold;
+  font-weight: 600;
 }
 
 /* =================================================================
-   JavaScript-controlled dynamic heights
+   Responsive
    ================================================================= */
-.quota-table-container[data-dynamic-height='true'] {
-  max-height: var(--dynamic-table-height, 80vh);
+@media (max-width: 768px) {
+  .quota-management {
+    padding: 1rem;
+  }
+
+  .quota-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .quota-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quota-select {
+    min-width: 100%;
+  }
+
+  .quota-management-table {
+    font-size: 0.75rem;
+  }
+
+  .quota-management-table thead th {
+    padding: 0.5rem 0.375rem;
+    font-size: 0.65rem;
+  }
+
+  .quota-management-table tbody td {
+    padding: 0.5rem 0.375rem;
+  }
 }
 
-/* =================================================================
-   Responsive adjustments for sticky headers
-   ================================================================= */
-
-/* Very small screens (Mobile) */
 @media (max-width: 480px) {
-  /* Ensure parent containers don't add padding */
-  .quota-management-container {
-    padding: 0.5rem;
+  .quota-management {
+    padding: 0.75rem;
   }
 
-  .quota-table-data-container {
-    padding: 0;
-    margin: 0;
-    overflow: visible;
-  }
-
-  .quota-table-header {
-    margin-bottom: 0.5rem;
-  }
-
-  .quota-table-container {
-    max-height: 70vh;
-    margin: 0;
-    border-radius: 4px;
-    width: 100%;
-    box-sizing: border-box;
-    position: relative;
+  .quota-header-left h1 {
+    font-size: 1.25rem;
   }
 
   .quota-management-table {
     font-size: 0.7rem;
-    min-width: 100%;
-    margin: 0;
-  }
-
-  .quota-management-table thead th {
-    padding: 0.6rem 0.4rem;
-    font-size: 0.65rem;
-    white-space: nowrap;
-    min-width: 50px;
-  }
-
-  .quota-management-table tbody td {
-    padding: 0.6rem 0.4rem;
-    white-space: nowrap;
-    min-width: 50px;
-  }
-
-  /* Adjust sticky header positions - stick to top of container */
-  .quota-management-table thead tr:first-child th {
-    top: 0;
-  }
-
-  .quota-management-table thead tr:nth-child(2) th {
-    /* Height of first row: 0.65rem (font-size) + 1.2rem (0.6rem padding top + 0.6rem padding bottom) + 2px (border) */
-    top: calc(0.65rem + 1.2rem + 2px);
-  }
-
-  .quota-management-table thead tr:nth-child(3) th {
-    /* Height of first two rows: 2 * (0.65rem + 1.2rem + 2px) */
-    top: calc(2 * (0.65rem + 1.2rem + 2px));
-  }
-
-  /* Full width select on mobile */
-  .quota-management-select .my-select__control {
-    min-width: 100%;
-    width: 100%;
-    font-size: 0.8rem;
-  }
-
-  .quota-management-select .my-select__container {
-    min-width: 100%;
-    width: 100%;
-  }
-
-  .quota-management-select .my-select__menu {
-    min-width: 100%;
-    width: 100%;
   }
 }
 
-/* Small screens (Mobile Landscape / Small Tablets) */
-@media (min-width: 481px) and (max-width: 767px) {
-  .quota-table-data-container {
-    padding: 0;
-    width: 100%;
-  }
-
-  .quota-table-container {
-    max-height: 75vh;
-    margin: 0;
-    width: 100%;
-  }
-
-  .quota-management-table {
-    font-size: 0.75rem;
-    min-width: 100%;
-  }
-
-  .quota-management-table thead th {
-    padding: 0.6rem 0.4rem;
-    white-space: nowrap;
-    font-size: 0.75rem;
-  }
-
-  .quota-management-table tbody td {
-    padding: 0.6rem 0.4rem;
-    white-space: nowrap;
-  }
-
-  /* Adjust sticky header positions for tablet */
-  .quota-management-table thead tr:first-child th {
-    top: 0;
-  }
-
-  .quota-management-table thead tr:nth-child(2) th {
-    /* Height of first row: 0.75rem (font-size) + 1.2rem (padding) + 2px (border) */
-    top: calc(0.75rem + 1.2rem + 2px);
-  }
-
-  .quota-management-table thead tr:nth-child(3) th {
-    /* Height of first two rows */
-    top: calc(2 * (0.75rem + 1.2rem + 2px));
-  }
-
-  .quota-management-select .my-select__control {
-    min-width: 100%;
-    width: 100%;
-    font-size: 0.8rem;
-  }
-
-  .quota-management-select .my-select__container {
-    min-width: 100%;
-    width: 100%;
-  }
-
-  .quota-management-select .my-select__menu {
-    min-width: 100%;
-    width: 100%;
-  }
-}
-
-/* Medium screens */
-@media (min-width: 768px) {
-  .quota-table-container {
-    max-height: 85vh;
-    width: fit-content;
-    max-width: 100%;
-  }
-
-  .quota-management-table {
-    width: auto;
-  }
-
-  .quota-management-select .my-select__control {
-    min-width: 500px;
-    width: auto;
-  }
-
-  .quota-management-select .my-select__container {
-    min-width: 500px;
-    width: auto;
-  }
-
-  .quota-management-select .my-select__menu {
-    min-width: 500px;
-    width: auto;
-  }
-}
-
-/* Large screens */
 @media (min-width: 1440px) {
-  .quota-table-container {
-    max-height: 90vh;
+  .quota-management {
+    padding: 2rem;
   }
-}
 
-/* Very large screens */
-@media (min-width: 3000px) {
   .quota-management-table {
-    font-size: 1.2rem;
+    font-size: 0.875rem;
   }
 }
