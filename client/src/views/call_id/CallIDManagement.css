@@ -664,6 +664,17 @@
   color: #fbbf24;
 }
 
+.status-badge.unknown {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .status-badge.unknown,
+[data-theme="superdark"] .status-badge.unknown {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
 /* ========================================
    ACTIVITY LIST
 ======================================== */

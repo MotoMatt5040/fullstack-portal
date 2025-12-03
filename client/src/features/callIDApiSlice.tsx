@@ -174,6 +174,9 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'CallIDRecentActivity',
         'CallIDUsage',
         'ProjectCallIDs',
+        'ProjectAssignments',
+        'CallIDDashboard',
+        'CallIDAnalytics',
       ],
     }),
 
@@ -194,6 +197,9 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'CallIDRecentActivity',
         'CallIDUsage',
         'ProjectCallIDs',
+        'ProjectAssignments',
+        'CallIDDashboard',
+        'CallIDAnalytics',
       ],
     }),
 
@@ -270,6 +276,8 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'CallIDActiveAssignments',
         'CallIDDashboard',
         'CallIDRecentActivity',
+        'ProjectAssignments',
+        'CallIDAnalytics',
       ],
     }),
 
@@ -290,6 +298,8 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
         'CallIDActiveAssignments',
         'CallIDDashboard',
         'CallIDRecentActivity',
+        'ProjectAssignments',
+        'CallIDAnalytics',
       ],
     }),
 

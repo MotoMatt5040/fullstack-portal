@@ -76,17 +76,13 @@ const useCallIDManagementLogic = () => {
     data: dashboardMetrics,
     isLoading: dashboardLoading,
     refetch: refetchDashboard,
-  } = useGetDashboardMetricsQuery(undefined, {
-    skip: activeTab !== 'dashboard',
-  });
+  } = useGetDashboardMetricsQuery();
 
   const {
     data: activeAssignmentsRaw = [],
     isLoading: assignmentsLoading,
     refetch: refetchActiveAssignments,
-  } = useGetCurrentActiveAssignmentsQuery(undefined, {
-    skip: activeTab !== 'dashboard',
-  });
+  } = useGetCurrentActiveAssignmentsQuery();
 
   // Sort active assignments by StartDate (newest first)
   const activeAssignments = useMemo(() => {
@@ -101,9 +97,7 @@ const useCallIDManagementLogic = () => {
     data: recentActivityRaw = [],
     isLoading: activityLoading,
     refetch: refetchRecentActivity,
-  } = useGetRecentActivityQuery(undefined, {
-    skip: activeTab !== 'dashboard',
-  });
+  } = useGetRecentActivityQuery();
 
   // Sort recent activity by StartDate (newest first)
   const recentActivity = useMemo(() => {
@@ -142,9 +136,10 @@ const useCallIDManagementLogic = () => {
   const {
     data: projectsWithAssignmentsData,
     isLoading: projectsLoading,
+    isFetching: projectsFetching,
     refetch: refetchProjects,
   } = useGetAllProjectsWithAssignmentsQuery(undefined, {
-    skip: activeTab !== 'assignments',
+    // Always fetch, let cache invalidation handle updates
   });
   const [reassignCallID, { isLoading: reassigning }] =
     useReassignCallIDMutation();
@@ -157,41 +152,31 @@ const useCallIDManagementLogic = () => {
     data: utilizationMetrics,
     isLoading: utilizationLoading,
     refetch: refetchUtilization,
-  } = useGetUtilizationMetricsQuery(undefined, {
-    skip: activeTab !== 'analytics',
-  });
+  } = useGetUtilizationMetricsQuery();
 
   const {
     data: mostUsedCallIDs = [],
     isLoading: mostUsedLoading,
     refetch: refetchMostUsed,
-  } = useGetMostUsedCallIDsQuery(mostUsedLimit, {
-    skip: activeTab !== 'analytics',
-  });
+  } = useGetMostUsedCallIDsQuery(mostUsedLimit);
 
   const {
     data: idleCallIDs = [],
     isLoading: idleLoading,
     refetch: refetchIdle,
-  } = useGetIdleCallIDsQuery(idleDaysFilter, {
-    skip: activeTab !== 'analytics',
-  });
+  } = useGetIdleCallIDsQuery(idleDaysFilter);
 
   const {
     data: stateCoverage = [],
     isLoading: coverageLoading,
     refetch: refetchCoverage,
-  } = useGetStateCoverageQuery(undefined, {
-    skip: activeTab !== 'analytics',
-  });
+  } = useGetStateCoverageQuery();
 
   const {
     data: usageTimeline = [],
     isLoading: timelineLoading,
     refetch: refetchTimeline,
-  } = useGetUsageTimelineQuery(timelineMonths, {
-    skip: activeTab !== 'analytics',
-  });
+  } = useGetUsageTimelineQuery(timelineMonths);
 
   // ==================== MUTATIONS ====================
   const [createCallID, { isLoading: creating }] = useCreateCallIDMutation();
@@ -209,10 +194,37 @@ const useCallIDManagementLogic = () => {
 
   // ==================== EFFECTS ====================
 
-  // Load inventory when inventory tab is active
+  // Refetch data when tab changes
   useEffect(() => {
-    getAllCallIDs(filters);
-  }, [filters, getAllCallIDs]);
+    switch (activeTab) {
+      case 'dashboard':
+        refetchDashboard();
+        refetchActiveAssignments();
+        refetchRecentActivity();
+        break;
+      case 'inventory':
+        getAllCallIDs(filters);
+        break;
+      case 'assignments':
+        refetchProjects();
+        break;
+      case 'analytics':
+        refetchUtilization();
+        refetchMostUsed();
+        refetchIdle();
+        refetchCoverage();
+        refetchTimeline();
+        break;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // Load inventory when filters change
+  useEffect(() => {
+    if (activeTab === 'inventory') {
+      getAllCallIDs(filters);
+    }
+  }, [filters, getAllCallIDs, activeTab]);
 
   // Load project history when selected
   useEffect(() => {
@@ -309,6 +321,7 @@ const useCallIDManagementLogic = () => {
   const handleTabChange = useCallback(
     (tab: 'dashboard' | 'inventory' | 'assignments' | 'analytics') => {
       setActiveTab(tab);
+      // Data refresh is handled by useEffect watching activeTab
     },
     []
   );

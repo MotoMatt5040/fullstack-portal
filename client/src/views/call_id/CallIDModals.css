@@ -206,6 +206,24 @@
   margin: 1rem 0 0 0;
 }
 
+.caller-name-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.375rem;
+  color: #92400e;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.caller-name-warning svg {
+  flex-shrink: 0;
+  color: #d97706;
+}
+
 @media (max-width: 640px) {
   .modal-content {
     max-width: 100%;

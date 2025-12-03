@@ -26,6 +26,7 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
   const [callerName, setCallerName] = useState('Survey Research');
   const [stateFIPS, setStateFIPS] = useState('');
   const [error, setError] = useState('');
+  const [showCallerNameWarning, setShowCallerNameWarning] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -34,6 +35,7 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
       setCallerName('Survey Research');
       setStateFIPS('');
       setError('');
+      setShowCallerNameWarning(false);
     }
   }, [isOpen]);
 
@@ -98,10 +100,18 @@ export const CreateCallIDModal: React.FC<CreateModalProps> = ({
               type='text'
               value={callerName}
               onChange={(e) => setCallerName(e.target.value.slice(0, 25))}
+              onFocus={() => setShowCallerNameWarning(true)}
+              onBlur={() => setShowCallerNameWarning(false)}
               maxLength={25}
               required
               className='form-input'
             />
+            {showCallerNameWarning && (
+              <div className='caller-name-warning'>
+                <Icon path={mdiAlert} size={0.7} />
+                <span>WARNING: Changing this will not change the Caller Name. This needs to be set to match our registered caller name for this number.</span>
+              </div>
+            )}
           </div>
 
           <div className='form-group'>
@@ -184,6 +194,7 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
   const [callerName, setCallerName] = useState(callID?.CallerName || '');
   const [stateFIPS, setStateFIPS] = useState(callID?.StateFIPS || '');
   const [error, setError] = useState('');
+  const [showCallerNameWarning, setShowCallerNameWarning] = useState(false);
 
   useEffect(() => {
     if (callID) {
@@ -191,6 +202,7 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
       setCallerName(callID.CallerName);
       setStateFIPS(callID.StateFIPS);
       setError('');
+      setShowCallerNameWarning(false);
     }
   }, [callID]);
 
@@ -239,10 +251,18 @@ export const EditCallIDModal: React.FC<EditModalProps> = ({
               type='text'
               value={callerName}
               onChange={(e) => setCallerName(e.target.value.slice(0, 25))}
+              onFocus={() => setShowCallerNameWarning(true)}
+              onBlur={() => setShowCallerNameWarning(false)}
               maxLength={25}
               required
               className='form-input'
             />
+            {showCallerNameWarning && (
+              <div className='caller-name-warning'>
+                <Icon path={mdiAlert} size={0.7} />
+                <span>WARNING: Changing this will not change the Caller Name. This needs to be set to match our registered caller name for this number.</span>
+              </div>
+            )}
           </div>
 
           <div className='form-group'>

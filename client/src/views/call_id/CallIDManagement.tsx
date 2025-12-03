@@ -559,10 +559,10 @@ const CallIDManagement: React.FC = () => {
                   <td>
                     <span
                       className={`status-badge ${getStatusClass(
-                        callID.StatusDescription
+                        callID.StatusDescription || 'Unknown'
                       )}`}
                     >
-                      {callID.StatusDescription}
+                      {callID.StatusDescription || 'Unknown'}
                     </span>
                   </td>
                   <td>{callID.CallerName}</td>
@@ -1212,6 +1212,7 @@ const CallIDManagement: React.FC = () => {
     if (lower.includes('inactive')) return 'inactive';
     if (lower.includes('flagged')) return 'flagged';
     if (lower.includes('testing')) return 'testing';
+    if (lower.includes('unknown')) return 'unknown';
     return '';
   };
 
