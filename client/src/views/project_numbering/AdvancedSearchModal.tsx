@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FaTimes, FaSearch } from 'react-icons/fa';
+import Icon from '@mdi/react';
+import { mdiClose, mdiMagnify, mdiRefresh } from '@mdi/js';
 
 const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
   const [criteria, setCriteria] = useState({
@@ -22,7 +23,7 @@ const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Filter out empty values
     const filteredCriteria = Object.entries(criteria).reduce((acc, [key, value]) => {
       if (value && value.trim() !== '') {
@@ -53,40 +54,43 @@ const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
       <div className="modal-content modal-medium" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>
-            <FaSearch /> Advanced Search
+            <Icon path={mdiMagnify} size={0.9} />
+            Advanced Search
           </h2>
           <button className="modal-close" onClick={onClose}>
-            <FaTimes />
+            <Icon path={mdiClose} size={0.9} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-grid">
-            <div className="form-group">
-              <label htmlFor="projectID">Project ID</label>
-              <input
-                type="number"
-                id="projectID"
-                name="projectID"
-                value={criteria.projectID}
-                onChange={handleChange}
-                placeholder="e.g., 12345"
-              />
+            <div className="form-row-2">
+              <div className="form-group">
+                <label htmlFor="projectID">Project ID</label>
+                <input
+                  type="number"
+                  id="projectID"
+                  name="projectID"
+                  value={criteria.projectID}
+                  onChange={handleChange}
+                  placeholder="e.g., 12345"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="clientProjectID">Client Project ID</label>
+                <input
+                  type="text"
+                  id="clientProjectID"
+                  name="clientProjectID"
+                  value={criteria.clientProjectID}
+                  onChange={handleChange}
+                  placeholder="Enter client project ID"
+                />
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="clientProjectID">Client Project ID</label>
-              <input
-                type="text"
-                id="clientProjectID"
-                name="clientProjectID"
-                value={criteria.clientProjectID}
-                onChange={handleChange}
-                placeholder="Enter client project ID"
-              />
-            </div>
-
-            <div className="form-group full-width">
               <label htmlFor="projectName">Project Name</label>
               <input
                 type="text"
@@ -98,50 +102,54 @@ const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="client">Client Code</label>
-              <input
-                type="text"
-                id="client"
-                name="client"
-                value={criteria.client}
-                onChange={handleChange}
-                placeholder="e.g., XYZ"
-              />
+            <div className="form-row-2">
+              <div className="form-group">
+                <label htmlFor="client">Client Code</label>
+                <input
+                  type="text"
+                  id="client"
+                  name="client"
+                  value={criteria.client}
+                  onChange={handleChange}
+                  placeholder="e.g., XYZ"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="contactName">Contact Name</label>
+                <input
+                  type="text"
+                  id="contactName"
+                  name="contactName"
+                  value={criteria.contactName}
+                  onChange={handleChange}
+                  placeholder="Enter contact name"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="contactName">Contact Name</label>
-              <input
-                type="text"
-                id="contactName"
-                name="contactName"
-                value={criteria.contactName}
-                onChange={handleChange}
-                placeholder="Enter contact name"
-              />
-            </div>
+            <div className="form-row-2">
+              <div className="form-group">
+                <label htmlFor="startDateFrom">Start Date From</label>
+                <input
+                  type="date"
+                  id="startDateFrom"
+                  name="startDateFrom"
+                  value={criteria.startDateFrom}
+                  onChange={handleChange}
+                />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="startDateFrom">Start Date From</label>
-              <input
-                type="date"
-                id="startDateFrom"
-                name="startDateFrom"
-                value={criteria.startDateFrom}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="startDateTo">Start Date To</label>
-              <input
-                type="date"
-                id="startDateTo"
-                name="startDateTo"
-                value={criteria.startDateTo}
-                onChange={handleChange}
-              />
+              <div className="form-group">
+                <label htmlFor="startDateTo">Start Date To</label>
+                <input
+                  type="date"
+                  id="startDateTo"
+                  name="startDateTo"
+                  value={criteria.startDateTo}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
           </div>
 
@@ -152,6 +160,7 @@ const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
               onClick={handleReset}
               disabled={isLoading}
             >
+              <Icon path={mdiRefresh} size={0.7} />
               Reset
             </button>
             <button
@@ -167,6 +176,7 @@ const AdvancedSearchModal = ({ isOpen, onClose, onSearch, isLoading }) => {
               className="btn-primary"
               disabled={isLoading}
             >
+              <Icon path={mdiMagnify} size={0.7} />
               {isLoading ? 'Searching...' : 'Search'}
             </button>
           </div>

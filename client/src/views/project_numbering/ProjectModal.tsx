@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import Icon from '@mdi/react';
+import {
+  mdiClose,
+  mdiIdentifier,
+  mdiCalendarRange,
+  mdiAccountOutline,
+  mdiCogOutline,
+  mdiPhone,
+  mdiCellphone,
+  mdiWeb,
+  mdiMessageTextOutline,
+  mdiEmailOutline,
+  mdiMailboxOutline
+} from '@mdi/js';
 import { useGetNextProjectNumberQuery } from '../../features/projectNumberingApiSlice';
 
 const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData }) => {
@@ -22,12 +35,12 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     dataProcessing: 0,
     multiCallID: 0,
     modes: {
-      landline: false,    // 1
-      cell: false,        // 2
-      webPanel: false,    // 3
-      text: false,        // 4
-      email: false,       // 5
-      postalMail: false,  // 6
+      landline: false,
+      cell: false,
+      webPanel: false,
+      text: false,
+      email: false,
+      postalMail: false,
     },
   });
 
@@ -41,7 +54,6 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
   useEffect(() => {
     if (mode === 'edit' && initialData) {
-      // Convert modes array to checkbox states
       const modes = {
         landline: initialData.modes?.includes(1) || false,
         cell: initialData.modes?.includes(2) || false,
@@ -95,14 +107,14 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
   const getModesArray = () => {
     const { modes } = formData;
     const result = [];
-    
+
     if (modes.landline) result.push(1);
     if (modes.cell) result.push(2);
     if (modes.webPanel) result.push(3);
     if (modes.text) result.push(4);
     if (modes.email) result.push(5);
     if (modes.postalMail) result.push(6);
-    
+
     return result;
   };
 
@@ -165,7 +177,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     };
 
     const result = await onSubmit(dataToSubmit);
-    
+
     if (result.success) {
       if (mode === 'create') {
         setFormData({
@@ -201,170 +213,177 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{mode === 'create' ? 'Add New Project' : 'Edit Project'}</h2>
+          <h2>
+            <Icon path={mdiIdentifier} size={0.9} />
+            {mode === 'create' ? 'Add New Project' : 'Edit Project'}
+          </h2>
           <button className="modal-close" onClick={onClose}>
-            <FaTimes />
+            <Icon path={mdiClose} size={0.9} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-grid">
-            {/* Row 1: Project ID, Client Project ID, Client */}
-            <div className="form-row">
-              <div className="form-group">
-                <label>Project ID</label>
-                <input
-                  type="text"
-                  value={nextProjectNumber || 'Loading...'}
-                  disabled
-                  className="input-disabled"
-                  name={"projectID"}
-                />
+            {/* Project Identification Section */}
+            <div className="form-section">
+              <div className="form-section-title">
+                <Icon path={mdiIdentifier} size={0.7} />
+                Project Identification
               </div>
-
-              <div className="form-group">
-                <label htmlFor="clientProjectID">Client Project ID</label>
-                <input
-                  type="text"
-                  id="clientProjectID"
-                  name="clientProjectID"
-                  value={formData.clientProjectID}
-                  onChange={handleChange}
-                  maxLength={50}
-                />
+              <div className="form-row-3">
+                <div className="form-group">
+                  <label>Project ID</label>
+                  <input
+                    type="text"
+                    value={nextProjectNumber || 'Loading...'}
+                    disabled
+                    className="input-disabled"
+                    name="projectID"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="clientProjectID">Client Project ID</label>
+                  <input
+                    type="text"
+                    id="clientProjectID"
+                    name="clientProjectID"
+                    value={formData.clientProjectID}
+                    onChange={handleChange}
+                    maxLength={50}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="client">Client Code</label>
+                  <input
+                    type="text"
+                    id="client"
+                    name="client"
+                    value={formData.client}
+                    onChange={handleChange}
+                    maxLength={10}
+                    placeholder="e.g., ABC"
+                  />
+                </div>
               </div>
-
               <div className="form-group">
-                <label htmlFor="client">Client</label>
+                <label htmlFor="projectName">
+                  Project Name <span className="required">*</span>
+                </label>
                 <input
                   type="text"
-                  id="client"
-                  name="client"
-                  value={formData.client}
+                  id="projectName"
+                  name="projectName"
+                  value={formData.projectName}
                   onChange={handleChange}
-                  maxLength={10}
-                  placeholder="XYZ"
+                  maxLength={255}
+                  className={errors.projectName ? 'input-error' : ''}
+                  required
                 />
+                {errors.projectName && <span className="error-text">{errors.projectName}</span>}
               </div>
             </div>
 
-            {/* Project Name */}
-            <div className="form-group">
-              <label htmlFor="projectName">
-                Project Name <span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                id="projectName"
-                name="projectName"
-                value={formData.projectName}
-                onChange={handleChange}
-                maxLength={255}
-                className={errors.projectName ? 'input-error' : ''}
-                required
-              />
-              {errors.projectName && <span className="error-text">{errors.projectName}</span>}
-            </div>
+            {/* Project Settings Section */}
+            <div className="form-section">
+              <div className="form-section-title">
+                <Icon path={mdiCogOutline} size={0.7} />
+                Project Settings
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="NSize">N= (Sample Size)</label>
+                  <input
+                    type="number"
+                    id="NSize"
+                    name="NSize"
+                    value={formData.NSize}
+                    onChange={handleChange}
+                    min="0"
+                    className={errors.NSize ? 'input-error' : ''}
+                  />
+                  {errors.NSize && <span className="error-text">{errors.NSize}</span>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="clientTime">Client LOI</label>
+                  <input
+                    type="number"
+                    id="clientTime"
+                    name="clientTime"
+                    value={formData.clientTime}
+                    onChange={handleChange}
+                    step="0.01"
+                    min="0"
+                    className={errors.clientTime ? 'input-error' : ''}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="promarkTime">Promark LOI</label>
+                  <input
+                    type="number"
+                    id="promarkTime"
+                    name="promarkTime"
+                    value={formData.promarkTime}
+                    onChange={handleChange}
+                    step="0.01"
+                    min="0"
+                    className={errors.promarkTime ? 'input-error' : ''}
+                  />
+                </div>
+              </div>
 
-            {/* Compact grid and dates side by side */}
-            <div className="compact-and-dates-row">
-              {/* Compact grid for N=, LOI, and toggles */}
-              <div className="form-group compact-grid">
-                <div className="compact-row">
-                  <div className="compact-field nsize-field">
-                    <label htmlFor="NSize">N=</label>
+              {/* Options Row */}
+              <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                <div className="checkbox-field">
+                  <label htmlFor="dataProcessing">
                     <input
-                      type="number"
-                      id="NSize"
-                      name="NSize"
-                      value={formData.NSize}
+                      type="checkbox"
+                      id="dataProcessing"
+                      name="dataProcessing"
+                      checked={formData.dataProcessing === 1}
                       onChange={handleChange}
-                      min="0"
-                      className={errors.NSize ? 'input-error' : ''}
                     />
-                    {errors.NSize && <span className="error-text">{errors.NSize}</span>}
-                  </div>
-                  <div className="compact-field">
-                    <label htmlFor="clientTime">Client LOI</label>
+                    Promark DP
+                  </label>
+                </div>
+                <div className="checkbox-field">
+                  <label htmlFor="multiCallID">
                     <input
-                      type="number"
-                      id="clientTime"
-                      name="clientTime"
-                      value={formData.clientTime}
+                      type="checkbox"
+                      id="multiCallID"
+                      name="multiCallID"
+                      checked={formData.multiCallID === 1}
                       onChange={handleChange}
-                      step="0.01"
-                      min="0"
-                      className={errors.clientTime ? 'input-error' : ''}
                     />
-                  </div>
-                  <div className="compact-field">
-                    <label htmlFor="promarkTime">Promark LOI</label>
+                    Multi Call ID
+                  </label>
+                </div>
+                <div className="checkbox-field">
+                  <label htmlFor="openends">
                     <input
-                      type="number"
-                      id="promarkTime"
-                      name="promarkTime"
-                      value={formData.promarkTime}
-                      onChange={handleChange}
-                      step="0.01"
-                      min="0"
-                      className={errors.promarkTime ? 'input-error' : ''}
+                      type="checkbox"
+                      id="openends"
+                      name="openends"
+                      checked={formData.openends === 'y'}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          openends: e.target.checked ? 'y' : 'n'
+                        }));
+                      }}
                     />
-                  </div>
+                    Open-Ends
+                  </label>
                 </div>
-                
-                {/* Row 1: Promark DP, Open-Ends */}
-                <div className="compact-row">
-                  <div className="checkbox-field">
-                    <label htmlFor="dataProcessing">
-                      <input
-                        type="checkbox"
-                        id="dataProcessing"
-                        name="dataProcessing"
-                        checked={formData.dataProcessing === 1}
-                        onChange={handleChange}
-                      />
-                      Promark DP
-                    </label>
-                  </div>
-                  <div className="checkbox-field"></div>
-                  <div className="checkbox-field">
-                    <label htmlFor="openends">
-                      <input
-                        type="checkbox"
-                        id="openends"
-                        name="openends"
-                        checked={formData.openends === 'y'}
-                        onChange={(e) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            openends: e.target.checked ? 'y' : 'n'
-                          }));
-                        }}
-                      />
-                      Open-Ends
-                    </label>
-                  </div>
-                  
-                </div>
-                <div className='compact-row'>
-                  <div className="checkbox-field">
-                    <label htmlFor="multiCallID">
-                      <input
-                        type="checkbox"
-                        id="multiCallID"
-                        name="multiCallID"
-                        checked={formData.multiCallID === 1}
-                        onChange={handleChange}
-                      />
-                      Multi Call ID
-                    </label>
-                  </div>
-                </div>
-                <label>Modes:</label>
-                {/* Row 2: Modes - Landline, Cell, Web Panel */}
-                <div className="compact-row">
+              </div>
+
+              {/* Modes */}
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '500', color: 'var(--label-text-color)', marginBottom: '0.5rem', display: 'block' }}>
+                  Survey Modes
+                </label>
+                <div className="checkbox-grid">
                   <div className="checkbox-field">
                     <label htmlFor="landline">
                       <input
@@ -374,6 +393,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         checked={formData.modes.landline}
                         onChange={handleModeChange}
                       />
+                      <Icon path={mdiPhone} size={0.6} style={{ marginRight: '4px' }} />
                       Landline
                     </label>
                   </div>
@@ -386,6 +406,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         checked={formData.modes.cell}
                         onChange={handleModeChange}
                       />
+                      <Icon path={mdiCellphone} size={0.6} style={{ marginRight: '4px' }} />
                       Cell
                     </label>
                   </div>
@@ -398,13 +419,10 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         checked={formData.modes.webPanel}
                         onChange={handleModeChange}
                       />
+                      <Icon path={mdiWeb} size={0.6} style={{ marginRight: '4px' }} />
                       Web Panel
                     </label>
                   </div>
-                </div>
-                
-                {/* Row 3: Modes - Text, Email, Postal Mail */}
-                <div className="compact-row">
                   <div className="checkbox-field">
                     <label htmlFor="text">
                       <input
@@ -414,6 +432,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         checked={formData.modes.text}
                         onChange={handleModeChange}
                       />
+                      <Icon path={mdiMessageTextOutline} size={0.6} style={{ marginRight: '4px' }} />
                       Text
                     </label>
                   </div>
@@ -426,6 +445,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         checked={formData.modes.email}
                         onChange={handleModeChange}
                       />
+                      <Icon path={mdiEmailOutline} size={0.6} style={{ marginRight: '4px' }} />
                       Email
                     </label>
                   </div>
@@ -438,15 +458,22 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                         checked={formData.modes.postalMail}
                         onChange={handleModeChange}
                       />
+                      <Icon path={mdiMailboxOutline} size={0.6} style={{ marginRight: '4px' }} />
                       Postal Mail
                     </label>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Dates */}
-              <div className="form-group dates-group">
-                <div className="date-field">
+            {/* Schedule & Contact Section */}
+            <div className="form-section">
+              <div className="form-section-title">
+                <Icon path={mdiCalendarRange} size={0.7} />
+                Schedule & Contact
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label htmlFor="startDate">Start Date</label>
                   <input
                     type="date"
@@ -456,7 +483,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                     onChange={handleChange}
                   />
                 </div>
-                <div className="date-field">
+                <div className="form-group">
                   <label htmlFor="endDate">End Date</label>
                   <input
                     type="date"
@@ -469,33 +496,33 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                   {errors.endDate && <span className="error-text">{errors.endDate}</span>}
                 </div>
               </div>
-            </div>
-
-            {/* Row: Contact Name and Contact Number */}
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="contactName">Contact Name</label>
-                <input
-                  type="text"
-                  id="contactName"
-                  name="contactName"
-                  value={formData.contactName}
-                  onChange={handleChange}
-                  maxLength={255}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="contactNumber">Contact Number</label>
-                <input
-                  type="tel"
-                  id="contactNumber"
-                  name="contactNumber"
-                  value={formData.contactNumber}
-                  onChange={handleChange}
-                  maxLength={20}
-                  placeholder="e.g., 512-345-9720"
-                />
+              <div className="form-row-2" style={{ marginTop: '0.75rem' }}>
+                <div className="form-group">
+                  <label htmlFor="contactName">
+                    <Icon path={mdiAccountOutline} size={0.6} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                    Contact Name
+                  </label>
+                  <input
+                    type="text"
+                    id="contactName"
+                    name="contactName"
+                    value={formData.contactName}
+                    onChange={handleChange}
+                    maxLength={255}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="contactNumber">Contact Number</label>
+                  <input
+                    type="tel"
+                    id="contactNumber"
+                    name="contactNumber"
+                    value={formData.contactNumber}
+                    onChange={handleChange}
+                    maxLength={20}
+                    placeholder="e.g., 512-345-9720"
+                  />
+                </div>
               </div>
             </div>
           </div>

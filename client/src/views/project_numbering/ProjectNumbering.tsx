@@ -1,4 +1,6 @@
 import React from 'react';
+import Icon from '@mdi/react';
+import { mdiPlus, mdiFilterOutline, mdiDatabase } from '@mdi/js';
 import { useProjectNumberingLogic } from './useProjectNumberingLogic';
 import ProjectsTable from './ProjectsTable';
 import ProjectModal from './ProjectModal';
@@ -6,7 +8,6 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import SearchBar from './SearchBar';
 import AdvancedSearchModal from './AdvancedSearchModal';
 import Pagination from './Pagination';
-import { FaPlus, FaSearch, FaFilter } from 'react-icons/fa';
 import './Projects.css';
 
 const ProjectNumbering = () => {
@@ -49,26 +50,23 @@ const ProjectNumbering = () => {
     toggleAdvancedSearch,
   } = useProjectNumberingLogic();
 
-  console.log('Modal States:', {
-    isAddModalOpen,
-    isEditModalOpen,
-    isDeleteModalOpen,
-    isAdvancedSearchOpen
-  });
-
   return (
     <div className="projects-container">
       {/* Header */}
       <div className="projects-header">
         <div className="projects-header-left">
-          <h1>Project Database</h1>
+          <h1>
+            <Icon path={mdiDatabase} size={1} />
+            Project Database
+          </h1>
           <p className="projects-subtitle">
             Manage and track all project information
           </p>
         </div>
         <div className="projects-header-right">
           <button className="btn-primary" onClick={openAddModal}>
-            <FaPlus /> Add Project
+            <Icon path={mdiPlus} size={0.8} />
+            Add Project
           </button>
         </div>
       </div>
@@ -86,7 +84,8 @@ const ProjectNumbering = () => {
           className="btn-secondary btn-with-icon"
           onClick={toggleAdvancedSearch}
         >
-          <FaFilter /> Advanced Search
+          <Icon path={mdiFilterOutline} size={0.8} />
+          Advanced Search
         </button>
       </div>
 
@@ -183,9 +182,3 @@ const ProjectNumbering = () => {
 };
 
 export default ProjectNumbering;
-
-
-
-
-
-

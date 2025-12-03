@@ -1,10 +1,13 @@
 import React from 'react';
-import { FaSearch, FaTimes } from 'react-icons/fa';
+import Icon from '@mdi/react';
+import { mdiMagnify, mdiClose } from '@mdi/js';
 
 const SearchBar = ({ value, onChange, onClear, placeholder, isSearching }) => {
   return (
     <div className="search-bar">
-      <FaSearch className="search-icon" />
+      <span className="search-icon">
+        <Icon path={mdiMagnify} size={0.8} />
+      </span>
       <input
         type="text"
         value={value}
@@ -18,7 +21,7 @@ const SearchBar = ({ value, onChange, onClear, placeholder, isSearching }) => {
           onClick={onClear}
           title="Clear search"
         >
-          <FaTimes />
+          <Icon path={mdiClose} size={0.7} />
         </button>
       )}
       {isSearching && <div className="search-spinner"></div>}

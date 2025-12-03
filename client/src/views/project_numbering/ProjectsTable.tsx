@@ -1,5 +1,12 @@
 import React from 'react';
-import { FaEdit, FaTrash, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import Icon from '@mdi/react';
+import {
+  mdiPencilOutline,
+  mdiTrashCanOutline,
+  mdiUnfoldMoreHorizontal,
+  mdiChevronUp,
+  mdiChevronDown
+} from '@mdi/js';
 
 const ProjectsTable = ({
   projects,
@@ -12,19 +19,18 @@ const ProjectsTable = ({
 }) => {
   const getSortIcon = (column) => {
     if (sortBy !== column) {
-      return <FaSort className="sort-icon inactive" />;
+      return <Icon path={mdiUnfoldMoreHorizontal} size={0.6} className="sort-icon inactive" />;
     }
     return sortOrder === 'ASC' ? (
-      <FaSortUp className="sort-icon active" />
+      <Icon path={mdiChevronUp} size={0.6} className="sort-icon active" />
     ) : (
-      <FaSortDown className="sort-icon active" />
+      <Icon path={mdiChevronDown} size={0.6} className="sort-icon active" />
     );
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
-      // Parse YYYY-MM-DD string directly without Date object
       const [year, month, day] = dateString.split('T')[0].split('-');
       return `${month}/${day}/${year}`;
     } catch {
@@ -38,20 +44,17 @@ const ProjectsTable = ({
     }
 
     const hasPhone = modes.includes(1) || modes.includes(2);
-    const hasWeb = modes.includes(3) || modes.includes(4) || 
+    const hasWeb = modes.includes(3) || modes.includes(4) ||
                    modes.includes(5) || modes.includes(6);
 
-    // If has both phone and web modes, it's mixed
     if (hasPhone && hasWeb) {
       return 'Mix';
     }
 
-    // If only phone modes (1 or 2)
     if (hasPhone && !hasWeb) {
       return 'Phone';
     }
 
-    // If only web modes (3, 4, 5, or 6)
     if (hasWeb && !hasPhone) {
       return 'Web';
     }
@@ -61,13 +64,13 @@ const ProjectsTable = ({
 
   const getRowClass = (startDate) => {
     if (!startDate) return '';
-    
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const projectDate = new Date(startDate);
-    
+
     if (projectDate.toDateString() === today.toDateString()) {
       return 'row-today';
     } else if (projectDate.toDateString() === yesterday.toDateString()) {
@@ -94,8 +97,7 @@ const ProjectsTable = ({
   }
 
   return (
-    <div className="table-container">
-      <table className="projects-table">
+    <table className="projects-table">
         <thead>
           <tr>
             <th className="col-actions">Actions</th>
@@ -111,12 +113,6 @@ const ProjectsTable = ({
             <th className="col-sortable" onClick={() => onSort('NSize')}>
               N= {getSortIcon('NSize')}
             </th>
-            {/* <th className="col-sortable" onClick={() => onSort('clientTime')}>
-              Client Time {getSortIcon('clientTime')}
-            </th>
-            <th className="col-sortable" onClick={() => onSort('promarkTime')}>
-              Promark Time {getSortIcon('promarkTime')}
-            </th> */}
             <th>Mode</th>
             <th className="col-sortable" onClick={() => onSort('dataProcessing')}>
               DP {getSortIcon('dataProcessing')}
@@ -149,14 +145,14 @@ const ProjectsTable = ({
                     onClick={() => onEdit(project)}
                     title="Edit Project"
                   >
-                    <FaEdit />
+                    <Icon path={mdiPencilOutline} size={0.75} />
                   </button>
                   <button
                     className="btn-icon btn-delete"
                     onClick={() => onDelete(project)}
                     title="Delete Project"
                   >
-                    <FaTrash />
+                    <Icon path={mdiTrashCanOutline} size={0.75} />
                   </button>
                 </div>
               </td>
@@ -164,8 +160,6 @@ const ProjectsTable = ({
               <td>{project.clientProjectID || '-'}</td>
               <td className="col-name">{project.projectName}</td>
               <td>{project.NSize || '-'}</td>
-              {/* <td>{project.clientTime || '-'}</td> */}
-              {/* <td>{project.promarkTime || '-'}</td> */}
               <td>{getModeDisplay(project.modes)}</td>
               <td>
                 <span className={`badge ${project.dataProcessing ? 'badge-yes' : 'badge-no'}`}>
@@ -186,7 +180,6 @@ const ProjectsTable = ({
           ))}
         </tbody>
       </table>
-    </div>
   );
 };
 

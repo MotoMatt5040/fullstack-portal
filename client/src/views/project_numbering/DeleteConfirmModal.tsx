@@ -1,5 +1,6 @@
 import React from 'react';
-import { FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import Icon from '@mdi/react';
+import { mdiClose, mdiAlertOutline } from '@mdi/js';
 
 const DeleteConfirmModal = ({
   isOpen,
@@ -16,10 +17,11 @@ const DeleteConfirmModal = ({
       <div className="modal-content modal-small" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header modal-header-danger">
           <h2>
-            <FaExclamationTriangle /> Confirm Delete
+            <Icon path={mdiAlertOutline} size={0.9} />
+            Confirm Delete
           </h2>
           <button className="modal-close" onClick={onClose}>
-            <FaTimes />
+            <Icon path={mdiClose} size={0.9} />
           </button>
         </div>
 
