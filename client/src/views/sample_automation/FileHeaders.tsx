@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import Icon from '@mdi/react';
+import { mdiChevronDown, mdiPencil, mdiContentSave, mdiClose, mdiLock, mdiLockOpen } from '@mdi/js';
 
 interface FileWrapper {
   file: File;
@@ -34,7 +36,7 @@ interface FileHeadersProps {
   fileHeaders: Record<string, FileHeaderData>;
   checkedFiles: Set<string>;
   isProcessing: boolean;
-  onSaveHeaders: (
+  onSaveHeaders?: (
     fileId: string,
     originalHeaders: string[],
     editedMappedHeaders?: string[]
@@ -61,7 +63,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   fileHeaders,
   checkedFiles,
   isProcessing,
-  onSaveHeaders,
   onUpdateLocalMapping,
   onSaveMappingToDB,
   validationSummary,
@@ -78,7 +79,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     Record<string, Set<number>>
   >({});
 
-  // Calculate progress
+  // Calculate progress stats
   const progressStats = useMemo(() => {
     let totalHeaders = 0;
     let mappedHeaders = 0;
@@ -151,13 +152,11 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
 
   const handleSaveLocal = useCallback(
     (fileId: string, index: number, newMapped: string) => {
-      // First clear the editing state
       setEditingHeaders((prev) => {
         const newState = { ...prev };
         if (newState[fileId]) {
           const fileEdits = { ...newState[fileId] };
           delete fileEdits[index];
-
           if (Object.keys(fileEdits).length === 0) {
             delete newState[fileId];
           } else {
@@ -167,7 +166,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
         return newState;
       });
 
-      // Mark this header as edited
       setEditedHeaders((prev) => {
         const fileEdited = prev[fileId] || new Set();
         return {
@@ -176,7 +174,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
         };
       });
 
-      // Then update the local mapping
       if (onUpdateLocalMapping) {
         onUpdateLocalMapping(fileId, index, newMapped);
       }
@@ -188,8 +185,6 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     (fileId: string, index: number, original: string, mapped: string) => {
       if (onSaveMappingToDB) {
         onSaveMappingToDB(fileId, original, mapped);
-
-        // Remove from edited headers since it's now in DB
         setEditedHeaders((prev) => {
           const fileEdited = new Set(prev[fileId] || []);
           fileEdited.delete(index);
@@ -228,38 +223,19 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
       const mapping = mappings[upperOriginal];
       const wasEdited = editedHeaders[fileId]?.has(index);
 
-      // If manually edited, always show as custom (yellow)
       if (wasEdited) {
-        return {
-          status: 'custom',
-          color: '#f0ad4e',
-          tooltip: 'Custom mapping (edited by user)',
-        };
+        return { status: 'custom', color: '#f59e0b', tooltip: 'Custom mapping' };
       }
 
       if (!mapping) {
-        return {
-          status: 'no-mapping',
-          color: '#d9534f',
-          tooltip: 'No mapping found in database',
-        };
+        return { status: 'no-mapping', color: '#ef4444', tooltip: 'No mapping found' };
       }
 
       if (mapping.mapped === mapped) {
-        return {
-          status: 'mapped',
-          color: '#5cb85c',
-          tooltip: `Mapped from ${mapping.vendorName || 'All'} → ${
-            mapping.clientName || 'All'
-          }`,
-        };
+        return { status: 'mapped', color: '#10b981', tooltip: 'Database mapped' };
       }
 
-      return {
-        status: 'custom',
-        color: '#f0ad4e',
-        tooltip: 'Custom mapping (edited by user)',
-      };
+      return { status: 'custom', color: '#f59e0b', tooltip: 'Custom mapping' };
     },
     [editedHeaders]
   );
@@ -272,20 +248,15 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }, []);
 
-  const getSupportedFileIcon = useCallback((filename: string): string => {
-    const extension = filename.toLowerCase().split('.').pop();
-    switch (extension) {
-      case 'csv':
-        return '📊';
+  const getFileIcon = useCallback((filename: string): string => {
+    const ext = filename.toLowerCase().split('.').pop();
+    switch (ext) {
+      case 'csv': return '📊';
       case 'xlsx':
-      case 'xls':
-        return '📗';
-      case 'json':
-        return '📄';
-      case 'txt':
-        return '📝';
-      default:
-        return '📄';
+      case 'xls': return '📗';
+      case 'json': return '📄';
+      case 'txt': return '📝';
+      default: return '📄';
     }
   }, []);
 
@@ -294,80 +265,36 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   }
 
   return (
-    <div className='file-headers-container'>
-      {/* Sticky Progress Bar */}
-      <div className='files-summary-sticky'>
-        <div className='progress-section'>
-          <div className='progress-stats'>
-            <span className='stat-item'>
-              <strong>{selectedFiles.length}</strong> files
-            </span>
-            <span className='stat-item success'>
-              <strong>{progressStats.mappedHeaders}</strong> mapped
-            </span>
-            <span className='stat-item warning'>
-              <strong>{progressStats.unmappedHeaders}</strong> unmapped
-            </span>
-            <span className='stat-item custom'>
-              <strong>{progressStats.customHeaders}</strong> custom
-            </span>
-          </div>
-          <div className='progress-bar-container'>
-            <div className='progress-bar'>
-              <div
-                className='progress-fill mapped'
-                style={{
-                  width: `${
-                    (progressStats.mappedHeaders / progressStats.totalHeaders) *
-                    100
-                  }%`,
-                }}
-              />
-              <div
-                className='progress-fill custom'
-                style={{
-                  width: `${
-                    (progressStats.customHeaders / progressStats.totalHeaders) *
-                    100
-                  }%`,
-                }}
-              />
-            </div>
-          </div>
+    <div className='headers-section'>
+      {/* Toolbar */}
+      <div className='headers-toolbar'>
+        <div className='headers-stats'>
+          <span>{selectedFiles.length} files</span>
+          <span className='mapped'>{progressStats.mappedHeaders} mapped</span>
+          <span className='unmapped'>{progressStats.unmappedHeaders} unmapped</span>
+          <span className='custom'>{progressStats.customHeaders} custom</span>
         </div>
-        <div className='global-controls'>
-          <button onClick={expandAll} className='control-btn'>
-            Expand All
-          </button>
-          <button onClick={collapseAll} className='control-btn'>
-            Collapse All
-          </button>
-          <button
-            onClick={() => setIsUnlocked(!isUnlocked)}
-            className={`lock-toggle-btn-compact ${
-              isUnlocked ? 'unlocked' : 'locked'
-            }`}
-            title={isUnlocked ? 'DB saves enabled' : 'DB saves disabled'}
-          >
-            {isUnlocked ? '🔓' : '🔒'}
-          </button>
-        </div>
-      </div>
-
-      <div className='file-headers-header'>
-        <h3>Review File Headers & Mappings</h3>
-        <div className='header-controls'>
+        <div className='headers-controls'>
           <select
             value={filterMode}
             onChange={(e) => setFilterMode(e.target.value as FilterMode)}
-            className='filter-dropdown'
+            className='header-filter'
           >
-            <option value='all'>All Headers</option>
-            <option value='mapped'>Mapped Only</option>
-            <option value='unmapped'>Unmapped Only</option>
-            <option value='custom'>Custom Only</option>
+            <option value='all'>All</option>
+            <option value='mapped'>Mapped</option>
+            <option value='unmapped'>Unmapped</option>
+            <option value='custom'>Custom</option>
           </select>
-          <label className='validation-toggle'>
+          <button onClick={expandAll} className='control-btn-sm'>Expand</button>
+          <button onClick={collapseAll} className='control-btn-sm'>Collapse</button>
+          <button
+            onClick={() => setIsUnlocked(!isUnlocked)}
+            className={`lock-btn ${isUnlocked ? 'unlocked' : 'locked'}`}
+            title={isUnlocked ? 'DB saves enabled' : 'DB saves locked'}
+          >
+            <Icon path={isUnlocked ? mdiLockOpen : mdiLock} size={0.65} />
+          </button>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem' }}>
             <input
               type='checkbox'
               checked={allowExtraHeaders}
@@ -378,28 +305,29 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
         </div>
       </div>
 
-      {validationSummary.nonMatchingHeaders.length > 0 &&
-        !allowExtraHeaders && (
-          <div className='validation-warning'>
-            <h4>⚠️ Header Conflicts Detected</h4>
+      {/* Validation Warning */}
+      {validationSummary.nonMatchingHeaders.length > 0 && !allowExtraHeaders && (
+        <div className='validation-alert'>
+          <div className='validation-alert-content'>
+            <h4>Header Conflicts Detected</h4>
             <p>The following headers are not present in all files:</p>
-            {validationSummary.nonMatchingHeaders.map((conflict, index) => (
-              <div key={index} className='conflict-item'>
-                <strong>"{conflict.header}"</strong>
-                <div className='conflict-details'>
-                  <span className='present-in'>
-                    ✓ Present in: {conflict.presentInFiles.join(', ')}
-                  </span>
-                  <span className='missing-from'>
-                    ✗ Missing from: {conflict.missingFromFiles.join(', ')}
-                  </span>
-                </div>
-              </div>
-            ))}
+            <ul className='conflict-list'>
+              {validationSummary.nonMatchingHeaders.slice(0, 5).map((conflict, idx) => (
+                <li key={idx}>
+                  <strong>{conflict.header}</strong> - missing from{' '}
+                  {conflict.missingFromFiles.join(', ')}
+                </li>
+              ))}
+              {validationSummary.nonMatchingHeaders.length > 5 && (
+                <li>...and {validationSummary.nonMatchingHeaders.length - 5} more</li>
+              )}
+            </ul>
           </div>
-        )}
+        </div>
+      )}
 
-      <div className='files-list'>
+      {/* File List */}
+      <div className='file-list'>
         {selectedFiles.map((fileWrapper) => {
           const { file, id } = fileWrapper;
           const isChecked = checkedFiles.has(id);
@@ -409,230 +337,152 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
 
           return (
             <div key={id} className={`file-item ${isChecked ? 'checked' : ''}`}>
-              <div
-                className='file-summary'
-                onClick={() => toggleFileExpansion(id)}
-              >
-                <div className='file-info'>
-                  <div className='file-name'>
-                    <span className='file-icon'>
-                      {getSupportedFileIcon(file.name)}
-                    </span>
-                    {file.name}
-                  </div>
-                  <div className='file-meta'>
-                    {formatFileSize(file.size)}
-                    {headerData && (
-                      <span className='header-count'>
-                        • {headerData.originalHeaders.length} columns
-                      </span>
-                    )}
+              <div className='file-item-header' onClick={() => toggleFileExpansion(id)}>
+                <div className='file-item-info'>
+                  <span className='file-item-icon'>{getFileIcon(file.name)}</span>
+                  <div className='file-item-details'>
+                    <div className='file-item-name'>{file.name}</div>
+                    <div className='file-item-meta'>
+                      {formatFileSize(file.size)}
+                      {headerData && ` • ${headerData.originalHeaders.length} columns`}
+                    </div>
                   </div>
                 </div>
-
-                <div className='file-actions'>
-                  {isChecked && headerData && (
-                    <div className='checked-indicator-compact'>✓</div>
-                  )}
-
-                  <button
-                    className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
-                  >
-                    {isExpanded ? '▼' : '▶'}
-                  </button>
+                <div className='file-item-actions'>
+                  {isChecked && <span className='check-badge'>✓</span>}
+                  <Icon
+                    path={mdiChevronDown}
+                    size={0.8}
+                    className={`expand-icon ${isExpanded ? 'expanded' : ''}`}
+                  />
                 </div>
               </div>
 
               {isExpanded && headerData && (
-                <div className='headers-detail'>
-                  <div className='headers-mapping-container'>
-                    <div className='mapping-header'>
-                      <div className='original-column'>Original</div>
-                      <div className='arrow-column'>→</div>
-                      <div className='mapped-column'>Mapped</div>
-                      <div className='actions-column'>Actions</div>
-                    </div>
-
-                    <div className='headers-grid'>
-                      {headerData.originalHeaders.map(
-                        (originalHeader, index) => {
-                          const isEditingThisRow =
-                            fileEditingHeaders.hasOwnProperty(index);
-                          const currentMappedValue =
-                            headerData.mappedHeaders[index];
-                          const editingValue = fileEditingHeaders[index];
-                          const displayValue = isEditingThisRow
-                            ? editingValue
-                            : currentMappedValue;
-
-                          const mappingStatus = getMappingStatus(
-                            originalHeader,
-                            currentMappedValue,
-                            headerData.mappings,
-                            id, // ADD THIS
-                            index // ADD THIS
-                          );
-
-                          // Apply filter
-                          if (
-                            filterMode === 'mapped' &&
-                            mappingStatus.status !== 'mapped'
-                          )
-                            return null;
-                          if (
-                            filterMode === 'unmapped' &&
-                            mappingStatus.status !== 'no-mapping'
-                          )
-                            return null;
-                          if (
-                            filterMode === 'custom' &&
-                            mappingStatus.status !== 'custom'
-                          )
-                            return null;
-
-                          return (
-                            <div key={index} className='header-row'>
-                              <div className='original-header'>
-                                <span className='header-text'>
-                                  {originalHeader}
-                                </span>
-                              </div>
-
-                              <div className='arrow'>→</div>
-
-                              <div className='mapped-header'>
-                                {isEditingThisRow ? (
-                                  <input
-                                    type='text'
-                                    value={displayValue}
-                                    onChange={(e) =>
-                                      handleHeaderChange(
-                                        id,
-                                        index,
-                                        e.target.value
-                                      )
-                                    }
-                                    className='header-input-compact'
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        handleSaveLocal(
-                                          id,
-                                          index,
-                                          displayValue
-                                        );
-                                      } else if (e.key === 'Escape') {
-                                        e.preventDefault();
-                                        handleCancelEdit(id, index);
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <div className='header-display'>
-                                    <div
-                                      className={`mapping-indicator ${mappingStatus.status}`}
-                                      style={{
-                                        backgroundColor: mappingStatus.color,
-                                      }}
-                                      title={mappingStatus.tooltip}
-                                    />
-                                    <span
-                                      className='header-text'
-                                      title={mappingStatus.tooltip}
-                                    >
-                                      {displayValue}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className='row-actions'>
-                                {isEditingThisRow ? (
-                                  <>
-                                    <button
-                                      onClick={() =>
-                                        handleSaveLocal(id, index, displayValue)
-                                      }
-                                      className='action-btn confirm'
-                                      title='Save (Enter)'
-                                    >
-                                      ✓
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        handleCancelEdit(id, index)
-                                      }
-                                      className='action-btn cancel'
-                                      title='Cancel (Esc)'
-                                    >
-                                      ✕
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() =>
-                                        handleEditHeader(
-                                          id,
-                                          index,
-                                          currentMappedValue
-                                        )
-                                      }
-                                      className='action-btn edit'
-                                      disabled={isProcessing}
-                                      title='Edit mapping'
-                                    >
-                                      ✏️
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        handleSaveToDB(
-                                          id,
-                                          index,
-                                          originalHeader,
-                                          currentMappedValue
-                                        )
-                                      }
-                                      className='action-btn save-db'
-                                      disabled={isProcessing || !isUnlocked}
-                                      title={
-                                        isUnlocked
-                                          ? 'Save to database'
-                                          : 'Unlock to save'
-                                      }
-                                    >
-                                      💾
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
+                <div className='headers-content'>
+                  <div className='headers-grid-header'>
+                    <span>Original</span>
+                    <span></span>
+                    <span>Mapped</span>
+                    <span>Actions</span>
                   </div>
 
-                  <div className='mapping-legend-compact'>
+                  {headerData.originalHeaders.map((originalHeader, index) => {
+                    const isEditing = fileEditingHeaders.hasOwnProperty(index);
+                    const currentMapped = headerData.mappedHeaders[index];
+                    const editingValue = fileEditingHeaders[index];
+                    const displayValue = isEditing ? editingValue : currentMapped;
+                    const mappingStatus = getMappingStatus(
+                      originalHeader,
+                      currentMapped,
+                      headerData.mappings,
+                      id,
+                      index
+                    );
+
+                    // Apply filter
+                    if (filterMode === 'mapped' && mappingStatus.status !== 'mapped') return null;
+                    if (filterMode === 'unmapped' && mappingStatus.status !== 'no-mapping') return null;
+                    if (filterMode === 'custom' && mappingStatus.status !== 'custom') return null;
+
+                    return (
+                      <div key={index} className='headers-grid-row'>
+                        <span className='header-cell original'>{originalHeader}</span>
+                        <span className='header-arrow'>→</span>
+                        <div className='header-mapped'>
+                          <span
+                            className={`mapping-dot ${mappingStatus.status === 'mapped' ? 'mapped' : mappingStatus.status === 'no-mapping' ? 'unmapped' : 'custom'}`}
+                            title={mappingStatus.tooltip}
+                          />
+                          {isEditing ? (
+                            <input
+                              type='text'
+                              value={displayValue}
+                              onChange={(e) => handleHeaderChange(id, index, e.target.value)}
+                              className='header-input-inline'
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleSaveLocal(id, index, displayValue);
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  handleCancelEdit(id, index);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span className='header-cell' title={mappingStatus.tooltip}>
+                              {displayValue}
+                            </span>
+                          )}
+                        </div>
+                        <div className='header-actions'>
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() => handleSaveLocal(id, index, displayValue)}
+                                className='action-btn-xs save'
+                                title='Save (Enter)'
+                              >
+                                <Icon path={mdiContentSave} size={0.55} />
+                              </button>
+                              <button
+                                onClick={() => handleCancelEdit(id, index)}
+                                className='action-btn-xs cancel'
+                                title='Cancel (Esc)'
+                              >
+                                <Icon path={mdiClose} size={0.55} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEditHeader(id, index, currentMapped)}
+                                className='action-btn-xs edit'
+                                disabled={isProcessing}
+                                title='Edit'
+                              >
+                                <Icon path={mdiPencil} size={0.55} />
+                              </button>
+                              <button
+                                onClick={() => handleSaveToDB(id, index, originalHeader, currentMapped)}
+                                className='action-btn-xs save'
+                                disabled={isProcessing || !isUnlocked}
+                                title={isUnlocked ? 'Save to DB' : 'Unlock to save'}
+                              >
+                                <Icon path={mdiContentSave} size={0.55} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Legend */}
+                  <div className='mapping-legend'>
                     <span className='legend-item'>
-                      <span className='dot mapped'></span>Mapped
+                      <span className='mapping-dot mapped' />
+                      Mapped
                     </span>
                     <span className='legend-item'>
-                      <span className='dot custom'></span>Custom
+                      <span className='mapping-dot custom' />
+                      Custom
                     </span>
                     <span className='legend-item'>
-                      <span className='dot unmapped'></span>Unmapped
+                      <span className='mapping-dot unmapped' />
+                      Unmapped
                     </span>
                   </div>
                 </div>
               )}
 
               {isExpanded && !headerData && (
-                <div className='headers-detail'>
-                  <div className='loading-headers'>
-                    <div className='spinner'></div>
-                    <p>Loading headers...</p>
+                <div className='headers-content'>
+                  <div className='loading-state'>
+                    <div className='spinner' />
+                    <span>Loading headers...</span>
                   </div>
                 </div>
               )}

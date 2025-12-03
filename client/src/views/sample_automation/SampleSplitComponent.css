@@ -1,645 +1,549 @@
-/* SampleSplitComponent.css - Scoped styling for Sample Split Component only */
-
-/* IMPORTANT: All styles are scoped to .sample-split-container to prevent conflicts */
-
 /* ========================================
-   SAMPLE SPLIT CONTAINER
+   SAMPLE SPLIT COMPONENT - MODERN STYLING
 ======================================== */
 
+/* ========================================
+   CONTAINER
+======================================== */
 .sample-split-container {
   background: var(--background-color-elevated);
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
-  margin-bottom: 2rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
   overflow: hidden;
-  transition: all 0.2s ease;
 }
 
 /* ========================================
-   HEADER SECTION
+   HEADER (COLLAPSIBLE)
 ======================================== */
-
-.sample-split-container .sample-split-header {
+.sample-split-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  background: var(--background-color);
-  border-bottom: 1px solid var(--border-color-soft);
+  padding: 0.75rem 1rem;
+  background: var(--background-color-muted);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background 0.15s;
   user-select: none;
 }
 
-.sample-split-container .sample-split-header:hover {
-  background: var(--background-color-elevated);
+.sample-split-header:hover {
+  background: var(--background-color-hover);
 }
 
-.sample-split-container .header-left {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   color: var(--text-color);
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 0.875rem;
 }
 
-.sample-split-container .header-summary {
-  color: var(--label-text-color);
-  font-size: 0.9rem;
+.header-summary {
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 0.75rem;
   font-weight: normal;
 }
 
 /* ========================================
-   CONTENT SECTION
+   CONTENT
 ======================================== */
-
-.sample-split-container .sample-split-content {
-  padding: 1.5rem;
-  background: var(--background-color-elevated);
-}
-
-/* ========================================
-   SECTION LABELS
-======================================== */
-
-.sample-split-container .section-label {
-  display: block;
-  margin-bottom: 0.75rem;
-  color: var(--text-color);
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-/* ========================================
-   SPLIT MODE TOGGLE
-======================================== */
-
-.sample-split-container .split-mode-section {
-  margin-bottom: 2rem;
-}
-
-.sample-split-container .toggle-group {
+.sample-split-content {
+  padding: 1rem;
   display: flex;
-  gap: 0;
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--background-color);
-}
-
-.sample-split-container .toggle-btn {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  background: var(--background-color);
-  color: var(--text-color);
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border-right: 1px solid var(--border-color-soft);
-}
-
-.sample-split-container .toggle-btn:last-child {
-  border-right: none;
-}
-
-.sample-split-container .toggle-btn:hover {
-  background: var(--background-color-elevated);
-}
-
-.sample-split-container .toggle-btn.active {
-  background: var(--accent-color);
-  color: white;
-}
-
-.sample-split-container .toggle-btn.active:hover {
-  background: var(--accent-color-hover, #0056b3);
-}
-
-/* ========================================
-   HEADER SELECTION SECTION
-======================================== */
-
-.sample-split-container .header-selection-section {
-  margin-bottom: 2.5rem;
-}
-
-.sample-split-container .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 1rem;
 }
 
-.sample-split-container .section-label-with-count {
+/* ========================================
+   SECTIONS
+======================================== */
+.split-mode-section,
+.householding-section,
+.header-selection-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ========================================
+   TOGGLE GROUP
+======================================== */
+.toggle-group {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--background-color);
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+}
+
+.toggle-btn {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.sample-split-container .selection-count {
-  background: var(--accent-color);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.sample-split-container .select-all-btn {
-  background: var(--button-background);
-  color: var(--button-text);
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
   border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 4px;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-color);
+  background: transparent;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
+  transition: all 0.15s;
 }
 
-.sample-split-container .select-all-btn:hover {
-  background: var(--button-background-hover);
+.toggle-btn:hover:not(.active) {
+  background: var(--background-color-hover);
 }
 
-.sample-split-container .headers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.75rem;
-  padding: 0;
+.toggle-btn.active {
+  background: var(--background-color-elevated);
+  color: var(--accent-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.sample-split-container .header-checkbox-item {
+/* ========================================
+   HOUSEHOLDING SECTION
+======================================== */
+.householding-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 0.875rem;
-  background: var(--background-color);
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  cursor: pointer;
 }
 
-.sample-split-container .header-checkbox-item:hover {
-  background: var(--background-color-elevated);
-  border-color: var(--accent-color);
-}
-
-.sample-split-container .header-checkbox-item.selected {
-  background: rgba(0, 123, 255, 0.08);
-  border-color: var(--accent-color);
-}
-
-.sample-split-container .header-checkbox {
+.householding-checkbox {
   margin: 0;
   cursor: pointer;
   accent-color: var(--accent-color);
   width: 16px;
   height: 16px;
+}
+
+.householding-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--text-color);
+}
+
+.householding-icon {
+  color: var(--accent-color);
+}
+
+/* ========================================
+   HEADER SELECTION
+======================================== */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.select-all-btn {
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.select-all-btn:hover {
+  background: var(--background-color-hover);
+}
+
+.headers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.375rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.header-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--background-color);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.header-checkbox-item:hover {
+  background: var(--background-color-hover);
+  border-color: var(--accent-color);
+}
+
+.header-checkbox-item.selected {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: var(--accent-color);
+}
+
+.header-checkbox {
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
-.sample-split-container .header-label {
+.header-label {
   cursor: pointer;
   color: var(--text-color);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   flex: 1;
   user-select: none;
-  line-height: 1.4;
-  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ========================================
    SPLIT LOGIC CONFIGURATION
 ======================================== */
-
-.sample-split-container .split-logic-container {
-  margin-bottom: 2rem;
+.split-logic-container {
   background: var(--background-color);
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
-  padding: 1.5rem;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
 }
 
-.sample-split-container .split-logic-header {
+.split-logic-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
   color: var(--text-color);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.75rem;
 }
 
-.sample-split-container .split-icon {
+.split-icon {
   color: var(--accent-color);
 }
 
-.sample-split-container .age-range-selector {
-  margin-bottom: 1.5rem;
+.age-range-selector {
+  margin-bottom: 0.75rem;
 }
 
-.sample-split-container .form-label {
+.form-label {
   display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-color);
+  margin-bottom: 0.25rem;
+  font-size: 0.6875rem;
   font-weight: 500;
-  font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.7;
 }
 
-.sample-split-container .form-select {
+.form-select {
   width: 100%;
-  max-width: 200px;
-  padding: 0.5rem;
+  max-width: 180px;
+  padding: 0.375rem 0.5rem;
   background: var(--background-color-elevated);
   color: var(--text-color);
   border: 1px solid var(--border-color-soft);
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
-.sample-split-container .form-select:focus {
+.form-select:focus {
   outline: none;
   border-color: var(--accent-color);
-  border-width: 2px;
 }
 
-.sample-split-container .form-select:disabled {
-  opacity: 0.6;
+.form-select:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* ========================================
    SPLIT PREVIEW
 ======================================== */
-
-.sample-split-container .split-preview {
+.split-preview {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
-.sample-split-container .split-group {
-  padding: 1rem;
-  border-radius: 4px;
-  border: 2px solid var(--border-color-soft);
-}
-
-.sample-split-container .split-group.landline-group {
+.split-group {
+  padding: 0.625rem;
+  border-radius: 0.25rem;
   background: var(--background-color-elevated);
-  border-color: #28a745;
+  border-left: 3px solid var(--border-color-soft);
 }
 
-.sample-split-container .split-group.cell-group {
-  background: var(--background-color-elevated);
-  border-color: var(--accent-color);
+.split-group.landline-group {
+  border-left-color: #10b981;
 }
 
-.sample-split-container .split-group-header {
+.split-group.cell-group {
+  border-left-color: #3b82f6;
+}
+
+.split-group-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 0.375rem;
+  margin-bottom: 0.5rem;
   color: var(--text-color);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
-.sample-split-container .split-conditions {
+.split-conditions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
-.sample-split-container .condition {
-  padding: 0.5rem;
-  background: var(--background-color-elevated);
-  border: 1px solid var(--border-color-soft);
-  border-radius: 4px;
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.8rem;
+.condition {
+  padding: 0.25rem 0.375rem;
+  background: var(--background-color);
+  border-radius: 0.25rem;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.6875rem;
   color: var(--text-color);
   text-align: center;
 }
 
-.sample-split-container .condition-separator {
+.condition-separator {
   text-align: center;
-  color: var(--label-text-color);
-  font-size: 0.8rem;
+  color: var(--text-color);
+  opacity: 0.5;
+  font-size: 0.625rem;
   font-weight: 600;
-  margin: 0.25rem 0;
 }
 
 /* ========================================
    CONFIGURATION SUMMARY
 ======================================== */
-
-.sample-split-container .configuration-summary {
-  margin-bottom: 2rem;
-  padding: 1rem;
+.configuration-summary {
   background: var(--background-color);
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
 }
 
-.sample-split-container .configuration-summary h4 {
+.configuration-summary h4 {
   color: var(--text-color);
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-.sample-split-container .configuration-summary ul {
+.configuration-summary ul {
   list-style-type: none;
   padding: 0;
   margin: 0;
 }
 
-.sample-split-container .configuration-summary li {
+.configuration-summary li {
   color: var(--text-color);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   padding: 0.25rem 0;
-  border-bottom: 1px solid var(--border-color-soft);
-}
-
-.sample-split-container .configuration-summary li:last-child {
-  border-bottom: none;
+  opacity: 0.8;
 }
 
 /* ========================================
    EXTRACT SECTION
 ======================================== */
-
-.sample-split-container .extract-section {
+.extract-section {
   background: var(--background-color);
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
-  padding: 1.5rem;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
 }
 
-.sample-split-container .extract-header {
-  margin-bottom: 1.5rem;
+.extract-header {
+  margin-bottom: 0.75rem;
 }
 
-.sample-split-container .extract-header h4 {
+.extract-header h4 {
   color: var(--text-color);
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
-.sample-split-container .extract-description {
-  color: var(--label-text-color);
-  font-size: 0.9rem;
+.extract-description {
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 0.75rem;
   margin: 0;
 }
 
 /* ========================================
    FILE PREVIEW
 ======================================== */
-
-.sample-split-container .extract-preview {
-  margin-bottom: 1.5rem;
-}
-
-.sample-split-container .file-preview {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--background-color-elevated);
-  border: 2px solid var(--border-color-soft);
-  border-radius: 4px;
+.extract-preview {
   margin-bottom: 0.75rem;
 }
 
-.sample-split-container .file-preview:last-child {
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  background: var(--background-color-elevated);
+  border-radius: 0.25rem;
+  margin-bottom: 0.375rem;
+  border-left: 3px solid var(--border-color-soft);
+}
+
+.file-preview:last-child {
   margin-bottom: 0;
 }
 
-.sample-split-container .file-preview.landline-file {
-  border-left: 3px solid #28a745;
+.file-preview.landline-file {
+  border-left-color: #10b981;
 }
 
-.sample-split-container .file-preview.cell-file {
-  border-left: 3px solid var(--accent-color);
+.file-preview.cell-file {
+  border-left-color: #3b82f6;
 }
 
-.sample-split-container .file-icon {
-  font-size: 1.5rem;
+.file-icon {
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
-.sample-split-container .file-info {
+.file-info {
   flex: 1;
+  min-width: 0;
 }
 
-.sample-split-container .file-name {
+.file-name {
   color: var(--text-color);
   font-weight: 600;
-  font-size: 0.95rem;
-  margin-bottom: 0.25rem;
-  font-family: 'Nunito', sans-serif;
+  font-size: 0.8125rem;
+  font-family: 'SF Mono', 'Consolas', monospace;
 }
 
-.sample-split-container .file-description {
-  color: var(--label-text-color);
-  font-size: 0.8rem;
+.file-description {
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 0.6875rem;
   line-height: 1.4;
 }
 
-.sample-split-container .split-files-preview {
-  display: grid;
-  gap: 0.75rem;
+.split-files-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
 }
 
 /* ========================================
    EXTRACT ACTIONS
 ======================================== */
-
-.sample-split-container .extract-actions {
+.extract-actions {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
 }
 
-.sample-split-container .extract-btn {
+.extract-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1.25rem;
   background: var(--accent-color);
-  color: white;
   border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  align-self: flex-start;
+  transition: all 0.15s;
 }
 
-.sample-split-container .extract-btn:hover:not(:disabled) {
-  background: var(--accent-color-hover, #0056b3);
+.extract-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
 }
 
-.sample-split-container .extract-btn:disabled {
+.extract-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.sample-split-container .extract-validation {
+.extract-validation {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
-.sample-split-container .validation-error {
-  color: #dc3545;
-  font-size: 0.85rem;
+.validation-error {
+  color: #ef4444;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
 /* ========================================
-   SCROLLBAR STYLING
+   SCROLLBAR
 ======================================== */
-
-.sample-split-container .headers-grid::-webkit-scrollbar {
-  width: 8px;
+.headers-grid::-webkit-scrollbar {
+  width: 6px;
 }
 
-.sample-split-container .headers-grid::-webkit-scrollbar-track {
+.headers-grid::-webkit-scrollbar-track {
   background: var(--background-color);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
-.sample-split-container .headers-grid::-webkit-scrollbar-thumb {
+.headers-grid::-webkit-scrollbar-thumb {
   background: var(--border-color-soft);
-  border-radius: 4px;
-}
-
-.sample-split-container .headers-grid::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-color);
+  border-radius: 3px;
 }
 
 /* ========================================
-   FOCUS STATES (ACCESSIBILITY)
+   RESPONSIVE
 ======================================== */
-
-.sample-split-container .toggle-btn:focus,
-.sample-split-container .select-all-btn:focus,
-.sample-split-container .header-checkbox:focus,
-.sample-split-container .form-select:focus,
-.sample-split-container .extract-btn:focus {
-  outline: 2px solid var(--focus-ring-color, var(--accent-color));
-  outline-offset: 0;
-}
-
-.sample-split-container .sample-split-header:focus {
-  outline: 2px solid var(--focus-ring-color, var(--accent-color));
-  outline-offset: 0;
-}
-
-/* ========================================
-   THEME TRANSITIONS
-======================================== */
-
-.sample-split-container,
-.sample-split-container .sample-split-header,
-.sample-split-container .sample-split-content,
-.sample-split-container .toggle-btn,
-.sample-split-container .header-checkbox-item,
-.sample-split-container .split-logic-container,
-.sample-split-container .configuration-summary,
-.sample-split-container .extract-section,
-.sample-split-container .file-preview {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-/* ========================================
-   RESPONSIVE DESIGN
-======================================== */
-
 @media (max-width: 768px) {
-  .sample-split-container .sample-split-header {
+  .sample-split-header {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.375rem;
     text-align: center;
   }
 
-  .sample-split-container .sample-split-content {
-    padding: 1rem;
-  }
-
-  .sample-split-container .toggle-group {
+  .toggle-group {
     flex-direction: column;
   }
 
-  .sample-split-container .toggle-btn {
-    border-right: none;
-    border-bottom: 1px solid var(--border-color-soft);
-  }
-
-  .sample-split-container .toggle-btn:last-child {
-    border-bottom: none;
-  }
-
-  .sample-split-container .section-header {
+  .section-header {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
     align-items: stretch;
   }
 
-  .sample-split-container .headers-grid {
+  .headers-grid {
     grid-template-columns: 1fr;
   }
 
-  .sample-split-container .split-preview {
+  .split-preview {
     grid-template-columns: 1fr;
   }
 
-  .sample-split-container .file-preview {
-    flex-direction: column;
-    gap: 0.75rem;
-    text-align: center;
-  }
-
-  .sample-split-container .extract-btn {
-    align-self: stretch;
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .sample-split-container .sample-split-header {
-    padding: 0.75rem 1rem;
-  }
-
-  .sample-split-container .sample-split-content {
-    padding: 0.75rem;
-  }
-
-  .sample-split-container .header-left {
-    font-size: 1rem;
-  }
-
-  .sample-split-container .header-summary {
-    font-size: 0.8rem;
-  }
-
-  .sample-split-container .headers-grid {
-    padding: 0.75rem;
-  }
-
-  .sample-split-container .split-logic-container,
-  .sample-split-container .configuration-summary,
-  .sample-split-container .extract-section {
-    padding: 1rem;
-  }
-
-  .sample-split-container .condition {
-    font-size: 0.75rem;
-    padding: 0.4rem;
+  .extract-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
