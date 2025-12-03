@@ -343,7 +343,7 @@ const getAllCallIDs = async (filters = {}) => {
  */
 const getCallIDById = async (phoneNumberId) => {
   const query = `
-    SELECT 
+    SELECT
       c.PhoneNumberID,
       c.PhoneNumber,
       c.Status,
@@ -357,7 +357,8 @@ const getCallIDById = async (phoneNumberId) => {
       CASE
         WHEN EXISTS (
           SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-          WHERE u.PhoneNumberID = c.PhoneNumberID
+          WHERE (u.CallIDL1 = c.PhoneNumberID OR u.CallIDL2 = c.PhoneNumberID
+                 OR u.CallIDC1 = c.PhoneNumberID OR u.CallIDC2 = c.PhoneNumberID)
             AND CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
         ) THEN 1
         ELSE 0
@@ -468,20 +469,27 @@ const deleteCallID = async (phoneNumberId) => {
     -- Check if call ID is currently in use
     IF EXISTS (
       SELECT 1 FROM FAJITA.dbo.CallIDUsage
-      WHERE PhoneNumberID = @phoneNumberId
+      WHERE (CallIDL1 = @phoneNumberId OR CallIDL2 = @phoneNumberId
+             OR CallIDC1 = @phoneNumberId OR CallIDC2 = @phoneNumberId)
         AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
     )
     BEGIN
       SELECT 0 as Success, 'Cannot delete call ID that is currently in use' as Message
       RETURN
     END
-    
-    -- Delete usage history first
-    DELETE FROM FAJITA.dbo.CallIDUsage WHERE PhoneNumberID = @phoneNumberId
-    
+
+    -- Clear this phone number from any usage slots
+    UPDATE FAJITA.dbo.CallIDUsage
+    SET CallIDL1 = CASE WHEN CallIDL1 = @phoneNumberId THEN NULL ELSE CallIDL1 END,
+        CallIDL2 = CASE WHEN CallIDL2 = @phoneNumberId THEN NULL ELSE CallIDL2 END,
+        CallIDC1 = CASE WHEN CallIDC1 = @phoneNumberId THEN NULL ELSE CallIDC1 END,
+        CallIDC2 = CASE WHEN CallIDC2 = @phoneNumberId THEN NULL ELSE CallIDC2 END
+    WHERE CallIDL1 = @phoneNumberId OR CallIDL2 = @phoneNumberId
+       OR CallIDC1 = @phoneNumberId OR CallIDC2 = @phoneNumberId
+
     -- Delete the call ID
     DELETE FROM FAJITA.dbo.CallIDs WHERE PhoneNumberID = @phoneNumberId
-    
+
     SELECT 1 as Success, 'Call ID deleted successfully' as Message
   `;
 
@@ -507,20 +515,27 @@ const deleteCallID = async (phoneNumberId) => {
  */
 const getCallIDUsageHistory = async (phoneNumberId) => {
   const query = `
-    SELECT 
+    SELECT
       u.ProjectID,
-      u.PhoneNumberID,
+      @phoneNumberId as PhoneNumberID,
       c.PhoneNumber,
       u.StartDate,
       u.EndDate,
+      CASE
+        WHEN u.CallIDL1 = @phoneNumberId THEN 'CallIDL1'
+        WHEN u.CallIDL2 = @phoneNumberId THEN 'CallIDL2'
+        WHEN u.CallIDC1 = @phoneNumberId THEN 'CallIDC1'
+        WHEN u.CallIDC2 = @phoneNumberId THEN 'CallIDC2'
+      END as SlotName,
       DATEDIFF(day, u.StartDate, u.EndDate) as DurationDays,
       CASE
         WHEN u.EndDate >= CAST(GETDATE() AS DATE) THEN 'Active'
         ELSE 'Ended'
       END as Status
     FROM FAJITA.dbo.CallIDUsage u
-    INNER JOIN FAJITA.dbo.CallIDs c ON u.PhoneNumberID = c.PhoneNumberID
-    WHERE u.PhoneNumberID = @phoneNumberId
+    INNER JOIN FAJITA.dbo.CallIDs c ON c.PhoneNumberID = @phoneNumberId
+    WHERE u.CallIDL1 = @phoneNumberId OR u.CallIDL2 = @phoneNumberId
+       OR u.CallIDC1 = @phoneNumberId OR u.CallIDC2 = @phoneNumberId
     ORDER BY u.StartDate DESC
   `;
 
@@ -790,10 +805,17 @@ const getUtilizationMetrics = async () => {
     -- Total numbers
     SELECT COUNT(*) as TotalNumbers FROM FAJITA.dbo.CallIDs
 
-    -- Currently in use
-    SELECT COUNT(DISTINCT u.PhoneNumberID) as InUseNumbers
-    FROM FAJITA.dbo.CallIDUsage u
-    WHERE CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
+    -- Currently in use (count distinct phone numbers across all slots)
+    SELECT COUNT(DISTINCT PhoneNumberID) as InUseNumbers
+    FROM (
+      SELECT CallIDL1 as PhoneNumberID FROM FAJITA.dbo.CallIDUsage WHERE CallIDL1 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      UNION
+      SELECT CallIDL2 FROM FAJITA.dbo.CallIDUsage WHERE CallIDL2 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      UNION
+      SELECT CallIDC1 FROM FAJITA.dbo.CallIDUsage WHERE CallIDC1 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      UNION
+      SELECT CallIDC2 FROM FAJITA.dbo.CallIDUsage WHERE CallIDC2 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+    ) AllInUse
 
     -- Average usage duration (in days)
     SELECT AVG(DATEDIFF(day, StartDate, EndDate)) as AvgDurationDays
