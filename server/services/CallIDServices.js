@@ -855,6 +855,15 @@ const getUtilizationMetrics = async () => {
  */
 const getMostUsedCallIDs = async (limit = 10) => {
   const query = `
+    WITH UsageUnpivoted AS (
+      SELECT ProjectID, CallIDL1 as PhoneNumberID, StartDate, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDL1 IS NOT NULL
+      UNION ALL
+      SELECT ProjectID, CallIDL2, StartDate, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDL2 IS NOT NULL
+      UNION ALL
+      SELECT ProjectID, CallIDC1, StartDate, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDC1 IS NOT NULL
+      UNION ALL
+      SELECT ProjectID, CallIDC2, StartDate, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDC2 IS NOT NULL
+    )
     SELECT TOP (@limit)
       c.PhoneNumber,
       c.CallerName,
@@ -862,7 +871,7 @@ const getMostUsedCallIDs = async (limit = 10) => {
       COUNT(u.ProjectID) as UsageCount,
       MAX(u.EndDate) as LastUsed
     FROM FAJITA.dbo.CallIDs c
-    INNER JOIN FAJITA.dbo.CallIDUsage u ON c.PhoneNumberID = u.PhoneNumberID
+    INNER JOIN UsageUnpivoted u ON c.PhoneNumberID = u.PhoneNumberID
     INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
     GROUP BY c.PhoneNumber, c.CallerName, s.StateAbbr
     ORDER BY LastUsed DESC, UsageCount DESC
@@ -888,7 +897,16 @@ const getMostUsedCallIDs = async (limit = 10) => {
  */
 const getIdleCallIDs = async (days = 30) => {
   const query = `
-    SELECT 
+    WITH UsageUnpivoted AS (
+      SELECT CallIDL1 as PhoneNumberID, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDL1 IS NOT NULL
+      UNION ALL
+      SELECT CallIDL2, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDL2 IS NOT NULL
+      UNION ALL
+      SELECT CallIDC1, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDC1 IS NOT NULL
+      UNION ALL
+      SELECT CallIDC2, EndDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDC2 IS NOT NULL
+    )
+    SELECT
       c.PhoneNumber,
       c.CallerName,
       s.StateAbbr,
@@ -898,10 +916,10 @@ const getIdleCallIDs = async (days = 30) => {
     FROM FAJITA.dbo.CallIDs c
     INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
     LEFT JOIN FAJITA.dbo.CallIDStatus cs ON c.Status = cs.StatusCode
-    LEFT JOIN FAJITA.dbo.CallIDUsage u ON c.PhoneNumberID = u.PhoneNumberID
+    LEFT JOIN UsageUnpivoted u ON c.PhoneNumberID = u.PhoneNumberID
     GROUP BY c.PhoneNumber, c.CallerName, s.StateAbbr, cs.StatusDescription
-    HAVING 
-      MAX(u.EndDate) IS NULL 
+    HAVING
+      MAX(u.EndDate) IS NULL
       OR DATEDIFF(day, MAX(u.EndDate), GETDATE()) >= @days
     ORDER BY DaysSinceLastUse DESC
   `;
@@ -925,25 +943,30 @@ const getIdleCallIDs = async (days = 30) => {
  */
 const getStateCoverage = async () => {
   const query = `
-    SELECT 
+    WITH CurrentUsage AS (
+      SELECT CallIDL1 as PhoneNumberID FROM FAJITA.dbo.CallIDUsage WHERE CallIDL1 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      UNION
+      SELECT CallIDL2 FROM FAJITA.dbo.CallIDUsage WHERE CallIDL2 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      UNION
+      SELECT CallIDC1 FROM FAJITA.dbo.CallIDUsage WHERE CallIDC1 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      UNION
+      SELECT CallIDC2 FROM FAJITA.dbo.CallIDUsage WHERE CallIDC2 IS NOT NULL AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+    )
+    SELECT
       s.StateAbbr,
       s.StateName,
       COUNT(c.PhoneNumberID) as TotalNumbers,
-      COUNT(CASE 
-        WHEN u.PhoneNumberID IS NOT NULL 
-        THEN 1 
+      COUNT(CASE
+        WHEN u.PhoneNumberID IS NOT NULL
+        THEN 1
       END) as InUseNumbers,
-      COUNT(CASE 
-        WHEN u.PhoneNumberID IS NULL 
-        THEN 1 
+      COUNT(CASE
+        WHEN u.PhoneNumberID IS NULL
+        THEN 1
       END) as AvailableNumbers
     FROM FAJITA.dbo.States s
     INNER JOIN FAJITA.dbo.CallIDs c ON s.StateFIPS = c.StateFIPS
-    LEFT JOIN (
-      SELECT DISTINCT PhoneNumberID
-      FROM FAJITA.dbo.CallIDUsage
-      WHERE CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
-    ) u ON c.PhoneNumberID = u.PhoneNumberID
+    LEFT JOIN CurrentUsage u ON c.PhoneNumberID = u.PhoneNumberID
     GROUP BY s.StateAbbr, s.StateName
     HAVING COUNT(c.PhoneNumberID) > 0
     ORDER BY TotalNumbers DESC
@@ -969,17 +992,26 @@ const getUsageTimeline = async (months = 6) => {
   const query = `
     WITH DateRange AS (
       SELECT DATEADD(month, -@months, GETDATE()) as StartRange
+    ),
+    UsageUnpivoted AS (
+      SELECT ProjectID, CallIDL1 as PhoneNumberID, StartDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDL1 IS NOT NULL
+      UNION ALL
+      SELECT ProjectID, CallIDL2, StartDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDL2 IS NOT NULL
+      UNION ALL
+      SELECT ProjectID, CallIDC1, StartDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDC1 IS NOT NULL
+      UNION ALL
+      SELECT ProjectID, CallIDC2, StartDate FROM FAJITA.dbo.CallIDUsage WHERE CallIDC2 IS NOT NULL
     )
-    SELECT 
+    SELECT
       DATEPART(year, u.StartDate) as Year,
       DATEPART(month, u.StartDate) as Month,
       DATENAME(month, u.StartDate) as MonthName,
       COUNT(DISTINCT u.PhoneNumberID) as UniqueNumbersUsed,
-      COUNT(u.ProjectID) as TotalAssignments
-    FROM FAJITA.dbo.CallIDUsage u
+      COUNT(DISTINCT u.ProjectID) as TotalAssignments
+    FROM UsageUnpivoted u
     CROSS JOIN DateRange dr
     WHERE u.StartDate >= dr.StartRange
-    GROUP BY 
+    GROUP BY
       DATEPART(year, u.StartDate),
       DATEPART(month, u.StartDate),
       DATENAME(month, u.StartDate)

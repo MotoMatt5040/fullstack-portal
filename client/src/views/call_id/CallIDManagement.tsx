@@ -297,48 +297,46 @@ const CallIDManagement: React.FC = () => {
         <h3 className='section-title'>
           Currently Active Assignments ({activeAssignments.length})
         </h3>
-        <div className='table-container'>
-          <table className='data-table'>
-            <thead>
-              <tr>
-                <th>Project ID</th>
-                <th>Phone Number</th>
-                <th>Caller Name</th>
-                <th>State</th>
-                <th>Start Date</th>
-                <th>Days Active</th>
-                <th>Status</th>
+        <table className='data-table'>
+          <thead>
+            <tr>
+              <th>Project ID</th>
+              <th>Phone Number</th>
+              <th>Caller Name</th>
+              <th>State</th>
+              <th>Start Date</th>
+              <th>Days Active</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeAssignments.map((assignment: any, index: number) => (
+              <tr key={index}>
+                <td className='project-id'>{assignment.ProjectID}</td>
+                <td className='phone-number'>
+                  {formatPhoneNumber(assignment.PhoneNumber)}
+                </td>
+                <td>{assignment.CallerName}</td>
+                <td>{assignment.StateAbbr}</td>
+                <td>{formatDate(assignment.StartDate)}</td>
+                <td className='days-active'>
+                  <span
+                    className={`days-badge ${getDaysBadgeClass(
+                      assignment.DaysActive
+                    )}`}
+                  >
+                    {assignment.DaysActive} days
+                  </span>
+                </td>
+                <td>
+                  <span className='status-badge active'>
+                    {assignment.Status}
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {activeAssignments.map((assignment: any, index: number) => (
-                <tr key={index}>
-                  <td className='project-id'>{assignment.ProjectID}</td>
-                  <td className='phone-number'>
-                    {formatPhoneNumber(assignment.PhoneNumber)}
-                  </td>
-                  <td>{assignment.CallerName}</td>
-                  <td>{assignment.StateAbbr}</td>
-                  <td>{formatDate(assignment.StartDate)}</td>
-                  <td className='days-active'>
-                    <span
-                      className={`days-badge ${getDaysBadgeClass(
-                        assignment.DaysActive
-                      )}`}
-                    >
-                      {assignment.DaysActive} days
-                    </span>
-                  </td>
-                  <td>
-                    <span className='status-badge active'>
-                      {assignment.Status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -536,83 +534,81 @@ const CallIDManagement: React.FC = () => {
           <small>Try adjusting your filters or add a new call ID</small>
         </div>
       ) : (
-        <div className='table-container'>
-          <table className='data-table'>
-            <thead>
-              <tr>
-                <th>Phone Number</th>
-                <th>Status</th>
-                <th>Caller Name</th>
-                <th>State</th>
-                <th>In Use</th>
-                <th>Active Project</th>
-                <th>Date Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {callIDInventory.map((callID: any) => (
-                <tr key={callID.PhoneNumberID}>
-                  <td className='phone-number'>
-                    {formatPhoneNumber(callID.PhoneNumber)}
-                  </td>
-                  <td>
-                    <span
-                      className={`status-badge ${getStatusClass(
-                        callID.StatusDescription || 'Unknown'
-                      )}`}
+        <table className='data-table'>
+          <thead>
+            <tr>
+              <th>Phone Number</th>
+              <th>Status</th>
+              <th>Caller Name</th>
+              <th>State</th>
+              <th>In Use</th>
+              <th>Active Project</th>
+              <th>Date Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {callIDInventory.map((callID: any) => (
+              <tr key={callID.PhoneNumberID}>
+                <td className='phone-number'>
+                  {formatPhoneNumber(callID.PhoneNumber)}
+                </td>
+                <td>
+                  <span
+                    className={`status-badge ${getStatusClass(
+                      callID.StatusDescription || 'Unknown'
+                    )}`}
+                  >
+                    {callID.StatusDescription || 'Unknown'}
+                  </span>
+                </td>
+                <td>{callID.CallerName}</td>
+                <td>
+                  <span className='state-badge'>{callID.StateAbbr}</span>
+                </td>
+                <td>
+                  {callID.CurrentlyInUse ? (
+                    <span className='badge-in-use'>In Use</span>
+                  ) : (
+                    <span className='badge-available'>Available</span>
+                  )}
+                </td>
+                <td className='project-id'>
+                  {callID.ActiveProjectID || '-'}
+                </td>
+                <td>{formatDate(callID.DateCreated)}</td>
+                <td className='actions-cell'>
+                  <div className='action-buttons'>
+                    <button
+                      onClick={() => openEditModal(callID)}
+                      className='btn-action btn-edit'
+                      title='Edit'
                     >
-                      {callID.StatusDescription || 'Unknown'}
-                    </span>
-                  </td>
-                  <td>{callID.CallerName}</td>
-                  <td>
-                    <span className='state-badge'>{callID.StateAbbr}</span>
-                  </td>
-                  <td>
-                    {callID.CurrentlyInUse ? (
-                      <span className='badge-in-use'>In Use</span>
-                    ) : (
-                      <span className='badge-available'>Available</span>
+                      <Icon path={mdiPencil} size={0.7} />
+                    </button>
+                    {!callID.CurrentlyInUse && (
+                      <button
+                        onClick={() => openAssignModal(callID)}
+                        className='btn-action btn-assign'
+                        title='Assign to Project'
+                      >
+                        <Icon path={mdiSwapHorizontal} size={0.7} />
+                      </button>
                     )}
-                  </td>
-                  <td className='project-id'>
-                    {callID.ActiveProjectID || '-'}
-                  </td>
-                  <td>{formatDate(callID.DateCreated)}</td>
-                  <td className='actions-cell'>
-                    <div className='action-buttons'>
-                      <button
-                        onClick={() => openEditModal(callID)}
-                        className='btn-action btn-edit'
-                        title='Edit'
-                      >
-                        <Icon path={mdiPencil} size={0.7} />
-                      </button>
-                      {!callID.CurrentlyInUse && (
-                        <button
-                          onClick={() => openAssignModal(callID)}
-                          className='btn-action btn-assign'
-                          title='Assign to Project'
-                        >
-                          <Icon path={mdiSwapHorizontal} size={0.7} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => openDeleteModal(callID)}
-                        className='btn-action btn-delete'
-                        title='Delete'
-                        disabled={callID.CurrentlyInUse}
-                      >
-                        <Icon path={mdiDelete} size={0.7} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <button
+                      onClick={() => openDeleteModal(callID)}
+                      className='btn-action btn-delete'
+                      title='Delete'
+                      disabled={callID.CurrentlyInUse}
+                    >
+                      <Icon path={mdiDelete} size={0.7} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
@@ -674,135 +670,133 @@ const CallIDManagement: React.FC = () => {
               <p>No active projects</p>
             </div>
           ) : (
-            <div className='table-container'>
-              <table className='data-table projects-table'>
-                <thead>
-                  <tr>
-                    <th>Project ID</th>
-                    <th>CALLIDL1</th>
-                    <th>CALLIDL2</th>
-                    <th>CALLIDC1</th>
-                    <th>CALLIDC2</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Days Active</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.map((project: any) => {
-                    const l1 = project.slots['CallIDL1'];
-                    const l2 = project.slots['CallIDL2'];
-                    const c1 = project.slots['CallIDC1'];
-                    const c2 = project.slots['CallIDC2'];
+            <table className='data-table projects-table'>
+              <thead>
+                <tr>
+                  <th>Project ID</th>
+                  <th>CALLIDL1</th>
+                  <th>CALLIDL2</th>
+                  <th>CALLIDC1</th>
+                  <th>CALLIDC2</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Days Active</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((project: any) => {
+                  const l1 = project.slots['CallIDL1'];
+                  const l2 = project.slots['CallIDL2'];
+                  const c1 = project.slots['CallIDC1'];
+                  const c2 = project.slots['CallIDC2'];
 
-                    return (
-                      <tr key={project.ProjectID}>
-                        <td
-                          className='project-id clickable'
-                          onClick={() => handleViewHistory(project.ProjectID)}
-                          style={{ cursor: 'pointer' }}
+                  return (
+                    <tr key={project.ProjectID}>
+                      <td
+                        className='project-id clickable'
+                        onClick={() => handleViewHistory(project.ProjectID)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {project.ProjectID}
+                      </td>
+
+                      {/* CALLIDL1 */}
+                      <td className='slot-cell'>
+                        {l1 ? (
+                          <div className='slot-display'>
+                            <div className='slot-phone'>
+                              {formatPhoneNumber(l1.PhoneNumber)}
+                            </div>
+                            <div className='slot-meta'>
+                              {l1.CallerName} • {l1.StateAbbr}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className='slot-empty'>—</span>
+                        )}
+                      </td>
+
+                      {/* CALLIDL2 */}
+                      <td className='slot-cell'>
+                        {l2 ? (
+                          <div className='slot-display'>
+                            <div className='slot-phone'>
+                              {formatPhoneNumber(l2.PhoneNumber)}
+                            </div>
+                            <div className='slot-meta'>
+                              {l2.CallerName} • {l2.StateAbbr}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className='slot-empty'>—</span>
+                        )}
+                      </td>
+
+                      {/* CALLIDC1 */}
+                      <td className='slot-cell'>
+                        {c1 ? (
+                          <div className='slot-display'>
+                            <div className='slot-phone'>
+                              {formatPhoneNumber(c1.PhoneNumber)}
+                            </div>
+                            <div className='slot-meta'>
+                              {c1.CallerName} • {c1.StateAbbr}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className='slot-empty'>—</span>
+                        )}
+                      </td>
+
+                      {/* CALLIDC2 */}
+                      <td className='slot-cell'>
+                        {c2 ? (
+                          <div className='slot-display'>
+                            <div className='slot-phone'>
+                              {formatPhoneNumber(c2.PhoneNumber)}
+                            </div>
+                            <div className='slot-meta'>
+                              {c2.CallerName} • {c2.StateAbbr}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className='slot-empty'>—</span>
+                        )}
+                      </td>
+
+                      <td>{formatDate(project.StartDate)}</td>
+                      <td>{project.EndDate ? formatDate(project.EndDate) : 'No End Date'}</td>
+                      <td>
+                        <span
+                          className={`days-badge ${getDaysBadgeClass(
+                            project.DaysActive
+                          )}`}
                         >
-                          {project.ProjectID}
-                        </td>
-
-                        {/* CALLIDL1 */}
-                        <td className='slot-cell'>
-                          {l1 ? (
-                            <div className='slot-display'>
-                              <div className='slot-phone'>
-                                {formatPhoneNumber(l1.PhoneNumber)}
-                              </div>
-                              <div className='slot-meta'>
-                                {l1.CallerName} • {l1.StateAbbr}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className='slot-empty'>—</span>
-                          )}
-                        </td>
-
-                        {/* CALLIDL2 */}
-                        <td className='slot-cell'>
-                          {l2 ? (
-                            <div className='slot-display'>
-                              <div className='slot-phone'>
-                                {formatPhoneNumber(l2.PhoneNumber)}
-                              </div>
-                              <div className='slot-meta'>
-                                {l2.CallerName} • {l2.StateAbbr}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className='slot-empty'>—</span>
-                          )}
-                        </td>
-
-                        {/* CALLIDC1 */}
-                        <td className='slot-cell'>
-                          {c1 ? (
-                            <div className='slot-display'>
-                              <div className='slot-phone'>
-                                {formatPhoneNumber(c1.PhoneNumber)}
-                              </div>
-                              <div className='slot-meta'>
-                                {c1.CallerName} • {c1.StateAbbr}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className='slot-empty'>—</span>
-                          )}
-                        </td>
-
-                        {/* CALLIDC2 */}
-                        <td className='slot-cell'>
-                          {c2 ? (
-                            <div className='slot-display'>
-                              <div className='slot-phone'>
-                                {formatPhoneNumber(c2.PhoneNumber)}
-                              </div>
-                              <div className='slot-meta'>
-                                {c2.CallerName} • {c2.StateAbbr}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className='slot-empty'>—</span>
-                          )}
-                        </td>
-
-                        <td>{formatDate(project.StartDate)}</td>
-                        <td>{project.EndDate ? formatDate(project.EndDate) : 'No End Date'}</td>
-                        <td>
-                          <span
-                            className={`days-badge ${getDaysBadgeClass(
-                              project.DaysActive
-                            )}`}
-                          >
-                            {project.DaysActive} days
-                          </span>
-                        </td>
-                        <td className='actions-cell'>
-                          <button
-                            onClick={() =>
-                              handleManageProjectSlots(
-                                project.ProjectID,
-                                filteredActiveAssignments.filter(
-                                  (a: any) => a.ProjectID === project.ProjectID
-                                )
+                          {project.DaysActive} days
+                        </span>
+                      </td>
+                      <td className='actions-cell'>
+                        <button
+                          onClick={() =>
+                            handleManageProjectSlots(
+                              project.ProjectID,
+                              filteredActiveAssignments.filter(
+                                (a: any) => a.ProjectID === project.ProjectID
                               )
-                            }
-                            className='btn-action btn-edit'
-                            title='Edit Slots'
-                          >
-                            <Icon path={mdiPencil} size={0.7} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            )
+                          }
+                          className='btn-action btn-edit'
+                          title='Edit Slots'
+                        >
+                          <Icon path={mdiPencil} size={0.7} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
 
