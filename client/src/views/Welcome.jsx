@@ -1,21 +1,21 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../features/auth/authSlice';
 import { jwtDecode } from 'jwt-decode';
 import { Link } from 'react-router-dom';
+import Icon from '@mdi/react';
 import {
-  FaTachometerAlt,
-  FaChartLine,
-  FaUsers,
-  FaCog,
-  FaGithub,
-  FaCodeBranch,
-  FaQuestionCircle,
-  FaInfoCircle,
-} from 'react-icons/fa';
+  mdiChartLine,
+  mdiFileDocumentOutline,
+  mdiAccountGroup,
+  mdiRobot,
+  mdiPhone,
+  mdiNumeric,
+  mdiCog,
+  mdiGithub,
+} from '@mdi/js';
 
 import '../views/Welcome.css';
-import './styles/Select.css'
 
 const EXTERNAL_ROLE_ID = 4;
 
@@ -38,196 +38,98 @@ const Welcome = () => {
     }
   }, [token]);
 
-  const quickActions = (
-    <div className='welcome-quick-actions'>
-      <h2>Quick Actions</h2>
-      <div className='quick-actions-grid'>
-        {userInfo.isInternalUser && (
-          <Link to='/summary-report' className='quick-action-btn'>
-            <div className='quick-action-icon'>
-              <FaChartLine />
-            </div>
-            Summary Report
-          </Link>
-        )}
-        {/* <Link to="/project-report" className="quick-action-btn">
-            <div className="quick-action-icon"><FaChartLine /></div>
-            Project Report
-          </Link> */}
-        {/* <Link to="/production-report" className="quick-action-btn">
-            <div className="quick-action-icon"><FaChartLine /></div>
-            Production Report
-          </Link> */}
+  const firstName = userInfo.username?.split('@')[0]?.split('.')[0] || 'User';
+  const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
-        {userInfo.isInternalUser && (
-          <Link to='/project-numbering' className='quick-action-btn'>
-            <div className='quick-action-icon'>
-              <FaCodeBranch />
-            </div>
-            Project Numbering
-          </Link>
-        )}
+  const navItems = [
+    {
+      to: '/quota-management',
+      icon: mdiChartLine,
+      label: 'Quota Report',
+      color: '#3b82f6',
+      visible: true,
+    },
+    {
+      to: '/summary-report',
+      icon: mdiFileDocumentOutline,
+      label: 'Summary Report',
+      color: '#8b5cf6',
+      visible: userInfo.isInternalUser,
+    },
+    {
+      to: '/disposition-report',
+      icon: mdiFileDocumentOutline,
+      label: 'Disposition Report',
+      color: '#06b6d4',
+      visible: true,
+    },
+    {
+      to: '/sample-automation',
+      icon: mdiCog,
+      label: 'Sample Automation',
+      color: '#f59e0b',
+      visible: userInfo.isInternalUser,
+    },
+    {
+      to: '/call-id',
+      icon: mdiPhone,
+      label: 'Call ID',
+      color: '#10b981',
+      visible: userInfo.isInternalUser,
+    },
+    {
+      to: '/project-numbering',
+      icon: mdiNumeric,
+      label: 'Project Numbering',
+      color: '#ec4899',
+      visible: userInfo.isInternalUser,
+    },
+    {
+      to: '/ai-prompting',
+      icon: mdiRobot,
+      label: 'AI Prompting',
+      color: '#6366f1',
+      visible: userInfo.isInternalUser,
+    },
+    {
+      to: '/user-management',
+      icon: mdiAccountGroup,
+      label: 'User Management',
+      color: '#14b8a6',
+      visible: userInfo.isInternalUser,
+    },
+    {
+      to: '/github',
+      icon: mdiGithub,
+      label: 'Feedback',
+      color: '#64748b',
+      visible: true,
+    },
+  ];
 
-        <Link to='/quota-management' className='quick-action-btn'>
-          <div className='quick-action-icon'>
-            <FaChartLine />
-          </div>
-          Quota Report
-        </Link>
-
-        {userInfo.isInternalUser && (
-          <Link to='/ai-prompting' className='quick-action-btn'>
-            <div className='quick-action-icon'>
-              <FaChartLine />
-            </div>
-            Prompt Engineering
-          </Link>
-        )}
-
-        {userInfo.isInternalUser && (
-          <Link to='/sample-automation' className='quick-action-btn'>
-            <div className='quick-action-icon'>
-              <FaTachometerAlt />
-            </div>
-            Sample Automation
-          </Link>
-        )}
-
-        {userInfo.isInternalUser && (
-          <Link to='/call-id' className='quick-action-btn'>
-            <div className='quick-action-icon'>
-              <FaTachometerAlt />
-            </div>
-            Call ID Management
-          </Link>
-        )}
-
-        <Link to='/topline-report' className='quick-action-btn'>
-          <div className='quick-action-icon'>
-            <FaChartLine />
-          </div>
-          Topline Report (FUTURE)
-        </Link>
-
-        <Link to='/disposition-report' className='quick-action-btn'>
-          <div className='quick-action-icon'>
-            <FaChartLine />
-          </div>
-          Disposition Report (WEB overview now available)
-        </Link>
-
-        <Link to='/settings' className='quick-action-btn'>
-          <div className='quick-action-icon'>
-            <FaCog />
-          </div>
-          Settings (FUTURE)
-        </Link>
-      </div>
-    </div>
-  );
-
-  const featureCards = (
-    <div className='welcome-grid'>
-        <div className='welcome-card'>
-          <div className='welcome-card-icon'>
-            <FaChartLine />
-          </div>
-          <h3>Comprehensive Reporting</h3>
-          <p>
-            Access detailed reports to track
-            progress and analyze performance metrics.
-          </p>
-          <Link to='/reports' className='welcome-card-link'>
-            View Reports <FaChartLine />
-          </Link>
-        </div>
-
-      <div className='welcome-card'>
-        <div className='welcome-card-icon'>
-          <FaGithub />
-        </div>
-        <h3>Portal Feedback</h3>
-        <p>
-          Submit feedback and suggestions to help us improve the portal. Your
-          input is invaluable in shaping the future of this platform.
-        </p>
-        <Link to='/github' className='welcome-card-link'>
-          Submit Feedback <FaGithub />
-        </Link>
-      </div>
-
-      {userInfo.isInternalUser && (
-        <div className='welcome-card'>
-          <div className='welcome-card-icon'>
-            <FaCodeBranch />
-          </div>
-          <h3>Project Publishing</h3>
-          <p>
-            Publish quota reports to individuals by giving them access to view
-            projects.
-          </p>
-          <Link to='/project-publishing' className='welcome-card-link'>
-            Publish Projects <FaCodeBranch />
-          </Link>
-        </div>
-      )}
-
-      {userInfo.isInternalUser && (
-        <div className='welcome-card'>
-          <div className='welcome-card-icon'>
-            <FaUsers />
-          </div>
-          <h3>User Management</h3>
-          <p>
-            Administrators can manage user roles, add new users, and update
-            passwords for secure access control.
-          </p>
-          <Link to='/user-management' className='welcome-card-link'>
-            Manage Users <FaUsers />
-          </Link>
-        </div>
-      )}
-    </div>
-  );
+  const visibleItems = navItems.filter(item => item.visible);
 
   return (
     <section className='welcome-container'>
-      {/* Development Notice */}
-      <div className='development-notice'>
-        <FaInfoCircle /> This portal is currently under active development.
-        Features and design may change.
+      <div className='welcome-greeting'>
+        <span className='greeting-text'>Hello, {capitalizedName}</span>
       </div>
 
-      {/* Quick Actions Section */}
-      {quickActions}
-
-      {/* Hero Section */}
-      {/* <div className="welcome-hero">
-        <h1>Welcome to the Fullstack Portal</h1>
-        <p>
-          Your central hub for managing projects, viewing reports, and accessing
-          essential tools. Streamline your workflow and gain insights into your
-          development and operations.
-        </p>
-        <Link to="/project-report" className="hero-button">
-          Get Started <FaTachometerAlt />
-        </Link>
-      </div> */}
-
-      {/* Feature Cards Section */}
-      {featureCards}
-
-      {/* Footer Section */}
-      <div className='welcome-footer'>
-        <h3>Need Help?</h3>
-        <p>
-          If you encounter any issues or have questions, please reach out to our
-          support team. We're here to help!
-        </p>
-        <Link to='/contact-support' className='support-link'>
-          Contact Support <FaQuestionCircle />
-        </Link>
-      </div>
+      <nav className='welcome-grid'>
+        {visibleItems.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className='welcome-tile'
+            style={{ '--tile-color': item.color }}
+          >
+            <div className='tile-icon'>
+              <Icon path={item.icon} size={1.5} />
+            </div>
+            <span className='tile-label'>{item.label}</span>
+          </Link>
+        ))}
+      </nav>
     </section>
   );
 };

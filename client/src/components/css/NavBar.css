@@ -79,28 +79,33 @@
 .navbar li {
   width: 100%;
   margin: 0;
-  border-bottom: 1px solid var(--border-color-soft);
-}
-
-.navbar li:last-child {
-  border-bottom: none;
 }
 
 .navbar a {
-  display: block;
-  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
   color: var(--text-color);
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   position: relative;
+}
+
+.navbar a svg {
+  opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .navbar a:hover {
   background-color: var(--background-color-hover);
+}
+
+.navbar a:hover svg {
+  opacity: 1;
   color: var(--accent-color);
-  padding-left: 2rem;
 }
 
 .navbar a:active {
@@ -111,7 +116,11 @@
 .navbar a.active {
   background-color: var(--accent-color);
   color: white;
-  font-weight: 600;
+}
+
+.navbar a.active svg {
+  opacity: 1;
+  color: white;
 }
 
 .navbar a.active::before {
@@ -120,15 +129,16 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 3px;
   background-color: white;
 }
 
 /* Settings Section */
-.navbar > div:last-child {
+.navbar > .settings-panel {
   margin-top: auto;
-  padding: 1rem 1.5rem;
-  border-top: 2px solid var(--border-color);
+  padding: 1rem;
+  border-top: 1px solid var(--border-color-soft);
+  background: var(--background-color);
 }
 
 /* Main Content Offset */
@@ -165,7 +175,7 @@ main {
 
 @media (min-width: 769px) {
   .navbar-container {
-    width: 70px;
+    width: 60px;
     height: 100vh;
     flex-direction: column;
     padding: 1rem 0;
@@ -182,10 +192,10 @@ main {
   .navbar {
     position: fixed;
     top: 0;
-    left: 70px;
-    width: 240px;
+    left: 60px;
+    width: 220px;
     height: 100vh;
-    padding: 2rem 0;
+    padding: 1rem 0;
     transform: translateX(-100%);
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
   }
@@ -199,24 +209,19 @@ main {
   }
 
   .navbar a {
-    padding: 1rem 1.5rem;
-    font-size: 0.95rem;
-  }
-
-  .navbar a:hover {
-    padding-left: 2rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
   }
 
   main {
     margin-top: 0;
-    margin-left: 70px;
+    margin-left: 60px;
     transition: margin-left 0.3s ease;
   }
 
-  /* Desktop Overlay */
+  /* Desktop Overlay - hidden on hover nav */
   .navbar-overlay {
-    left: 70px;
-    width: calc(100% - 70px);
+    display: none;
   }
 }
 
@@ -225,6 +230,30 @@ main {
 ======================================== */
 
 @media (min-width: 1280px) {
+  .navbar-container {
+    width: 70px;
+  }
+
+  .navbar {
+    left: 70px;
+    width: 240px;
+  }
+
+  .navbar a {
+    padding: 0.8rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  main {
+    margin-left: 70px;
+  }
+}
+
+/* ========================================
+   EXTRA LARGE SCREENS (1920px+)
+======================================== */
+
+@media (min-width: 1920px) {
   .navbar-container {
     width: 80px;
   }
@@ -235,54 +264,12 @@ main {
   }
 
   .navbar a {
-    padding: 1.1rem 1.75rem;
-    font-size: 1rem;
-  }
-
-  .navbar a:hover {
-    padding-left: 2.25rem;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
   }
 
   main {
     margin-left: 80px;
-  }
-
-  .navbar-overlay {
-    left: 80px;
-    width: calc(100% - 80px);
-  }
-}
-
-/* ========================================
-   EXTRA LARGE SCREENS (1920px+)
-======================================== */
-
-@media (min-width: 1920px) {
-  .navbar-container {
-    width: 90px;
-  }
-
-  .navbar {
-    left: 90px;
-    width: 280px;
-  }
-
-  .navbar a {
-    padding: 1.25rem 2rem;
-    font-size: 1.05rem;
-  }
-
-  .navbar a:hover {
-    padding-left: 2.5rem;
-  }
-
-  main {
-    margin-left: 90px;
-  }
-
-  .navbar-overlay {
-    left: 90px;
-    width: calc(100% - 90px);
   }
 }
 
