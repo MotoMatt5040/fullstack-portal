@@ -885,15 +885,32 @@ const updateSourceColumn = async (tableName) => {
           .input('TableName', sql.NVarChar, tableName)
           .execute('FAJITA.dbo.sp_UpdateSourceColumn');
 
-        const rowsUpdated = result.recordset[0].RowsUpdated;
+        const data = result.recordset[0];
+        const rowsUpdated = data.RowsUpdated;
+        const landlineOnlyCount = data.LandlineOnlyCount || 0;
+        const cellOnlyCount = data.CellOnlyCount || 0;
+        const bothCount = data.BothCount || 0;
+
         console.log(
           `✅ SOURCE column updated for ${rowsUpdated} rows in ${tableName}`
+        );
+        console.log(
+          `   - Landline only (SOURCE=1): ${landlineOnlyCount}`
+        );
+        console.log(
+          `   - Cell only (SOURCE=2): ${cellOnlyCount}`
+        );
+        console.log(
+          `   - Both (SOURCE=3): ${bothCount}`
         );
 
         return {
           success: true,
           rowsUpdated: rowsUpdated,
-          message: `SOURCE column updated in ${tableName}`,
+          landlineOnlyCount: landlineOnlyCount,
+          cellOnlyCount: cellOnlyCount,
+          bothCount: bothCount,
+          message: `SOURCE column updated: ${landlineOnlyCount} landline only, ${cellOnlyCount} cell only, ${bothCount} both`,
         };
       } catch (error) {
         console.error('Error updating SOURCE column:', error);
@@ -2082,7 +2099,8 @@ const applyWDNCScrubbing = async (tableName) => {
         console.log(
           `✅ WDNC scrubbing complete:`,
           `${data.RowsRemoved} records removed,`,
-          `${data.LandlinesCleared} landlines cleared`
+          `${data.LandlinesCleared} landlines cleared,`,
+          `${data.SourceUpdatedToCell || 0} moved to cell`
         );
 
         return {
@@ -2092,7 +2110,8 @@ const applyWDNCScrubbing = async (tableName) => {
           rowsAfter: data.RowsAfter,
           rowsRemoved: data.RowsRemoved,
           landlinesCleared: data.LandlinesCleared,
-          message: `WDNC scrubbing complete: ${data.RowsRemoved} records removed, ${data.LandlinesCleared} landlines cleared`,
+          sourceUpdatedToCell: data.SourceUpdatedToCell || 0,
+          message: `WDNC scrubbing complete: ${data.RowsRemoved} records removed, ${data.LandlinesCleared} landlines cleared, ${data.SourceUpdatedToCell || 0} moved to cell`,
         };
       } catch (error) {
         console.error('Error applying WDNC scrubbing:', error);

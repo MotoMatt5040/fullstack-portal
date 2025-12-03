@@ -385,15 +385,15 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
       console.log(`✅ VFREQ columns: ${vfreqResult.rowsUpdated} rows calculated`);
     }
 
-    // Update SOURCE column
-    console.log('Updating SOURCE column...');
-    await SampleAutomation.updateSourceColumn(tableName);
-    console.log('✅ SOURCE column updated');
+    // Update SOURCE column based on LAND and CELL values
+    console.log('Updating SOURCE column based on LAND/CELL values...');
+    const sourceResult = await SampleAutomation.updateSourceColumn(tableName);
+    console.log(`✅ SOURCE column updated: ${sourceResult.landlineOnlyCount} landline only, ${sourceResult.cellOnlyCount} cell only, ${sourceResult.bothCount} both`);
 
-    // Apply WDNC scrubbing
+    // Apply WDNC scrubbing (also updates SOURCE to 2 when LAND is cleared but CELL exists)
     console.log('Applying WDNC scrubbing...');
     const wdncResult = await SampleAutomation.applyWDNCScrubbing(tableName);
-    console.log(`✅ WDNC scrubbing: ${wdncResult.rowsRemoved} removed, ${wdncResult.landlinesCleared} cleared`);
+    console.log(`✅ WDNC scrubbing: ${wdncResult.rowsRemoved} removed, ${wdncResult.landlinesCleared} cleared, ${wdncResult.sourceUpdatedToCell || 0} moved to cell`);
 
     // Convert AGE to IAGE if AGE column exists
     console.log('Converting AGE to IAGE...');
