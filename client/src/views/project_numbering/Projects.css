@@ -342,20 +342,40 @@
   background: var(--background-color-elevated);
 }
 
-.projects-table tbody tr.row-today {
-  background: rgba(34, 197, 94, 0.06);
+/* Green: Project ends today */
+.projects-table tbody tr.row-ending {
+  background: rgba(34, 197, 94, 0.08);
 }
 
-.projects-table tbody tr.row-today:hover {
-  background: rgba(34, 197, 94, 0.1);
+.projects-table tbody tr.row-ending:hover {
+  background: rgba(34, 197, 94, 0.12);
 }
 
-.projects-table tbody tr.row-yesterday {
+/* Red: Project starts today */
+.projects-table tbody tr.row-starting {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.projects-table tbody tr.row-starting:hover {
+  background: rgba(220, 38, 38, 0.12);
+}
+
+/* Blue: Currently fielding */
+.projects-table tbody tr.row-fielding {
   background: rgba(59, 130, 246, 0.06);
 }
 
-.projects-table tbody tr.row-yesterday:hover {
+.projects-table tbody tr.row-fielding:hover {
   background: rgba(59, 130, 246, 0.1);
+}
+
+/* Yellow: Upcoming */
+.projects-table tbody tr.row-upcoming {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.projects-table tbody tr.row-upcoming:hover {
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .projects-table td {

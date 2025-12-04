@@ -62,20 +62,37 @@ const ProjectsTable = ({
     return '-';
   };
 
-  const getRowClass = (startDate) => {
+  const getRowClass = (startDate, endDate) => {
     if (!startDate) return '';
 
+    // Get today's date as YYYY-MM-DD string (local timezone)
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    const projectDate = new Date(startDate);
+    // Extract just the date portions (handles "2025-12-05T00:00:00" format)
+    const startDateStr = startDate.split('T')[0];
+    const endDateStr = endDate ? endDate.split('T')[0] : null;
 
-    if (projectDate.toDateString() === today.toDateString()) {
-      return 'row-today';
-    } else if (projectDate.toDateString() === yesterday.toDateString()) {
-      return 'row-yesterday';
+    // Green: Project ends today
+    if (endDateStr === todayStr) {
+      return 'row-ending';
     }
+
+    // Red: Project starts today
+    if (startDateStr === todayStr) {
+      return 'row-starting';
+    }
+
+    // Blue: Project is currently fielding (started before today, ends after today)
+    if (startDateStr < todayStr && endDateStr && endDateStr > todayStr) {
+      return 'row-fielding';
+    }
+
+    // Yellow: Upcoming project (starts in the future)
+    if (startDateStr > todayStr) {
+      return 'row-upcoming';
+    }
+
     return '';
   };
 
@@ -137,7 +154,7 @@ const ProjectsTable = ({
         </thead>
         <tbody>
           {projects.map((project) => (
-            <tr key={project.projectID} className={getRowClass(project.startDate)}>
+            <tr key={project.projectID} className={getRowClass(project.startDate, project.endDate)}>
               <td className="col-actions">
                 <div className="action-buttons">
                   <button
