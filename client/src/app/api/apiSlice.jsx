@@ -12,63 +12,86 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
     }
-    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    headers.set('Expires', '0');
-
     return headers;
   },
 });
 
+// Mutex to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let refreshPromise = null;
+
+const refreshToken = async (api, extraOptions) => {
+  // If already refreshing, wait for the existing refresh to complete
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const refreshResult = await baseQuery(
+        { url: '/refresh', method: 'GET' },
+        api,
+        extraOptions
+      );
+
+      if (refreshResult?.data?.accessToken) {
+        const user = api.getState().auth.user;
+        api.dispatch(setCredentials({ accessToken: refreshResult.data.accessToken, user }));
+        return { success: true };
+      }
+      return { success: false, error: refreshResult?.error };
+    } catch (error) {
+      return { success: false, error };
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+};
+
 export const baseQueryWithReauth = async (args, api, extraOptions) => {
-  console.log('🔵 Making API request:', args);
   let result = await baseQuery(args, api, extraOptions);
 
-  // Handle 403 (your verifyJWT returns 403 for expired tokens)
+  // Handle 401 (no auth) - redirect to login
+  if (result?.error?.status === 401) {
+    api.dispatch(logOut());
+    return result;
+  }
+
+  // Handle 403 (token expired or invalid)
   if (result?.error?.status === 403) {
-    console.log('⚠️ Received 403 error - token likely expired');
-    console.log('📋 Error details:', result.error);
+    const errorCode = result?.error?.data?.code;
 
-    // Check if persist is enabled
-    const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
-      const [name, value] = cookie.split('=');
-      acc[name] = value;
-      return acc;
-    }, {});
+    // Only attempt refresh for expired tokens
+    if (errorCode === 'TOKEN_EXPIRED') {
+      // Check if persist is enabled
+      const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+        const [name, value] = cookie.split('=');
+        acc[name] = value;
+        return acc;
+      }, {});
 
-    const persist = cookies.persist === 'true';
-    console.log('🔐 Persist enabled:', persist);
+      const persist = cookies.persist === 'true';
 
-    if (!persist) {
-      console.log('❌ Persist not enabled - logging out');
-      api.dispatch(logOut());
-      return result;
-    }
+      if (!persist) {
+        api.dispatch(logOut());
+        return result;
+      }
 
-    // Attempt to refresh the token
-    console.log('🔄 Attempting to refresh token...');
-    const refreshResult = await baseQuery('/refresh', api, extraOptions);
-    console.log('📥 Refresh result:', refreshResult);
+      // Attempt to refresh the token
+      const refreshResult = await refreshToken(api, extraOptions);
 
-    if (refreshResult?.data?.accessToken) {
-      console.log('✅ Token refresh successful!');
-      const user = api.getState().auth.user;
-
-      // Store the new token
-      api.dispatch(setCredentials({ ...refreshResult.data, user }));
-      console.log('💾 New token stored in Redux');
-
-      // Retry the original request with the new token
-      console.log('🔁 Retrying original request...');
-      result = await baseQuery(args, api, extraOptions);
-
-      if (result?.error) {
-        console.log('❌ Retry failed:', result.error);
+      if (refreshResult.success) {
+        // Retry the original request with the new token
+        result = await baseQuery(args, api, extraOptions);
       } else {
-        console.log('✅ Retry successful!');
+        api.dispatch(logOut());
       }
     } else {
-      console.log('❌ Token refresh failed - no accessToken in response');
-      console.log('📋 Refresh response:', refreshResult);
+      // For other 403 errors (invalid token, malformed), log out
       api.dispatch(logOut());
     }
   }
@@ -78,5 +101,6 @@ export const baseQueryWithReauth = async (args, api, extraOptions) => {
 
 export const apiSlice = createApi({
   baseQuery: baseQueryWithReauth,
+  tagTypes: ['User', 'Project', 'CallID', 'Quota'],
   endpoints: (builder) => ({}),
 });
