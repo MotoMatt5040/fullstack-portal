@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@mdi/react';
-import { mdiPlus, mdiFilterOutline, mdiDatabase } from '@mdi/js';
+import { mdiPlus, mdiFilterOutline, mdiDatabase, mdiInformationOutline } from '@mdi/js';
 import { useProjectNumberingLogic } from './useProjectNumberingLogic';
 import ProjectsTable from './ProjectsTable';
 import ProjectModal from './ProjectModal';
@@ -11,6 +11,28 @@ import Pagination from './Pagination';
 import './Projects.css';
 
 const ProjectNumbering = () => {
+  const [showLegend, setShowLegend] = useState(false);
+  const legendRef = useRef<HTMLDivElement>(null);
+  const legendBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Close legend when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showLegend &&
+        legendRef.current &&
+        legendBtnRef.current &&
+        !legendRef.current.contains(event.target as Node) &&
+        !legendBtnRef.current.contains(event.target as Node)
+      ) {
+        setShowLegend(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLegend]);
+
   const {
     projects,
     total,
@@ -105,6 +127,43 @@ const ProjectNumbering = () => {
             Total Projects: <strong>{total}</strong>
           </span>
         )}
+
+        {/* Legend Button */}
+        <div className="legend-container">
+          <button
+            ref={legendBtnRef}
+            className="btn-legend"
+            onClick={() => setShowLegend(!showLegend)}
+            title="Color Legend"
+          >
+            <Icon path={mdiInformationOutline} size={0.75} />
+            <span>Legend</span>
+          </button>
+
+          {showLegend && (
+            <div ref={legendRef} className="legend-popover">
+              <div className="legend-title">Row Colors</div>
+              <div className="legend-items">
+                <div className="legend-item">
+                  <span className="legend-color legend-color-starting"></span>
+                  <span>Starts Today</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-color legend-color-ending"></span>
+                  <span>Ends Today</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-color legend-color-fielding"></span>
+                  <span>Currently Fielding</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-color legend-color-upcoming"></span>
+                  <span>Upcoming</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Error Display */}

@@ -170,6 +170,110 @@
 }
 
 /* =============================================
+   LEGEND
+   ============================================= */
+.legend-container {
+  position: relative;
+}
+
+.btn-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  color: var(--label-text-color);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-legend:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: rgba(var(--accent-color-rgb), 0.04);
+}
+
+.legend-popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--background-color-elevated);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1rem;
+  z-index: 100;
+  min-width: 160px;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.legend-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--label-text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.625rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--text-color);
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-color-starting {
+  background: rgba(220, 38, 38, 0.5);
+  border: 1px solid rgba(220, 38, 38, 0.7);
+}
+
+.legend-color-ending {
+  background: rgba(34, 197, 94, 0.5);
+  border: 1px solid rgba(34, 197, 94, 0.7);
+}
+
+.legend-color-fielding {
+  background: rgba(59, 130, 246, 0.5);
+  border: 1px solid rgba(59, 130, 246, 0.7);
+}
+
+.legend-color-upcoming {
+  background: rgba(245, 158, 11, 0.5);
+  border: 1px solid rgba(245, 158, 11, 0.7);
+}
+
+/* =============================================
    BUTTONS
    ============================================= */
 .btn-primary,
