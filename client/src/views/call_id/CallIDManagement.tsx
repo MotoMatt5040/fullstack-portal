@@ -1179,8 +1179,7 @@ const CallIDManagement: React.FC = () => {
   // ==================== UTILITY FUNCTIONS ====================
 
   const formatPhoneNumber = (phone: string) => {
-    if (!phone || phone.length !== 10) return phone;
-    return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+    return phone || '';
   };
 
   const formatDate = (dateString: string) => {
