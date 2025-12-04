@@ -7,7 +7,6 @@ import {
   mdiPlay,
   mdiCheck,
   mdiTableLarge,
-  mdiShieldOff,
 } from '@mdi/js';
 import { useSampleAutomationLogic } from './useSampleAutomationLogic';
 import './SampleAutomation.css';
@@ -83,11 +82,6 @@ const SampleAutomation: React.FC = () => {
     tablePreview,
     isLoadingPreview,
     previewError,
-
-    // DNC Scrub
-    handleCreateDNCScrubbed,
-    isCreatingDNC,
-    dncScrubResult,
 
     // Split config
     distinctAgeRanges,
@@ -567,82 +561,6 @@ const SampleAutomation: React.FC = () => {
                   </div>
                 )}
 
-                {/* DNC Scrub Section */}
-                {tablePreview && (
-                  <div className='dnc-section'>
-                    <div className='dnc-header'>
-                      <h4 className='dnc-title'>
-                        <Icon
-                          path={mdiShieldOff}
-                          size={0.7}
-                          style={{ marginRight: '0.5rem' }}
-                        />
-                        DNC Scrub
-                      </h4>
-                      <span
-                        className={`dnc-status ${
-                          tablePreview.columns.some(
-                            (c) => c.name.toUpperCase() === 'SOURCE'
-                          )
-                            ? 'found'
-                            : 'missing'
-                        }`}
-                      >
-                        {tablePreview.columns.some(
-                          (c) => c.name.toUpperCase() === 'SOURCE'
-                        )
-                          ? '✓ SOURCE column detected'
-                          : '⚠ No SOURCE column'}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={handleCreateDNCScrubbed}
-                      disabled={
-                        isCreatingDNC ||
-                        !tablePreview.columns.some(
-                          (c) => c.name.toUpperCase() === 'SOURCE'
-                        )
-                      }
-                      className='btn-danger'
-                    >
-                      {isCreatingDNC
-                        ? 'Creating...'
-                        : 'Create DNC-Scrubbed Table'}
-                    </button>
-
-                    {dncScrubResult && (
-                      <div className='dnc-results'>
-                        <div className='results-grid'>
-                          <div className='result-card'>
-                            <div className='result-label'>Original Table</div>
-                            <div className='result-value'>
-                              {dncScrubResult.sourceTableName}
-                            </div>
-                          </div>
-                          <div className='result-card'>
-                            <div className='result-label'>Clean Table</div>
-                            <div className='result-value success'>
-                              {dncScrubResult.newTableName}
-                            </div>
-                          </div>
-                          <div className='result-card'>
-                            <div className='result-label'>Original Rows</div>
-                            <div className='result-value'>
-                              {dncScrubResult.rowsOriginal?.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className='result-card'>
-                            <div className='result-label'>DNC Removed</div>
-                            <div className='result-value error'>
-                              {dncScrubResult.rowsRemoved?.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Sample Configuration */}

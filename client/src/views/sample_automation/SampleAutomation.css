@@ -908,45 +908,6 @@
 }
 
 /* ========================================
-   DNC SCRUB SECTION
-======================================== */
-.dnc-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color-soft);
-}
-
-.dnc-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.dnc-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
-}
-
-.dnc-status {
-  font-size: 0.75rem;
-}
-
-.dnc-status.found {
-  color: #10b981;
-}
-
-.dnc-status.missing {
-  color: #f59e0b;
-}
-
-.dnc-results {
-  margin-top: 1rem;
-}
-
-/* ========================================
    STATUS MESSAGES
 ======================================== */
 .status-message {
