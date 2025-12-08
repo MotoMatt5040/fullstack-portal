@@ -60,17 +60,24 @@ INNER JOIN tblAuthentication a ON a.uuid = up.uuid`;
   }
 
   const qry = `
-SELECT DISTINCT 
-    ph.projectId, 
-    ph.projectName, 
-    ph.fieldStart 
-FROM 
-    tblcc3projectheader ph
-${joinClause}
-WHERE 
-    ${whereConditions.join(' AND ')}
-ORDER BY 
-    ph.fieldStart DESC;
+SELECT
+    projectId,
+    projectName,
+    fieldStart
+FROM (
+    SELECT DISTINCT
+        ph.projectId,
+        ph.projectName,
+        ph.fieldStart
+    FROM
+        tblcc3projectheader ph
+    ${joinClause}
+    WHERE
+        ${whereConditions.join(' AND ')}
+) AS projects
+ORDER BY
+    COALESCE(TRY_CAST(LEFT(projectId, 5) AS INT), 0) DESC,
+    projectId DESC;
 `;
 
   return withDbConnection({
@@ -96,16 +103,23 @@ const unrestrictedGetProjectsList = async () => {
   ];
 
   const qry = `
-SELECT DISTINCT 
-    ph.projectId, 
-    ph.projectName, 
-    ph.fieldStart 
-FROM 
-    tblcc3projectheader ph
-WHERE 
-    ${whereConditions.join(' AND ')}
-ORDER BY 
-    ph.fieldStart DESC;
+SELECT
+    projectId,
+    projectName,
+    fieldStart
+FROM (
+    SELECT DISTINCT
+        ph.projectId,
+        ph.projectName,
+        ph.fieldStart
+    FROM
+        tblcc3projectheader ph
+    WHERE
+        ${whereConditions.join(' AND ')}
+) AS projects
+ORDER BY
+    COALESCE(TRY_CAST(LEFT(projectId, 5) AS INT), 0) DESC,
+    projectId DESC;
 `;
 
   return withDbConnection({

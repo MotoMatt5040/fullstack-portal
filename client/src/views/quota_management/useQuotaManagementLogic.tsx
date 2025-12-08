@@ -81,6 +81,7 @@ const useQuotaManagementLogic = () => {
   const projectListOptions = useMemo((): ProjectOption[] => {
     if (!projectList || projectListIsFetching) return [];
 
+    // Sorting is handled by SQL query (ORDER BY numeric prefix, then suffix)
     return projectList.map((item: any) => ({
       value: item.projectId,
       label: `${item.projectId} - ${item.projectName}`,

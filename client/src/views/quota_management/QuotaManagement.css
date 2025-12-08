@@ -47,6 +47,7 @@
 
 .quota-select {
   min-width: 350px;
+  max-width: 450px;
 }
 
 .quota-select .my-select__control {
@@ -63,6 +64,50 @@
 .quota-select .my-select__control--is-focused {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.1);
+}
+
+/* Truncate selected value with ellipsis */
+.quota-select .my-select__single-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 8px);
+}
+
+/* Truncate options in dropdown with ellipsis */
+.quota-select .my-select__option {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dropdown menu styling */
+.quota-select .my-select__menu {
+  background: var(--background-color-elevated);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.quota-select .my-select__menu-list {
+  padding: 0.25rem;
+}
+
+.quota-select .my-select__option {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+.quota-select .my-select__option--is-focused {
+  background: var(--background-color-muted);
+}
+
+.quota-select .my-select__option--is-selected {
+  background: var(--accent-color);
+  color: #fff;
 }
 
 .quota-updating {
@@ -232,6 +277,17 @@
 
   .quota-select {
     min-width: 100%;
+    max-width: 100%;
+  }
+
+  .quota-select .my-select__control {
+    min-height: 36px;
+    font-size: 0.8125rem;
+  }
+
+  .quota-select .my-select__option {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.625rem;
   }
 
   .quota-management-table {
@@ -255,6 +311,24 @@
 
   .quota-header-left h1 {
     font-size: 1.25rem;
+  }
+
+  .quota-select .my-select__control {
+    min-height: 34px;
+    font-size: 0.75rem;
+  }
+
+  .quota-select .my-select__single-value {
+    font-size: 0.75rem;
+  }
+
+  .quota-select .my-select__placeholder {
+    font-size: 0.75rem;
+  }
+
+  .quota-select .my-select__option {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
   }
 
   .quota-management-table {
