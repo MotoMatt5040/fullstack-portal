@@ -88,12 +88,27 @@ const useQuotaManagementLogic = () => {
     }));
   }, [projectList, projectListIsFetching]);
 
+  // Track if we've already initialized from URL to prevent re-running
+  const initializedFromUrlRef = useRef(false);
+
+  // Initialize selected project from URL once project list is available
   useEffect(() => {
+    // Only run once and only when project list has loaded
+    if (initializedFromUrlRef.current || projectListOptions.length === 0) return;
+
     const projectIdFromUrl = searchParams.get(PROJECT_ID_QUERY_PARAM);
-    if (projectIdFromUrl && projectIdFromUrl !== selectedProject) {
-      setSelectedProject(projectIdFromUrl);
+    if (projectIdFromUrl) {
+      // Verify the project exists in the list
+      const projectExists = projectListOptions.some(opt => opt.value === projectIdFromUrl);
+      if (projectExists && projectIdFromUrl !== selectedProject) {
+        setSelectedProject(projectIdFromUrl);
+      }
+      initializedFromUrlRef.current = true;
+    } else {
+      // No URL param, mark as initialized anyway
+      initializedFromUrlRef.current = true;
     }
-  }, []);
+  }, [projectListOptions, searchParams]);
 
   useEffect(() => {
     const fetchParams = userInfo.isInternalUser
@@ -184,6 +199,9 @@ const useQuotaManagementLogic = () => {
 
   // Separate effect for URL management
   useEffect(() => {
+    // Don't modify URL until we've finished initializing from it
+    if (!initializedFromUrlRef.current) return;
+
     if (!selectedProject) {
       if (searchParams.has(PROJECT_ID_QUERY_PARAM)) {
         const newSearchParams = new URLSearchParams(searchParams);

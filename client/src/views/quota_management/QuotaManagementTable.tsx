@@ -53,7 +53,13 @@ const EMPTY_VALUE_INDICATORS = [
   '',
 ];
 
+const LABEL_MAX_LENGTH = 25;
+
 // Utility functions
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
 const getDisplayName = (columnName: string): string => {
   return COLUMN_DISPLAY_NAMES[columnName] || columnName;
 };
@@ -122,24 +128,35 @@ interface TableCellProps {
 
 // Memoized cell component
 const TableCell = memo<TableCellProps>(({ rowKey, group, subGroup, col, cellData, extraClassName }) => { // Destructure the new prop
-  const value = useMemo(() => {
-    if (!cellData) return '';
+  const { displayValue, fullValue, isLabel } = useMemo(() => {
+    if (!cellData) return { displayValue: '', fullValue: '', isLabel: false };
     const rawValue = getColumnValue(cellData, col);
-    return formatCellValue(rawValue);
+    const formattedValue = formatCellValue(rawValue);
+    const isLabelCol = col === 'Label';
+
+    return {
+      displayValue: isLabelCol ? truncateText(formattedValue, LABEL_MAX_LENGTH) : formattedValue,
+      fullValue: formattedValue,
+      isLabel: isLabelCol,
+    };
   }, [cellData, col]);
 
   const className = useMemo(() => {
     const headerName = getDisplayName(col);
     // Combine the dynamically generated class with the extra one
-    return `${getCellClassName(headerName, value, subGroup)} ${extraClassName || ''}`;
-  }, [col, value, subGroup, extraClassName]); // Add extraClassName to the dependency array
+    return `${getCellClassName(headerName, displayValue, subGroup)} ${extraClassName || ''}`;
+  }, [col, displayValue, subGroup, extraClassName]); // Add extraClassName to the dependency array
+
+  // Only add title attribute for Label cells when text is truncated
+  const titleAttr = isLabel && fullValue.length > LABEL_MAX_LENGTH ? fullValue : undefined;
 
   return (
     <td
       key={`${rowKey}-${group}-${subGroup}-${col}`}
       className={className.trim()} // Use trim() to remove any trailing space
+      title={titleAttr}
     >
-      {value}
+      {displayValue}
     </td>
   );
 });
