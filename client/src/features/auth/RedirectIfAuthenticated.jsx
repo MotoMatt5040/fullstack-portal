@@ -1,13 +1,18 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { selectCurrentToken } from './authSlice';
 
 const RedirectIfAuthenticated = ({ children }) => {
     const token = useSelector(selectCurrentToken);
+    const location = useLocation();
+
+    // Get the original destination if they were redirected to login
+    const from = location.state?.from?.pathname || '/welcome';
 
     if (token) {
-        return <Navigate to="/welcome" />;
+        // If already authenticated, redirect to the original destination
+        return <Navigate to={from} replace />;
     }
 
     return children;

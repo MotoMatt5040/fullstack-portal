@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import React from 'react';
 import { setCredentials } from '../../features/auth/authSlice';
 import { useLoginMutation } from '../../features/auth/authApiSlice';
@@ -32,6 +33,11 @@ const Login = () => {
   const [forgotPassword, { isLoading: forgotLoading }] =
     useForgotPasswordMutation();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the page they were trying to access before being redirected to login
+  const from = location.state?.from?.pathname || '/welcome';
 
   // State for forgot password modal
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -70,6 +76,8 @@ const Login = () => {
       document.cookie = `persist=${persist}; path=/`;
       setUser('');
       setPwd('');
+      // Navigate to the page they were trying to access, or /welcome as default
+      navigate(from, { replace: true });
     } catch (err) {
       if (!err?.status) {
         setErrMsg('No Server Response');
