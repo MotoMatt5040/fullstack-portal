@@ -36,8 +36,11 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the page they were trying to access before being redirected to login
-  const from = location.state?.from?.pathname || '/welcome';
+  // Get the full URL (pathname + search params) they were trying to access before being redirected to login
+  const fromLocation = location.state?.from;
+  const from = fromLocation
+    ? `${fromLocation.pathname}${fromLocation.search || ''}${fromLocation.hash || ''}`
+    : '/welcome';
 
   // State for forgot password modal
   const [showForgotPassword, setShowForgotPassword] = useState(false);
