@@ -560,6 +560,17 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
 
   const getPhoneDetails = (phoneNumberId: number | null) => {
     if (!phoneNumberId) return null;
+    // First check assignmentDetails for currently assigned phones
+    const assignedPhone = assignmentDetails?.find((a) => a.PhoneNumberID === phoneNumberId);
+    if (assignedPhone) {
+      return {
+        PhoneNumberID: assignedPhone.PhoneNumberID,
+        PhoneNumber: assignedPhone.PhoneNumber,
+        CallerName: assignedPhone.CallerName,
+        StateAbbr: assignedPhone.StateAbbr,
+      };
+    }
+    // Fall back to availableCallIDs for unassigned phones
     return availableCallIDs.find((c) => c.PhoneNumberID === phoneNumberId);
   };
 
@@ -599,20 +610,6 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
       setError(result.error || 'Failed to update slot');
     } else {
       setError('');
-    }
-  };
-
-  const handleRemoveSlot = async (slotName: string) => {
-    if (
-      window.confirm(`Remove phone number from ${slotInfo[slotName].label}?`)
-    ) {
-      const result = await onUpdateSlot(projectId, slotName, null);
-      if (!result.success) {
-        setError(result.error || 'Failed to remove slot');
-      } else {
-        setSlots((prev) => ({ ...prev, [slotName]: null }));
-        setError('');
-      }
     }
   };
 
@@ -689,16 +686,6 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
                       </span>
                       <span className='slot-type'>{info.type}</span>
                     </div>
-                    {isAssigned && (
-                      <button
-                        onClick={() => handleRemoveSlot(slotName)}
-                        className='btn-icon-danger'
-                        title='Remove from slot'
-                        disabled={isLoading}
-                      >
-                        <Icon path={mdiClose} size={0.7} />
-                      </button>
-                    )}
                   </div>
 
                   {isAssigned && currentPhone ? (

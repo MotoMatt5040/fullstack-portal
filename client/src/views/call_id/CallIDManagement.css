@@ -485,12 +485,23 @@
   opacity: 0.6;
 }
 
-.status-badge.flagged {
+.status-badge.flagged,
+.status-badge.removed {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
 .status-badge.testing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.status-badge.available {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.status-badge.in-use {
   background: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
 }

@@ -77,6 +77,7 @@ const getDashboardMetrics = async () => {
 
 /**
  * Get currently active assignments - UNPIVOTED to show each slot as a row
+ * Active assignments are determined by CallID status = 2 (In Use)
  */
 const getCurrentActiveAssignments = async () => {
   const query = `
@@ -94,8 +95,8 @@ const getCurrentActiveAssignments = async () => {
     FROM FAJITA.dbo.CallIDUsage u
     LEFT JOIN FAJITA.dbo.CallIDs c1 ON u.CallIDL1 = c1.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s1 ON c1.StateFIPS = s1.StateFIPS
-    WHERE CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
-      AND u.CallIDL1 IS NOT NULL
+    WHERE u.CallIDL1 IS NOT NULL
+      AND c1.Status = 2  -- CallID status is "In Use"
 
     UNION ALL
 
@@ -113,8 +114,8 @@ const getCurrentActiveAssignments = async () => {
     FROM FAJITA.dbo.CallIDUsage u
     LEFT JOIN FAJITA.dbo.CallIDs c2 ON u.CallIDL2 = c2.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s2 ON c2.StateFIPS = s2.StateFIPS
-    WHERE CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
-      AND u.CallIDL2 IS NOT NULL
+    WHERE u.CallIDL2 IS NOT NULL
+      AND c2.Status = 2  -- CallID status is "In Use"
 
     UNION ALL
 
@@ -132,8 +133,8 @@ const getCurrentActiveAssignments = async () => {
     FROM FAJITA.dbo.CallIDUsage u
     LEFT JOIN FAJITA.dbo.CallIDs c3 ON u.CallIDC1 = c3.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s3 ON c3.StateFIPS = s3.StateFIPS
-    WHERE CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
-      AND u.CallIDC1 IS NOT NULL
+    WHERE u.CallIDC1 IS NOT NULL
+      AND c3.Status = 2  -- CallID status is "In Use"
 
     UNION ALL
 
@@ -151,8 +152,8 @@ const getCurrentActiveAssignments = async () => {
     FROM FAJITA.dbo.CallIDUsage u
     LEFT JOIN FAJITA.dbo.CallIDs c4 ON u.CallIDC2 = c4.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s4 ON c4.StateFIPS = s4.StateFIPS
-    WHERE CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
-      AND u.CallIDC2 IS NOT NULL
+    WHERE u.CallIDC2 IS NOT NULL
+      AND c4.Status = 2  -- CallID status is "In Use"
 
     ORDER BY ProjectID, SlotNumber
   `;
@@ -713,15 +714,36 @@ const assignCallIDToProject = async (assignmentData) => {
 // };
 
 /**
- * End an assignment WITH SLOT INFO
+ * End an assignment - clears the phone number from all slots it occupies
+ * Also resets the CallID status to "Available" (status code 1) if not used elsewhere
  */
 const endAssignment = async (projectId, phoneNumberId) => {
   const query = `
+    -- Clear this phone number from all slots where it appears
     UPDATE FAJITA.dbo.CallIDUsage
-    SET EndDate = CAST(GETDATE() AS DATE)
+    SET
+      CallIDL1 = CASE WHEN CallIDL1 = @phoneNumberId THEN NULL ELSE CallIDL1 END,
+      CallIDL2 = CASE WHEN CallIDL2 = @phoneNumberId THEN NULL ELSE CallIDL2 END,
+      CallIDC1 = CASE WHEN CallIDC1 = @phoneNumberId THEN NULL ELSE CallIDC1 END,
+      CallIDC2 = CASE WHEN CallIDC2 = @phoneNumberId THEN NULL ELSE CallIDC2 END
     WHERE ProjectID = @projectId
-      AND PhoneNumberID = @phoneNumberId
-      AND EndDate >= CAST(GETDATE() AS DATE)
+      AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+      AND (CallIDL1 = @phoneNumberId OR CallIDL2 = @phoneNumberId
+           OR CallIDC1 = @phoneNumberId OR CallIDC2 = @phoneNumberId)
+
+    -- If the phone number is not used in any other active slot, reset to Available
+    IF NOT EXISTS (
+      SELECT 1 FROM FAJITA.dbo.CallIDUsage
+      WHERE CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+        AND (CallIDL1 = @phoneNumberId OR CallIDL2 = @phoneNumberId
+             OR CallIDC1 = @phoneNumberId OR CallIDC2 = @phoneNumberId)
+    )
+    BEGIN
+      -- Reset to Available (only if it was In Use)
+      UPDATE FAJITA.dbo.CallIDs
+      SET Status = 1, DateUpdated = GETDATE()
+      WHERE PhoneNumberID = @phoneNumberId AND Status = 2
+    END
 
     SELECT 1 as Success, 'Assignment ended successfully' as Message
   `;
@@ -1119,24 +1141,31 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
 
 /**
  * Get projects with their CURRENT slot assignments
+ * Active assignments are determined by CallID status = 2 (In Use)
  */
 const getAllProjectsWithAssignments = async () => {
   const query = `
     SELECT
       u.ProjectID,
-      -- Count active assignments by slot (check if slot is filled and date is current)
-      SUM(CASE WHEN CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate AND u.CallIDL1 IS NOT NULL THEN 1 ELSE 0 END) as Slot1Active,
-      SUM(CASE WHEN CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate AND u.CallIDL2 IS NOT NULL THEN 1 ELSE 0 END) as Slot2Active,
-      SUM(CASE WHEN CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate AND u.CallIDC1 IS NOT NULL THEN 1 ELSE 0 END) as Slot3Active,
-      SUM(CASE WHEN CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate AND u.CallIDC2 IS NOT NULL THEN 1 ELSE 0 END) as Slot4Active,
-      -- Count rows where at least one slot is active
-      SUM(CASE WHEN CAST(GETDATE() AS DATE) BETWEEN u.StartDate AND u.EndDate
-               AND (u.CallIDL1 IS NOT NULL OR u.CallIDL2 IS NOT NULL OR u.CallIDC1 IS NOT NULL OR u.CallIDC2 IS NOT NULL)
+      -- Count active assignments by slot (check if slot is filled and CallID status is "In Use")
+      SUM(CASE WHEN u.CallIDL1 IS NOT NULL AND c1.Status = 2 THEN 1 ELSE 0 END) as Slot1Active,
+      SUM(CASE WHEN u.CallIDL2 IS NOT NULL AND c2.Status = 2 THEN 1 ELSE 0 END) as Slot2Active,
+      SUM(CASE WHEN u.CallIDC1 IS NOT NULL AND c3.Status = 2 THEN 1 ELSE 0 END) as Slot3Active,
+      SUM(CASE WHEN u.CallIDC2 IS NOT NULL AND c4.Status = 2 THEN 1 ELSE 0 END) as Slot4Active,
+      -- Count rows where at least one slot has an "In Use" CallID
+      SUM(CASE WHEN (u.CallIDL1 IS NOT NULL AND c1.Status = 2)
+                 OR (u.CallIDL2 IS NOT NULL AND c2.Status = 2)
+                 OR (u.CallIDC1 IS NOT NULL AND c3.Status = 2)
+                 OR (u.CallIDC2 IS NOT NULL AND c4.Status = 2)
           THEN 1 ELSE 0 END) as ActiveAssignments,
       COUNT(*) as TotalAssignments,
       MIN(u.StartDate) as FirstUsed,
       MAX(u.EndDate) as LastUsed
     FROM FAJITA.dbo.CallIDUsage u
+    LEFT JOIN FAJITA.dbo.CallIDs c1 ON u.CallIDL1 = c1.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c2 ON u.CallIDL2 = c2.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c3 ON u.CallIDC1 = c3.PhoneNumberID
+    LEFT JOIN FAJITA.dbo.CallIDs c4 ON u.CallIDC2 = c4.PhoneNumberID
     GROUP BY u.ProjectID
     ORDER BY u.ProjectID
   `;
@@ -1316,6 +1345,7 @@ const swapCallIDAssignment = async (fromProjectId, toProjectId, phoneNumberId, n
 
 /**
  * Update a specific slot for a project
+ * Also updates the CallID status to "In Use" (status code 2) when assigning
  */
 const updateProjectSlot = async (projectId, slotName, phoneNumberId, startDate = null, endDate = null) => {
   // Validate slot name
@@ -1324,9 +1354,13 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId, startDate =
     throw new Error('Invalid slot name');
   }
 
+  // Status codes: 1 = Available, 2 = In Use, 3 = Removed, 4 = Flagged as Spam
+  const IN_USE_STATUS = 2;
+
   const query = `
     -- Check if project has a usage row
     DECLARE @RowExists BIT = 0
+    DECLARE @OldPhoneNumberId INT = NULL
 
     IF EXISTS (
       SELECT 1 FROM FAJITA.dbo.CallIDUsage
@@ -1334,22 +1368,75 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId, startDate =
     )
     BEGIN
       SET @RowExists = 1
+      -- Get the old phone number in this slot (if any) to reset its status
+      SELECT @OldPhoneNumberId = ${slotName} FROM FAJITA.dbo.CallIDUsage WHERE ProjectID = @projectId
+    END
+
+    -- If there was an old phone number in this slot, check if it's still used elsewhere
+    -- If not, reset it to Available (status 1)
+    IF @OldPhoneNumberId IS NOT NULL AND @OldPhoneNumberId != @phoneNumberId
+    BEGIN
+      -- Check if this old phone number is used in any other active slot
+      IF NOT EXISTS (
+        SELECT 1 FROM FAJITA.dbo.CallIDUsage
+        WHERE CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+          AND (
+            (CallIDL1 = @OldPhoneNumberId AND NOT (ProjectID = @projectId AND '${slotName}' = 'CallIDL1'))
+            OR (CallIDL2 = @OldPhoneNumberId AND NOT (ProjectID = @projectId AND '${slotName}' = 'CallIDL2'))
+            OR (CallIDC1 = @OldPhoneNumberId AND NOT (ProjectID = @projectId AND '${slotName}' = 'CallIDC1'))
+            OR (CallIDC2 = @OldPhoneNumberId AND NOT (ProjectID = @projectId AND '${slotName}' = 'CallIDC2'))
+          )
+      )
+      BEGIN
+        -- Reset old phone number to Available (only if it was In Use)
+        UPDATE FAJITA.dbo.CallIDs
+        SET Status = 1, DateUpdated = GETDATE()
+        WHERE PhoneNumberID = @OldPhoneNumberId AND Status = 2
+      END
     END
 
     IF @RowExists = 0
     BEGIN
       -- Create new usage row with provided dates (or defaults if not provided)
+      -- Default end date is far future to indicate ongoing assignment
       INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, ${slotName}, StartDate, EndDate)
-      VALUES (@projectId, @phoneNumberId, COALESCE(@startDate, GETDATE()), COALESCE(@endDate, '1900-01-01'))
+      VALUES (@projectId, @phoneNumberId, COALESCE(@startDate, GETDATE()), COALESCE(@endDate, '2099-12-31'))
+
+      -- Update CallID status to In Use
+      IF @phoneNumberId IS NOT NULL
+      BEGIN
+        UPDATE FAJITA.dbo.CallIDs
+        SET Status = @inUseStatus, DateUpdated = GETDATE()
+        WHERE PhoneNumberID = @phoneNumberId
+      END
 
       SELECT 1 as Success, 'Slot assigned successfully' as Message, 'INSERT' as Action, @@ROWCOUNT as RowsAffected
     END
     ELSE
     BEGIN
-      -- Update existing row (keep existing dates, only update the slot)
+      -- Update existing row - update the slot and ensure dates are valid
+      -- If current dates exclude today, update StartDate to today and EndDate to far future
       UPDATE FAJITA.dbo.CallIDUsage
-      SET ${slotName} = @phoneNumberId
+      SET ${slotName} = @phoneNumberId,
+          StartDate = CASE
+            WHEN CAST(GETDATE() AS DATE) NOT BETWEEN StartDate AND EndDate
+            THEN COALESCE(@startDate, CAST(GETDATE() AS DATE))
+            ELSE COALESCE(@startDate, StartDate)
+          END,
+          EndDate = CASE
+            WHEN CAST(GETDATE() AS DATE) NOT BETWEEN StartDate AND EndDate
+            THEN COALESCE(@endDate, '2099-12-31')
+            ELSE COALESCE(@endDate, EndDate)
+          END
       WHERE ProjectID = @projectId
+
+      -- Update CallID status to In Use
+      IF @phoneNumberId IS NOT NULL
+      BEGIN
+        UPDATE FAJITA.dbo.CallIDs
+        SET Status = @inUseStatus, DateUpdated = GETDATE()
+        WHERE PhoneNumberID = @phoneNumberId
+      END
 
       SELECT 1 as Success, 'Slot updated successfully' as Message, 'UPDATE' as Action, @@ROWCOUNT as RowsAffected
     END
@@ -1361,7 +1448,8 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId, startDate =
       console.log('[updateProjectSlot] Executing query for:', { projectId, slotName, phoneNumberId, startDate, endDate });
       const request = pool.request()
         .input('projectId', sql.NVarChar(20), projectId)
-        .input('phoneNumberId', sql.Int, phoneNumberId);
+        .input('phoneNumberId', sql.Int, phoneNumberId)
+        .input('inUseStatus', sql.TinyInt, IN_USE_STATUS);
 
       if (startDate) {
         request.input('startDate', sql.DateTime, startDate);
@@ -1382,6 +1470,7 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId, startDate =
 
 /**
  * Remove a phone number from a specific slot
+ * Also resets the CallID status to "Available" (status code 1) if not used elsewhere
  */
 const removeProjectSlot = async (projectId, slotName) => {
   const validSlots = ['CallIDL1', 'CallIDL2', 'CallIDC1', 'CallIDC2'];
@@ -1390,10 +1479,34 @@ const removeProjectSlot = async (projectId, slotName) => {
   }
 
   const query = `
+    -- Get the phone number being removed
+    DECLARE @PhoneNumberId INT
+    SELECT @PhoneNumberId = ${slotName} FROM FAJITA.dbo.CallIDUsage
+    WHERE ProjectID = @projectId
+      AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+
+    -- Clear the slot
     UPDATE FAJITA.dbo.CallIDUsage
     SET ${slotName} = NULL
     WHERE ProjectID = @projectId
       AND CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+
+    -- If the phone number is not used in any other active slot, reset to Available
+    IF @PhoneNumberId IS NOT NULL
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM FAJITA.dbo.CallIDUsage
+        WHERE CAST(GETDATE() AS DATE) BETWEEN StartDate AND EndDate
+          AND (CallIDL1 = @PhoneNumberId OR CallIDL2 = @PhoneNumberId
+               OR CallIDC1 = @PhoneNumberId OR CallIDC2 = @PhoneNumberId)
+      )
+      BEGIN
+        -- Reset to Available (only if it was In Use)
+        UPDATE FAJITA.dbo.CallIDs
+        SET Status = 1, DateUpdated = GETDATE()
+        WHERE PhoneNumberID = @PhoneNumberId AND Status = 2
+      END
+    END
 
     SELECT 1 as Success, 'Slot cleared successfully' as Message
   `;

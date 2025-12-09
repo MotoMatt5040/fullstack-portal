@@ -487,19 +487,6 @@ const CallIDManagement: React.FC = () => {
             </select>
           </div>
 
-          {/* In Use Filter */}
-          <div className='filter-item'>
-            <label>Currently In Use</label>
-            <select
-              value={filters.inUse}
-              onChange={(e) => handleFilterChange('inUse', e.target.value)}
-              className='filter-select'
-            >
-              <option value=''>All</option>
-              <option value='true'>In Use</option>
-              <option value='false'>Available</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -541,7 +528,6 @@ const CallIDManagement: React.FC = () => {
               <th>Status</th>
               <th>Caller Name</th>
               <th>State</th>
-              <th>In Use</th>
               <th>Active Project</th>
               <th>Date Created</th>
               <th>Actions</th>
@@ -565,13 +551,6 @@ const CallIDManagement: React.FC = () => {
                 <td>{callID.CallerName}</td>
                 <td>
                   <span className='state-badge'>{callID.StateAbbr}</span>
-                </td>
-                <td>
-                  {callID.CurrentlyInUse ? (
-                    <span className='badge-in-use'>In Use</span>
-                  ) : (
-                    <span className='badge-available'>Available</span>
-                  )}
                 </td>
                 <td className='project-id'>
                   {callID.ActiveProjectID || '-'}
@@ -1201,9 +1180,12 @@ const CallIDManagement: React.FC = () => {
   const getStatusClass = (status: string) => {
     if (!status) return '';
     const lower = status.toLowerCase();
+    if (lower.includes('removed')) return 'removed';
+    if (lower.includes('flagged') || lower.includes('spam')) return 'flagged';
+    if (lower.includes('in use')) return 'in-use';
+    if (lower.includes('available')) return 'available';
     if (lower.includes('active')) return 'active';
     if (lower.includes('inactive')) return 'inactive';
-    if (lower.includes('flagged')) return 'flagged';
     if (lower.includes('testing')) return 'testing';
     if (lower.includes('unknown')) return 'unknown';
     return '';
