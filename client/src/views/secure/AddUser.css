@@ -1,76 +1,258 @@
+/* =================================================================
+   Add User Form - Modern Flat Design
+   ================================================================= */
+
 .add-user-form {
-  max-width: 400px;
+  max-width: 450px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 1.5rem;
   background-color: var(--background-color);
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* =================================================================
+   User Type Toggle
+   ================================================================= */
+.user-type-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background-color: var(--background-color-muted);
+  border-radius: 6px;
+}
+
+/* =================================================================
+   Form Labels
+   ================================================================= */
 .add-user-label {
   display: block;
-  margin-bottom: 10px;
-  font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--label-text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.5rem;
 }
 
+/* =================================================================
+   Form Inputs
+   ================================================================= */
 .add-user-input,
 .add-user-select {
   width: 100%;
-  padding: 8px;
-  margin-top: 5px;
+  padding: 0.625rem 0.875rem;
   border: 1px solid var(--border-color-soft);
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
   background-color: var(--input-background);
   color: var(--text-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .add-user-select {
-  height: 120px;
+  height: auto;
+  min-height: 40px;
 }
 
 .add-user-input:focus,
 .add-user-select:focus {
-  background-color: var(--input-focus-background);
-  border-color: var(--focus-ring-color);
   outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: var(--input-background);
 }
 
+.add-user-input::placeholder {
+  color: var(--label-text-color);
+}
+
+/* =================================================================
+   Password Info Note
+   ================================================================= */
+.password-info {
+  padding: 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.password-info p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.password-info em {
+  font-style: normal;
+  color: var(--label-text-color);
+}
+
+/* =================================================================
+   Role Toggle Group
+   ================================================================= */
+.add-user-form .role-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  background-color: var(--background-color-muted);
+  margin-top: 0.5rem;
+}
+
+/* =================================================================
+   Client Select
+   ================================================================= */
+.add-user-form .client-select {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+/* =================================================================
+   Submit Button
+   ================================================================= */
 .add-user-submit {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 10px;
-  margin-top: 20px;
+  padding: 0.75rem 1.25rem;
+  margin-top: 1.5rem;
   background-color: var(--accent-color);
-  color: var(--button-text);
+  color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.add-user-submit:hover {
+.add-user-submit:hover:not(:disabled) {
   background-color: var(--accent-color-hover);
 }
 
-.add-user-input:focus,
-.add-user-select:focus,
+.add-user-submit:disabled {
+  background-color: var(--background-color-muted);
+  color: var(--label-text-color);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .add-user-submit:focus {
   outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
-
+/* =================================================================
+   Multi-Select (if used)
+   ================================================================= */
 .multi-select {
-  width: 20%;
-  background-color: var(--background-multi-select);
+  width: 100%;
+  background-color: var(--input-background);
   color: var(--text-color);
-  border-radius: 5px;
+  border-radius: 6px;
 }
 
-.user-type-toggle {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
+/* =================================================================
+   Success/Error Messages
+   ================================================================= */
+.add-user-form ~ .success-message,
+.success-message {
+  text-align: center;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  color: #059669;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.add-user-form ~ .error-message,
+.error-message {
+  text-align: center;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #dc2626;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* =================================================================
+   React-Select Customization
+   ================================================================= */
+.add-user-form .my-select__control {
+  background-color: var(--input-background);
+  border-color: var(--border-color-soft);
+  min-height: 40px;
+  border-radius: 6px;
+}
+
+.add-user-form .my-select__control:hover {
+  border-color: var(--border-color-half-soft);
+}
+
+.add-user-form .my-select__control--is-focused {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.add-user-form .my-select__menu {
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.add-user-form .my-select__option {
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+}
+
+.add-user-form .my-select__option--is-focused {
+  background-color: var(--background-color-muted);
+}
+
+.add-user-form .my-select__option--is-selected {
+  background-color: var(--accent-color);
+}
+
+.add-user-form .my-select__single-value {
+  color: var(--text-color);
+}
+
+.add-user-form .my-select__placeholder {
+  color: var(--label-text-color);
+}
+
+.add-user-form .my-select__input-container {
+  color: var(--text-color);
+}
+
+/* =================================================================
+   Responsive
+   ================================================================= */
+@media (max-width: 480px) {
+  .add-user-form {
+    padding: 1rem;
+  }
+
+  .user-type-toggle {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .add-user-form .role-toggle-group {
+    padding: 0.75rem;
+  }
 }

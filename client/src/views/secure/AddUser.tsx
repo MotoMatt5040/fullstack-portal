@@ -191,38 +191,33 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="user@example.com"
           required
           disabled={addUserIsLoading}
         />
-
-        <br />
-        <br />
 
         <div className="password-info">
           <p><em>Note: A secure password will be automatically generated and sent via email.</em></p>
         </div>
 
-        <br />
-
         {userType === 'internal' ? (
-            <div>
-                <label className="add-user-label">Roles:</label>
-                <div className="role-toggle-group">
-                {availableRoles.map((role) => (
-                    <MyToggle
-                    key={role.id}
-                    label={role.name}
-                    active={toggleStates[role.name]}
-                    onClick={() => handleToggleClick(role.name)}
-                    disabled={addUserIsLoading}
-                    />
-                ))}
-                </div>
+          <div>
+            <label className="add-user-label">Roles:</label>
+            <div className="role-toggle-group">
+              {availableRoles.map((role) => (
+                <MyToggle
+                  key={role.id}
+                  label={role.name}
+                  active={toggleStates[role.name]}
+                  onClick={() => handleToggleClick(role.name)}
+                  disabled={addUserIsLoading}
+                />
+              ))}
             </div>
+          </div>
         ) : (
           <div>
-            <br />
-            <label htmlFor="client-select">Client:</label>
+            <label className="add-user-label" htmlFor="client-select">Client:</label>
             <Select
               classNamePrefix="my-select"
               inputId="client-select"
@@ -231,7 +226,7 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
               value={selectedClientOption}
               onChange={handleClientChange}
               isDisabled={addUserIsLoading || fetchingClients}
-              placeholder={fetchingClients ? "Loading clients..." : "Select..."}
+              placeholder={fetchingClients ? "Loading clients..." : "Select a client..."}
               isClearable
               closeMenuOnSelect
               isLoading={fetchingClients}
@@ -239,11 +234,8 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
           </div>
         )}
 
-        <br />
-        <br />
-
-        <button 
-          className="add-user-submit" 
+        <button
+          className="add-user-submit"
           type="submit"
           disabled={addUserIsLoading}
         >

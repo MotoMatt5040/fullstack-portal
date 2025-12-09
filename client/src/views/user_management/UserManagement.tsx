@@ -1,27 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useUserManagementLogic } from './useUserManagementLogic';
 import { Modal } from '../../components/Modal';
 import UserForm from '../secure/AddUser';
 import UpdateUserRoles from '../users/UpdateUserRoles';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import './UserManagement.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Icon from '@mdi/react';
 import {
-  faPlus,
-  faPencilAlt,
-  faChevronDown,
-  faChevronRight,
-  faExpandArrowsAlt,
-  faCompressArrowsAlt,
-  faSync,
-  faTrashAlt,
-} from '@fortawesome/free-solid-svg-icons';
+  mdiAccountGroup,
+  mdiPlus,
+  mdiPencil,
+  mdiTrashCan,
+  mdiChevronDown,
+  mdiChevronRight,
+  mdiArrowExpandAll,
+  mdiArrowCollapseAll,
+  mdiRefresh,
+  mdiMagnify,
+  mdiAccountCircle,
+  mdiDomain,
+} from '@mdi/js';
+import './UserManagement.css';
 
 interface User {
   email: string;
   roles: string[];
   clientname: string;
 }
+
+const getRoleBadgeClass = (role: string): string => {
+  const roleLower = role.toLowerCase();
+  if (roleLower === 'admin') return 'admin';
+  if (roleLower === 'external') return 'external';
+  if (roleLower === 'manager') return 'manager';
+  if (roleLower === 'executive') return 'executive';
+  return '';
+};
 
 const UserManagement = () => {
   const {
@@ -45,6 +58,13 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalClients = filteredClients.length;
+    const totalUsers = filteredClients.reduce((sum, client) => sum + client.users.length, 0);
+    return { totalClients, totalUsers };
+  }, [filteredClients]);
 
   const handleOpenDeleteModal = (user: User) => {
     setUserToDelete(user);
@@ -75,166 +95,236 @@ const UserManagement = () => {
   };
 
   const handleRefresh = () => {
-    // This would typically be a function from the logic hook to refetch data
     window.location.reload();
   };
 
-  let content;
-
-  if (isLoading) content = <p>Loading users...</p>;
-
-  if (isError) {
-    content = (
-      <div className='error-container'>
-        {/* @ts-ignore */}
-        <p className='errmsg'>{error?.data?.message || 'An error occurred'}</p>
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className='user-management'>
+        <div className='user-management-loading'>
+          <div className='user-management-loading-spinner'>
+            <div className='user-management-spinner'></div>
+            <span>Loading users...</span>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (isSuccess) {
-    const tableContent =
-      filteredClients.length > 0 ? (
-        filteredClients.map((client) => {
-          const isExpanded = isClientExpanded(client.clientname);
-          return (
-            <React.Fragment key={client.clientname}>
-              <tr
-                className='table__row client-row'
-                onClick={() => toggleClientExpansion(client.clientname)}
-              >
-                <td className='table__cell client-name'>
-                  <FontAwesomeIcon
-                    icon={isExpanded ? faChevronDown : faChevronRight}
-                    className='toggle-icon'
-                  />
-                  {client.clientname}
-                </td>
-                <td className='table__cell user-count'>
-                  {client.userCount} user{client.userCount !== 1 ? 's' : ''}
-                </td>
-                <td className='table__cell actions-cell'></td>
-              </tr>
-              {isExpanded &&
-                client.users.map((user) => (
-                  <tr key={user.email} className='table__row user-row'>
-                    <td className='table__cell user-email'>
-                      <span className='user-indent'>└─ {user.email}</span>
-                    </td>
-                    <td className='table__cell'>{user.roles.join(', ')}</td>
-                    <td className='table__cell actions-cell'>
-                      <div className='actions-cell-content'>
-                        <button
-                          onClick={() => handleOpenUpdateModal(user)}
-                          className='edit-button'
-                        >
-                          <FontAwesomeIcon icon={faPencilAlt} />
-                        </button>
-                        <button
-                          onClick={() => handleOpenDeleteModal(user)}
-                          className='delete-button'
-                        >
-                          <FontAwesomeIcon icon={faTrashAlt} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </React.Fragment>
-          );
-        })
-      ) : (
-        <tr>
-          <td
-            className='table__cell'
-            colSpan={3}
-            style={{ textAlign: 'center' }}
-          >
-            No clients or users found.
-          </td>
-        </tr>
-      );
-
-    content = (
-      <>
-        <div className='user-management-header'>
-          <h1 className='user-management-title'>User Management</h1>
-          <div className='header-actions'>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className='add-user-button'
-            >
-              <FontAwesomeIcon icon={faPlus} /> Add New User
-            </button>
-            <button
-              onClick={expandAll}
-              className='expand-button'
-              title='Expand All'
-            >
-              <FontAwesomeIcon icon={faExpandArrowsAlt} />
-            </button>
-            <button
-              onClick={collapseAll}
-              className='collapse-button'
-              title='Collapse All'
-            >
-              <FontAwesomeIcon icon={faCompressArrowsAlt} />
-            </button>
-            <button onClick={handleRefresh} className='refresh-button'>
-              <FontAwesomeIcon icon={faSync} />
-            </button>
-          </div>
+  // Error state
+  if (isError) {
+    return (
+      <div className='user-management'>
+        <div className='user-management-error'>
+          {/* @ts-ignore */}
+          {error?.data?.message || 'An error occurred while loading users'}
         </div>
-        <div className='user-management-controls'>
-          <input
-            type='text'
-            placeholder='Search by client or email...'
-            className='search-input'
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            autoComplete='new-password'
-          />
-        </div>
-        <div className='table-container'>
-          <table className='table table__users'>
-            <thead className='table__thead'>
-              <tr>
-                <th scope='col' className='table__th client__name_header'>
-                  Client
-                </th>
-                <th scope='col' className='table__th user__roles_header'>
-                  Users / Roles
-                </th>
-                <th scope='col' className='table__th user__actions_header'>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>{tableContent}</tbody>
-          </table>
-        </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <section className='user-management-container'>
-      {content}
+    <div className='user-management'>
+      {/* Header */}
+      <div className='user-management-header'>
+        <div className='user-management-header-left'>
+          <h1>
+            <Icon path={mdiAccountGroup} size={1} />
+            User Management
+          </h1>
+          <p className='user-management-subtitle'>Manage users and their roles</p>
+        </div>
+      </div>
 
+      {/* Controls */}
+      <div className='user-management-controls'>
+        <div className='user-management-controls-left'>
+          <div className='user-management-search-wrapper'>
+            <Icon path={mdiMagnify} size={0.75} className='user-management-search-icon' />
+            <input
+              type='text'
+              placeholder='Search by client or email...'
+              className='user-management-search'
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoComplete='off'
+            />
+          </div>
+        </div>
+        <div className='user-management-controls-right'>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className='user-management-btn user-management-btn-primary'
+            title='Add New User'
+          >
+            <Icon path={mdiPlus} size={0.75} />
+            <span>Add User</span>
+          </button>
+          <button
+            onClick={expandAll}
+            className='user-management-btn user-management-btn-icon'
+            title='Expand All'
+          >
+            <Icon path={mdiArrowExpandAll} size={0.75} />
+          </button>
+          <button
+            onClick={collapseAll}
+            className='user-management-btn user-management-btn-icon'
+            title='Collapse All'
+          >
+            <Icon path={mdiArrowCollapseAll} size={0.75} />
+          </button>
+          <button
+            onClick={handleRefresh}
+            className='user-management-btn user-management-btn-icon'
+            title='Refresh'
+          >
+            <Icon path={mdiRefresh} size={0.75} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className='user-management-stats'>
+        <div className='user-management-stat'>
+          <span className='user-management-stat-value'>{stats.totalClients}</span>
+          <span className='user-management-stat-label'>Clients</span>
+        </div>
+        <div className='user-management-stat'>
+          <span className='user-management-stat-value'>{stats.totalUsers}</span>
+          <span className='user-management-stat-label'>Users</span>
+        </div>
+      </div>
+
+      {/* Data Section */}
+      <div className='user-management-data-section'>
+        <div className='user-management-data-header'>
+          <h2 className='user-management-data-title'>
+            <Icon path={mdiDomain} size={0.875} />
+            Clients & Users
+          </h2>
+        </div>
+
+        {filteredClients.length === 0 ? (
+          <div className='user-management-empty'>
+            No clients or users found matching your search.
+          </div>
+        ) : (
+          <div className='user-management-table-scroller'>
+            <table className='user-management-table'>
+              <thead>
+                <tr>
+                  <th>Client / User</th>
+                  <th>Roles</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClients.map((client) => {
+                  const isExpanded = isClientExpanded(client.clientname);
+                  return (
+                    <React.Fragment key={client.clientname}>
+                      {/* Client Row */}
+                      <tr
+                        className='user-management-client-row'
+                        onClick={() => toggleClientExpansion(client.clientname)}
+                      >
+                        <td>
+                          <div className='user-management-client-name'>
+                            <Icon
+                              path={isExpanded ? mdiChevronDown : mdiChevronRight}
+                              size={0.75}
+                              className='user-management-toggle-icon'
+                            />
+                            {client.clientname}
+                          </div>
+                        </td>
+                        <td>
+                          <span className='user-management-user-count'>
+                            {client.userCount} user{client.userCount !== 1 ? 's' : ''}
+                          </span>
+                        </td>
+                        <td></td>
+                      </tr>
+
+                      {/* User Rows */}
+                      {isExpanded &&
+                        client.users.map((user) => (
+                          <tr key={user.email} className='user-management-user-row'>
+                            <td>
+                              <div className='user-management-user-email'>
+                                <Icon
+                                  path={mdiAccountCircle}
+                                  size={0.75}
+                                  className='user-management-user-email-icon'
+                                />
+                                <span className='user-management-user-email-text'>
+                                  {user.email}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className='user-management-roles'>
+                                {user.roles.map((role) => (
+                                  <span
+                                    key={role}
+                                    className={`user-management-role-badge ${getRoleBadgeClass(role)}`}
+                                  >
+                                    {role}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td>
+                              <div className='user-management-actions'>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenUpdateModal(user);
+                                  }}
+                                  className='user-management-action-btn edit'
+                                  title='Edit User'
+                                >
+                                  <Icon path={mdiPencil} size={0.625} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDeleteModal(user);
+                                  }}
+                                  className='user-management-action-btn delete'
+                                  title='Delete User'
+                                >
+                                  <Icon path={mdiTrashCan} size={0.625} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Add User Modal */}
       <Modal isOpen={isAddModalOpen} onClose={handleModalClose}>
         <UserForm onSuccess={handleModalClose} />
       </Modal>
 
+      {/* Edit User Modal */}
       {editingUser && (
         <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>
           {/* @ts-ignore */}
-          <UpdateUserRoles
-            userToUpdate={editingUser}
-            onSuccess={handleModalClose}
-          />
+          <UpdateUserRoles userToUpdate={editingUser} onSuccess={handleModalClose} />
         </Modal>
       )}
 
+      {/* Delete Confirmation Modal */}
       {userToDelete && (
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
@@ -253,7 +343,7 @@ const UserManagement = () => {
           isConfirming={isDeleting}
         />
       )}
-    </section>
+    </div>
   );
 };
 
