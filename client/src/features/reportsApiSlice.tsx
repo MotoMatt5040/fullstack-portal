@@ -1,13 +1,16 @@
 import { apiSlice } from '../app/api/apiSlice';
 import { removeTimeZone } from '../utils/DateFormat';
 
+// Global sequence counter for request tracking
+let requestSequenceCounter = 0;
+
 interface ReportArgs {
   live: boolean;
   useGpcph: boolean;
 
-  projectId?: string; 
-  startDate?: string;  
-  endDate?: string;  
+  projectId?: string;
+  startDate?: string;
+  endDate?: string;
   ts?: string;
   recDate?: string;
 }
@@ -40,9 +43,7 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getReport: builder.query<ReportResponse, ReportArgs>({
       query: ({ projectId, live, startDate, endDate, ts, useGpcph }) => {
-        
         const basePath = '/reports/tables/data/';
-
         let url = '';
 
         if (live) {
@@ -64,7 +65,13 @@ export const ReportApiSlice = apiSlice.injectEndpoints({
           url = url.slice(0, -1);
         }
 
-        return { url, method: 'GET' };
+        // Include request sequence header for live requests to help backend track request order
+        const headers: Record<string, string> = {};
+        if (live) {
+          headers['X-Request-Sequence'] = String(++requestSequenceCounter);
+        }
+
+        return { url, method: 'GET', headers };
       },
     }),
 

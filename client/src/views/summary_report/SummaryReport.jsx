@@ -1,21 +1,15 @@
 import React from 'react';
 import useProjectReportLogic from './useSummaryReportLogic';
 import Icon from '@mdi/react';
-import { mdiViewList, mdiViewGrid } from '@mdi/js';
+import { mdiViewList, mdiViewGrid, mdiChartLine, mdiEye } from '@mdi/js';
 
 import MyPieChart from '../../components/MyPieChart';
 import MyDateRangePicker from '../../components/DateRangePicker';
 import MyTable from '../../components/MyTable';
 import MyToggle from '../../components/MyToggle';
 
-// import './SummaryReport.css';
+import './SummaryReport.css';
 import './SummaryReportTable.css';
-import '../styles/Tables.css';
-import '../styles/Headers.css';
-import '../styles/Sections.css';
-import '../styles/Charts.css';
-import '../styles/Scrollers.css';
-import '../styles/ViewToggles.css';
 import { useSelector } from 'react-redux';
 import MyDataCard from '../../components/MyDataCard';
 
@@ -30,9 +24,8 @@ const ProjectReport = () => {
     totalData,
     date,
     handleDateChange,
-    summaryReportIsLoading,
-    summaryReportIsSuccess,
-    summaryReportIsFetching,
+    isInitialLoading,
+    isRefreshing,
     isListView,
     handleViewChange,
   } = useProjectReportLogic();
@@ -47,7 +40,6 @@ const ProjectReport = () => {
   };
 
   if (window.innerWidth < 768) {
-    // Mobile view
     columnKeyMap = {
       ...columnKeyMap,
       GPH: 'gpcph',
@@ -76,7 +68,6 @@ const ProjectReport = () => {
   };
 
   const cardColumnKeyMap = {
-    // 'Proj ID': 'projectId',
     'Proj Name': 'projName',
     ...(liveToggle ? {} : { Date: 'abbreviatedDate' }),
     CMS: 'cms',
@@ -91,124 +82,160 @@ const ProjectReport = () => {
     'Zero CMS': 'zcms',
   };
 
+  // Data is ready once we have any data - don't flicker on refreshes
+  const hasData = data && data.length > 0;
+
   return (
-    <section className='summary report section'>
-      <div className='summary header'>
-        <h1>
-          Calculations currently use{' '}
-          {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
-        </h1>
+    <div className='summary-report'>
+      {/* Header */}
+      <div className='summary-header'>
+        <div className='summary-header-left'>
+          <h1>
+            <Icon path={mdiChartLine} size={1} />
+            Summary Report
+          </h1>
+          <p className='summary-subtitle'>Project performance overview</p>
+          <p className='summary-cph-note'>
+            Using {useGpcph || liveToggle ? 'Gameplan CPH' : 'Actual CPH'}
+          </p>
+        </div>
       </div>
-      <span className='report-container'>
-        <div className='report-header'>
+
+      {/* Controls */}
+      <div className='summary-controls'>
+        <div className='summary-controls-left'>
+          {!liveToggle && (
+            <MyDateRangePicker
+              date={date}
+              onChange={handleDateChange}
+              isDisabled={liveToggle}
+            />
+          )}
+        </div>
+        <div className='summary-controls-right'>
+          {liveToggle && (
+            <span className='summary-live-indicator'>
+              <span className={`live-dot ${isRefreshing ? 'refreshing' : ''}`}></span>
+              {isRefreshing ? 'Updating...' : 'Live Data'}
+            </span>
+          )}
+          <MyToggle
+            label='Live'
+            active={liveToggle}
+            onClick={handleLiveToggle}
+            blink={liveToggle}
+          />
+        </div>
+      </div>
+
+      {/* Overview Section */}
+      <div className='summary-overview'>
+        <h2 className='summary-overview-title'>
+          <Icon path={mdiEye} size={0.875} />
           Overview
-          <div className='report-charts'>
-            {showGraphs && (
+        </h2>
+        <div className='summary-overview-content'>
+          {showGraphs && (
+            <div className='summary-chart-container'>
               <MyPieChart
                 data={chartData}
                 domainColumn='field'
                 valueColumn='value'
-                dataIsReady={
-                  summaryReportIsSuccess &&
-                  !summaryReportIsLoading &&
-                  !summaryReportIsFetching
-                }
+                dataIsReady={hasData}
                 colorMap={{
                   'ON-CPH': '#4CAF50',
                   'ON-VAR': '#2196F3',
                   'OFF-CPH': '#FF9800',
-                  'ZERO-CMS': '#F44336'
+                  'ZERO-CMS': '#F44336',
                 }}
               />
-            )}
+            </div>
+          )}
+          <div className='summary-stats-container'>
             <MyTable
               className='summary-overview-table'
               data={totalData}
               columnKeyMap={summaryColumnKeyMap}
               isLive={liveToggle}
-              dataIsReady={
-                summaryReportIsSuccess &&
-                !summaryReportIsLoading &&
-                !summaryReportIsFetching
-              }
+              dataIsReady={hasData}
             />
           </div>
         </div>
-        <div className='table-data-container'>
-          <div className='view-toggle-div'>
-            <span className='view-toggle-span' onClick={handleViewChange}>
-              {isListView ? (
-                <Icon path={mdiViewGrid} size={1} title='Card View' />
-              ) : (
-                <Icon path={mdiViewList} size={1} title='Table View' />
-              )}
-            </span>
+      </div>
+
+      {/* Data Section */}
+      <div className='summary-data-section'>
+        <div className='summary-data-header'>
+          <h2 className='summary-data-title'>
+            {liveToggle ? 'Live Projects' : 'Project Data'}
+          </h2>
+          <div className='summary-data-actions'>
+            <div className='summary-view-toggle'>
+              <button
+                className={isListView ? 'active' : ''}
+                onClick={isListView ? undefined : handleViewChange}
+                title='Table View'
+              >
+                <Icon path={mdiViewList} size={0.875} />
+              </button>
+              <button
+                className={!isListView ? 'active' : ''}
+                onClick={!isListView ? undefined : handleViewChange}
+                title='Card View'
+              >
+                <Icon path={mdiViewGrid} size={0.875} />
+              </button>
+            </div>
           </div>
-          <div className={`table-data-header`}>
-            {liveToggle ? (
-              'Live Data'
-            ) : (
-              <MyDateRangePicker
-                date={date}
-                onChange={handleDateChange}
-                isDisabled={liveToggle}
-              />
-            )}
-            <MyToggle
-              label='Live'
-              active={liveToggle}
-              onClick={handleLiveToggle}
-              blink={liveToggle}
+        </div>
+
+        {/* Show loading only on initial load, never during refreshes */}
+        {isInitialLoading ? (
+          <div className='summary-loading'>Loading project data...</div>
+        ) : isListView ? (
+          <div className='summary-table-scroller'>
+            <MyTable
+              className='summary-data-table'
+              data={data}
+              columnKeyMap={columnKeyMap}
+              reverseThresholds={['offCph', 'zcms']}
+              isLive={liveToggle}
+              isClickable={true}
+              clickParameters={[
+                'projectId',
+                'recDate',
+                'projName',
+                'cms',
+                'cph',
+                'hrs',
+                'al',
+                'mph',
+              ]}
+              linkTo={'/project-report'}
+              redirect={true}
+              dataIsReady={true}
             />
           </div>
-          {/* NOTE: This is a special notation in JS that allows a function to be called only if the previous condition is true. In this case, it will only call the function if isSuccess is true.
-				    The syntax is {bool && <Component />} (please include the brackets) */}
-          {isListView ? (
-            <div className='table-scroller'>
-              <MyTable
-                // className='summary-table'
-                data={data}
-                columnKeyMap={columnKeyMap}
-                reverseThresholds={['offCph', 'zcms']}
-                isLive={liveToggle}
-                isClickable={true}
-                clickParameters={[
-                  'projectId',
-                  'recDate',
-                  'projName',
-                  'cms',
-                  'cph',
-                  'hrs',
-                  'al',
-                  'mph',
-                ]}
-                linkTo={'/project-report'}
-                redirect={true}
-                dataIsReady={
-                  summaryReportIsSuccess &&
-                  !summaryReportIsLoading &&
-                  !summaryReportIsFetching
-                }
+        ) : (
+          <div className='summary-card-container'>
+            {data.map((item, index) => (
+              <MyDataCard
+                key={index}
+                title={item.projectId}
+                data={item}
+                columnKeyMap={cardColumnKeyMap}
               />
-            </div>
-          ) : (
-            <div className='card-container'>
-              {summaryReportIsSuccess &&
-                !summaryReportIsLoading &&
-                !summaryReportIsFetching &&
-                data.map((item, index) => (
-                  <MyDataCard
-                    key={index}
-                    title={item.projectId}
-                    data={item}
-                    columnKeyMap={cardColumnKeyMap}
-                  />
-                ))}
-            </div>
-          )}
-        </div>
-      </span>
-    </section>
+            ))}
+          </div>
+        )}
+
+        {!isInitialLoading && data.length === 0 && (
+          <div className='summary-empty'>
+            No project data available for the selected period.
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

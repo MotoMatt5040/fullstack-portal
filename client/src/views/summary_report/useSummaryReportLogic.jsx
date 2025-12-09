@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 // import { useGetSummaryReportQuery } from '../../features/summaryReportApiSlice';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
@@ -28,9 +28,16 @@ const useProjectReportLogic = () => {
   );
   const [data, setData] = useState([]);
   const [timestamp, setTimestamp] = useState(Date.now());
-  const [projectCount, setProjectCount] = useState(0);
-  const [isRefetching, setIsRefetching] = useState(false);
   const [isListView, setIsListView] = useState(true);
+
+  // Ref to track if we have received initial data (prevents flickering on refreshes)
+  const hasInitialDataRef = useRef(false);
+  // Track last known good data count to detect potential incomplete responses
+  const lastCountRef = useRef(0);
+  // Track if we're doing a validation re-fetch
+  const isValidatingRef = useRef(false);
+  // Store pending validation data to compare against
+  const pendingValidationRef = useRef(null);
   const [chartData, setChartData] = useState([
     { field: 'ON-CPH', value: 0 },
     { field: 'ON-VAR', value: 0 },
@@ -131,29 +138,97 @@ const useProjectReportLogic = () => {
     };
   }, [liveToggle, date]);
 
+  // Process incoming data - backend handles stale request filtering via 204 responses
   useEffect(() => {
-    if (!summaryReport.data) return;
+    // Ignore empty/null data - keep showing existing data
+    if (!summaryReport.data || !Array.isArray(summaryReport.data)) return;
 
-    let data = summaryReport.data;
+    // In live mode with existing data, ignore empty arrays (stale 204 response was converted to empty)
+    if (liveToggle && summaryReport.data.length === 0 && hasInitialDataRef.current) {
+      return;
+    }
 
+    const newCount = summaryReport.data.length;
+    const lastCount = lastCountRef.current;
+
+    // If we're in a validation cycle, compare results
+    if (isValidatingRef.current && pendingValidationRef.current !== null) {
+      isValidatingRef.current = false;
+      const pendingCount = pendingValidationRef.current.length;
+
+      // Use whichever response has more data (assume incomplete is the issue)
+      if (newCount >= pendingCount) {
+        // Validation returned same or more - use validation data
+        lastCountRef.current = newCount;
+        pendingValidationRef.current = null;
+        // Process and set the validated data
+        let processedData = summaryReport.data;
+        if (window.innerWidth < 768) {
+          processedData = processedData.map((item) => ({
+            ...item,
+            projName:
+              item.projName.length > 7
+                ? item.projName.slice(0, 7) + '…'
+                : item.projName,
+          }));
+        }
+        setData(processedData);
+      } else {
+        // Original had more data - keep the pending data, update count
+        lastCountRef.current = pendingCount;
+        let processedData = pendingValidationRef.current;
+        if (window.innerWidth < 768) {
+          processedData = processedData.map((item) => ({
+            ...item,
+            projName:
+              item.projName.length > 7
+                ? item.projName.slice(0, 7) + '…'
+                : item.projName,
+          }));
+        }
+        pendingValidationRef.current = null;
+        setData(processedData);
+      }
+      return;
+    }
+
+    // In live mode: detect when count drops from previous
+    // Trigger a silent validation re-fetch to confirm
+    if (liveToggle && lastCount > 0 && newCount > 0 && newCount < lastCount) {
+      // Store the new (potentially incomplete) data for comparison
+      pendingValidationRef.current = summaryReport.data;
+      isValidatingRef.current = true;
+      // Trigger a re-fetch by updating timestamp - data will be compared on next response
+      setTimestamp(Date.now());
+      // Don't update displayed data yet - wait for validation
+      return;
+    }
+
+    let processedData = summaryReport.data;
+
+    // Trim project names on mobile
     if (window.innerWidth < 768) {
-      const trimmedData = data.map((item) => ({
+      processedData = processedData.map((item) => ({
         ...item,
         projName:
           item.projName.length > 7
             ? item.projName.slice(0, 7) + '…'
             : item.projName,
       }));
-      data = trimmedData;
     }
 
-    setData(data);
-  }, [projectCount, isRefetching, summaryReport.data]);
+    // Update last known count
+    if (processedData.length > 0) {
+      hasInitialDataRef.current = true;
+      lastCountRef.current = processedData.length;
+    }
 
+    setData(processedData);
+  }, [summaryReport.data, liveToggle]);
+
+  // Calculate totals when data changes
   useEffect(() => {
     if (!data || data.length === 0) return;
-
-    if (liveToggle) refetchCheck();
 
     const totals = data.reduce(
       (acc, project) => {
@@ -166,49 +241,23 @@ const useProjectReportLogic = () => {
       { onCph: 0, onVar: 0, offCph: 0, zcms: 0 }
     );
 
-    const newChartData = [
+    setChartData([
       { field: 'ON-CPH', value: totals.onCph.toFixed(2) },
       { field: 'ON-VAR', value: totals.onVar.toFixed(2) },
       { field: 'OFF-CPH', value: totals.offCph.toFixed(2) },
       { field: 'ZERO-CMS', value: totals.zcms.toFixed(2) },
-    ];
+    ]);
 
-    setChartData(newChartData);
-
-    const newTotalData = [
+    setTotalData([
       {
-        Total: (
-          totals.onCph +
-          totals.onVar +
-          totals.offCph +
-          totals.zcms
-        ).toFixed(2),
+        Total: (totals.onCph + totals.onVar + totals.offCph + totals.zcms).toFixed(2),
         'ON-CPH': totals.onCph.toFixed(2),
         'ON-VAR': totals.onVar.toFixed(2),
         'OFF-CPH': totals.offCph.toFixed(2),
         'ZERO-CMS': totals.zcms.toFixed(2),
       },
-    ];
-
-    setTotalData(newTotalData);
+    ]);
   }, [data]);
-
-  const refetchCheck = () => {
-    if (projectCount > summaryReport.data.length && !isRefetching) {
-      setTimeout(() => {
-        setIsRefetching(true);
-        fetchData(summaryReport.refetch, {
-          live: liveToggle,
-          startDate: date.start,
-          endDate: date.end,
-          ts: timestamp,
-        }).finally(() => {
-          setIsRefetching(false);
-        });
-      }, 1000);
-    }
-    setProjectCount(summaryReport.data.length);
-  };
 
   const handleLiveToggle = () => {
     const newToggle = !liveToggle;
@@ -239,16 +288,20 @@ const useProjectReportLogic = () => {
     props.useGpcph = useGpcph;
     try {
       const result = await refetch(props);
-      // This is a custom error code for when the server cancels the request. This is not good practice and will be changed in the future.
-      // To trigger this, begin a request then make another request immedietaly after. The server will cancel the first request.
-      // Example: Start with live disabled..... Enable it, then disable it again. The server will cancel the first request.
-      if (result?.error?.status === 499) return;
-      if (result?.data) {
-        setData(result.data);
-      } else {
+
+      // Ignore stale/cancelled requests (204 from backend, 499 legacy)
+      if (result?.error?.status === 499 || result?.error?.status === 204) {
+        return;
+      }
+
+      // Data processing is handled by the useEffect watching summaryReport.data
+      // Only reset in historic mode when genuinely no data
+      if (!liveToggle && result?.data?.length === 0) {
         resetVariables();
       }
-    } catch (err) {}
+    } catch (err) {
+      // Silently ignore fetch errors
+    }
   };
 
   const handleDateChange = (newDate) => {
@@ -271,13 +324,18 @@ const useProjectReportLogic = () => {
     setIsListView((prev) => !prev);
   };
 
+  // Initial loading = no data yet and fetching
+  // Once we have data, never show loading again (seamless updates)
+  const isInitialLoading = !hasInitialDataRef.current && (summaryReport.isLoading || summaryReport.isFetching);
+
   return {
     liveToggle,
     handleLiveToggle,
     data,
-    summaryReportIsSuccess: summaryReport.isSuccess,
-    summaryReportIsLoading: summaryReport.isLoading,
-    summaryReportIsFetching: summaryReport.isFetching,
+    // For live mode: only show loading on initial load, not on refreshes
+    isInitialLoading,
+    // Background refresh indicator (optional subtle indicator)
+    isRefreshing: hasInitialDataRef.current && summaryReport.isFetching,
     chartData,
     totalData,
     date,

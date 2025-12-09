@@ -1,0 +1,499 @@
+/* =================================================================
+   Summary Report - Modern Flat Design
+   ================================================================= */
+
+.summary-report {
+  padding: 1.5rem;
+  max-width: 100%;
+}
+
+/* =================================================================
+   Header
+   ================================================================= */
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.summary-header-left h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary-subtitle {
+  color: var(--label-text-color);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.summary-cph-note {
+  font-size: 0.75rem;
+  color: var(--label-text-color);
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+/* =================================================================
+   Controls
+   ================================================================= */
+.summary-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.summary-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.summary-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.summary-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.summary-live-indicator .live-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+
+/* Refreshing state - orange color with faster pulse */
+.summary-live-indicator .live-dot.refreshing {
+  background: #f59e0b;
+  animation: pulse 0.5s infinite;
+}
+
+/* =================================================================
+   Overview Section
+   ================================================================= */
+.summary-overview {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.summary-overview-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary-overview-content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.summary-chart-container {
+  flex: 0 0 auto;
+  min-width: 200px;
+}
+
+.summary-stats-container {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* =================================================================
+   Stats Table (Overview Table)
+   ================================================================= */
+.summary-overview-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.summary-overview-table thead th {
+  padding: 0.625rem 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  border-bottom: 1px solid var(--border-color-soft);
+  text-align: center;
+}
+
+.summary-overview-table tbody td {
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.summary-overview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =================================================================
+   Data Section
+   ================================================================= */
+.summary-data-section {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.summary-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.summary-data-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary-data-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* =================================================================
+   View Toggle
+   ================================================================= */
+.summary-view-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--background-color-muted);
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+.summary-view-toggle button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.625rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-color);
+  opacity: 0.5;
+  transition: all 0.15s ease;
+}
+
+.summary-view-toggle button:hover {
+  opacity: 0.8;
+}
+
+.summary-view-toggle button.active {
+  background: var(--background-color);
+  opacity: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* =================================================================
+   Table Scroller
+   ================================================================= */
+.summary-table-scroller {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* =================================================================
+   Data Table
+   ================================================================= */
+.summary-data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.summary-data-table thead th {
+  padding: 0.625rem 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  border-bottom: 1px solid var(--border-color-soft);
+  background: var(--background-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: center;
+}
+
+.summary-data-table tbody td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.summary-data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.summary-data-table tbody tr:nth-child(even) td {
+  background-color: var(--background-color-muted);
+}
+
+.summary-data-table tbody tr:hover td {
+  background-color: var(--background-color-elevated);
+}
+
+.summary-data-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+/* =================================================================
+   Card View
+   ================================================================= */
+.summary-card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  background: var(--background-color-muted);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--border-color-soft);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.summary-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.summary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.summary-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.summary-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem 1rem;
+}
+
+.summary-card-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+}
+
+.summary-card-label {
+  color: var(--label-text-color);
+}
+
+.summary-card-value {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+/* =================================================================
+   States
+   ================================================================= */
+.summary-loading,
+.summary-error,
+.summary-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--label-text-color);
+  font-size: 0.9rem;
+}
+
+.summary-error {
+  color: #dc2626;
+}
+
+/* =================================================================
+   Responsive
+   ================================================================= */
+@media (max-width: 768px) {
+  .summary-report {
+    padding: 1rem;
+  }
+
+  .summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .summary-header-left h1 {
+    font-size: 1.25rem;
+  }
+
+  .summary-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .summary-controls-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-controls-right {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .summary-overview-content {
+    flex-direction: column;
+  }
+
+  .summary-chart-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .summary-stats-container {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .summary-data-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .summary-data-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .summary-card-container {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-data-table {
+    font-size: 0.75rem;
+  }
+
+  .summary-data-table thead th,
+  .summary-data-table tbody td {
+    padding: 0.5rem 0.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-report {
+    padding: 0.75rem;
+  }
+
+  .summary-header-left h1 {
+    font-size: 1.125rem;
+  }
+
+  .summary-subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .summary-overview,
+  .summary-data-section {
+    padding: 1rem;
+  }
+
+  .summary-card-body {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-data-table {
+    font-size: 0.7rem;
+  }
+
+  .summary-overview-table tbody td {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.375rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .summary-report {
+    padding: 2rem;
+  }
+
+  .summary-header-left h1 {
+    font-size: 1.625rem;
+  }
+}

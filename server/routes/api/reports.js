@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {ROLES_LIST} = require('../../config/rolesConfig');
 const verifyRoles = require('../../middleware/verifyRoles');
+const requestSequence = require('../../middleware/requestSequence');
 const ReportController = require('../../controllers/reportController');
 
 router
@@ -13,6 +14,8 @@ router
       ROLES_LIST.Manager,
       ROLES_LIST.Programmer
     ),
+    // Use request sequencing for live data to handle rapid requests gracefully
+    requestSequence({ abortPrevious: true }),
     (req, res) => {
       ReportController.handleGetReportData(req, res);
     }

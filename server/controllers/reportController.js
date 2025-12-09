@@ -227,7 +227,6 @@ const handleGetReportData = handleAsync(async (req, res) => {
     const recDate = new Date(rd.getTime() + CST_OFFSET_MS); // This is a bandaid fix for the timezone issue, it will be fixed in the future
     const month = String(recDate.getMonth() + 1).padStart(2, '0');
     const day = String(recDate.getDate()).padStart(2, '0');
-    console.log(recDate, month, day);
 
     // This is the final updated object that gets returned to result, which is then returned to the front end.
     const update = {
