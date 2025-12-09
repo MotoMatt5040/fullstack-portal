@@ -45,6 +45,10 @@ const useCallIDManagementLogic = () => {
     inUse: '',
   });
 
+  // Inventory pagination state
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [inventoryLimit, setInventoryLimit] = useState(50);
+
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -203,7 +207,7 @@ const useCallIDManagementLogic = () => {
         refetchRecentActivity();
         break;
       case 'inventory':
-        getAllCallIDs(filters);
+        getAllCallIDs({ ...filters, page: inventoryPage, limit: inventoryLimit });
         break;
       case 'assignments':
         refetchProjects();
@@ -219,12 +223,12 @@ const useCallIDManagementLogic = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Load inventory when filters change
+  // Load inventory when filters or pagination change
   useEffect(() => {
     if (activeTab === 'inventory') {
-      getAllCallIDs(filters);
+      getAllCallIDs({ ...filters, page: inventoryPage, limit: inventoryLimit });
     }
-  }, [filters, getAllCallIDs, activeTab]);
+  }, [filters, inventoryPage, inventoryLimit, getAllCallIDs, activeTab]);
 
   // Load project history when selected
   useEffect(() => {
@@ -331,6 +335,7 @@ const useCallIDManagementLogic = () => {
       ...prev,
       [filterName]: value,
     }));
+    setInventoryPage(1); // Reset to first page when filters change
   }, []);
 
   const handleClearFilters = useCallback(() => {
@@ -341,6 +346,7 @@ const useCallIDManagementLogic = () => {
       phoneNumber: '',
       inUse: '',
     });
+    setInventoryPage(1); // Reset to first page when filters are cleared
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -351,7 +357,7 @@ const useCallIDManagementLogic = () => {
         refetchRecentActivity();
         break;
       case 'inventory':
-        getAllCallIDs(filters);
+        getAllCallIDs({ ...filters, page: inventoryPage, limit: inventoryLimit });
         break;
       case 'assignments':
         refetchProjects();
@@ -370,6 +376,8 @@ const useCallIDManagementLogic = () => {
   }, [
     activeTab,
     filters,
+    inventoryPage,
+    inventoryLimit,
     refetchDashboard,
     refetchActiveAssignments,
     refetchRecentActivity,
@@ -383,6 +391,16 @@ const useCallIDManagementLogic = () => {
     refetchCoverage,
     refetchTimeline,
   ]);
+
+  // Pagination handlers
+  const handleInventoryPageChange = useCallback((page: number) => {
+    setInventoryPage(page);
+  }, []);
+
+  const handleInventoryLimitChange = useCallback((limit: number) => {
+    setInventoryLimit(limit);
+    setInventoryPage(1); // Reset to first page when limit changes
+  }, []);
 
   // Modal actions
   const openCreateModal = useCallback(() => setShowCreateModal(true), []);
@@ -867,6 +885,9 @@ const useCallIDManagementLogic = () => {
     activeAssignments,
     recentActivity,
     callIDInventory,
+    paginationInfo,
+    inventoryPage,
+    inventoryLimit,
     statusOptions,
     stateOptions,
     availableNumbers,
@@ -941,6 +962,11 @@ const useCallIDManagementLogic = () => {
     handleIdleDaysChange,
     handleMostUsedLimitChange,
     handleTimelineMonthsChange,
+
+    // Inventory pagination
+    handleInventoryPageChange,
+    handleInventoryLimitChange,
+
     // Project slots modal
     showProjectSlotsModal,
     selectedProjectSlots,

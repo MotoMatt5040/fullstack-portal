@@ -77,7 +77,7 @@ const getDashboardMetrics = async () => {
 
 /**
  * Get currently active assignments - UNPIVOTED to show each slot as a row
- * Active assignments are determined by CallID status = 2 (In Use)
+ * Active assignments are determined by currently fielding projects (today between StartDate and EndDate)
  */
 const getCurrentActiveAssignments = async () => {
   const query = `
@@ -96,7 +96,8 @@ const getCurrentActiveAssignments = async () => {
     LEFT JOIN FAJITA.dbo.CallIDs c1 ON u.CallIDL1 = c1.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s1 ON c1.StateFIPS = s1.StateFIPS
     WHERE u.CallIDL1 IS NOT NULL
-      AND c1.Status = 2  -- CallID status is "In Use"
+      AND CAST(GETDATE() AS DATE) >= CAST(u.StartDate AS DATE)
+      AND CAST(GETDATE() AS DATE) <= CAST(u.EndDate AS DATE)
 
     UNION ALL
 
@@ -115,7 +116,8 @@ const getCurrentActiveAssignments = async () => {
     LEFT JOIN FAJITA.dbo.CallIDs c2 ON u.CallIDL2 = c2.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s2 ON c2.StateFIPS = s2.StateFIPS
     WHERE u.CallIDL2 IS NOT NULL
-      AND c2.Status = 2  -- CallID status is "In Use"
+      AND CAST(GETDATE() AS DATE) >= CAST(u.StartDate AS DATE)
+      AND CAST(GETDATE() AS DATE) <= CAST(u.EndDate AS DATE)
 
     UNION ALL
 
@@ -134,7 +136,8 @@ const getCurrentActiveAssignments = async () => {
     LEFT JOIN FAJITA.dbo.CallIDs c3 ON u.CallIDC1 = c3.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s3 ON c3.StateFIPS = s3.StateFIPS
     WHERE u.CallIDC1 IS NOT NULL
-      AND c3.Status = 2  -- CallID status is "In Use"
+      AND CAST(GETDATE() AS DATE) >= CAST(u.StartDate AS DATE)
+      AND CAST(GETDATE() AS DATE) <= CAST(u.EndDate AS DATE)
 
     UNION ALL
 
@@ -153,7 +156,8 @@ const getCurrentActiveAssignments = async () => {
     LEFT JOIN FAJITA.dbo.CallIDs c4 ON u.CallIDC2 = c4.PhoneNumberID
     LEFT JOIN FAJITA.dbo.States s4 ON c4.StateFIPS = s4.StateFIPS
     WHERE u.CallIDC2 IS NOT NULL
-      AND c4.Status = 2  -- CallID status is "In Use"
+      AND CAST(GETDATE() AS DATE) >= CAST(u.StartDate AS DATE)
+      AND CAST(GETDATE() AS DATE) <= CAST(u.EndDate AS DATE)
 
     ORDER BY ProjectID, SlotNumber
   `;
@@ -1141,32 +1145,27 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
 
 /**
  * Get projects with their CURRENT slot assignments
- * Active assignments are determined by CallID status = 2 (In Use)
+ * Only returns currently fielding projects (today between StartDate and EndDate)
  */
 const getAllProjectsWithAssignments = async () => {
   const query = `
     SELECT
       u.ProjectID,
-      -- Count active assignments by slot (check if slot is filled and CallID status is "In Use")
-      SUM(CASE WHEN u.CallIDL1 IS NOT NULL AND c1.Status = 2 THEN 1 ELSE 0 END) as Slot1Active,
-      SUM(CASE WHEN u.CallIDL2 IS NOT NULL AND c2.Status = 2 THEN 1 ELSE 0 END) as Slot2Active,
-      SUM(CASE WHEN u.CallIDC1 IS NOT NULL AND c3.Status = 2 THEN 1 ELSE 0 END) as Slot3Active,
-      SUM(CASE WHEN u.CallIDC2 IS NOT NULL AND c4.Status = 2 THEN 1 ELSE 0 END) as Slot4Active,
-      -- Count rows where at least one slot has an "In Use" CallID
-      SUM(CASE WHEN (u.CallIDL1 IS NOT NULL AND c1.Status = 2)
-                 OR (u.CallIDL2 IS NOT NULL AND c2.Status = 2)
-                 OR (u.CallIDC1 IS NOT NULL AND c3.Status = 2)
-                 OR (u.CallIDC2 IS NOT NULL AND c4.Status = 2)
-          THEN 1 ELSE 0 END) as ActiveAssignments,
-      COUNT(*) as TotalAssignments,
-      MIN(u.StartDate) as FirstUsed,
-      MAX(u.EndDate) as LastUsed
+      u.StartDate,
+      u.EndDate,
+      -- Check if each slot has a CallID assigned
+      CASE WHEN u.CallIDL1 IS NOT NULL THEN 1 ELSE 0 END as Slot1Active,
+      CASE WHEN u.CallIDL2 IS NOT NULL THEN 1 ELSE 0 END as Slot2Active,
+      CASE WHEN u.CallIDC1 IS NOT NULL THEN 1 ELSE 0 END as Slot3Active,
+      CASE WHEN u.CallIDC2 IS NOT NULL THEN 1 ELSE 0 END as Slot4Active,
+      -- Count total active slots
+      (CASE WHEN u.CallIDL1 IS NOT NULL THEN 1 ELSE 0 END +
+       CASE WHEN u.CallIDL2 IS NOT NULL THEN 1 ELSE 0 END +
+       CASE WHEN u.CallIDC1 IS NOT NULL THEN 1 ELSE 0 END +
+       CASE WHEN u.CallIDC2 IS NOT NULL THEN 1 ELSE 0 END) as ActiveAssignments
     FROM FAJITA.dbo.CallIDUsage u
-    LEFT JOIN FAJITA.dbo.CallIDs c1 ON u.CallIDL1 = c1.PhoneNumberID
-    LEFT JOIN FAJITA.dbo.CallIDs c2 ON u.CallIDL2 = c2.PhoneNumberID
-    LEFT JOIN FAJITA.dbo.CallIDs c3 ON u.CallIDC1 = c3.PhoneNumberID
-    LEFT JOIN FAJITA.dbo.CallIDs c4 ON u.CallIDC2 = c4.PhoneNumberID
-    GROUP BY u.ProjectID
+    WHERE CAST(GETDATE() AS DATE) >= CAST(u.StartDate AS DATE)
+      AND CAST(GETDATE() AS DATE) <= CAST(u.EndDate AS DATE)
     ORDER BY u.ProjectID
   `;
 

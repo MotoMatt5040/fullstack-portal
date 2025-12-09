@@ -61,6 +61,9 @@ const CallIDManagement: React.FC = () => {
     activeAssignments,
     recentActivity,
     callIDInventory,
+    paginationInfo,
+    inventoryPage,
+    inventoryLimit,
     statusOptions,
     stateOptions,
     availableNumbers,
@@ -123,6 +126,9 @@ const CallIDManagement: React.FC = () => {
     handleIdleDaysChange,
     handleMostUsedLimitChange,
     handleTimelineMonthsChange,
+    // Inventory pagination
+    handleInventoryPageChange,
+    handleInventoryLimitChange,
     // Project slots modal
     showProjectSlotsModal,
     selectedProjectSlots,
@@ -501,8 +507,11 @@ const CallIDManagement: React.FC = () => {
             <span className='loading-text'>Updating...</span>
           ) : (
             <span className='result-count'>
-              {callIDInventory.length}{' '}
-              {callIDInventory.length === 1 ? 'result' : 'results'}
+              {paginationInfo ? (
+                <>Showing {callIDInventory.length} of {paginationInfo.totalCount} results</>
+              ) : (
+                <>{callIDInventory.length} {callIDInventory.length === 1 ? 'result' : 'results'}</>
+              )}
             </span>
           )}
         </div>
@@ -588,6 +597,62 @@ const CallIDManagement: React.FC = () => {
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* Pagination Controls */}
+      {paginationInfo && paginationInfo.totalPages > 1 && (
+        <div className='pagination-container'>
+          <div className='pagination-info'>
+            <span>Rows per page:</span>
+            <select
+              value={inventoryLimit}
+              onChange={(e) => handleInventoryLimitChange(Number(e.target.value))}
+              className='pagination-select'
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+            </select>
+          </div>
+          <div className='pagination-controls'>
+            <button
+              onClick={() => handleInventoryPageChange(1)}
+              disabled={inventoryPage === 1 || inventoryFetching}
+              className='pagination-btn'
+              title='First page'
+            >
+              ««
+            </button>
+            <button
+              onClick={() => handleInventoryPageChange(inventoryPage - 1)}
+              disabled={!paginationInfo.hasPreviousPage || inventoryFetching}
+              className='pagination-btn'
+              title='Previous page'
+            >
+              «
+            </button>
+            <span className='pagination-current'>
+              Page {inventoryPage} of {paginationInfo.totalPages}
+            </span>
+            <button
+              onClick={() => handleInventoryPageChange(inventoryPage + 1)}
+              disabled={!paginationInfo.hasNextPage || inventoryFetching}
+              className='pagination-btn'
+              title='Next page'
+            >
+              »
+            </button>
+            <button
+              onClick={() => handleInventoryPageChange(paginationInfo.totalPages)}
+              disabled={inventoryPage === paginationInfo.totalPages || inventoryFetching}
+              className='pagination-btn'
+              title='Last page'
+            >
+              »»
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
