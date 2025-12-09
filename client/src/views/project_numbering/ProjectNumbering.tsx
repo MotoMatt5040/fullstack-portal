@@ -174,15 +174,17 @@ const ProjectNumbering = () => {
       )}
 
       {/* Projects Table */}
-      <ProjectsTable
-        projects={projects}
-        isLoading={isLoading}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSort={handleSort}
-        onEdit={openEditModal}
-        onDelete={openDeleteModal}
-      />
+      <div className="table-wrapper">
+        <ProjectsTable
+          projects={projects}
+          isLoading={isLoading}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          onEdit={openEditModal}
+          onDelete={openDeleteModal}
+        />
+      </div>
 
       {/* Pagination */}
       {!searchResults && totalPages > 1 && (
