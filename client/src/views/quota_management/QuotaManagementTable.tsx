@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useCallback, useEffect } from 'react';
 
 // Types
 interface RowData {
@@ -123,40 +123,59 @@ interface TableCellProps {
   subGroup: string;
   col: string;
   cellData: RowData | null;
-  extraClassName?: string; // Added new prop
+  extraClassName?: string;
+  activeTooltip: string | null;
+  onTooltipToggle: (cellId: string | null) => void;
 }
 
 // Memoized cell component
-const TableCell = memo<TableCellProps>(({ rowKey, group, subGroup, col, cellData, extraClassName }) => { // Destructure the new prop
-  const { displayValue, fullValue, isLabel } = useMemo(() => {
-    if (!cellData) return { displayValue: '', fullValue: '', isLabel: false };
+const TableCell = memo<TableCellProps>(({ rowKey, group, subGroup, col, cellData, extraClassName, activeTooltip, onTooltipToggle }) => {
+  const { displayValue, fullValue, isLabel, isTruncated } = useMemo(() => {
+    if (!cellData) return { displayValue: '', fullValue: '', isLabel: false, isTruncated: false };
     const rawValue = getColumnValue(cellData, col);
     const formattedValue = formatCellValue(rawValue);
     const isLabelCol = col === 'Label';
+    const truncated = isLabelCol && formattedValue.length > LABEL_MAX_LENGTH;
 
     return {
       displayValue: isLabelCol ? truncateText(formattedValue, LABEL_MAX_LENGTH) : formattedValue,
       fullValue: formattedValue,
       isLabel: isLabelCol,
+      isTruncated: truncated,
     };
   }, [cellData, col]);
 
+  const cellId = `${rowKey}-${group}-${subGroup}-${col}`;
+  const isTooltipVisible = activeTooltip === cellId;
+
   const className = useMemo(() => {
     const headerName = getDisplayName(col);
-    // Combine the dynamically generated class with the extra one
-    return `${getCellClassName(headerName, displayValue, subGroup)} ${extraClassName || ''}`;
-  }, [col, displayValue, subGroup, extraClassName]); // Add extraClassName to the dependency array
+    let cls = `${getCellClassName(headerName, displayValue, subGroup)} ${extraClassName || ''}`;
+    if (isTruncated) {
+      cls += ' truncated';
+    }
+    return cls;
+  }, [col, displayValue, subGroup, extraClassName, isTruncated]);
 
-  // Only add title attribute for Label cells when text is truncated
-  const titleAttr = isLabel && fullValue.length > LABEL_MAX_LENGTH ? fullValue : undefined;
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (isTruncated) {
+      e.stopPropagation();
+      onTooltipToggle(isTooltipVisible ? null : cellId);
+    }
+  }, [isTruncated, isTooltipVisible, cellId, onTooltipToggle]);
 
   return (
     <td
-      key={`${rowKey}-${group}-${subGroup}-${col}`}
-      className={className.trim()} // Use trim() to remove any trailing space
-      title={titleAttr}
+      key={cellId}
+      className={className.trim()}
+      onClick={handleClick}
     >
       {displayValue}
+      {isTruncated && isTooltipVisible && (
+        <div className="label-tooltip">
+          {fullValue}
+        </div>
+      )}
     </td>
   );
 });
@@ -168,7 +187,9 @@ const TableRow = memo<{
   rowKey: string;
   rowData: QuotaData[string];
   visibleStypes: VisibleStypes;
-}>(({ rowKey, rowData, visibleStypes }) => {
+  activeTooltip: string | null;
+  onTooltipToggle: (cellId: string | null) => void;
+}>(({ rowKey, rowData, visibleStypes, activeTooltip, onTooltipToggle }) => {
   const cells = useMemo(() => {
     // These flags will track if we've already added the border for a group in this row
     let isFirstInPhoneGroup = true;
@@ -189,7 +210,7 @@ const TableRow = memo<{
             extraClassName = 'group-border-left';
             isFirstInWebGroup = false; // Ensure it's only applied once per group per row
           }
-          
+
           if (group.startsWith('blankSpace') || group.startsWith('Project')) {
             cellData = rowData.Total?.Total || rowData.Total || null;
           } else {
@@ -206,13 +227,15 @@ const TableRow = memo<{
               subGroup={subGroup}
               col={col}
               cellData={cellData}
-              extraClassName={extraClassName} // Pass the class to TableCell
+              extraClassName={extraClassName}
+              activeTooltip={activeTooltip}
+              onTooltipToggle={onTooltipToggle}
             />
           );
         });
       })
     );
-  }, [rowKey, rowData, visibleStypes]);
+  }, [rowKey, rowData, visibleStypes, activeTooltip, onTooltipToggle]);
 
   return <tr key={rowKey}>{cells}</tr>;
 });
@@ -225,6 +248,33 @@ const QuotaManagementTable: React.FC<Props> = memo(({
   quotaData,
   visibleStypes,
 }) => {
+  // State for tracking which tooltip is active
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+
+  // Callback to toggle tooltip
+  const handleTooltipToggle = useCallback((cellId: string | null) => {
+    setActiveTooltip(cellId);
+  }, []);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    if (!activeTooltip) return;
+
+    const handleClickOutside = () => {
+      setActiveTooltip(null);
+    };
+
+    // Use timeout to prevent immediate close from the same click
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [activeTooltip]);
+
   // Memoized column groups for better performance
   const columnGroups = useMemo(() => {
     return Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
@@ -311,9 +361,11 @@ const QuotaManagementTable: React.FC<Props> = memo(({
         rowKey={rowKey}
         rowData={rowData}
         visibleStypes={visibleStypes}
+        activeTooltip={activeTooltip}
+        onTooltipToggle={handleTooltipToggle}
       />
     ));
-  }, [quotaData, visibleStypes]);
+  }, [quotaData, visibleStypes, activeTooltip, handleTooltipToggle]);
 
   // Don't render if no data
   if (!quotaData || Object.keys(quotaData).length === 0) {

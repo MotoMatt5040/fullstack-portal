@@ -219,11 +219,44 @@
   font-weight: 500;
   max-width: 200px;
   cursor: default;
+  position: relative;
 }
 
-/* Show pointer cursor when label has tooltip (is truncated) */
-.quota-management-table .cell-label[title] {
-  cursor: help;
+/* Truncated labels are clickable */
+.quota-management-table .cell-label.truncated {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+/* Tooltip shown on click/tap */
+.quota-management-table .label-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: var(--background-color-elevated, #333);
+  color: var(--text-color, #fff);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: normal;
+  max-width: 300px;
+  min-width: 150px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  margin-bottom: 4px;
+  word-wrap: break-word;
+}
+
+/* Tooltip arrow */
+.quota-management-table .label-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 12px;
+  border: 6px solid transparent;
+  border-top-color: var(--background-color-elevated, #333);
 }
 
 /* =================================================================
