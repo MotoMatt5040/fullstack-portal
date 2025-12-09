@@ -26,22 +26,22 @@ const PROMARK_INTERNAL_VARIABLES = {
   // },
   CALLIDL1: { 
     type: 'TEXT', 
-    defaultValue: '0000000000',
+    defaultValue: '9999999999',
     description: 'Call ID 1 - for tracking purposes'
   },
   CALLIDL2: { 
     type: 'TEXT', 
-    defaultValue: '0000000000',
+    defaultValue: '9999999999',
     description: 'Call ID 2 - for tracking purposes'
   },
   CALLIDC1: { 
     type: 'TEXT', 
-    defaultValue: '0000000000',
+    defaultValue: '9999999999',
     description: 'Call ID 3 - for tracking purposes'
   },
   CALLIDC2: { 
     type: 'TEXT', 
-    defaultValue: '0000000000',
+    defaultValue: '9999999999',
     description: 'Call ID 4 - for tracking purposes'
   }
 };
