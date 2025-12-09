@@ -7,6 +7,7 @@ import {
 } from '../../features/usersApiSlice';
 import { selectRoles } from '../../features/roles/rolesSlice';
 import { selectUser } from '../../features/auth/authSlice';
+import { useToast } from '../../context/ToastContext';
 import './AddUser.css';
 import Select from 'react-select';
 
@@ -19,13 +20,13 @@ const EXCLUSIVE_ROLES = ['Admin', 'External'] as const;
 const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
   const rolesFromStore = useSelector(selectRoles);
   const currentUser = useSelector(selectUser); // Get current user from the store
+  const toast = useToast();
 
   const { data: clients = [], isFetching: fetchingClients } = useGetClientsQuery();
   const [addUser, { isLoading: addUserIsLoading, error: addUserError }] = useAddUserMutation();
 
   const [email, setEmail] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState('');
   const [userType, setUserType] = useState('internal'); // 'internal' or 'external'
 
   const availableRoles = useMemo((): Role[] => {
@@ -121,7 +122,7 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
 
     const validationError = validateForm();
     if (validationError) {
-      alert(validationError);
+      toast.warning(validationError, 'Validation Error');
       return;
     }
 
@@ -142,20 +143,17 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
 
     try {
       await addUser(userData).unwrap();
-      setSuccessMessage('User added successfully!');
+      toast.success('User created and email sent successfully!', 'User Added');
       resetForm();
-      
-      setTimeout(() => {
-        setSuccessMessage('');
-        if (onSuccess) {
-          onSuccess();
-        }
-      }, 2000);
+
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err: any) {
       console.error('Error adding user:', err);
-      alert(err?.data?.message || 'Failed to add user. Please try again.');
+      toast.error(err?.data?.message || 'Failed to add user. Please try again.');
     }
-  }, [validateForm, availableRoles, toggleStates, email, selectedClientId, addUser, resetForm, onSuccess, userType, rolesFromStore]);
+  }, [validateForm, availableRoles, toggleStates, email, selectedClientId, addUser, resetForm, onSuccess, userType, rolesFromStore, toast]);
 
   const handleClientChange = useCallback((selected: ClientOption | null) => {
     setSelectedClientId(selected?.value || null);
@@ -242,12 +240,6 @@ const UserForm: React.FC<UserFormProps> = ({ onSuccess }) => {
           {addUserIsLoading ? 'Creating User...' : 'Create User & Send Email'}
         </button>
       </form>
-
-      {successMessage && (
-        <div className="success-message" role="alert">
-          {successMessage}
-        </div>
-      )}
 
       {addUserError && (
         <div className="error-message" role="alert">

@@ -1,5 +1,6 @@
 // client/src/views/callid_management/useCallIDManagementLogic.tsx
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   useGetDashboardMetricsQuery,
   useGetCurrentActiveAssignmentsQuery,
@@ -25,15 +26,27 @@ import {
   useUpdateProjectSlotMutation,
 } from '../../features/callIDApiSlice';
 
+type TabType = 'dashboard' | 'inventory' | 'assignments' | 'analytics';
+const VALID_TABS: TabType[] = ['dashboard', 'inventory', 'assignments', 'analytics'];
+
 /**
  * Custom hook for Call ID Management logic
  * Handles data fetching, state management, and actions
  */
 const useCallIDManagementLogic = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get initial tab from URL or default to 'dashboard'
+  const getInitialTab = (): TabType => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && VALID_TABS.includes(tabParam as TabType)) {
+      return tabParam as TabType;
+    }
+    return 'dashboard';
+  };
+
   // ==================== STATE ====================
-  const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'inventory' | 'assignments' | 'analytics'
-  >('dashboard');
+  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
   const [idleDaysFilter, setIdleDaysFilter] = useState(30);
   const [mostUsedLimit, setMostUsedLimit] = useState(10);
   const [timelineMonths, setTimelineMonths] = useState(6);
@@ -323,11 +336,21 @@ const useCallIDManagementLogic = () => {
   // ==================== ACTIONS ====================
 
   const handleTabChange = useCallback(
-    (tab: 'dashboard' | 'inventory' | 'assignments' | 'analytics') => {
+    (tab: TabType) => {
       setActiveTab(tab);
+      // Update URL with the new tab
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        if (tab === 'dashboard') {
+          newParams.delete('tab'); // Remove tab param for default tab
+        } else {
+          newParams.set('tab', tab);
+        }
+        return newParams;
+      });
       // Data refresh is handled by useEffect watching activeTab
     },
-    []
+    [setSearchParams]
   );
 
   const handleFilterChange = useCallback((filterName: string, value: any) => {

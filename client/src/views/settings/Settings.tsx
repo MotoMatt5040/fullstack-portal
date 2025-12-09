@@ -9,6 +9,7 @@ import {
   mdiWeatherSunny,
   mdiWeatherNight,
   mdiMoonWaningCrescent,
+  mdiThemeLightDark,
   mdiChartBar,
   mdiClockOutline,
   mdiSpeedometer,
@@ -22,6 +23,14 @@ interface RootState {
   };
 }
 
+// Helper to get system preference
+const getSystemTheme = (): 'light' | 'dark' => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'dark';
+};
+
 const Settings: React.FC = () => {
   const dispatch = useDispatch();
   const [logoutRequest] = useLogoutMutation();
@@ -30,8 +39,23 @@ const Settings: React.FC = () => {
   const showGraphs = useSelector((state: RootState) => state.settings.showGraphs);
   const useGpcph = useSelector((state: RootState) => state.settings.useGpcph);
 
+  // Apply theme (handle 'system' option)
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const effectiveTheme = theme === 'system' ? getSystemTheme() : theme;
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+  }, [theme]);
+
+  // Listen for system theme changes when 'system' is selected
+  useEffect(() => {
+    if (theme !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      document.documentElement.setAttribute('data-theme', getSystemTheme());
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
   useEffect(() => {
@@ -74,6 +98,7 @@ const Settings: React.FC = () => {
   };
 
   const themeOptions = [
+    { value: 'system', icon: mdiThemeLightDark, label: 'System' },
     { value: 'light', icon: mdiWeatherSunny, label: 'Light' },
     { value: 'dark', icon: mdiWeatherNight, label: 'Dark' },
     { value: 'superdark', icon: mdiMoonWaningCrescent, label: 'Dim' },

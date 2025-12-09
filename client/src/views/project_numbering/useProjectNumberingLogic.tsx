@@ -6,8 +6,11 @@ import {
   useDeleteProjectMutation,
   useSearchProjectsMutation,
 } from '../../features/projectNumberingApiSlice';
+import { useToast } from '../../context/ToastContext';
 
 export const useProjectNumberingLogic = () => {
+  const toast = useToast();
+
   // State for pagination and filtering
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(75);
@@ -96,8 +99,10 @@ export const useProjectNumberingLogic = () => {
       const result = await searchProjects(criteria).unwrap();
       setSearchResults(result);
       setIsAdvancedSearchOpen(false);
+      toast.info(`Found ${result.count} project${result.count !== 1 ? 's' : ''}`, 'Search Results');
     } catch (error) {
       console.error('Search error:', error);
+      toast.error('Failed to search projects. Please try again.');
     }
   };
 
@@ -106,9 +111,11 @@ export const useProjectNumberingLogic = () => {
     try {
       await createProject(projectData).unwrap();
       setIsAddModalOpen(false);
+      toast.success('Project created successfully!', 'Project Added');
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create error:', error);
+      toast.error(error?.data?.message || 'Failed to create project. Please try again.');
       return { success: false, error };
     }
   };
@@ -122,9 +129,11 @@ export const useProjectNumberingLogic = () => {
       }).unwrap();
       setIsEditModalOpen(false);
       setSelectedProject(null);
+      toast.success('Project updated successfully!', 'Project Updated');
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update error:', error);
+      toast.error(error?.data?.message || 'Failed to update project. Please try again.');
       return { success: false, error };
     }
   };
@@ -135,9 +144,11 @@ export const useProjectNumberingLogic = () => {
       await deleteProject(selectedProject.projectID).unwrap();
       setIsDeleteModalOpen(false);
       setSelectedProject(null);
+      toast.success('Project deleted successfully!', 'Project Deleted');
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete error:', error);
+      toast.error(error?.data?.message || 'Failed to delete project. Please try again.');
       return { success: false, error };
     }
   };

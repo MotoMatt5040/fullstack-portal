@@ -138,19 +138,24 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <ul>
-          {visibleItems.map((item) => (
-            <li key={item.to}>
-              <Link
-                to={item.to}
-                onClick={closeNav}
-                className={location.pathname === item.to ? 'active' : ''}
-              >
-                <Icon path={item.icon} size={0.9} />
-                <span>{item.label}</span>
-              </Link>
-            </li>
-          ))}
+        <ul role="menubar" aria-label="Main navigation">
+          {visibleItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <li key={item.to} role="none">
+                <Link
+                  to={item.to}
+                  onClick={closeNav}
+                  className={isActive ? 'active' : ''}
+                  role="menuitem"
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <Icon path={item.icon} size={0.9} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
         <Settings />
       </nav>

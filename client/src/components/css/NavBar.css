@@ -143,7 +143,7 @@
 
 /* Main Content Offset */
 main {
-  margin-top: 60px;
+  margin-top: 100px; /* 60px navbar + ~40px breadcrumbs */
   margin-left: 0;
   transition: margin-left 0.3s ease;
   min-width: 0;
@@ -214,7 +214,7 @@ main {
   }
 
   main {
-    margin-top: 0;
+    margin-top: 40px; /* breadcrumbs height on desktop */
     margin-left: 60px;
     transition: margin-left 0.3s ease;
   }
@@ -245,6 +245,7 @@ main {
   }
 
   main {
+    margin-top: 40px;
     margin-left: 70px;
   }
 }
@@ -269,6 +270,7 @@ main {
   }
 
   main {
+    margin-top: 40px;
     margin-left: 80px;
   }
 }

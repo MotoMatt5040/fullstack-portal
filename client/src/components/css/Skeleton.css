@@ -1,0 +1,153 @@
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base, var(--background-color-elevated)) 25%,
+    var(--skeleton-highlight, var(--background-color-muted)) 50%,
+    var(--skeleton-base, var(--background-color-elevated)) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 1em;
+  width: 100%;
+}
+
+.skeleton-text-sm {
+  height: 0.75em;
+}
+
+.skeleton-text-lg {
+  height: 1.5em;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton-avatar-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.skeleton-avatar-lg {
+  width: 56px;
+  height: 56px;
+}
+
+.skeleton-button {
+  height: 38px;
+  width: 100px;
+  border-radius: 6px;
+}
+
+.skeleton-card {
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--background-color-elevated);
+}
+
+/* Skeleton Table */
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-table-header {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  background: var(--table-header-background);
+}
+
+.skeleton-table-header-cell {
+  height: 1em;
+  flex: 1;
+}
+
+.skeleton-table-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.skeleton-table-row:nth-child(odd) {
+  background: var(--zebra-stripe-color);
+}
+
+.skeleton-table-cell {
+  height: 1em;
+  flex: 1;
+}
+
+/* Skeleton Metric Card */
+.skeleton-metric-card {
+  background: var(--background-color-elevated);
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeleton-metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.skeleton-metric-value {
+  height: 2rem;
+  width: 60%;
+}
+
+.skeleton-metric-label {
+  height: 0.875rem;
+  width: 80%;
+}
+
+/* Animation */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: var(--skeleton-base, var(--background-color-elevated));
+  }
+}
+
+/* Skeleton Container for stacking */
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-container-horizontal {
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Inline skeleton for text mixing */
+.skeleton-inline {
+  display: inline-block;
+  vertical-align: middle;
+}

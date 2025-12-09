@@ -386,6 +386,7 @@ export const useAIPromptingLogic = () => {
           };
 
           try {
+            console.log('Payload Object:', payloadObject);
             const payload = await getAiResponse(payloadObject).unwrap();
             responses.push(payload);
             wordCounts.push(countWords(payload));
