@@ -76,11 +76,11 @@ export const useKeyboardShortcuts = (
 
   useEffect(() => {
     if (enabled) {
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', handleKeyDown, { capture: true });
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
   }, [enabled, handleKeyDown]);
 };

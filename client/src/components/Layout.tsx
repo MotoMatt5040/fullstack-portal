@@ -43,7 +43,7 @@ const Layout: React.FC = () => {
   useKeyboardShortcuts(
     [
       {
-        key: 'k',
+        key: '/',
         ctrl: true,
         meta: true,
         action: openSearch,
