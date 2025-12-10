@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiClose,
@@ -14,11 +14,24 @@ import {
   mdiMailboxOutline
 } from '@mdi/js';
 import { useGetNextProjectNumberQuery } from '../../features/projectNumberingApiSlice';
+import { useModalUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import UnsavedChangesModal from '../../components/UnsavedChangesModal';
 
 const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData }) => {
   const { data: nextNumberData, refetch } = useGetNextProjectNumberQuery(undefined, {
     skip: mode === 'edit' || !isOpen,
   });
+
+  // Track unsaved changes
+  const {
+    isDirty,
+    markDirty,
+    markClean,
+    showWarning,
+    handleClose,
+    confirmClose,
+    cancelClose,
+  } = useModalUnsavedChanges({ onClose });
 
   const [formData, setFormData] = useState({
     clientProjectID: '',
@@ -50,7 +63,11 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     if (isOpen && mode === 'create') {
       refetch();
     }
-  }, [isOpen, mode, refetch]);
+    // Reset dirty state when modal opens
+    if (isOpen) {
+      markClean();
+    }
+  }, [isOpen, mode, refetch, markClean]);
 
   useEffect(() => {
     if (mode === 'edit' && initialData) {
@@ -88,6 +105,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       ...prev,
       [name]: type === 'checkbox' ? (checked ? 1 : 0) : value,
     }));
+    markDirty(); // Mark form as having unsaved changes
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -102,6 +120,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
         [name]: checked,
       },
     }));
+    markDirty(); // Mark form as having unsaved changes
   };
 
   const getModesArray = () => {
@@ -179,6 +198,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     const result = await onSubmit(dataToSubmit);
 
     if (result.success) {
+      markClean(); // Clear dirty state after successful submission
       if (mode === 'create') {
         setFormData({
           clientProjectID: '',
@@ -212,14 +232,15 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
   const nextProjectNumber = mode === 'create' ? nextNumberData?.nextNumber : initialData?.projectID;
 
   return (
-    <div className="modal-overlay" onMouseDown={onClose}>
+    <>
+    <div className="modal-overlay" onMouseDown={handleClose}>
       <div className="modal-content modal-large" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>
             <Icon path={mdiIdentifier} size={0.9} />
             {mode === 'create' ? 'Add New Project' : 'Edit Project'}
           </h2>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={handleClose}>
             <Icon path={mdiClose} size={0.9} />
           </button>
         </div>
@@ -531,7 +552,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
             <button
               type="button"
               className="btn-secondary"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isLoading}
             >
               Cancel
@@ -547,6 +568,14 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
         </form>
       </div>
     </div>
+
+    {/* Unsaved changes warning */}
+    <UnsavedChangesModal
+      isOpen={showWarning}
+      onConfirm={confirmClose}
+      onCancel={cancelClose}
+    />
+    </>
   );
 };
 

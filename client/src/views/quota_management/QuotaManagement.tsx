@@ -7,6 +7,7 @@ import './QuotaManagement.css';
 import useQuotaManagementLogic from './useQuotaManagementLogic';
 import QuotaManagementTable from './QuotaManagementTable';
 import ExportExcelButton from '../../components/ExportExcelButton';
+import { SkeletonTable } from '../../components/Skeleton';
 
 const QuotaManagement = () => {
   const {

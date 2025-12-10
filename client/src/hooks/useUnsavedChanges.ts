@@ -63,6 +63,73 @@ export const useUnsavedChanges = (
 };
 
 /**
+ * Hook for modal forms - provides a guard function for closing
+ * Use this when you want to warn users before closing a modal with unsaved changes
+ */
+interface UseModalUnsavedChangesOptions {
+  onClose: () => void;
+}
+
+interface UseModalUnsavedChangesReturn {
+  isDirty: boolean;
+  setIsDirty: (dirty: boolean) => void;
+  markDirty: () => void;
+  markClean: () => void;
+  showWarning: boolean;
+  handleClose: () => void;
+  confirmClose: () => void;
+  cancelClose: () => void;
+}
+
+export const useModalUnsavedChanges = (
+  options: UseModalUnsavedChangesOptions
+): UseModalUnsavedChangesReturn => {
+  const { onClose } = options;
+  const [isDirty, setIsDirty] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+
+  const markDirty = useCallback(() => {
+    setIsDirty(true);
+  }, []);
+
+  const markClean = useCallback(() => {
+    setIsDirty(false);
+  }, []);
+
+  // Call this instead of onClose directly
+  const handleClose = useCallback(() => {
+    if (isDirty) {
+      setShowWarning(true);
+    } else {
+      onClose();
+    }
+  }, [isDirty, onClose]);
+
+  // User confirms they want to discard changes
+  const confirmClose = useCallback(() => {
+    setShowWarning(false);
+    setIsDirty(false);
+    onClose();
+  }, [onClose]);
+
+  // User cancels and wants to stay
+  const cancelClose = useCallback(() => {
+    setShowWarning(false);
+  }, []);
+
+  return {
+    isDirty,
+    setIsDirty,
+    markDirty,
+    markClean,
+    showWarning,
+    handleClose,
+    confirmClose,
+    cancelClose,
+  };
+};
+
+/**
  * Hook to compare form values with initial values to detect changes
  * @param initialValues - The initial form values
  * @param currentValues - The current form values

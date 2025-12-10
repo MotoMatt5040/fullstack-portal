@@ -4,6 +4,7 @@ import { Modal } from '../../components/Modal';
 import UserForm from '../secure/AddUser';
 import UpdateUserRoles from '../users/UpdateUserRoles';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { SkeletonTable } from '../../components/Skeleton';
 import Icon from '@mdi/react';
 import {
   mdiAccountGroup,
@@ -102,11 +103,17 @@ const UserManagement = () => {
   if (isLoading) {
     return (
       <div className='user-management'>
-        <div className='user-management-loading'>
-          <div className='user-management-loading-spinner'>
-            <div className='user-management-spinner'></div>
-            <span>Loading users...</span>
+        <div className='user-management-header'>
+          <div className='user-management-header-left'>
+            <h1>
+              <Icon path={mdiAccountGroup} size={1} />
+              User Management
+            </h1>
+            <p className='user-management-subtitle'>Manage users and their roles</p>
           </div>
+        </div>
+        <div className='user-management-data-section'>
+          <SkeletonTable rows={8} columns={3} showHeader />
         </div>
       </div>
     );

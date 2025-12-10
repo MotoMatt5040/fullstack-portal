@@ -7,6 +7,7 @@ import {
   mdiChevronUp,
   mdiChevronDown
 } from '@mdi/js';
+import { SkeletonTable } from '../../components/Skeleton';
 
 const ProjectsTable = ({
   projects,
@@ -97,12 +98,7 @@ const ProjectsTable = ({
   };
 
   if (isLoading) {
-    return (
-      <div className="table-loading">
-        <div className="spinner"></div>
-        <p>Loading projects...</p>
-      </div>
-    );
+    return <SkeletonTable rows={10} columns={13} showHeader />;
   }
 
   if (!projects || projects.length === 0) {

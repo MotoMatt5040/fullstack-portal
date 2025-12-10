@@ -25,6 +25,7 @@ import {
   mdiCheckCircle,
   mdiAlertCircle,
 } from '@mdi/js';
+import { SkeletonMetricCard, SkeletonTable } from '../../components/Skeleton';
 import useCallIDManagementLogic from './useCallIDManagementLogic';
 import {
   CreateCallIDModal,
@@ -182,7 +183,17 @@ const CallIDManagement: React.FC = () => {
    * Render dashboard metrics cards
    */
   const renderMetricsCards = () => {
-    if (!dashboardMetrics) return null;
+    // Show skeletons while loading
+    if (isLoading || !dashboardMetrics) {
+      return (
+        <div className='metrics-grid'>
+          <SkeletonMetricCard />
+          <SkeletonMetricCard />
+          <SkeletonMetricCard />
+          <SkeletonMetricCard />
+        </div>
+      );
+    }
 
     return (
       <div className='metrics-grid'>
@@ -519,10 +530,7 @@ const CallIDManagement: React.FC = () => {
 
       {/* Inventory Table */}
       {inventoryFetching && callIDInventory.length === 0 ? (
-        <div className='loading-state'>
-          <Icon path={mdiRefresh} size={2} spin />
-          <p>Loading inventory...</p>
-        </div>
+        <SkeletonTable rows={10} columns={7} showHeader />
       ) : callIDInventory.length === 0 ? (
         <div className='empty-state'>
           <Icon path={mdiPhone} size={3} color='#ccc' />
@@ -1282,19 +1290,10 @@ const CallIDManagement: React.FC = () => {
       {renderTabs()}
 
       <div className='tab-content'>
-        {isLoading && activeTab === 'dashboard' ? (
-          <div className='loading-state'>
-            <Icon path={mdiRefresh} size={2} spin />
-            <p>Loading dashboard data...</p>
-          </div>
-        ) : (
-          <>
-            {activeTab === 'dashboard' && renderDashboardTab()}
-            {activeTab === 'inventory' && renderInventoryTab()}
-            {activeTab === 'assignments' && renderAssignmentsTab()}
-            {activeTab === 'analytics' && renderAnalyticsTab()}
-          </>
-        )}
+        {activeTab === 'dashboard' && renderDashboardTab()}
+        {activeTab === 'inventory' && renderInventoryTab()}
+        {activeTab === 'assignments' && renderAssignmentsTab()}
+        {activeTab === 'analytics' && renderAnalyticsTab()}
       </div>
 
       {/* Modals */}
