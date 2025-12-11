@@ -123,7 +123,8 @@ const SampleAutomation: React.FC = () => {
     selectedProjectId && selectedVendorId && selectedClientId;
   const hasFiles = selectedFiles && selectedFiles.length > 0;
   const isStep1Complete = isConfigComplete && hasFiles;
-  const isStep2Complete = isStep1Complete && allFilesChecked;
+  // Step 2 is complete when files are uploaded AND all headers are loaded/checked
+  const isStep2Complete = hasFiles && allFilesChecked;
   const isStep3Complete = processResult && processResult.tableName;
 
   // Processing state check
@@ -574,6 +575,8 @@ const SampleAutomation: React.FC = () => {
                   fileType={fileType}
                   setFileType={setFileType}
                   clientId={selectedClientId}
+                  projectId={selectedProjectId}
+                  callIdAssignment={processResult.callIdAssignment}
                 />
               )}
             </div>

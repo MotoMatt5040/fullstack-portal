@@ -1,6 +1,7 @@
 // client/src/views/callid_management/useCallIDManagementLogic.tsx
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
 import {
   useGetDashboardMetricsQuery,
   useGetCurrentActiveAssignmentsQuery,
@@ -35,6 +36,7 @@ const VALID_TABS: TabType[] = ['dashboard', 'inventory', 'assignments', 'analyti
  */
 const useCallIDManagementLogic = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
 
   // Get initial tab from URL or default to 'dashboard'
   const getInitialTab = (): TabType => {
@@ -463,16 +465,16 @@ const useCallIDManagementLogic = () => {
         await createCallID(data).unwrap();
         closeCreateModal();
         handleRefresh();
+        toast.success(`Call ID ${data.phoneNumber} created successfully`);
         return { success: true };
       } catch (error: any) {
         console.error('Failed to create call ID:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to create call ID',
-        };
+        const errorMsg = error?.data?.message || 'Failed to create call ID';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [createCallID, closeCreateModal, handleRefresh]
+    [createCallID, closeCreateModal, handleRefresh, toast]
   );
 
   const handleUpdateCallID = useCallback(
@@ -481,16 +483,16 @@ const useCallIDManagementLogic = () => {
         await updateCallID({ id, data }).unwrap();
         closeEditModal();
         handleRefresh();
+        toast.success('Call ID updated successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Failed to update call ID:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to update call ID',
-        };
+        const errorMsg = error?.data?.message || 'Failed to update call ID';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [updateCallID, closeEditModal, handleRefresh]
+    [updateCallID, closeEditModal, handleRefresh, toast]
   );
 
   const handleDeleteCallID = useCallback(
@@ -499,42 +501,40 @@ const useCallIDManagementLogic = () => {
         await deleteCallID(id).unwrap();
         closeDeleteModal();
         handleRefresh();
+        toast.success('Call ID deleted successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Failed to delete call ID:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to delete call ID',
-        };
+        const errorMsg = error?.data?.message || 'Failed to delete call ID';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [deleteCallID, closeDeleteModal, handleRefresh]
+    [deleteCallID, closeDeleteModal, handleRefresh, toast]
   );
 
   const handleAssignCallID = useCallback(
     async (data: any) => {
       try {
-        // Use the updateProjectSlot mutation instead
+        // Use the updateProjectSlot mutation - dates come from Projects table
         await updateProjectSlot({
           projectId: data.projectId,
           slotName: data.slotName,
           phoneNumberId: data.phoneNumberId,
-          startDate: data.startDate,
-          endDate: data.endDate,
         }).unwrap();
 
         closeAssignModal();
         handleRefresh();
+        toast.success(`Call ID assigned to ${data.slotName} slot`);
         return { success: true };
       } catch (error: any) {
         console.error('Failed to assign call ID:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to assign call ID',
-        };
+        const errorMsg = error?.data?.message || 'Failed to assign call ID';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [updateProjectSlot, closeAssignModal, handleRefresh]
+    [updateProjectSlot, closeAssignModal, handleRefresh, toast]
   );
 
   const handleEndAssignment = useCallback(
@@ -542,16 +542,16 @@ const useCallIDManagementLogic = () => {
       try {
         await endAssignment({ projectId, phoneNumberId }).unwrap();
         handleRefresh();
+        toast.success('Assignment ended successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Failed to end assignment:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to end assignment',
-        };
+        const errorMsg = error?.data?.message || 'Failed to end assignment';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [endAssignment, handleRefresh]
+    [endAssignment, handleRefresh, toast]
   );
 
   const handleSwapNumber = useCallback((assignment: any) => {
@@ -567,13 +567,11 @@ const useCallIDManagementLogic = () => {
   const handleEndAssignmentClick = useCallback(
     async (assignment: any) => {
       if (window.confirm(`End assignment for ${assignment.ProjectID}?`)) {
-        const result = await handleEndAssignment(
+        await handleEndAssignment(
           assignment.ProjectID,
           assignment.PhoneNumberID
         );
-        if (!result.success) {
-          alert(result.error);
-        }
+        // Toast is handled in handleEndAssignment
       }
     },
     [handleEndAssignment]
@@ -581,8 +579,10 @@ const useCallIDManagementLogic = () => {
 
   const handleSwapSubmit = useCallback(
     async (newPhoneNumberId: number) => {
-      if (!selectedAssignment)
+      if (!selectedAssignment) {
+        toast.error('No assignment selected');
         return { success: false, error: 'No assignment selected' };
+      }
 
       try {
         await reassignCallID({
@@ -593,16 +593,16 @@ const useCallIDManagementLogic = () => {
 
         closeSwapModal();
         handleRefresh();
+        toast.success('Call ID reassigned successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Failed to reassign number:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to reassign number',
-        };
+        const errorMsg = error?.data?.message || 'Failed to reassign number';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [selectedAssignment, reassignCallID, closeSwapModal, handleRefresh]
+    [selectedAssignment, reassignCallID, closeSwapModal, handleRefresh, toast]
   );
 
   const handleViewHistory = useCallback((projectId: string) => {
@@ -646,11 +646,13 @@ const useCallIDManagementLogic = () => {
         }
 
         closeEditAssignmentModal();
+        toast.success('Assignment updated successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Error updating assignment:', error);
-        alert(error.data?.message || 'Failed to update assignment');
-        return { success: false, error: error.data?.message };
+        const errorMsg = error.data?.message || 'Failed to update assignment';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
     [
@@ -658,6 +660,7 @@ const useCallIDManagementLogic = () => {
       selectedProjectHistory,
       handleViewProjectHistory,
       closeEditAssignmentModal,
+      toast,
     ]
   );
 
@@ -677,11 +680,13 @@ const useCallIDManagementLogic = () => {
         }
 
         closeSwapModal();
+        toast.success('Call IDs swapped successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Error swapping assignment:', error);
-        alert(error.data?.message || 'Failed to swap assignment');
-        return { success: false, error: error.data?.message };
+        const errorMsg = error.data?.message || 'Failed to swap assignment';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
     [
@@ -690,6 +695,7 @@ const useCallIDManagementLogic = () => {
       selectedProjectHistory,
       handleViewProjectHistory,
       closeSwapModal,
+      toast,
     ]
   );
 
@@ -713,11 +719,13 @@ const useCallIDManagementLogic = () => {
         }
 
         closeAssignToProjectModal();
+        toast.success('Call ID assigned to project successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Error assigning call ID:', error);
-        alert(error.data?.message || 'Failed to assign call ID');
-        return { success: false, error: error.data?.message };
+        const errorMsg = error.data?.message || 'Failed to assign call ID';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
     [
@@ -725,6 +733,7 @@ const useCallIDManagementLogic = () => {
       selectedProjectHistory,
       handleViewProjectHistory,
       closeAssignToProjectModal,
+      toast,
     ]
   );
 
@@ -749,51 +758,40 @@ const useCallIDManagementLogic = () => {
     async (
       projectId: string,
       slotName: string,
-      phoneNumberId: number | null,
-      startDate?: string,
-      endDate?: string
+      phoneNumberId: number | null
     ) => {
-      console.log('[handleAssignSlot] Called with:', { projectId, slotName, phoneNumberId, startDate, endDate });
       try {
-        console.log('[handleAssignSlot] Calling updateProjectSlot mutation...');
-        const result = await updateProjectSlot({
+        // Dates are now retrieved from the Projects table
+        await updateProjectSlot({
           projectId,
           slotName,
           phoneNumberId,
-          startDate,
-          endDate,
         }).unwrap();
-        console.log('[handleAssignSlot] updateProjectSlot result:', result);
 
         // Refresh data
-        console.log('[handleAssignSlot] Refreshing active assignments...');
         await refetchActiveAssignments();
 
         // Reload current slots
         if (selectedProjectSlots) {
-          console.log('[handleAssignSlot] Reloading current project slots...');
           const updatedAssignments = await refetchActiveAssignments();
           if (updatedAssignments.data) {
             const projectAssignments = updatedAssignments.data.filter(
               (a: any) => a.ProjectID === selectedProjectSlots
             );
-            console.log('[handleAssignSlot] Updated project assignments:', projectAssignments);
             setCurrentProjectSlots(projectAssignments);
           }
         }
 
-        console.log('[handleAssignSlot] Success!');
+        toast.success(`${slotName} slot updated successfully`);
         return { success: true };
       } catch (error: any) {
         console.error('[handleAssignSlot] Error:', error);
-        console.error('[handleAssignSlot] Error data:', error?.data);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to assign slot',
-        };
+        const errorMsg = error?.data?.message || 'Failed to assign slot';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [updateProjectSlot, refetchActiveAssignments, selectedProjectSlots]
+    [updateProjectSlot, refetchActiveAssignments, selectedProjectSlots, toast]
   );
 
   const handleRemoveSlot = useCallback(
@@ -815,59 +813,33 @@ const useCallIDManagementLogic = () => {
           }
         }
 
+        toast.success('Slot removed successfully');
         return { success: true };
       } catch (error: any) {
         console.error('Error removing slot:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to remove slot',
-        };
+        const errorMsg = error?.data?.message || 'Failed to remove slot';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     },
-    [endAssignment, refetchActiveAssignments, selectedProjectSlots]
+    [endAssignment, refetchActiveAssignments, selectedProjectSlots, toast]
   );
 
+  // Note: Dates are now managed in the Projects table, not CallIDUsage
+  // This function is kept for backward compatibility but now just shows a message
   const handleUpdateSlotDates = useCallback(
     async (
       projectId: string,
-      phoneNumberId: number,
-      startDate: string,
-      endDate: string
+      _phoneNumberId: number,
+      _startDate: string,
+      _endDate: string
     ) => {
-      try {
-        await updateAssignment({
-          projectId,
-          phoneNumberId,
-          startDate,
-          endDate,
-        }).unwrap();
-
-        // Refresh data - only if query is active
-        try {
-          const updatedAssignments = await refetchActiveAssignments();
-
-          // Reload current slots
-          if (selectedProjectSlots && updatedAssignments.data) {
-            const projectAssignments = updatedAssignments.data.filter(
-              (a: any) => a.ProjectID === selectedProjectSlots
-            );
-            setCurrentProjectSlots(projectAssignments);
-          }
-        } catch (refetchError) {
-          // Ignore refetch errors - the query may not be active
-          console.log('Could not refetch assignments (query not active)');
-        }
-
-        return { success: true };
-      } catch (error: any) {
-        console.error('Error updating slot dates:', error);
-        return {
-          success: false,
-          error: error?.data?.message || 'Failed to update dates',
-        };
-      }
+      // Dates are now stored in the Projects table
+      // To change dates, users should edit the project in Project Management
+      toast.info(`Project dates should be edited in Project Management for project ${projectId}`);
+      return { success: false, error: 'Dates are now managed in the Projects table' };
     },
-    [updateAssignment, refetchActiveAssignments, selectedProjectSlots]
+    [toast]
   );
 
   // ==================== ANALYTICS FILTER ACTIONS ====================

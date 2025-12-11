@@ -156,11 +156,11 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
 
     /**
      * Assign a call ID to a project
+     * Dates are now retrieved from the Projects table
      * @param {Object} data - Assignment data
      * @param {string} data.projectId - Project ID
      * @param {number} data.phoneNumberId - Phone number ID
-     * @param {string} data.startDate - Start date (ISO format)
-     * @param {string} data.endDate - End date (ISO format)
+     * @param {number} data.callIdSlot - Optional slot number (1-4)
      */
     assignCallIDToProject: builder.mutation({
       query: (data) => ({
@@ -367,22 +367,57 @@ export const callIDApiSlice = apiSlice.injectEndpoints({
     }),
 
     /**
-     * Get available call IDs for a specific state and date range
+     * Get available call IDs for a specific state
+     * Dates are now retrieved from the Projects table for conflict checking
      * @param {Object} params
      * @param {string} params.stateFIPS - State FIPS code
-     * @param {string} params.startDate - Start date (ISO format)
-     * @param {string} params.endDate - End date (ISO format)
+     * @param {string} params.projectId - Project ID to check dates against
      */
     getAvailableCallIDsForState: builder.query({
-      query: ({ stateFIPS, startDate, endDate }) => {
+      query: ({ stateFIPS, projectId }) => {
         const queryParams = new URLSearchParams({
           stateFIPS,
-          startDate,
-          endDate,
+          projectId,
         });
         return `/callid/lookups/available?${queryParams.toString()}`;
       },
       providesTags: ['CallIDLookups'],
+    }),
+
+    // ==================== AUTO-ASSIGNMENT ENDPOINTS ====================
+
+    /**
+     * Get top area codes from a sample table
+     * @param {string} tableName - The sample table name to analyze
+     */
+    getTopAreaCodes: builder.query({
+      query: (tableName) => `/callid/auto-assign/area-codes?tableName=${encodeURIComponent(tableName)}`,
+      providesTags: ['CallIDAreaCodes'],
+    }),
+
+    /**
+     * Auto-assign CallIDs to a project based on sample table area codes
+     * Finds 4 available CallIDs matching the most common area codes
+     * and assigns them to the project's L1, L2, C1, C2 slots
+     * @param {Object} data
+     * @param {string} data.tableName - Sample table name to analyze for area codes
+     * @param {number} data.projectId - Project ID to assign CallIDs to
+     * @param {number} data.clientId - Client ID (102 = Tarrance uses PHONE column)
+     */
+    autoAssignCallIDs: builder.mutation({
+      query: (data) => ({
+        url: '/callid/auto-assign',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [
+        'CallIDInventory',
+        'CallIDActiveAssignments',
+        'CallIDDashboard',
+        'CallIDRecentActivity',
+        'ProjectAssignments',
+        'CallIDAnalytics',
+      ],
     }),
   }),
 });
@@ -438,4 +473,9 @@ export const {
   useGetAllStatesQuery,
   useGetAvailableCallIDsForStateQuery,
   useLazyGetAvailableCallIDsForStateQuery,
+
+  // Auto-assignment
+  useGetTopAreaCodesQuery,
+  useLazyGetTopAreaCodesQuery,
+  useAutoAssignCallIDsMutation,
 } = callIDApiSlice;

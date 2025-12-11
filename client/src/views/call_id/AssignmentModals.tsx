@@ -42,61 +42,16 @@ interface AssignToProjectModalProps {
 }
 
 // ==================== EDIT ASSIGNMENT MODAL ====================
+// Note: This modal now only displays assignment info since dates are managed in the Projects table
 
 export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
   isOpen,
   onClose,
-  onUpdate,
   assignment,
   isLoading,
 }) => {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (assignment) {
-      setStartDate(
-        assignment.StartDate ? assignment.StartDate.split('T')[0] : ''
-      );
-      setEndDate(assignment.EndDate ? assignment.EndDate.split('T')[0] : '');
-      setError('');
-    }
-  }, [assignment]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setStartDate('');
-      setEndDate('');
-      setError('');
-    }
-  }, [isOpen]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!startDate || !endDate) {
-      setError('Both start and end dates are required');
-      return;
-    }
-
-    if (new Date(endDate) < new Date(startDate)) {
-      setError('End date must be after start date');
-      return;
-    }
-
-    const result = await onUpdate({
-      projectId: assignment.ProjectID,
-      phoneNumberId: assignment.PhoneNumberID,
-      startDate,
-      endDate,
-    });
-
-    if (!result.success) {
-      setError(result.error || 'Failed to update assignment');
-    }
-  };
+  const startDate = assignment?.StartDate ? assignment.StartDate.split('T')[0] : '';
+  const endDate = assignment?.EndDate ? assignment.EndDate.split('T')[0] : '';
 
   if (!isOpen) return null;
 
@@ -104,20 +59,13 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
     <div className='modal-overlay' onMouseDown={onClose}>
       <div className='modal-content' onMouseDown={(e) => e.stopPropagation()}>
         <div className='modal-header'>
-          <h2>Edit Assignment Dates</h2>
+          <h2>Assignment Details</h2>
           <button onClick={onClose} className='modal-close'>
             <Icon path={mdiClose} size={1} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className='modal-form'>
-          {error && (
-            <div className='error-message'>
-              <Icon path={mdiAlert} size={0.8} />
-              {error}
-            </div>
-          )}
-
+        <div className='modal-form'>
           <div className='assignment-info'>
             <p>
               <strong>Project:</strong> {assignment?.ProjectID}
@@ -132,27 +80,33 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
 
           <div className='form-row'>
             <div className='form-group'>
-              <label>Start Date *</label>
+              <label>Start Date</label>
               <input
                 type='date'
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
+                disabled
+                readOnly
                 className='form-input'
               />
             </div>
 
             <div className='form-group'>
-              <label>End Date *</label>
+              <label>End Date</label>
               <input
                 type='date'
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={startDate}
-                required
+                disabled
+                readOnly
                 className='form-input'
               />
             </div>
+          </div>
+
+          <div className='alert alert-info' style={{ marginTop: '15px' }}>
+            <Icon path={mdiInformationOutline} size={0.9} />
+            <span>
+              Dates are managed in the Projects table. To change dates, edit the project in Project Management.
+            </span>
           </div>
 
           <div className='modal-actions'>
@@ -162,13 +116,10 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
               className='btn-secondary'
               disabled={isLoading}
             >
-              Cancel
-            </button>
-            <button type='submit' className='btn-primary' disabled={isLoading}>
-              {isLoading ? 'Updating...' : 'Update Dates'}
+              Close
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -317,18 +268,12 @@ export const AssignToProjectModal: React.FC<AssignToProjectModalProps> = ({
 }) => {
   const [selectedCallID, setSelectedCallID] = useState('');
   const [callIdSlot, setCallIdSlot] = useState<string>('1'); // Default to slot 1
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
-  const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setSelectedCallID('');
       setCallIdSlot('1');
-      setStartDate(new Date().toISOString().split('T')[0]);
-      setEndDate('');
       setError('');
     }
   }, [isOpen]);
@@ -354,11 +299,10 @@ export const AssignToProjectModal: React.FC<AssignToProjectModalProps> = ({
       return;
     }
 
+    // Dates are now retrieved from the Projects table
     const result = await onAssign({
       projectId,
       phoneNumberId: parseInt(selectedCallID),
-      startDate,
-      endDate: endDate || '2099-12-31',
       callIdSlot: parseInt(callIdSlot),
     });
 
@@ -390,6 +334,9 @@ export const AssignToProjectModal: React.FC<AssignToProjectModalProps> = ({
           <div className='project-info'>
             <p>
               <strong>Project:</strong> {projectId}
+            </p>
+            <p className='text-muted'>
+              <small>Assignment dates will use the project's start and end dates</small>
             </p>
           </div>
 
@@ -431,31 +378,6 @@ export const AssignToProjectModal: React.FC<AssignToProjectModalProps> = ({
             )}
           </div>
 
-          <div className='form-row'>
-            <div className='form-group'>
-              <label>Start Date *</label>
-              <input
-                type='date'
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-                className='form-input'
-              />
-            </div>
-
-            <div className='form-group'>
-              <label>End Date</label>
-              <input
-                type='date'
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={startDate}
-                className='form-input'
-              />
-              <small>Leave blank for no end date</small>
-            </div>
-          </div>
-
           <div className='modal-actions'>
             <button
               type='button'
@@ -484,7 +406,7 @@ interface ProjectSlotsModalProps {
   onClose: () => void;
   projectId: string;
   currentAssignments: any; // Single row with CallIDL1, CallIDL2, CallIDC1, CallIDC2
-  assignmentDetails: any[]; // Array of full assignment objects with dates
+  assignmentDetails: any[]; // Array of full assignment objects with dates from Projects table
   availableCallIDs: any[];
   onUpdateSlot: (
     projectId: string,
@@ -508,7 +430,7 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
   assignmentDetails,
   availableCallIDs,
   onUpdateSlot,
-  onUpdateDates,
+  // onUpdateDates is no longer used - dates come from Projects table
   isLoading,
 }) => {
   const [slots, setSlots] = useState<{ [key: string]: number | null }>({
@@ -530,18 +452,11 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
         CallIDC2: currentAssignments.CallIDC2 || null,
       });
 
-      // Populate project dates from the first assignment (they should all be the same)
+      // Display project dates from the first assignment (read-only, from Projects table)
       if (assignmentDetails && assignmentDetails.length > 0) {
         const firstAssignment = assignmentDetails[0];
         setProjectStartDate(firstAssignment.StartDate ? firstAssignment.StartDate.split('T')[0] : '');
-
-        // Check if end date is the old default (2099-12-31), NULL, or invalid and treat it as empty
-        const endDateStr = firstAssignment.EndDate ? firstAssignment.EndDate.split('T')[0] : '';
-        if (!firstAssignment.EndDate || endDateStr.startsWith('2099-12-31') || endDateStr.startsWith('2099') || endDateStr === '1900-01-01') {
-          setProjectEndDate(''); // Don't show 2099, NULL, or invalid dates
-        } else {
-          setProjectEndDate(endDateStr);
-        }
+        setProjectEndDate(firstAssignment.EndDate ? firstAssignment.EndDate.split('T')[0] : '');
       } else {
         setProjectStartDate('');
         setProjectEndDate('');
@@ -596,57 +511,15 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
       return;
     }
 
-    // Check if dates are set
-    if (!projectStartDate || !projectEndDate) {
-      setError('Please set project start and end dates before assigning slots');
-      return;
-    }
-
-    console.log('[ProjectSlotsModal] Calling onUpdateSlot with dates:', { projectStartDate, projectEndDate });
-    const result = await onUpdateSlot(projectId, slotName, newPhoneNumberId, projectStartDate, projectEndDate);
+    // Dates are now retrieved from the Projects table automatically
+    console.log('[ProjectSlotsModal] Calling onUpdateSlot (dates from Projects table)');
+    const result = await onUpdateSlot(projectId, slotName, newPhoneNumberId);
     console.log('[ProjectSlotsModal] onUpdateSlot result:', result);
 
     if (!result.success) {
       setError(result.error || 'Failed to update slot');
     } else {
       setError('');
-    }
-  };
-
-  const handleSaveProjectDates = async () => {
-    if (!projectStartDate) {
-      setError('Start date is required');
-      return;
-    }
-
-    if (!projectEndDate) {
-      setError('End date is required');
-      return;
-    }
-
-    if (new Date(projectEndDate) < new Date(projectStartDate)) {
-      setError('End date must be after start date');
-      return;
-    }
-
-    // Find any assigned phone number (we just need one to identify the project row)
-    const anyPhoneNumberId = Object.values(currentAssignments).find(id => id !== null);
-
-    if (!anyPhoneNumberId) {
-      setError('No phone numbers assigned to update');
-      return;
-    }
-
-    try {
-      const result = await onUpdateDates(projectId, anyPhoneNumberId as number, projectStartDate, projectEndDate);
-
-      if (!result.success) {
-        setError(result.error || 'Failed to update dates');
-      } else {
-        setError('');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to update dates');
     }
   };
 
@@ -740,56 +613,37 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
             })}
           </div>
 
-          {/* Project-wide date management */}
+          {/* Project dates display (read-only - dates come from Projects table) */}
           <div className='project-dates-section'>
-            <h3>Project Assignment Dates</h3>
+            <h3>Project Dates</h3>
             <p className='section-description'>
-              These dates apply to all call IDs assigned to this project
+              These dates are managed in Project Management and apply to all call IDs assigned to this project.
             </p>
-            {!projectEndDate && assignmentDetails && assignmentDetails.length > 0 && (
-              <div className='warning-message' style={{
-                padding: '10px',
-                backgroundColor: '#fff3cd',
-                border: '1px solid #ffc107',
-                borderRadius: '4px',
-                marginBottom: '15px',
-                color: '#856404'
-              }}>
-                <strong>⚠️ End date required:</strong> This project has an old default end date. Please set a proper end date.
-              </div>
-            )}
             <div className='date-inputs-row'>
               <div className='date-field'>
-                <label>Start Date *</label>
+                <label>Start Date</label>
                 <input
                   type='date'
                   value={projectStartDate}
-                  onChange={(e) => setProjectStartDate(e.target.value)}
                   className='form-input'
-                  disabled={isLoading}
-                  required
+                  disabled
+                  readOnly
                 />
               </div>
               <div className='date-field'>
-                <label>End Date *</label>
+                <label>End Date</label>
                 <input
                   type='date'
                   value={projectEndDate}
-                  onChange={(e) => setProjectEndDate(e.target.value)}
-                  min={projectStartDate}
                   className='form-input'
-                  disabled={isLoading}
-                  required
+                  disabled
+                  readOnly
                 />
               </div>
-              <button
-                onClick={handleSaveProjectDates}
-                className='btn-primary'
-                disabled={isLoading || !projectStartDate || !projectEndDate}
-              >
-                Update All Dates
-              </button>
             </div>
+            <p className='text-muted' style={{ marginTop: '10px', fontSize: '0.9em' }}>
+              To change project dates, please edit the project in Project Management.
+            </p>
           </div>
         </div>
 

@@ -239,20 +239,19 @@ const handleGetProjectCallIDs = handleAsync(async (req, res) => {
 });
 
 const handleAssignCallIDToProject = handleAsync(async (req, res) => {
-  const { projectId, phoneNumberId, startDate, endDate, callIdSlot } = req.body;
+  const { projectId, phoneNumberId, callIdSlot } = req.body;
 
   // Validation
   if (!projectId || !phoneNumberId) {
-    return res.status(400).json({ 
-      message: 'Project ID and Phone Number ID are required' 
+    return res.status(400).json({
+      message: 'Project ID and Phone Number ID are required'
     });
   }
 
+  // Dates are now retrieved from the Projects table, not passed as parameters
   const result = await CallIDService.assignCallIDToProject({
     projectId,
     phoneNumberId: parseInt(phoneNumberId),
-    startDate: startDate ? new Date(startDate) : undefined,
-    endDate: endDate ? new Date(endDate) : undefined,
     callIdSlot: callIdSlot ? parseInt(callIdSlot) : null
   });
 
@@ -420,26 +419,26 @@ const handleGetAllProjectsWithAssignments = async (req, res) => {
 /**
  * Check for assignment conflicts
  * POST /api/callid/assignments/check-conflict
- * Body: { phoneNumberId, startDate, endDate, excludeProjectId? }
+ * Body: { phoneNumberId, projectId, excludeProjectId? }
+ * Dates are now retrieved from the Projects table
  */
 const handleCheckAssignmentConflict = async (req, res) => {
   try {
-    const { phoneNumberId, startDate, endDate, excludeProjectId } = req.body;
+    const { phoneNumberId, projectId, excludeProjectId } = req.body;
 
-    if (!phoneNumberId || !startDate || !endDate) {
+    if (!phoneNumberId || !projectId) {
       return res.status(400).json({
         success: false,
-        message: 'Phone number ID, start date, and end date are required'
+        message: 'Phone number ID and project ID are required'
       });
     }
 
     const conflictCheck = await checkAssignmentConflict(
-      phoneNumberId, 
-      startDate, 
-      endDate, 
+      phoneNumberId,
+      projectId,
       excludeProjectId
     );
-    
+
     res.json({
       success: true,
       ...conflictCheck
@@ -456,35 +455,24 @@ const handleCheckAssignmentConflict = async (req, res) => {
 /**
  * Update an existing assignment
  * PUT /api/callid/assignments/:projectId/:phoneNumberId
- * Body: { startDate, endDate }
+ * Note: Dates are now in the Projects table, this just returns current assignment info
  */
 const handleUpdateAssignment = async (req, res) => {
   try {
     const { projectId, phoneNumberId } = req.params;
-    const { startDate, endDate } = req.body;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Start date and end date are required'
-      });
-    }
+    const updated = await updateAssignment(projectId, parseInt(phoneNumberId));
 
-    const updated = await updateAssignment(projectId, parseInt(phoneNumberId), {
-      startDate,
-      endDate
-    });
-    
     res.json({
       success: true,
       data: updated,
-      message: 'Assignment updated successfully'
+      message: 'Assignment retrieved successfully'
     });
   } catch (error) {
     console.error('Error in handleUpdateAssignment:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to update assignment'
+      message: error.message || 'Failed to get assignment'
     });
   }
 };
@@ -492,11 +480,12 @@ const handleUpdateAssignment = async (req, res) => {
 /**
  * Swap call ID from one project to another
  * POST /api/callid/assignments/swap
- * Body: { fromProjectId, toProjectId, phoneNumberId, startDate?, endDate? }
+ * Body: { fromProjectId, toProjectId, phoneNumberId, slotName? }
+ * Dates are now retrieved from the Projects table
  */
 const handleSwapCallIDAssignment = async (req, res) => {
   try {
-    const { fromProjectId, toProjectId, phoneNumberId, startDate, endDate } = req.body;
+    const { fromProjectId, toProjectId, phoneNumberId, slotName } = req.body;
 
     if (!fromProjectId || !toProjectId || !phoneNumberId) {
       return res.status(400).json({
@@ -509,9 +498,9 @@ const handleSwapCallIDAssignment = async (req, res) => {
       fromProjectId,
       toProjectId,
       phoneNumberId,
-      { startDate, endDate }
+      slotName || 'CallIDL1'
     );
-    
+
     res.json({
       success: true,
       ...result
@@ -551,7 +540,7 @@ const handleReassignCallID = handleAsync(async (req, res) => {
 
 const handleUpdateProjectSlot = handleAsync(async (req, res) => {
   console.log('[handleUpdateProjectSlot] Request body:', req.body);
-  const { projectId, slotName, phoneNumberId, startDate, endDate } = req.body;
+  const { projectId, slotName, phoneNumberId } = req.body;
 
   if (!projectId || !slotName) {
     console.log('[handleUpdateProjectSlot] Missing projectId or slotName');
@@ -569,13 +558,12 @@ const handleUpdateProjectSlot = handleAsync(async (req, res) => {
     });
   }
 
-  console.log('[handleUpdateProjectSlot] Calling service with:', { projectId, slotName, phoneNumberId, startDate, endDate });
+  // Dates are now retrieved from the Projects table, not passed as parameters
+  console.log('[handleUpdateProjectSlot] Calling service with:', { projectId, slotName, phoneNumberId });
   const result = await CallIDService.updateProjectSlot(
     projectId,
     slotName,
-    phoneNumberId ? parseInt(phoneNumberId) : null,
-    startDate,
-    endDate
+    phoneNumberId ? parseInt(phoneNumberId) : null
   );
   console.log('[handleUpdateProjectSlot] Service result:', result);
 
@@ -589,8 +577,8 @@ const handleRemoveProjectSlot = handleAsync(async (req, res) => {
   const { projectId, slotName } = req.body;
 
   if (!projectId || !slotName) {
-    return res.status(400).json({ 
-      message: 'Project ID and slot name are required' 
+    return res.status(400).json({
+      message: 'Project ID and slot name are required'
     });
   }
 
@@ -600,6 +588,53 @@ const handleRemoveProjectSlot = handleAsync(async (req, res) => {
     success: true,
     message: result.Message
   });
+});
+
+// ==================== AUTO-ASSIGNMENT CONTROLLERS ====================
+
+/**
+ * Get top area codes from a sample table
+ * GET /api/callid/auto-assign/area-codes
+ * Query params: tableName
+ */
+const handleGetTopAreaCodes = handleAsync(async (req, res) => {
+  const { tableName } = req.query;
+
+  if (!tableName) {
+    return res.status(400).json({
+      message: 'Table name is required'
+    });
+  }
+
+  const result = await CallIDService.getTopAreaCodesFromSampleTable(tableName);
+  res.status(200).json(result);
+});
+
+/**
+ * Auto-assign CallIDs to a project based on sample table area codes
+ * POST /api/callid/auto-assign
+ * Body: { tableName, projectId, clientId }
+ */
+const handleAutoAssignCallIDs = handleAsync(async (req, res) => {
+  const { tableName, projectId, clientId } = req.body;
+
+  if (!tableName || !projectId) {
+    return res.status(400).json({
+      message: 'Table name and project ID are required'
+    });
+  }
+
+  const result = await CallIDService.autoAssignCallIDsFromSample(
+    tableName,
+    projectId,
+    clientId
+  );
+
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  res.status(200).json(result);
 });
 
 module.exports = {
@@ -640,5 +675,9 @@ module.exports = {
   // Lookups
   handleGetAllStatusCodes,
   handleGetAllStates,
-  handleGetAvailableCallIDsForState
+  handleGetAvailableCallIDsForState,
+
+  // Auto-assignment
+  handleGetTopAreaCodes,
+  handleAutoAssignCallIDs
 };

@@ -1,15 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
-import { 
-  mdiChevronDown, 
-  mdiChevronRight, 
-  mdiCog, 
-  mdiPhone, 
+import {
+  mdiChevronDown,
+  mdiChevronRight,
+  mdiCog,
+  mdiPhone,
   mdiCallSplit,
   mdiCellphone,
-  mdiHome
+  mdiHome,
+  mdiPhoneClassic
 } from '@mdi/js';
 import './SampleSplitComponent.css';
+
+interface CallIdAssignment {
+  success: boolean;
+  message: string;
+  projectId?: number;
+  projectName?: string;
+  dateRange?: { startDate: string; endDate: string };
+  areaCodes?: { AreaCode: string; Count: number }[];
+  assigned?: { slot: string; phoneNumberId: number; phoneNumber: string; areaCode: string; stateAbbr: string }[];
+  warnings?: string[];
+}
+
+interface SampleSplitComponentProps {
+  headers?: any[];
+  ageRanges?: any[];
+  onConfigChange?: (config: any) => void;
+  tableName?: string | null;
+  isExtracting?: boolean;
+  fileType?: 'landline' | 'cell';
+  setFileType?: (type: 'landline' | 'cell') => void;
+  clientId?: number | null;
+  projectId?: string | null;
+  callIdAssignment?: CallIdAssignment | null;
+}
 
 const SampleSplitComponent = ({
   headers = [],
@@ -19,8 +44,10 @@ const SampleSplitComponent = ({
   isExtracting = false,
   fileType = 'landline',
   setFileType = () => {},
-  clientId = null
-}) => {
+  clientId = null,
+  projectId = null,
+  callIdAssignment = null
+}: SampleSplitComponentProps) => {
   const isTarranceClient = clientId === 102;
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
@@ -343,17 +370,14 @@ const SampleSplitComponent = ({
                   >
                     <input
                       type="checkbox"
-                      id={`header-${index}`}
                       checked={isSelected}
-                      onChange={() => handleHeaderToggle(headerName)}
+                      onChange={() => {}} // Handled by parent div onClick
+                      onClick={(e) => e.stopPropagation()} // Prevent double-toggle
                       className="header-checkbox"
                     />
-                    <label
-                      htmlFor={`header-${index}`}
-                      className="header-label"
-                    >
+                    <span className="header-label">
                       {headerName}
-                    </label>
+                    </span>
                   </div>
                 );
               })}
@@ -443,7 +467,7 @@ const SampleSplitComponent = ({
               >
                 {isExtracting ? 'Extracting...' : 'Extract Files'}
               </button>
-              
+
               {!canExtract() && (
                 <div className="extract-validation">
                   {selectedHeaders.length === 0 && (
@@ -456,6 +480,60 @@ const SampleSplitComponent = ({
               )}
             </div>
           </div>
+
+          {/* CallID Auto-Assignment Section - Shows results from automatic assignment during processing */}
+          {callIdAssignment && (
+            <div className="callid-section">
+              <div className="callid-header">
+                <h4>
+                  <Icon path={mdiPhoneClassic} size={0.75} />
+                  CallID Assignment
+                </h4>
+              </div>
+
+              {callIdAssignment.success ? (
+                <div className="callid-result">
+                  <div className="callid-result-header">
+                    <span className="callid-success">CallIDs Assigned Successfully</span>
+                  </div>
+
+                  {callIdAssignment.areaCodes && callIdAssignment.areaCodes.length > 0 && (
+                    <div className="callid-area-codes">
+                      <strong>Top Area Codes:</strong>{' '}
+                      {callIdAssignment.areaCodes.slice(0, 5).map((ac, idx) => (
+                        <span key={ac.AreaCode} className="area-code-badge">
+                          {ac.AreaCode} ({ac.Count})
+                          {idx < Math.min(4, (callIdAssignment.areaCodes?.length || 0) - 1) && ', '}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="callid-assignments">
+                    {callIdAssignment.assigned && callIdAssignment.assigned.map((assignment) => (
+                      <div key={assignment.slot} className="callid-assignment-item">
+                        <span className="slot-name">{assignment.slot.replace('CallID', '')}:</span>
+                        <span className="phone-number">{assignment.phoneNumber}</span>
+                        <span className="area-info">({assignment.areaCode} - {assignment.stateAbbr})</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {callIdAssignment.warnings && callIdAssignment.warnings.length > 0 && (
+                    <div className="callid-warnings">
+                      {callIdAssignment.warnings.map((warning, idx) => (
+                        <span key={idx} className="callid-warning">{warning}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="callid-error">
+                  {callIdAssignment.message || 'CallID assignment was not successful'}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

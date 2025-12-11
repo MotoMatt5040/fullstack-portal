@@ -13,6 +13,7 @@ import {
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
 import { selectUser, selectCurrentToken } from '../../features/auth/authSlice';
+import { useToast } from '../../context/ToastContext';
 
 const EXTERNAL_ROLE_ID = 4;
 
@@ -60,6 +61,7 @@ interface FileHeaderData {
 export const useSampleAutomationLogic = () => {
   // Get auth token from Redux store
   const token = useSelector(selectCurrentToken);
+  const toast = useToast();
 
   // State management
   const [selectedFiles, setSelectedFiles] = useState<FileWrapper[]>([]);
@@ -634,6 +636,33 @@ export const useSampleAutomationLogic = () => {
     return selectedFiles?.every((file) => checkedFiles.has(file.id)) || false;
   }, [selectedFiles, checkedFiles]);
 
+  // Track previous allFilesChecked state to detect when it becomes true
+  const prevAllFilesCheckedRef = useRef(false);
+
+  // Show toast notification when all headers are done loading
+  useEffect(() => {
+    // Only show toast when:
+    // 1. allFilesChecked just became true (wasn't true before)
+    // 2. There are actually files selected
+    // 3. There are headers loaded
+    if (
+      allFilesChecked &&
+      !prevAllFilesCheckedRef.current &&
+      selectedFiles.length > 0 &&
+      Object.keys(fileHeaders).length > 0
+    ) {
+      const totalHeaders = Object.values(fileHeaders).reduce(
+        (sum, fh) => sum + fh.originalHeaders.length,
+        0
+      );
+      toast.success(
+        `${totalHeaders} headers loaded from ${selectedFiles.length} file${selectedFiles.length !== 1 ? 's' : ''}`,
+        'Headers Ready'
+      );
+    }
+    prevAllFilesCheckedRef.current = allFilesChecked;
+  }, [allFilesChecked, selectedFiles.length, fileHeaders, toast]);
+
   const canMerge = useMemo(() => {
     if (!allFilesChecked) return false;
     if (allowExtraHeaders) return true;
@@ -661,21 +690,25 @@ export const useSampleAutomationLogic = () => {
   const handleProcessFiles = useCallback(async () => {
     if (!selectedProjectId) {
       setProcessStatus('❌ Please select a project');
+      toast.warning('Please select a project');
       return;
     }
 
     if (selectedFiles.length === 0) {
       setProcessStatus('❌ Please select at least one file');
+      toast.warning('Please select at least one file');
       return;
     }
 
     if (!allFilesChecked) {
       setProcessStatus('❌ Please review headers for all files first');
+      toast.warning('Please review headers for all files first');
       return;
     }
 
     if (!allowExtraHeaders && validationSummary.nonMatchingHeaders.length > 0) {
       setProcessStatus('❌ Please resolve header conflicts before merging');
+      toast.warning('Please resolve header conflicts before merging');
       return;
     }
 
@@ -713,17 +746,35 @@ export const useSampleAutomationLogic = () => {
     formData.append('customHeaders', JSON.stringify(headersMapping));
 
     try {
+      // Clear previous results to reset step 3
+      setProcessResult(null);
+      setTablePreview(null);
+      setDistinctAgeRanges([]);
+
       setProcessStatus(
         `Processing ${selectedFiles.length} file${
           selectedFiles.length !== 1 ? 's' : ''
         }...`
       );
+      toast.info(`Processing ${selectedFiles.length} file${selectedFiles.length !== 1 ? 's' : ''}...`, 'Processing');
 
       const result = await processFile(formData).unwrap();
 
       if (result.success) {
         setProcessResult(result);
         setProcessStatus(`✅ ${result.message}`);
+
+        // Show success toast with details
+        const rowCount = result.rowsInserted?.toLocaleString() || result.totalRows?.toLocaleString() || 0;
+        toast.success(`${rowCount} rows processed successfully`, 'Processing Complete');
+
+        // Show CallID assignment toast if applicable
+        if (result.callIdAssignment?.success) {
+          const assignedCount = result.callIdAssignment.assigned?.length || 0;
+          if (assignedCount > 0) {
+            toast.success(`${assignedCount} CallIDs auto-assigned`, 'CallID Assignment');
+          }
+        }
 
         // Set distinct age ranges from response (already fetched after post-processing)
         if (result.distinctAgeRanges) {
@@ -761,6 +812,7 @@ export const useSampleAutomationLogic = () => {
         error?.message ||
         'Processing failed. Please try again.';
       setProcessStatus(`❌ Error: ${errorMessage}`);
+      toast.error(errorMessage, 'Processing Failed');
     }
   }, [
     selectedProjectId,
@@ -774,6 +826,7 @@ export const useSampleAutomationLogic = () => {
     requestedFileId,
     allowExtraHeaders,
     getTablePreview,
+    toast,
   ]);
 
   // Utility functions
@@ -858,11 +911,14 @@ export const useSampleAutomationLogic = () => {
           await Promise.all(refreshPromises);
 
           setProcessStatus('✓ All files refreshed with new mapping');
+          toast.success(`Header mapping saved: ${original} → ${mapped}`);
           setTimeout(() => setProcessStatus(''), 2000);
         }
       } catch (error: any) {
         console.error('Error saving mapping:', error);
-        setProcessStatus(`❌ Error: ${error.message || 'Failed to save'}`);
+        const errorMsg = error.message || 'Failed to save mapping';
+        setProcessStatus(`❌ Error: ${errorMsg}`);
+        toast.error(errorMsg, 'Mapping Save Failed');
       }
     },
     [
@@ -871,6 +927,7 @@ export const useSampleAutomationLogic = () => {
       saveHeaderMappings,
       fetchAndApplyHeaderMappings,
       fileHeaders,
+      toast,
     ]
   );
 
@@ -927,14 +984,16 @@ const downloadFile = useCallback(async (url, filename) => {
 const handleExtractFiles = useCallback(async (config) => {
   try {
     setProcessStatus('🔄 Extracting files...');
+    toast.info('Extracting files...', 'Export');
     const result = await extractFiles(config).unwrap();
-    
+
     if (result.success) {
       setProcessStatus('✅ Files extracted successfully! Downloading...');
-      
+
       let downloadDelay = 0;
       const DELAY_INCREMENT = 1000; // 1 second between downloads
-      
+      let totalFilesDownloaded = 0;
+
       if (result.splitMode === 'split') {
         // Download landline file
         if (result.files.landline) {
@@ -942,14 +1001,16 @@ const handleExtractFiles = useCallback(async (config) => {
             downloadFile(result.files.landline.url, result.files.landline.filename);
           }, downloadDelay);
           downloadDelay += DELAY_INCREMENT;
+          totalFilesDownloaded++;
         }
-        
+
         // Download cell file
         if (result.files.cell) {
           setTimeout(() => {
             downloadFile(result.files.cell.url, result.files.cell.filename);
           }, downloadDelay);
           downloadDelay += DELAY_INCREMENT;
+          totalFilesDownloaded++;
         }
       } else {
         // Download single file
@@ -958,41 +1019,45 @@ const handleExtractFiles = useCallback(async (config) => {
             downloadFile(result.files.single.url, result.files.single.filename);
           }, downloadDelay);
           downloadDelay += DELAY_INCREMENT;
+          totalFilesDownloaded++;
         }
       }
-      
+
       // NEW: Download householding duplicate files if they exist
       if (result.householdingDuplicateFiles && result.householdingDuplicateFiles.files) {
         const duplicateFiles = result.householdingDuplicateFiles.files;
-        
+
         // Download duplicate2 file
         if (duplicateFiles.duplicate2) {
           setTimeout(() => {
             downloadFile(duplicateFiles.duplicate2.url, duplicateFiles.duplicate2.filename);
           }, downloadDelay);
           downloadDelay += DELAY_INCREMENT;
+          totalFilesDownloaded++;
         }
-        
+
         // Download duplicate3 file
         if (duplicateFiles.duplicate3) {
           setTimeout(() => {
             downloadFile(duplicateFiles.duplicate3.url, duplicateFiles.duplicate3.filename);
           }, downloadDelay);
           downloadDelay += DELAY_INCREMENT;
+          totalFilesDownloaded++;
         }
-        
+
         // Download duplicate4 file
         if (duplicateFiles.duplicate4) {
           setTimeout(() => {
             downloadFile(duplicateFiles.duplicate4.url, duplicateFiles.duplicate4.filename);
           }, downloadDelay);
           downloadDelay += DELAY_INCREMENT;
+          totalFilesDownloaded++;
         }
-        
+
         // Update status message to include householding info
         const totalDuplicateFiles = result.householdingDuplicateFiles.filesGenerated || 0;
         const totalDuplicateRecords = result.householdingDuplicateFiles.totalRecords || 0;
-        
+
         if (totalDuplicateFiles > 0) {
           setTimeout(() => {
             setProcessStatus(
@@ -1001,23 +1066,26 @@ const handleExtractFiles = useCallback(async (config) => {
           }, downloadDelay);
         }
       }
-      
+
       console.log('Files extracted:', result);
-      
+      toast.success(`${totalFilesDownloaded} file${totalFilesDownloaded !== 1 ? 's' : ''} downloading`, 'Export Complete');
+
       // Clear status after a delay
       setTimeout(() => {
         setProcessStatus('');
       }, downloadDelay + 5000);
-      
+
     } else {
       setProcessStatus(`❌ Extraction failed: ${result.message}`);
+      toast.error(result.message || 'Extraction failed', 'Export Failed');
     }
   } catch (error) {
     console.error('Error extracting files:', error);
     const errorMessage = error?.data?.message || error?.message || 'Failed to extract files';
     setProcessStatus(`❌ Error extracting files: ${errorMessage}`);
+    toast.error(errorMessage, 'Export Failed');
   }
-}, [extractFiles, downloadFile, setProcessStatus]);
+}, [extractFiles, downloadFile, setProcessStatus, toast]);
 
   // Handle split configuration changes
 const handleSplitConfigChange = useCallback(async (config: any) => {

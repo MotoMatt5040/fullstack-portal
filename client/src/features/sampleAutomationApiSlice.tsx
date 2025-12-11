@@ -1,6 +1,19 @@
 import { apiSlice } from '../app/api/apiSlice';
 
 // TypeScript interfaces for type safety
+interface CallIdAssignment {
+  success: boolean;
+  message?: string;
+  assigned?: Array<{
+    slotName: string;
+    phoneNumberId: number;
+    phoneNumber: string;
+    areaCode: string;
+    stateAbbr: string;
+  }>;
+  areaCodes?: Array<{ areaCode: string; count: number }>;
+}
+
 interface ProcessFileResponse {
   success: boolean;
   sessionId: string;
@@ -12,6 +25,7 @@ interface ProcessFileResponse {
   fileType?: string;
   originalFilename?: string;
   distinctAgeRanges?: number[];
+  callIdAssignment?: CallIdAssignment;
 }
 
 interface Client {

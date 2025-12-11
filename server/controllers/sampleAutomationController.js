@@ -3,6 +3,7 @@ const path = require('path');
 const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
 const SampleAutomation = require('../services/SampleAutomationServices');
+const CallIDService = require('../services/CallIDServices');
 const handleAsync = require('./asyncController');
 
 const upload = multer({
@@ -425,10 +426,22 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
       console.log('⏭️ Skipping birthyear calculation - IAGE already populated from AGE column');
     }
 
-    // Always populate AGERANGE from IAGE (even if AGERANGENEW exists)
-    console.log('Populating AGERANGE from IAGE...');
-    const ageRangeResult = await SampleAutomation.populateAgeRange(tableName);
-    console.log(`✅ AGERANGE: ${ageRangeResult.recordsWithAgeRange} records matched`);
+    // Populate AGERANGE from IAGE
+    // Skip for client 102 (Tarrance) if AGERANGE column already exists
+    if (clientId === 102) {
+      const ageRangeExists = await SampleAutomation.checkColumnExists(tableName, 'AGERANGE');
+      if (ageRangeExists) {
+        console.log('⏭️ Skipping AGERANGE population - column already exists for Tarrance client');
+      } else {
+        console.log('Populating AGERANGE from IAGE...');
+        const ageRangeResult = await SampleAutomation.populateAgeRange(tableName);
+        console.log(`✅ AGERANGE: ${ageRangeResult.recordsWithAgeRange} records matched`);
+      }
+    } else {
+      console.log('Populating AGERANGE from IAGE...');
+      const ageRangeResult = await SampleAutomation.populateAgeRange(tableName);
+      console.log(`✅ AGERANGE: ${ageRangeResult.recordsWithAgeRange} records matched`);
+    }
 
 
     // Pad columns
@@ -594,6 +607,27 @@ const processFile = async (req, res) => {
       // Fetch distinct age ranges after post-processing completes
       const distinctAgeRangesResult = await SampleAutomation.getDistinctAgeRanges(tableResult.tableName);
 
+      // Auto-assign CallIDs if projectId is provided
+      let callIdAssignment = null;
+      if (projectId) {
+        try {
+          console.log('Auto-assigning CallIDs...');
+          callIdAssignment = await CallIDService.autoAssignCallIDsFromSample(
+            tableResult.tableName,
+            parseInt(projectId, 10),
+            clientId
+          );
+          if (callIdAssignment.success) {
+            console.log(`✅ CallIDs assigned: ${callIdAssignment.assigned?.length || 0} slots filled`);
+          } else {
+            console.log(`⚠️ CallID assignment: ${callIdAssignment.message}`);
+          }
+        } catch (callIdError) {
+          console.error('⚠️ CallID auto-assignment failed (non-critical):', callIdError.message);
+          // Don't throw - CallID failures shouldn't kill the whole request
+        }
+      }
+
       // Generate response
       const sessionId = generateSessionId();
       const responseMessage = filesToProcess.length > 1
@@ -619,6 +653,7 @@ const processFile = async (req, res) => {
         promarkConstantsAdded: tableResult.promarkConstantsAdded,
         mappedHeadersUsed: Object.keys(customHeaders).length > 0,
         distinctAgeRanges: distinctAgeRangesResult.ageRanges,
+        callIdAssignment: callIdAssignment,
       });
       
     } catch (sqlError) {

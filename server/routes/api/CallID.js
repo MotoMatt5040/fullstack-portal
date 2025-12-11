@@ -300,4 +300,28 @@ router.route('/projects/slots')
     callIDController.handleRemoveProjectSlot
   );
 
+// ==================== AUTO-ASSIGNMENT ROUTES ====================
+
+/**
+ * Get top area codes from a sample table
+ * GET /api/callid/auto-assign/area-codes
+ * Query params: tableName
+ */
+router.route('/auto-assign/area-codes')
+  .get(
+    verifyRoles(...allowedRoles),
+    callIDController.handleGetTopAreaCodes
+  );
+
+/**
+ * Auto-assign CallIDs to a project based on sample table area codes
+ * POST /api/callid/auto-assign
+ * Body: { tableName, projectId }
+ */
+router.route('/auto-assign')
+  .post(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Executive, ROLES_LIST.Programmer),
+    callIDController.handleAutoAssignCallIDs
+  );
+
 module.exports = router;

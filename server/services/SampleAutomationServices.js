@@ -2268,14 +2268,16 @@ const createVFREQColumns = async (tableName) => {
         );
 
         // Check if both VFREQGEN and VFREQPR columns already exist
+        // Also check if required source columns exist (voting history year columns)
         const checkQuery = `
           SELECT
             SUM(CASE WHEN COLUMN_NAME = 'VFREQGEN' THEN 1 ELSE 0 END) as HasVFREQGEN,
-            SUM(CASE WHEN COLUMN_NAME = 'VFREQPR' THEN 1 ELSE 0 END) as HasVFREQPR
+            SUM(CASE WHEN COLUMN_NAME = 'VFREQPR' THEN 1 ELSE 0 END) as HasVFREQPR,
+            -- Check for voting history columns (years like 2020, 2022, 2024 or GENFREQ/PRIFREQ)
+            SUM(CASE WHEN COLUMN_NAME LIKE '20[0-9][0-9]' OR COLUMN_NAME IN ('GENFREQ', 'PRIFREQ', 'G20', 'G22', 'G24', 'P20', 'P22', 'P24') THEN 1 ELSE 0 END) as HasVotingHistoryColumns
           FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
           WHERE TABLE_SCHEMA = 'dbo'
           AND TABLE_NAME = @TableName
-          AND COLUMN_NAME IN ('VFREQGEN', 'VFREQPR')
         `;
 
         const checkResult = await pool
@@ -2285,6 +2287,7 @@ const createVFREQColumns = async (tableName) => {
 
         const hasVFREQGEN = checkResult.recordset[0].HasVFREQGEN > 0;
         const hasVFREQPR = checkResult.recordset[0].HasVFREQPR > 0;
+        const hasVotingHistoryColumns = checkResult.recordset[0].HasVotingHistoryColumns > 0;
 
         if (hasVFREQGEN && hasVFREQPR) {
           console.log(
@@ -2295,6 +2298,19 @@ const createVFREQColumns = async (tableName) => {
             skipped: true,
             rowsUpdated: 0,
             message: 'VFREQGEN and VFREQPR columns already exist, skipped creation',
+          };
+        }
+
+        // Skip if no voting history columns exist - nothing to calculate from
+        if (!hasVotingHistoryColumns) {
+          console.log(
+            `⏭️ No voting history columns found in ${tableName}, skipping VFREQ creation`
+          );
+          return {
+            success: true,
+            skipped: true,
+            rowsUpdated: 0,
+            message: 'No voting history columns found, skipped VFREQ creation',
           };
         }
 
@@ -2862,6 +2878,39 @@ const getTableHeaders = async (tableName) => {
   });
 };
 
+/**
+ * Check if a specific column exists in a table
+ * @param {string} tableName - Name of the table
+ * @param {string} columnName - Name of the column to check
+ * @returns {boolean} - True if column exists
+ */
+const checkColumnExists = async (tableName, columnName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const result = await pool
+          .request()
+          .input('tableName', sql.NVarChar, tableName)
+          .input('columnName', sql.NVarChar, columnName)
+          .query(`
+            SELECT COUNT(*) as ColumnExists
+            FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = 'dbo'
+            AND TABLE_NAME = @tableName
+            AND COLUMN_NAME = @columnName
+          `);
+
+        return result.recordset[0].ColumnExists > 0;
+      } catch (error) {
+        console.error('Error checking column existence:', error);
+        throw new Error(`Failed to check column existence: ${error.message}`);
+      }
+    },
+    fnName: 'checkColumnExists',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -2897,4 +2946,5 @@ module.exports = {
   registerProjectFile,
   updateProjectFileTableName,
   deleteProjectFile,
+  checkColumnExists,
 };
