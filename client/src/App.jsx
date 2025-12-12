@@ -109,10 +109,23 @@ function App() {
           <Route path='summary-report' element={<SummaryReport />} />
           <Route path='project-report' element={<ProjectReport />} />
           <Route path='production-report' element={<ProductionReport />} />
-          <Route path='sample-automation' element={<SampleAutomation />} />
-          <Route path='call-id' element={<CallID />} />
           <Route path='project-numbering' element={<ProjectNumbering />} />
           {/* <Route path='publishquotas' element={<QuotaPublishing />} /> */}
+        </Route>
+
+        <Route
+          element={
+            <RequireAuth
+              allowedRoles={[
+                roles.Admin,
+                roles.Executive,
+                roles.Programmer,
+              ]}
+            />
+          }
+        >
+          <Route path='sample-automation' element={<SampleAutomation />} />
+          <Route path='call-id' element={<CallID />} />
         </Route>
         <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>
           <Route path='project-publishing' element={<ProjectPublishing />} />

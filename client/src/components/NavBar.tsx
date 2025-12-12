@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../features/auth/authSlice';
+import { selectRoles } from '../features/roles/rolesSlice';
 import { jwtDecode } from 'jwt-decode';
 import Settings from '../views/settings/Settings';
 import Icon from '@mdi/react';
@@ -23,38 +24,40 @@ type Props = {
   onToggleNav: (visible: boolean) => void;
 };
 
-const EXTERNAL_ROLE_ID = 4;
-
 const NavBar: React.FC<Props> = ({ onToggleNav }) => {
   const [isNavVisible, setIsNavVisible] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const token = useSelector(selectCurrentToken);
+  const roles = useSelector(selectRoles) as Record<string, number>;
 
-  const userInfo = useMemo(() => {
-    if (!token) return { isInternalUser: true };
+  const userRoles = useMemo(() => {
+    if (!token) return [];
     try {
       const decoded = jwtDecode<{ UserInfo?: { roles?: number[] } }>(token);
-      const roles = decoded?.UserInfo?.roles ?? [];
-      return { isInternalUser: !roles.includes(EXTERNAL_ROLE_ID) };
+      return decoded?.UserInfo?.roles ?? [];
     } catch {
-      return { isInternalUser: true };
+      return [];
     }
   }, [token]);
 
-  const navItems = [
+  const hasRole = (allowedRoles: number[]) => {
+    return allowedRoles.some((role) => userRoles.includes(role));
+  };
+
+  const navItems = useMemo(() => [
     { to: '/', icon: mdiHome, label: 'Home', visible: true },
     { to: '/quota-management', icon: mdiChartLine, label: 'Quota Report', visible: true },
-    { to: '/summary-report', icon: mdiFileDocumentOutline, label: 'Summary Report', visible: userInfo.isInternalUser },
+    { to: '/summary-report', icon: mdiFileDocumentOutline, label: 'Summary Report', visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]) },
     { to: '/disposition-report', icon: mdiFileDocumentOutline, label: 'Disposition Report', visible: true },
-    { to: '/sample-automation', icon: mdiCog, label: 'Sample Automation', visible: userInfo.isInternalUser },
-    { to: '/call-id', icon: mdiPhone, label: 'Call ID Management', visible: userInfo.isInternalUser },
-    { to: '/project-numbering', icon: mdiNumeric, label: 'Project Numbering', visible: userInfo.isInternalUser },
-    { to: '/ai-prompting', icon: mdiRobot, label: 'AI Prompting', visible: userInfo.isInternalUser },
-    { to: '/user-management', icon: mdiAccountGroup, label: 'User Management', visible: userInfo.isInternalUser },
+    { to: '/sample-automation', icon: mdiCog, label: 'Sample Automation', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
+    { to: '/call-id', icon: mdiPhone, label: 'Call ID Management', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
+    { to: '/project-numbering', icon: mdiNumeric, label: 'Project Numbering', visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]) },
+    { to: '/ai-prompting', icon: mdiRobot, label: 'AI Prompting', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
+    { to: '/user-management', icon: mdiAccountGroup, label: 'User Management', visible: hasRole([roles.Admin, roles.Executive]) },
     { to: '/github', icon: mdiGithub, label: 'Feedback', visible: true },
-  ];
+  ], [roles, userRoles]);
 
   const visibleItems = navItems.filter(item => item.visible);
 

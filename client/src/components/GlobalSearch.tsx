@@ -98,7 +98,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
         path: '/call-id',
         category: 'tools',
         keywords: ['call', 'caller', 'id', 'phone', 'numbers'],
-        roles: [roles.Admin, roles.Executive, roles.Manager, roles.Programmer],
+        roles: [roles.Admin, roles.Executive, roles.Programmer],
       },
       {
         id: 'sample-automation',
@@ -108,7 +108,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
         path: '/sample-automation',
         category: 'tools',
         keywords: ['sample', 'automation', 'auto', 'process'],
-        roles: [roles.Admin, roles.Executive, roles.Manager, roles.Programmer],
+        roles: [roles.Admin, roles.Executive, roles.Programmer],
       },
       // Reports
       {

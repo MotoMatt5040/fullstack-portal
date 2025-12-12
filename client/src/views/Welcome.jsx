@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../features/auth/authSlice';
+import { selectRoles } from '../features/roles/rolesSlice';
 import { jwtDecode } from 'jwt-decode';
 import { Link } from 'react-router-dom';
 import Icon from '@mdi/react';
@@ -17,31 +18,33 @@ import {
 
 import '../views/Welcome.css';
 
-const EXTERNAL_ROLE_ID = 4;
-
 const Welcome = () => {
   const token = useSelector(selectCurrentToken);
+  const roles = useSelector(selectRoles);
 
   const userInfo = useMemo(() => {
-    if (!token) return { roles: [], username: '', isInternalUser: true };
+    if (!token) return { userRoles: [], username: '' };
 
     try {
       const decoded = jwtDecode(token);
-      const roles = decoded?.UserInfo?.roles ?? [];
+      const userRoles = decoded?.UserInfo?.roles ?? [];
       const username = decoded?.UserInfo?.username ?? '';
-      const isInternalUser = !roles.includes(EXTERNAL_ROLE_ID);
 
-      return { roles, username, isInternalUser };
+      return { userRoles, username };
     } catch (error) {
       console.error('Error decoding token:', error);
-      return { roles: [], username: '', isInternalUser: true };
+      return { userRoles: [], username: '' };
     }
   }, [token]);
+
+  const hasRole = (allowedRoles) => {
+    return allowedRoles.some((role) => userInfo.userRoles.includes(role));
+  };
 
   const firstName = userInfo.username?.split('@')[0]?.split('.')[0] || 'User';
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
-  const navItems = [
+  const navItems = useMemo(() => [
     {
       to: '/quota-management',
       icon: mdiChartLine,
@@ -54,7 +57,7 @@ const Welcome = () => {
       icon: mdiFileDocumentOutline,
       label: 'Summary Report',
       color: '#8b5cf6',
-      visible: userInfo.isInternalUser,
+      visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]),
     },
     {
       to: '/disposition-report',
@@ -68,35 +71,35 @@ const Welcome = () => {
       icon: mdiCog,
       label: 'Sample Automation',
       color: '#f59e0b',
-      visible: userInfo.isInternalUser,
+      visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
     },
     {
       to: '/call-id',
       icon: mdiPhone,
       label: 'Call ID',
       color: '#10b981',
-      visible: userInfo.isInternalUser,
+      visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
     },
     {
       to: '/project-numbering',
       icon: mdiNumeric,
       label: 'Project Numbering',
       color: '#ec4899',
-      visible: userInfo.isInternalUser,
+      visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]),
     },
     {
       to: '/ai-prompting',
       icon: mdiRobot,
       label: 'AI Prompting',
       color: '#6366f1',
-      visible: userInfo.isInternalUser,
+      visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
     },
     {
       to: '/user-management',
       icon: mdiAccountGroup,
       label: 'User Management',
       color: '#14b8a6',
-      visible: userInfo.isInternalUser,
+      visible: hasRole([roles.Admin, roles.Executive]),
     },
     {
       to: '/github',
@@ -105,7 +108,7 @@ const Welcome = () => {
       color: '#64748b',
       visible: true,
     },
-  ];
+  ], [roles, userInfo.userRoles]);
 
   const visibleItems = navItems.filter(item => item.visible);
 

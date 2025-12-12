@@ -1,7 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import Icon from '@mdi/react';
 import { mdiPlus, mdiFilterOutline, mdiDatabase, mdiInformationOutline } from '@mdi/js';
 import { useProjectNumberingLogic } from './useProjectNumberingLogic';
+import { selectCurrentToken } from '../../features/auth/authSlice';
+import { selectRoles } from '../../features/roles/rolesSlice';
+import { jwtDecode } from 'jwt-decode';
 import ProjectsTable from './ProjectsTable';
 import ProjectModal from './ProjectModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
@@ -14,6 +18,25 @@ const ProjectNumbering = () => {
   const [showLegend, setShowLegend] = useState(false);
   const legendRef = useRef<HTMLDivElement>(null);
   const legendBtnRef = useRef<HTMLButtonElement>(null);
+
+  const token = useSelector(selectCurrentToken);
+  const roles = useSelector(selectRoles) as Record<string, number>;
+
+  const userRoles = useMemo(() => {
+    if (!token) return [];
+    try {
+      const decoded = jwtDecode<{ UserInfo?: { roles?: number[] } }>(token);
+      return decoded?.UserInfo?.roles ?? [];
+    } catch {
+      return [];
+    }
+  }, [token]);
+
+  // Only Admin, Executive, and Programmer can add/edit/delete projects
+  const canEditProjects = useMemo(() => {
+    const allowedRoles = [roles.Admin, roles.Executive, roles.Programmer];
+    return allowedRoles.some((role) => userRoles.includes(role));
+  }, [roles, userRoles]);
 
   // Close legend when clicking outside
   useEffect(() => {
@@ -85,12 +108,14 @@ const ProjectNumbering = () => {
             Manage and track all project information
           </p>
         </div>
-        <div className="projects-header-right">
-          <button className="btn-primary" onClick={openAddModal}>
-            <Icon path={mdiPlus} size={0.8} />
-            Add Project
-          </button>
-        </div>
+        {canEditProjects && (
+          <div className="projects-header-right">
+            <button className="btn-primary" onClick={openAddModal}>
+              <Icon path={mdiPlus} size={0.8} />
+              Add Project
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -183,6 +208,7 @@ const ProjectNumbering = () => {
           onSort={handleSort}
           onEdit={openEditModal}
           onDelete={openDeleteModal}
+          canEdit={canEditProjects}
         />
       </div>
 

@@ -1471,8 +1471,8 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId) => {
     IF @RowExists = 0
     BEGIN
       -- Create new usage row (no dates - dates come from Projects table)
-      INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, ${slotName}, CallIDL1, CallIDL2, CallIDC1, CallIDC2)
-      VALUES (@projectId, @phoneNumberId,
+      INSERT INTO FAJITA.dbo.CallIDUsage (ProjectID, CallIDL1, CallIDL2, CallIDC1, CallIDC2)
+      VALUES (@projectId,
         CASE WHEN '${slotName}' = 'CallIDL1' THEN @phoneNumberId ELSE NULL END,
         CASE WHEN '${slotName}' = 'CallIDL2' THEN @phoneNumberId ELSE NULL END,
         CASE WHEN '${slotName}' = 'CallIDC1' THEN @phoneNumberId ELSE NULL END,

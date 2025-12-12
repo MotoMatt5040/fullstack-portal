@@ -17,6 +17,7 @@ const ProjectsTable = ({
   onSort,
   onEdit,
   onDelete,
+  canEdit = true,
 }) => {
   const getSortIcon = (column) => {
     if (sortBy !== column) {
@@ -113,7 +114,7 @@ const ProjectsTable = ({
     <table className="projects-table">
         <thead>
           <tr>
-            <th className="col-actions">Actions</th>
+            {canEdit && <th className="col-actions">Actions</th>}
             <th className="col-sortable" onClick={() => onSort('projectID')}>
               # {getSortIcon('projectID')}
             </th>
@@ -151,24 +152,26 @@ const ProjectsTable = ({
         <tbody>
           {projects.map((project) => (
             <tr key={project.projectID} className={getRowClass(project.startDate, project.endDate)}>
-              <td className="col-actions">
-                <div className="action-buttons">
-                  <button
-                    className="btn-icon btn-edit"
-                    onClick={() => onEdit(project)}
-                    title="Edit Project"
-                  >
-                    <Icon path={mdiPencilOutline} size={0.75} />
-                  </button>
-                  <button
-                    className="btn-icon btn-delete"
-                    onClick={() => onDelete(project)}
-                    title="Delete Project"
-                  >
-                    <Icon path={mdiTrashCanOutline} size={0.75} />
-                  </button>
-                </div>
-              </td>
+              {canEdit && (
+                <td className="col-actions">
+                  <div className="action-buttons">
+                    <button
+                      className="btn-icon btn-edit"
+                      onClick={() => onEdit(project)}
+                      title="Edit Project"
+                    >
+                      <Icon path={mdiPencilOutline} size={0.75} />
+                    </button>
+                    <button
+                      className="btn-icon btn-delete"
+                      onClick={() => onDelete(project)}
+                      title="Delete Project"
+                    >
+                      <Icon path={mdiTrashCanOutline} size={0.75} />
+                    </button>
+                  </div>
+                </td>
+              )}
               <td>{project.projectID}</td>
               <td>{project.clientProjectID || '-'}</td>
               <td className="col-name">{project.projectName}</td>
