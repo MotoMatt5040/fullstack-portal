@@ -567,6 +567,14 @@ const handleUpdateProjectSlot = handleAsync(async (req, res) => {
   );
   console.log('[handleUpdateProjectSlot] Service result:', result);
 
+  // Check if the operation was successful
+  if (result.Success === 0) {
+    return res.status(400).json({
+      success: false,
+      message: result.Message
+    });
+  }
+
   res.status(200).json({
     success: true,
     message: result.Message
