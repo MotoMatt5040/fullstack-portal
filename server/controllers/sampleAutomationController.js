@@ -377,13 +377,22 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
       }
     }
 
-    // Create VFREQ columns
-    console.log('Creating VFREQ columns...');
-    const vfreqResult = await SampleAutomation.createVFREQColumns(tableName);
-    if (vfreqResult.skipped) {
-      console.log(`⏭️ VFREQ columns: ${vfreqResult.message}`);
+    // Create VFREQ columns - RNC vendor-specific (VendorID 4)
+    if (vendorId === 4) {
+      try {
+        console.log('RNC vendor detected - creating VFREQ columns...');
+        const vfreqResult = await SampleAutomation.createVFREQColumns(tableName);
+        if (vfreqResult.skipped) {
+          console.log(`⏭️ VFREQ columns: ${vfreqResult.message}`);
+        } else {
+          console.log(`✅ VFREQ columns: ${vfreqResult.rowsUpdated} rows calculated`);
+        }
+      } catch (vfreqError) {
+        console.error('⚠️ RNC VFREQ columns creation failed (non-critical):', vfreqError.message);
+        // Continue with rest of post-processing
+      }
     } else {
-      console.log(`✅ VFREQ columns: ${vfreqResult.rowsUpdated} rows calculated`);
+      console.log('⏭️ VFREQ columns: Skipped (only runs for RNC vendor)');
     }
 
     // Update SOURCE column based on LAND and CELL values

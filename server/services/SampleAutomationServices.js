@@ -2255,6 +2255,7 @@ const createDollarNColumn = async (tableName, fileType = null, clientId = null) 
 
 /**
  * Create and populate VFREQGEN and VFREQPR columns based on previous 4 even years
+ * Uses VH columns like VH24G, VH22G, VH24P, VH22P etc. to count elections voted in
  * @param {string} tableName - Name of the table
  * @returns {Object} - Result with calculation details
  */
@@ -2264,66 +2265,33 @@ const createVFREQColumns = async (tableName) => {
     queryFn: async (pool) => {
       try {
         console.log(
-          `Checking VFREQGEN and VFREQPR columns in table: ${tableName}`
-        );
-
-        // Check if both VFREQGEN and VFREQPR columns already exist
-        // Also check if required source columns exist (voting history year columns)
-        const checkQuery = `
-          SELECT
-            SUM(CASE WHEN COLUMN_NAME = 'VFREQGEN' THEN 1 ELSE 0 END) as HasVFREQGEN,
-            SUM(CASE WHEN COLUMN_NAME = 'VFREQPR' THEN 1 ELSE 0 END) as HasVFREQPR,
-            -- Check for voting history columns (years like 2020, 2022, 2024 or GENFREQ/PRIFREQ)
-            SUM(CASE WHEN COLUMN_NAME LIKE '20[0-9][0-9]' OR COLUMN_NAME IN ('GENFREQ', 'PRIFREQ', 'G20', 'G22', 'G24', 'P20', 'P22', 'P24') THEN 1 ELSE 0 END) as HasVotingHistoryColumns
-          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
-          WHERE TABLE_SCHEMA = 'dbo'
-          AND TABLE_NAME = @TableName
-        `;
-
-        const checkResult = await pool
-          .request()
-          .input('TableName', sql.NVarChar, tableName)
-          .query(checkQuery);
-
-        const hasVFREQGEN = checkResult.recordset[0].HasVFREQGEN > 0;
-        const hasVFREQPR = checkResult.recordset[0].HasVFREQPR > 0;
-        const hasVotingHistoryColumns = checkResult.recordset[0].HasVotingHistoryColumns > 0;
-
-        if (hasVFREQGEN && hasVFREQPR) {
-          console.log(
-            `⏭️ VFREQGEN and VFREQPR columns already exist in ${tableName}, skipping creation`
-          );
-          return {
-            success: true,
-            skipped: true,
-            rowsUpdated: 0,
-            message: 'VFREQGEN and VFREQPR columns already exist, skipped creation',
-          };
-        }
-
-        // Skip if no voting history columns exist - nothing to calculate from
-        if (!hasVotingHistoryColumns) {
-          console.log(
-            `⏭️ No voting history columns found in ${tableName}, skipping VFREQ creation`
-          );
-          return {
-            success: true,
-            skipped: true,
-            rowsUpdated: 0,
-            message: 'No voting history columns found, skipped VFREQ creation',
-          };
-        }
-
-        console.log(
           `Creating VFREQGEN and VFREQPR columns in table: ${tableName}`
         );
 
+        // Let the stored procedure handle all the logic:
+        // - Check if VFREQGEN/VFREQPR already exist
+        // - Find available VH columns (VH24G, VH22G, VH24P, etc.)
+        // - Create columns if needed and calculate counts
         const result = await pool
           .request()
           .input('TableName', sql.NVarChar, tableName)
           .execute('FAJITA.dbo.sp_CreateVFREQColumns');
 
         const data = result.recordset[0];
+
+        // Check if it was skipped due to no VH columns
+        if (data.ColumnsUsed === 'No VH columns found') {
+          console.log(
+            `⏭️ No VH columns found in ${tableName}, VFREQ calculation skipped`
+          );
+          return {
+            success: true,
+            skipped: true,
+            rowsUpdated: 0,
+            message: data.Message,
+          };
+        }
+
         console.log(
           `✅ VFREQ columns created for ${data.RowsUpdated} rows using years: ${data.OldestYear}-${data.NewestYear}`
         );
