@@ -65,6 +65,16 @@ export const baseQueryWithReauth = async (args, api, extraOptions) => {
   if (result?.error?.status === 403) {
     const errorCode = result?.error?.data?.code;
 
+    // Session was invalidated (logged in from another location)
+    if (errorCode === 'SESSION_INVALIDATED') {
+      api.dispatch(logOut());
+      // Optionally show a message to the user
+      window.dispatchEvent(new CustomEvent('session-invalidated', {
+        detail: { message: 'You have been logged out because your account was accessed from another location.' }
+      }));
+      return result;
+    }
+
     // Only attempt refresh for expired tokens
     if (errorCode === 'TOKEN_EXPIRED') {
       // Check if persist is enabled

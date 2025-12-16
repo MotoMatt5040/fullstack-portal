@@ -19,7 +19,13 @@ import {
   mdiMagnify,
   mdiAccountCircle,
   mdiDomain,
+  mdiWrench,
 } from '@mdi/js';
+import {
+  useSendMaintenanceNotificationMutation,
+  useGetConnectedClientsQuery,
+} from '../../features/notificationsApiSlice';
+import { useToast } from '../../context/ToastContext';
 import './UserManagement.css';
 
 interface User {
@@ -59,6 +65,15 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [maintenanceMinutes, setMaintenanceMinutes] = useState(5);
+
+  const toast = useToast();
+  const [sendMaintenanceNotification, { isLoading: isSendingMaintenance }] =
+    useSendMaintenanceNotificationMutation();
+  const { data: clientsData } = useGetConnectedClientsQuery(undefined, {
+    pollingInterval: 30000, // Poll every 30 seconds
+  });
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -97,6 +112,18 @@ const UserManagement = () => {
 
   const handleRefresh = () => {
     window.location.reload();
+  };
+
+  const handleSendMaintenanceNotification = async () => {
+    try {
+      const result = await sendMaintenanceNotification({
+        minutes: maintenanceMinutes,
+      }).unwrap();
+      toast.success(result.message, 'Maintenance Notification Sent');
+      setIsMaintenanceModalOpen(false);
+    } catch (err) {
+      toast.error('Failed to send maintenance notification', 'Error');
+    }
   };
 
   // Loading state
@@ -160,6 +187,14 @@ const UserManagement = () => {
           </div>
         </div>
         <div className='user-management-controls-right'>
+          <button
+            onClick={() => setIsMaintenanceModalOpen(true)}
+            className='user-management-btn user-management-btn-warning'
+            title={`Send Maintenance Notification (${clientsData?.clientCount || 0} users online)`}
+          >
+            <Icon path={mdiWrench} size={0.75} />
+            <span>Maintenance</span>
+          </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
             className='user-management-btn user-management-btn-primary'
@@ -350,6 +385,56 @@ const UserManagement = () => {
           isConfirming={isDeleting}
         />
       )}
+
+      {/* Maintenance Notification Modal */}
+      <Modal isOpen={isMaintenanceModalOpen} onClose={() => setIsMaintenanceModalOpen(false)}>
+        <div className='maintenance-modal'>
+          <h2 className='maintenance-modal-title'>
+            <Icon path={mdiWrench} size={1} />
+            Send Maintenance Notification
+          </h2>
+          <p className='maintenance-modal-description'>
+            This will send a maintenance warning to all connected users. They will see a
+            countdown timer and be prompted to save their work.
+          </p>
+
+          <div className='maintenance-modal-stats'>
+            <span className='maintenance-modal-online'>
+              <strong>{clientsData?.clientCount || 0}</strong> users currently online
+            </span>
+          </div>
+
+          <div className='maintenance-modal-field'>
+            <label htmlFor='maintenance-minutes'>Time until maintenance (minutes)</label>
+            <input
+              id='maintenance-minutes'
+              type='number'
+              min={1}
+              max={60}
+              value={maintenanceMinutes}
+              onChange={(e) => setMaintenanceMinutes(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
+              className='maintenance-modal-input'
+            />
+          </div>
+
+          <div className='maintenance-modal-actions'>
+            <button
+              onClick={() => setIsMaintenanceModalOpen(false)}
+              className='user-management-btn user-management-btn-secondary'
+              disabled={isSendingMaintenance}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSendMaintenanceNotification}
+              className='user-management-btn user-management-btn-warning'
+              disabled={isSendingMaintenance}
+            >
+              {isSendingMaintenance ? 'Sending...' : 'Send Notification'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

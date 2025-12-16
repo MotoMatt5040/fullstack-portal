@@ -14,7 +14,8 @@ router.use('/disposition-report', require('./api/dispositions'));
 router.use('/ai-prompting', require('./api/openAIPrompting'));
 router.use('/support', require('./api/support'));
 router.use('/sample-automation', require('./api/sampleAutomation'));
-router.use('/callid', require('./api/CallID')); 
+router.use('/callid', require('./api/CallID'));
 router.use('/project-numbering', require('./api/projectNumbering'));
+router.use('/notifications', require('./api/notifications'));
 
 module.exports = router;

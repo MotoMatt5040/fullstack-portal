@@ -534,3 +534,106 @@
     font-size: 1.625rem;
   }
 }
+
+/* =================================================================
+   Warning Button & Secondary Button
+   ================================================================= */
+.user-management-btn-warning {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.user-management-btn-warning:hover {
+  background-color: #d97706;
+}
+
+.user-management-btn-secondary {
+  background-color: var(--background-color-muted);
+  color: var(--text-color);
+  border: 1px solid var(--border-color-soft);
+}
+
+.user-management-btn-secondary:hover {
+  background-color: var(--background-color-elevated);
+  border-color: var(--border-color-half-soft);
+}
+
+/* =================================================================
+   Maintenance Modal
+   ================================================================= */
+.maintenance-modal {
+  padding: 0.5rem;
+}
+
+.maintenance-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+}
+
+.maintenance-modal-title svg {
+  color: #f59e0b;
+}
+
+.maintenance-modal-description {
+  color: var(--label-text-color);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 1.25rem 0;
+}
+
+.maintenance-modal-stats {
+  background: var(--background-color-muted);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.maintenance-modal-online {
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.maintenance-modal-online strong {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.maintenance-modal-field {
+  margin-bottom: 1.5rem;
+}
+
+.maintenance-modal-field label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--label-text-color);
+  margin-bottom: 0.5rem;
+}
+
+.maintenance-modal-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  background: var(--background-color);
+  color: var(--text-color);
+  transition: border-color 0.15s ease;
+}
+
+.maintenance-modal-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.maintenance-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}

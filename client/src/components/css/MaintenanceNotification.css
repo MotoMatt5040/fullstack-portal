@@ -1,0 +1,204 @@
+/* MaintenanceNotification.css */
+
+.maintenance-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.maintenance-notification {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #e94560;
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(233, 69, 96, 0.3);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.maintenance-notification.urgent {
+  border-color: #ff4444;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 20px 60px rgba(255, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 20px 80px rgba(255, 68, 68, 0.5);
+  }
+}
+
+.maintenance-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.maintenance-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.maintenance-icon {
+  color: #e94560;
+  margin-bottom: 1rem;
+}
+
+.maintenance-notification.urgent .maintenance-icon {
+  color: #ff4444;
+  animation: iconPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.maintenance-title {
+  color: #fff;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.maintenance-message {
+  color: #ccc;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+}
+
+.maintenance-timer {
+  background: rgba(233, 69, 96, 0.15);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.maintenance-timer.urgent {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: rgba(255, 68, 68, 0.5);
+}
+
+.timer-label {
+  color: #aaa;
+  font-size: 1rem;
+}
+
+.timer-value {
+  color: #e94560;
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+}
+
+.maintenance-timer.urgent .timer-value {
+  color: #ff4444;
+}
+
+.timer-expired {
+  color: #ff4444;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.maintenance-instruction {
+  color: #888;
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.maintenance-dismiss-btn {
+  background: linear-gradient(135deg, #e94560 0%, #c23a51 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.maintenance-dismiss-btn:hover {
+  background: linear-gradient(135deg, #ff5a75 0%, #e94560 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+}
+
+.maintenance-dismiss-btn:active {
+  transform: translateY(0);
+}
+
+/* Light theme adjustments */
+[data-theme='light'] .maintenance-notification {
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border-color: #dc3545;
+}
+
+[data-theme='light'] .maintenance-title {
+  color: #1a1a2e;
+}
+
+[data-theme='light'] .maintenance-message {
+  color: #555;
+}
+
+[data-theme='light'] .maintenance-instruction {
+  color: #666;
+}
+
+[data-theme='light'] .timer-label {
+  color: #666;
+}

@@ -121,6 +121,22 @@ const getAllUsers = async () => {
     }
 };
 
+const validateAccessToken = async (email, accessToken) => {
+    try {
+        const user = await tblAuthentication.findOne({
+            where: { Email: email },
+            attributes: ['AccessToken']
+        });
+        if (!user || !user.AccessToken) {
+            return false;
+        }
+        return user.AccessToken === accessToken;
+    } catch (error) {
+        console.error("Error in validateAccessToken:", error);
+        throw error;
+    }
+};
+
 module.exports = {
     getUserByEmail,
     updateUserPassword,
@@ -131,4 +147,5 @@ module.exports = {
     clearRefreshToken,
     updateUserRefreshToken,
     getAllUsers,
+    validateAccessToken,
 };
