@@ -15,12 +15,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug SSH connection info
+        run: |
+          echo "Host length: ${#HOST}"
+          echo "Username length: ${#USERNAME}"
+          echo "Key length: ${#KEY}"
+          echo "Host first 5 chars: ${HOST:0:5}"
+        env:
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          USERNAME: ${{ secrets.PRODUCTION_SSH_USERNAME }}
+          KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+
       - name: Deploy to Production Server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.PRODUCTION_SSH_HOST }}
           username: ${{ secrets.PRODUCTION_SSH_USERNAME }}
           key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          debug: true
           script: |
             echo "🚀 Starting PRODUCTION deployment at $(date)"
 
