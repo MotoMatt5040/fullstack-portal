@@ -110,7 +110,10 @@ jobs:
             IMAGE_TAG=${{ vars.IMAGE_TAG }}
             
             EOF
-            
+
+            # Strip leading whitespace from env file
+            sed -i 's/^[[:space:]]*//' .env.testing
+
             # Verify we're in the right directory
             echo "📂 Files in deploy directory:"
             ls -la
