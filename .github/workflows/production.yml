@@ -114,6 +114,13 @@ jobs:
 
             EOF
 
+            # Strip leading whitespace from env file
+            sed -i 's/^[[:space:]]*//' .env.production
+
+            # Debug: Show first few lines of env file (without secrets)
+            echo "📋 Env file structure (first 5 lines):"
+            head -5 .env.production
+
             # Verify we're in the right directory
             echo "📂 Files in deploy directory:"
             ls -la
