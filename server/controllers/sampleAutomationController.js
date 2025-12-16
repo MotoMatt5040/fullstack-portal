@@ -1317,6 +1317,92 @@ const cleanupTempFile = handleAsync(async (req, res) => {
   }
 });
 
+// ============================================================================
+// COMPUTED VARIABLES
+// ============================================================================
+
+/**
+ * Preview a computed variable without applying it
+ * POST /api/sample-automation/computed-variable/preview
+ */
+const previewComputedVariable = handleAsync(async (req, res) => {
+  const { tableName, variableDefinition } = req.body;
+
+  if (!tableName || !variableDefinition) {
+    return res.status(400).json({
+      success: false,
+      message: 'tableName and variableDefinition are required',
+    });
+  }
+
+  if (!variableDefinition.name || !variableDefinition.outputType) {
+    return res.status(400).json({
+      success: false,
+      message: 'Variable name and output type are required',
+    });
+  }
+
+  // Validate variable name (alphanumeric + underscore only, must start with letter)
+  const nameRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
+  if (!nameRegex.test(variableDefinition.name)) {
+    return res.status(400).json({
+      success: false,
+      message:
+        'Variable name must start with a letter and contain only letters, numbers, and underscores',
+    });
+  }
+
+  console.log(`Previewing computed variable: ${variableDefinition.name} for table: ${tableName}`);
+
+  const result = await SampleAutomation.previewComputedVariable(
+    tableName,
+    variableDefinition
+  );
+
+  res.json(result);
+});
+
+/**
+ * Add a computed variable to the table
+ * POST /api/sample-automation/computed-variable/add
+ */
+const addComputedVariable = handleAsync(async (req, res) => {
+  const { tableName, variableDefinition } = req.body;
+
+  if (!tableName || !variableDefinition) {
+    return res.status(400).json({
+      success: false,
+      message: 'tableName and variableDefinition are required',
+    });
+  }
+
+  if (!variableDefinition.name || !variableDefinition.outputType) {
+    return res.status(400).json({
+      success: false,
+      message: 'Variable name and output type are required',
+    });
+  }
+
+  // Validate variable name (alphanumeric + underscore only, must start with letter)
+  const nameRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
+  if (!nameRegex.test(variableDefinition.name)) {
+    return res.status(400).json({
+      success: false,
+      message:
+        'Variable name must start with a letter and contain only letters, numbers, and underscores',
+    });
+  }
+
+  console.log(`Adding computed variable: ${variableDefinition.name} to table: ${tableName}`);
+
+  const result = await SampleAutomation.addComputedVariable(
+    tableName,
+    variableDefinition
+  );
+
+  res.json(result);
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -1338,4 +1424,7 @@ module.exports = {
   calculateAgeFromBirthYear,
   downloadTempFile,
   cleanupTempFile,
+  // Computed Variables
+  previewComputedVariable,
+  addComputedVariable,
 };

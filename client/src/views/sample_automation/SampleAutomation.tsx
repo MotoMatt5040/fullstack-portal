@@ -21,11 +21,11 @@ const SampleAutomation: React.FC = () => {
     selectedProjectId,
     selectedVendorId,
     selectedClientId,
+    selectedClientName,
 
     // Data
     projectListOptions,
     vendors,
-    clients,
 
     // Processing state
     processStatus,
@@ -55,9 +55,8 @@ const SampleAutomation: React.FC = () => {
     // Project handling
     handleProjectChange,
 
-    // Vendor/Client handling
+    // Vendor handling
     handleVendorChange,
-    handleClientChange,
 
     // Actions
     handleProcessFiles,
@@ -260,24 +259,16 @@ const SampleAutomation: React.FC = () => {
                   />
                 </div>
 
-                {/* Client */}
+                {/* Client (auto-populated from project) */}
                 <div className='config-item'>
                   <label>Client</label>
-                  <Select
-                    classNamePrefix='my-select'
-                    options={clients}
-                    value={
-                      clients.find((c) => c.value === selectedClientId) || null
-                    }
-                    onChange={handleClientChange}
-                    isDisabled={isAnyProcessing || isLoadingClientsAndVendors}
-                    placeholder={
-                      isLoadingClientsAndVendors ? 'Loading...' : 'Select client'
-                    }
-                    isClearable
-                    menuPortalTarget={document.body}
-                    styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                  />
+                  <div className='client-display'>
+                    {selectedClientName || (
+                      <span className='client-placeholder'>
+                        {selectedProjectId ? 'No client assigned' : 'Select a project'}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Age Base Date */}

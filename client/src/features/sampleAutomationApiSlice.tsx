@@ -231,6 +231,76 @@ interface HouseholdingStats {
   message: string;
 }
 
+// ============================================================================
+// COMPUTED VARIABLES INTERFACES
+// ============================================================================
+
+export type ConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'starts_with'
+  | 'ends_with'
+  | 'greater_than'
+  | 'less_than'
+  | 'greater_equal'
+  | 'less_equal'
+  | 'is_empty'
+  | 'is_not_empty';
+
+export type OutputDataType = 'INT' | 'TEXT' | 'CHAR' | 'VARCHAR';
+
+export interface Condition {
+  id: string;
+  variable: string;
+  operator: ConditionOperator;
+  value: string | number;
+}
+
+export interface ComputedRule {
+  id: string;
+  conditions: Condition[];
+  conditionLogic: 'AND' | 'OR';
+  outputValue: string | number;
+}
+
+export interface ComputedVariableDefinition {
+  id: string;
+  name: string;
+  outputType: OutputDataType;
+  outputLength?: number;
+  rules: ComputedRule[];
+  defaultValue: string | number;
+  formula?: string;
+  inputMode: 'visual' | 'formula';
+}
+
+interface PreviewComputedVariableParams {
+  tableName: string;
+  variableDefinition: ComputedVariableDefinition;
+}
+
+interface PreviewComputedVariableResponse {
+  success: boolean;
+  sampleData: Record<string, any>[];
+  estimatedLength: number;
+  columnName: string;
+  errors: string[];
+}
+
+interface AddComputedVariableParams {
+  tableName: string;
+  variableDefinition: ComputedVariableDefinition;
+}
+
+interface AddComputedVariableResponse {
+  success: boolean;
+  message: string;
+  newColumnName: string;
+  rowsUpdated: number;
+  executionTimeMs: number;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -371,6 +441,30 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
         method: 'GET',
       }),
     }),
+
+    // Computed Variables: Preview without applying
+    previewComputedVariable: builder.mutation<
+      PreviewComputedVariableResponse,
+      PreviewComputedVariableParams
+    >({
+      query: (params) => ({
+        url: '/sample-automation/computed-variable/preview',
+        method: 'POST',
+        body: params,
+      }),
+    }),
+
+    // Computed Variables: Add to table
+    addComputedVariable: builder.mutation<
+      AddComputedVariableResponse,
+      AddComputedVariableParams
+    >({
+      query: (params) => ({
+        url: '/sample-automation/computed-variable/add',
+        method: 'POST',
+        body: params,
+      }),
+    }),
   }),
 });
 
@@ -395,4 +489,7 @@ export const {
   useExtractFilesMutation,
   // NEW: Cleanup hook
   useCleanupTempFileMutation,
+  // Computed Variables hooks
+  usePreviewComputedVariableMutation,
+  useAddComputedVariableMutation,
 } = sampleAutomationApiSlice;

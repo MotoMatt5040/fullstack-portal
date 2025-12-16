@@ -69,6 +69,7 @@ export const useSampleAutomationLogic = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [selectedClientName, setSelectedClientName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [splitConfiguration, setSplitConfiguration] = useState<any>(null);
   const [distinctAgeRanges, setDistinctAgeRanges] = useState<string[]>([]);
@@ -537,16 +538,43 @@ export const useSampleAutomationLogic = () => {
     }
   }, []);
 
-  // Project selection handler
+  // Project selection handler - auto-populates client from project data
   const handleProjectChange = useCallback(
     (selected: ProjectOption | null) => {
       const newValue = selected?.value || '';
       if (newValue !== selectedProjectId) {
         setSelectedProjectId(newValue);
         setProcessStatus('');
+
+        // Auto-populate client from project data if available
+        if (newValue && projectList) {
+          const selectedProject = projectList.find(
+            (p: any) => p.projectId === newValue
+          );
+          if (selectedProject?.clientId) {
+            setSelectedClientId(selectedProject.clientId);
+            selectedClientIdRef.current = selectedProject.clientId;
+            setSelectedClientName(selectedProject.clientName || '');
+            console.log(
+              'Auto-populated client from project:',
+              selectedProject.clientId,
+              selectedProject.clientName
+            );
+          } else {
+            // Clear client if project has no client
+            setSelectedClientId(null);
+            selectedClientIdRef.current = null;
+            setSelectedClientName('');
+          }
+        } else {
+          // Clear client if no project selected
+          setSelectedClientId(null);
+          selectedClientIdRef.current = null;
+          setSelectedClientName('');
+        }
       }
     },
-    [selectedProjectId]
+    [selectedProjectId, projectList]
   );
 
   // Updated vendor selection handler to refresh mappings
@@ -625,10 +653,31 @@ export const useSampleAutomationLogic = () => {
   // For backwards compatibility with select element
   const handleProjectSelect = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedProjectId(event.target.value);
+      const newValue = event.target.value;
+      setSelectedProjectId(newValue);
       setProcessStatus('');
+
+      // Auto-populate client from project data if available
+      if (newValue && projectList) {
+        const selectedProject = projectList.find(
+          (p: any) => p.projectId === newValue
+        );
+        if (selectedProject?.clientId) {
+          setSelectedClientId(selectedProject.clientId);
+          selectedClientIdRef.current = selectedProject.clientId;
+          setSelectedClientName(selectedProject.clientName || '');
+        } else {
+          setSelectedClientId(null);
+          selectedClientIdRef.current = null;
+          setSelectedClientName('');
+        }
+      } else {
+        setSelectedClientId(null);
+        selectedClientIdRef.current = null;
+        setSelectedClientName('');
+      }
     },
-    []
+    [projectList]
   );
 
   // Update the allFilesChecked logic
@@ -675,6 +724,7 @@ export const useSampleAutomationLogic = () => {
     setSelectedProjectId('');
     setSelectedVendorId(null);
     setSelectedClientId(null);
+    setSelectedClientName('');
     setProcessStatus('');
     setProcessResult(null);
     setFileHeaders({});
@@ -1166,6 +1216,7 @@ const generateSplitFiles = useCallback(async () => {
     selectedProjectId,
     selectedVendorId,
     selectedClientId,
+    selectedClientName,
 
     // Data
     projectListOptions,

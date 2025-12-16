@@ -2879,6 +2879,283 @@ const checkColumnExists = async (tableName, columnName) => {
   });
 };
 
+// ============================================================================
+// COMPUTED VARIABLES FEATURE
+// ============================================================================
+
+/**
+ * Escape SQL string to prevent injection
+ * @param {string} str - String to escape
+ * @returns {string} - Escaped string
+ */
+const escapeSQL = (str) => {
+  if (typeof str !== 'string') return str;
+  return str.replace(/'/g, "''");
+};
+
+/**
+ * Build SQL condition from condition object
+ * @param {Object} condition - Condition object with variable, operator, value
+ * @returns {string} - SQL condition string
+ */
+const buildConditionSQL = (condition) => {
+  const column = `[${sanitizeColumnName(condition.variable)}]`;
+  const isStringValue = typeof condition.value === 'string';
+  const value = isStringValue
+    ? `'${escapeSQL(condition.value)}'`
+    : condition.value;
+
+  switch (condition.operator) {
+    case 'equals':
+      return `${column} = ${value}`;
+    case 'not_equals':
+      return `${column} <> ${value}`;
+    case 'contains':
+      return `${column} LIKE '%' + ${value} + '%'`;
+    case 'starts_with':
+      return `${column} LIKE ${value} + '%'`;
+    case 'ends_with':
+      return `${column} LIKE '%' + ${value}`;
+    case 'greater_than':
+      return `${column} > ${value}`;
+    case 'less_than':
+      return `${column} < ${value}`;
+    case 'greater_equal':
+      return `${column} >= ${value}`;
+    case 'less_equal':
+      return `${column} <= ${value}`;
+    case 'is_empty':
+      return `(${column} IS NULL OR ${column} = '')`;
+    case 'is_not_empty':
+      return `(${column} IS NOT NULL AND ${column} <> '')`;
+    default:
+      throw new Error(`Unknown operator: ${condition.operator}`);
+  }
+};
+
+/**
+ * Build SQL CASE expression from variable definition
+ * @param {Object} definition - Variable definition object
+ * @returns {string} - SQL CASE expression
+ */
+const buildCaseExpression = (definition) => {
+  // If formula mode with raw SQL, use it directly (with basic validation)
+  if (definition.inputMode === 'formula' && definition.formula) {
+    // Basic validation - ensure it starts with CASE or is a simple expression
+    const trimmedFormula = definition.formula.trim().toUpperCase();
+    if (!trimmedFormula.startsWith('CASE') &&
+        !trimmedFormula.includes('CONCAT') &&
+        !trimmedFormula.match(/^\[?[A-Z0-9_]+\]?\s*[\+\-\*\/]/)) {
+      throw new Error('Formula must be a valid SQL CASE expression or arithmetic operation');
+    }
+    return definition.formula;
+  }
+
+  // Build CASE WHEN from visual rules
+  if (!definition.rules || definition.rules.length === 0) {
+    // No rules, just return the default value
+    const defaultValue = typeof definition.defaultValue === 'string'
+      ? `'${escapeSQL(definition.defaultValue)}'`
+      : definition.defaultValue;
+    return defaultValue;
+  }
+
+  let caseExpr = 'CASE\n';
+
+  for (const rule of definition.rules) {
+    if (!rule.conditions || rule.conditions.length === 0) {
+      continue;
+    }
+
+    const conditions = rule.conditions
+      .map((cond) => buildConditionSQL(cond))
+      .join(` ${rule.conditionLogic || 'AND'} `);
+
+    const outputValue =
+      typeof rule.outputValue === 'string'
+        ? `'${escapeSQL(rule.outputValue)}'`
+        : rule.outputValue;
+
+    caseExpr += `  WHEN ${conditions} THEN ${outputValue}\n`;
+  }
+
+  const defaultValue =
+    typeof definition.defaultValue === 'string'
+      ? `'${escapeSQL(definition.defaultValue)}'`
+      : definition.defaultValue ?? 'NULL';
+
+  caseExpr += `  ELSE ${defaultValue}\n`;
+  caseExpr += 'END';
+
+  return caseExpr;
+};
+
+/**
+ * Build SQL type string from variable definition
+ * @param {Object} definition - Variable definition with outputType and outputLength
+ * @returns {string} - SQL type string
+ */
+const buildSQLType = (definition) => {
+  switch (definition.outputType) {
+    case 'INT':
+      return 'INT NULL';
+    case 'TEXT':
+      const textLength = definition.outputLength || 255;
+      return `NVARCHAR(${Math.min(textLength, 4000)}) NULL`;
+    case 'CHAR':
+      return `CHAR(${definition.outputLength || 10}) NULL`;
+    case 'VARCHAR':
+      return `VARCHAR(${definition.outputLength || 50}) NULL`;
+    default:
+      return 'NVARCHAR(255) NULL';
+  }
+};
+
+/**
+ * Preview a computed variable without applying it
+ * @param {string} tableName - Name of the table
+ * @param {Object} variableDefinition - The variable definition
+ * @returns {Object} - Preview result with sample data
+ */
+const previewComputedVariable = async (tableName, variableDefinition) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        // Build the CASE expression from the definition
+        const caseExpression = buildCaseExpression(variableDefinition);
+        const columnName = sanitizeColumnName(variableDefinition.name);
+
+        // Get columns used in conditions for display
+        const usedColumns = new Set();
+        if (variableDefinition.rules) {
+          for (const rule of variableDefinition.rules) {
+            for (const cond of rule.conditions || []) {
+              usedColumns.add(sanitizeColumnName(cond.variable));
+            }
+          }
+        }
+
+        // Build SELECT with relevant columns + computed column
+        const selectColumns = usedColumns.size > 0
+          ? [...usedColumns].map(col => `[${col}]`).join(', ') + ', '
+          : '';
+
+        const query = `
+          SELECT TOP 10
+            ${selectColumns}
+            ${caseExpression} AS [${columnName}]
+          FROM FAJITA.dbo.[${tableName}]
+        `;
+
+        console.log('Preview query:', query);
+        const result = await pool.request().query(query);
+
+        // Calculate estimated max length for TEXT type auto-sizing
+        let estimatedLength = 0;
+        result.recordset.forEach((row) => {
+          const value = row[columnName];
+          if (value && String(value).length > estimatedLength) {
+            estimatedLength = String(value).length;
+          }
+        });
+        // Add 20% buffer, minimum 10
+        estimatedLength = Math.max(10, Math.ceil(estimatedLength * 1.2));
+
+        return {
+          success: true,
+          sampleData: result.recordset,
+          estimatedLength,
+          columnName,
+          errors: [],
+        };
+      } catch (error) {
+        console.error('Error previewing computed variable:', error);
+        return {
+          success: false,
+          sampleData: [],
+          estimatedLength: 0,
+          errors: [error.message],
+        };
+      }
+    },
+    fnName: 'previewComputedVariable',
+  });
+};
+
+/**
+ * Add a computed variable to the table
+ * @param {string} tableName - Name of the table
+ * @param {Object} variableDefinition - The variable definition
+ * @returns {Object} - Result with success status
+ */
+const addComputedVariable = async (tableName, variableDefinition) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const startTime = Date.now();
+        const columnName = sanitizeColumnName(variableDefinition.name);
+
+        // Step 1: Check if column already exists
+        const checkQuery = `
+          SELECT COUNT(*) as ColumnExists
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = @tableName
+          AND COLUMN_NAME = @columnName
+        `;
+
+        const checkResult = await pool
+          .request()
+          .input('tableName', sql.NVarChar, tableName)
+          .input('columnName', sql.NVarChar, columnName)
+          .query(checkQuery);
+
+        if (checkResult.recordset[0].ColumnExists > 0) {
+          throw new Error(`Variable '${columnName}' already exists in the table`);
+        }
+
+        // Step 2: Determine SQL type and add column
+        const sqlType = buildSQLType(variableDefinition);
+        const alterQuery = `
+          ALTER TABLE FAJITA.dbo.[${tableName}]
+          ADD [${columnName}] ${sqlType}
+        `;
+
+        await pool.request().query(alterQuery);
+        console.log(`Created column [${columnName}] with type ${sqlType}`);
+
+        // Step 3: Build and execute UPDATE with CASE expression
+        const caseExpression = buildCaseExpression(variableDefinition);
+        const updateQuery = `
+          UPDATE FAJITA.dbo.[${tableName}]
+          SET [${columnName}] = ${caseExpression}
+        `;
+
+        console.log('Update query:', updateQuery);
+        const updateResult = await pool.request().query(updateQuery);
+        const rowsUpdated = updateResult.rowsAffected[0];
+
+        const executionTimeMs = Date.now() - startTime;
+        console.log(`Updated ${rowsUpdated} rows in ${executionTimeMs}ms`);
+
+        return {
+          success: true,
+          message: `Variable '${columnName}' created successfully`,
+          newColumnName: columnName,
+          rowsUpdated,
+          executionTimeMs,
+        };
+      } catch (error) {
+        console.error('Error adding computed variable:', error);
+        throw new Error(`Failed to add computed variable: ${error.message}`);
+      }
+    },
+    fnName: 'addComputedVariable',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -2915,4 +3192,7 @@ module.exports = {
   updateProjectFileTableName,
   deleteProjectFile,
   checkColumnExists,
+  // Computed Variables
+  previewComputedVariable,
+  addComputedVariable,
 };

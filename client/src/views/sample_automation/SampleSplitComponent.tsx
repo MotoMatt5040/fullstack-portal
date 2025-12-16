@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiChevronDown,
@@ -8,9 +8,11 @@ import {
   mdiCallSplit,
   mdiCellphone,
   mdiHome,
-  mdiPhoneClassic
+  mdiPhoneClassic,
+  mdiCalculatorVariant,
 } from '@mdi/js';
 import './SampleSplitComponent.css';
+import ComputedVariablesModal from './ComputedVariablesModal';
 
 interface CallIdAssignment {
   success: boolean;
@@ -56,6 +58,11 @@ const SampleSplitComponent = ({
   const [availableAgeRanges, setAvailableAgeRanges] = useState([]);
   const [householdingEnabled, setHouseholdingEnabled] = useState(false);
 
+  // Computed Variables state
+  const [isComputedVarModalOpen, setIsComputedVarModalOpen] = useState(false);
+  const [addedVariables, setAddedVariables] = useState<string[]>([]);
+  const [availableVariables, setAvailableVariables] = useState<string[]>([]);
+
   // Initialize available age ranges
   useEffect(() => {
     if (ageRanges && ageRanges.length > 0) {
@@ -72,6 +79,22 @@ const SampleSplitComponent = ({
       setSelectedHeaders(headers.map(h => h.name || h));
     }
   }, [headers]);
+
+  // Update available variables for computed variables modal
+  useEffect(() => {
+    if (headers && headers.length > 0) {
+      const headerNames = headers.map(h => h.name || h);
+      // Include any added computed variables
+      setAvailableVariables([...headerNames, ...addedVariables]);
+    }
+  }, [headers, addedVariables]);
+
+  // Handle when a computed variable is added
+  const handleVariableAdded = useCallback((variableName: string) => {
+    setAddedVariables(prev => [...prev, variableName]);
+    // Auto-select the new variable in the header selection
+    setSelectedHeaders(prev => [...prev, variableName]);
+  }, []);
 
   // Notify parent of configuration changes
   useEffect(() => {
@@ -257,7 +280,7 @@ const SampleSplitComponent = ({
           <span>Sample Configuration</span>
         </div>
         <div className="header-summary">
-          {selectedHeaders.length} of {headers.length} headers selected
+          {selectedHeaders.length} of {headers.length + addedVariables.length} variables selected
           {splitMode === 'all' && ` • ${fileType === 'landline' ? 'Landline' : 'Cell'} file`}
           {splitMode === 'split' && (isTarranceClient ? ' • Split by WPHONE' : ` • Split by age ${selectedAgeRange}`)}
           {householdingEnabled && ` • Householding enabled`}
@@ -345,11 +368,11 @@ const SampleSplitComponent = ({
             </div>
           </div>
 
-          {/* Header Selection */}
+          {/* Variable Selection */}
           <div className="header-selection-section">
             <div className="section-header">
-              <label className="section-label">Select Headers to Include:</label>
-              <button 
+              <label className="section-label">Select Variables to Include:</label>
+              <button
                 className="select-all-btn"
                 onClick={handleSelectAll}
               >
@@ -391,7 +414,7 @@ const SampleSplitComponent = ({
           <div className="configuration-summary">
             <h4>Configuration Summary:</h4>
             <ul>
-              <li>Headers: {selectedHeaders.length} selected</li>
+              <li>Variables: {selectedHeaders.length} selected</li>
               <li>Mode: {splitMode === 'all' ? 'Single output file' : 'Split into Landline and Cell files'}</li>
               {splitMode === 'all' && (
                 <li>File type: {fileType === 'landline' ? 'Landline' : 'Cell'}</li>
@@ -459,6 +482,27 @@ const SampleSplitComponent = ({
               )}
             </div>
             
+            {/* Computed Variables Section */}
+            <div className="computed-variables-section">
+              <button
+                onClick={() => setIsComputedVarModalOpen(true)}
+                disabled={!tableName}
+                className="add-variable-btn"
+                title="Create a new computed variable from existing data"
+              >
+                <Icon path={mdiCalculatorVariant} size={0.7} />
+                Add Variable
+              </button>
+              {addedVariables.length > 0 && (
+                <div className="added-variables-list">
+                  <span className="added-variables-label">Added:</span>
+                  {addedVariables.map((v) => (
+                    <span key={v} className="added-variable-tag">{v}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="extract-actions">
               <button
                 onClick={handleExtract}
@@ -471,7 +515,7 @@ const SampleSplitComponent = ({
               {!canExtract() && (
                 <div className="extract-validation">
                   {selectedHeaders.length === 0 && (
-                    <span className="validation-error">Select at least one header</span>
+                    <span className="validation-error">Select at least one variable</span>
                   )}
                   {splitMode === 'split' && !isTarranceClient && !selectedAgeRange && (
                     <span className="validation-error">Select an age range threshold</span>
@@ -536,6 +580,15 @@ const SampleSplitComponent = ({
           )}
         </div>
       )}
+
+      {/* Computed Variables Modal */}
+      <ComputedVariablesModal
+        isOpen={isComputedVarModalOpen}
+        onClose={() => setIsComputedVarModalOpen(false)}
+        tableName={tableName || ''}
+        availableVariables={availableVariables}
+        onVariableAdded={handleVariableAdded}
+      />
     </div>
   );
 };

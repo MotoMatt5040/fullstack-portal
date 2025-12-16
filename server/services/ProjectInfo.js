@@ -46,16 +46,17 @@ const getWebProjects = async (projectId) => {
 const getProjectsList = async (userId) => {
   let joinClause = '';
   let whereConditions = [
-    "ph.projectId NOT LIKE '%c'",
-    "ph.projectId NOT LIKE '%w'",
-    'ph.fieldStart >= DATEADD(DAY, -180, GETDATE())',
+    // Only show projects from the last 180 days
+    'p.startDate >= DATEADD(DAY, -180, GETDATE())',
   ];
 
   if (userId) {
+    // Join with user projects table to filter by user access
+    // Note: tblUserProjects uses string projectId, so we cast FAJITA projectID to varchar
+    // Tables are in the default database for the promark connection (no database prefix needed)
     joinClause = `
-INNER JOIN tblUserProjects up ON ph.projectId = up.projectId
-INNER JOIN tblAuthentication a ON a.uuid = up.uuid`;
-    //This adds the condition for the email to the beginning of the whereConditions array, making sure it appears first in the SQL WHERE clause.
+INNER JOIN dbo.tblUserProjects up ON CAST(p.projectID AS VARCHAR(20)) = up.projectId
+INNER JOIN dbo.tblAuthentication a ON a.uuid = up.uuid`;
     whereConditions.unshift(`a.email = @userId`);
   }
 
@@ -63,20 +64,24 @@ INNER JOIN tblAuthentication a ON a.uuid = up.uuid`;
 SELECT
     projectId,
     projectName,
-    fieldStart
+    fieldStart,
+    clientId,
+    clientName
 FROM (
     SELECT DISTINCT
-        ph.projectId,
-        ph.projectName,
-        ph.fieldStart
+        CAST(p.projectID AS VARCHAR(20)) AS projectId,
+        p.projectName,
+        p.startDate AS fieldStart,
+        c.ClientID AS clientId,
+        COALESCE(c.ClientName, p.client) AS clientName
     FROM
-        tblcc3projectheader ph
+        FAJITA.dbo.Projects p
+    LEFT JOIN CaligulaD.dbo.tblClients c ON p.client = c.ClientName
     ${joinClause}
     WHERE
         ${whereConditions.join(' AND ')}
 ) AS projects
 ORDER BY
-    COALESCE(TRY_CAST(LEFT(projectId, 5) AS INT), 0) DESC,
     projectId DESC;
 `;
 
@@ -97,28 +102,31 @@ ORDER BY
 
 const unrestrictedGetProjectsList = async () => {
   const whereConditions = [
-    "ph.projectId NOT LIKE '%c'",
-    "ph.projectId NOT LIKE '%w'",
-    'ph.fieldStart >= DATEADD(DAY, -180, GETDATE())',
+    // Only show projects from the last 180 days
+    'p.startDate >= DATEADD(DAY, -180, GETDATE())',
   ];
 
   const qry = `
 SELECT
     projectId,
     projectName,
-    fieldStart
+    fieldStart,
+    clientId,
+    clientName
 FROM (
     SELECT DISTINCT
-        ph.projectId,
-        ph.projectName,
-        ph.fieldStart
+        CAST(p.projectID AS VARCHAR(20)) AS projectId,
+        p.projectName,
+        p.startDate AS fieldStart,
+        c.ClientID AS clientId,
+        COALESCE(c.ClientName, p.client) AS clientName
     FROM
-        tblcc3projectheader ph
+        FAJITA.dbo.Projects p
+    LEFT JOIN CaligulaD.dbo.tblClients c ON p.client = c.ClientName
     WHERE
         ${whereConditions.join(' AND ')}
 ) AS projects
 ORDER BY
-    COALESCE(TRY_CAST(LEFT(projectId, 5) AS INT), 0) DESC,
     projectId DESC;
 `;
 

@@ -91,9 +91,17 @@ router.route('/cleanup/:filename').delete(
   sampleAutomationController.cleanupTempFile
 );
 
+// Computed Variables routes
+router.route('/computed-variable/preview').post(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.previewComputedVariable
+);
 
+router.route('/computed-variable/add').post(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.addComputedVariable
+);
 
 // router.use('/temp', express.static(path.join(__dirname, '../../temp')));
-
 
 module.exports = router;
