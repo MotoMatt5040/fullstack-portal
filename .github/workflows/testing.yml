@@ -1,18 +1,15 @@
-name: Build and Deploy to Production
+name: Build and Deploy to Testing
 
 on:
-  pull_request:
+  push:
     branches:
-      - production
-    types:
-      - closed
+      - testing
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    environment: testing
 
     steps:
       - name: Checkout code
@@ -20,24 +17,18 @@ jobs:
 
       - name: Debug SSH connection info
         run: |
-          echo "Host length: ${#HOST}"
-          echo "Username length: ${#USERNAME}"
-          echo "Key length: ${#KEY}"
-          echo "Host first 5 chars: ${HOST:0:5}"
+          echo "Host first 25: ${HOST:0:25}"
         env:
-          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
-          USERNAME: ${{ secrets.PRODUCTION_SSH_USERNAME }}
-          KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.TESTING_SSH_HOST }}
 
-      - name: Deploy to Production Server
+      - name: Deploy to Testing Server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.PRODUCTION_SSH_HOST }}
-          username: ${{ secrets.PRODUCTION_SSH_USERNAME }}
-          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
-          debug: true
+          host: ${{ secrets.TESTING_SSH_HOST }}
+          username: ${{ secrets.TESTING_SSH_USERNAME }}
+          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
           script: |
-            echo "🚀 Starting PRODUCTION deployment at $(date)"
+            echo "🚀 Starting TESTING deployment at $(date)"
 
             # Ensure we're in the user's home directory
             cd $HOME
@@ -52,44 +43,27 @@ jobs:
             if [ -d "$DEPLOY_PATH" ]; then
               echo "🛑 Stopping existing containers..."
               cd $DEPLOY_PATH
-              docker compose --env-file .env.production down || true
+              docker compose --env-file .env.testing -f docker-compose.testing.yml down || true
               docker compose down || true
             fi
 
             # Remove old deployment
             echo "🗑️ Removing old deployment..."
-            cd $HOME
-            # Remove everything we can (some caddy files may be root-owned)
-            rm -rf $DEPLOY_PATH/* $DEPLOY_PATH/.* 2>/dev/null || true
-            rmdir $DEPLOY_PATH 2>/dev/null || true
+            rm -rf $DEPLOY_PATH
 
-            # Clone fresh (use temp dir if old dir has root files)
+            # Clone fresh
             echo "📥 Cloning fresh code..."
-            if [ -d "$DEPLOY_PATH" ]; then
-              echo "⚠️ Directory still exists (root-owned files), cloning to temp first..."
-              TEMP_DEPLOY="/tmp/fullstack_portal_deploy"
-              rm -rf $TEMP_DEPLOY
-              mkdir -p $TEMP_DEPLOY
-              cd $TEMP_DEPLOY
-              git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
-              git checkout production
-              # Copy over to deploy path (will overwrite)
-              cp -rf $TEMP_DEPLOY/* $DEPLOY_PATH/
-              cp -rf $TEMP_DEPLOY/.* $DEPLOY_PATH/ 2>/dev/null || true
-              cd $DEPLOY_PATH
-              rm -rf $TEMP_DEPLOY
-            else
-              mkdir -p $DEPLOY_PATH
-              cd $DEPLOY_PATH
-              git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
-              git checkout production
-            fi
+            mkdir -p $DEPLOY_PATH
+            cd $DEPLOY_PATH
+            git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
+            git checkout testing
+
             echo "📋 Creating environment file..."
-            # Create .env.production file
-            cat > .env.production << 'EOF'
+            # Create .env.testing file
+            cat > .env.testing << 'EOF'
             # Environment
-            NODE_ENV=production
-            VITE_ENV=production
+            NODE_ENV=testing
+            VITE_ENV=testing
 
             # Domain Configuration
             VITE_DOMAIN_NAME=${{ secrets.VITE_DOMAIN_NAME }}
@@ -98,11 +72,11 @@ jobs:
             VITE_DOCKER_API_URL=${{ secrets.VITE_DOCKER_API_URL }}
             VITE_API_URL=${{ secrets.VITE_API_URL }}
 
-            # JWT Secrets
+            # JWT Secrets (Testing)
             ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
             REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
 
-            # MongoDB Database
+            # MongoDB Database (Testing)
             DATABASE_URI=${{ secrets.DATABASE_URI }}
 
             # GitHub Integration
@@ -118,19 +92,19 @@ jobs:
             FROM_NAME=${{ vars.FROM_NAME }}
             FROM_EMAIL=${{ vars.FROM_EMAIL }}
 
-            # Promark Database
+            # Promark Database (Testing)
             PROMARK_DB_USER=${{ secrets.PROMARK_DB_USER }}
             PROMARK_DB_PASSWORD=${{ secrets.PROMARK_DB_PASSWORD }}
             PROMARK_DB_SERVER=${{ secrets.PROMARK_DB_SERVER }}
             PROMARK_DB_NAME=${{ secrets.PROMARK_DB_NAME }}
 
-            # Voxco Database
+            # Voxco Database (Testing)
             VOXCO_DB_USER=${{ secrets.VOXCO_DB_USER }}
             VOXCO_DB_PASSWORD=${{ secrets.VOXCO_DB_PASSWORD }}
             VOXCO_DB_SERVER=${{ secrets.VOXCO_DB_SERVER }}
             VOXCO_DB_NAME=${{ secrets.VOXCO_DB_NAME }}
 
-            # Voxco API
+            # Voxco API (Testing)
             VOXCO_API_USERNAME=${{ secrets.VOXCO_API_USERNAME }}
             VOXCO_API_PASSWORD=${{ secrets.VOXCO_API_PASSWORD }}
             VOXCO_API_CONTEXT=${{ secrets.VOXCO_API_CONTEXT }}
@@ -145,19 +119,15 @@ jobs:
             EOF
 
             # Strip leading whitespace from env file
-            sed -i 's/^[[:space:]]*//' .env.production
-
-            # Debug: Show first few lines of env file (without secrets)
-            echo "📋 Env file structure (first 5 lines):"
-            head -5 .env.production
+            sed -i 's/^[[:space:]]*//' .env.testing
 
             # Verify we're in the right directory
             echo "📂 Files in deploy directory:"
             ls -la
 
-            # Build and start with the default docker-compose file
+            # Build and start with the testing docker-compose file
             echo "🔨 Building and starting containers..."
-            docker compose --env-file .env.production up -d --build
+            docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --build
 
             # Wait for services
             echo "⏳ Waiting for services to start..."
@@ -165,11 +135,11 @@ jobs:
 
             # Check status
             echo "📊 Container status:"
-            docker compose --env-file .env.production ps
+            docker compose --env-file .env.testing -f docker-compose.testing.yml ps
 
             # Show container logs for debugging
             echo "📜 Container logs:"
-            docker compose --env-file .env.production logs --tail=10
+            docker compose --env-file .env.testing -f docker-compose.testing.yml logs --tail=10
 
             # Test endpoints
             echo "🧪 Testing API..."
@@ -178,5 +148,5 @@ jobs:
             echo "🧪 Testing Frontend..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}" || echo "Frontend not ready"
 
-            echo "✅ PRODUCTION Deployment completed at $(date)"
+            echo "✅ TESTING Deployment completed at $(date)"
             echo "🌐 Site available at: https://${{ secrets.VITE_DOMAIN_NAME }}"
