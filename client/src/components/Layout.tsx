@@ -39,18 +39,25 @@ const Layout: React.FC = () => {
     setIsSearchOpen(false);
   }, []);
 
-  // Global keyboard shortcuts
+  // Global keyboard shortcuts - always enabled, auth check happens in action
+  const handleSearchShortcut = useCallback(() => {
+    // Check token directly from the current state when shortcut is triggered
+    if (token) {
+      openSearch();
+    }
+  }, [token, openSearch]);
+
   useKeyboardShortcuts(
     [
       {
         key: '/',
         ctrl: true,
         meta: true,
-        action: openSearch,
+        action: handleSearchShortcut,
         description: 'Open search',
       },
     ],
-    { enabled: isAuthenticated }
+    { enabled: isProtectedRoute }
   );
 
   return (

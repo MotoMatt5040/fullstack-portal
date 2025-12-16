@@ -26,7 +26,8 @@ const useSessionTimeout = (): UseSessionTimeoutReturn => {
 
   const [isWarningVisible, setIsWarningVisible] = useState<boolean>(false);
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
-  const [lastTokenRefresh, setLastTokenRefresh] = useState<number>(Date.now());
+  // Use ref instead of state to prevent re-render cascades when token refreshes
+  const lastTokenRefreshRef = useRef<number>(Date.now());
 
   const token = useSelector(selectCurrentToken);
   const isAuthenticated = !!token;
@@ -83,7 +84,7 @@ const useSessionTimeout = (): UseSessionTimeoutReturn => {
 
       if (result?.accessToken) {
         dispatch(setCredentials({ accessToken: result.accessToken }));
-        setLastTokenRefresh(Date.now());
+        lastTokenRefreshRef.current = Date.now();
         return true;
       }
       return false;
@@ -100,7 +101,7 @@ const useSessionTimeout = (): UseSessionTimeoutReturn => {
       clearTimeout(tokenRefreshRef.current);
     }
 
-    const timeSinceLastRefresh = Date.now() - lastTokenRefresh;
+    const timeSinceLastRefresh = Date.now() - lastTokenRefreshRef.current;
     const timeUntilRefresh = Math.max(0, TOKEN_REFRESH_INTERVAL - timeSinceLastRefresh);
 
     tokenRefreshRef.current = setTimeout(async () => {
@@ -113,7 +114,7 @@ const useSessionTimeout = (): UseSessionTimeoutReturn => {
         performLogout();
       }
     }, timeUntilRefresh);
-  }, [lastTokenRefresh, refreshAccessToken, performLogout, TOKEN_REFRESH_INTERVAL]);
+  }, [refreshAccessToken, performLogout, TOKEN_REFRESH_INTERVAL]);
 
   const startSessionTimeouts = useCallback((): void => {
     const persistEnabled = getPersistStatus();
@@ -171,7 +172,7 @@ const useSessionTimeout = (): UseSessionTimeoutReturn => {
   // Reset lastTokenRefresh when token changes (e.g., after login)
   useEffect(() => {
     if (token) {
-      setLastTokenRefresh(Date.now());
+      lastTokenRefreshRef.current = Date.now();
     }
   }, [token]);
 
