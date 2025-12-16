@@ -95,13 +95,20 @@ const clearRefreshToken = async (email) => {
     }
 };
 
-const updateUserRefreshToken = async (email, refreshToken, accessToken) => {
+const updateUserRefreshToken = async (email, refreshToken, accessToken, deviceId = null) => {
     try {
-        const [affectedRows] = await tblAuthentication.update({
+        const updateData = {
             RefreshToken: refreshToken,
             AccessToken: accessToken,
-            DateUpdated: Sequelize.literal('GETDATE()') // <-- FIX
-        }, {
+            DateUpdated: Sequelize.literal('GETDATE()')
+        };
+
+        // Only update DeviceId if provided
+        if (deviceId) {
+            updateData.DeviceId = deviceId;
+        }
+
+        const [affectedRows] = await tblAuthentication.update(updateData, {
             where: { Email: email }
         });
         return affectedRows;
@@ -137,6 +144,23 @@ const validateAccessToken = async (email, accessToken) => {
     }
 };
 
+const validateDeviceId = async (email, deviceId) => {
+    try {
+        const user = await tblAuthentication.findOne({
+            where: { Email: email },
+            attributes: ['DeviceId']
+        });
+        // If no DeviceId stored yet, allow (backwards compatibility)
+        if (!user || !user.DeviceId) {
+            return true;
+        }
+        return user.DeviceId === deviceId;
+    } catch (error) {
+        console.error("Error in validateDeviceId:", error);
+        throw error;
+    }
+};
+
 module.exports = {
     getUserByEmail,
     updateUserPassword,
@@ -148,4 +172,5 @@ module.exports = {
     updateUserRefreshToken,
     getAllUsers,
     validateAccessToken,
+    validateDeviceId,
 };

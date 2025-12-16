@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
-const { validateAccessToken } = require('../services/PromarkUsers');
+const { validateDeviceId } = require('../services/PromarkUsers');
 
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
+  const deviceId = req.headers['x-device-id'];
 
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Authorization required' });
@@ -24,19 +25,21 @@ const verifyJWT = (req, res, next) => {
       return res.status(403).json({ message: 'Malformed token', code: 'MALFORMED_TOKEN' });
     }
 
-    // Validate access token against database (ensures session is still valid)
-    // This invalidates tokens when user logs in from another location
-    try {
-      const isValidSession = await validateAccessToken(decoded.UserInfo.username, token);
-      if (!isValidSession) {
-        return res.status(403).json({
-          message: 'Session invalidated - logged in from another location',
-          code: 'SESSION_INVALIDATED'
-        });
+    // Validate device ID against database (ensures session is from same device)
+    // This allows multiple tabs on same machine but blocks different machines
+    if (deviceId) {
+      try {
+        const isValidDevice = await validateDeviceId(decoded.UserInfo.username, deviceId);
+        if (!isValidDevice) {
+          return res.status(403).json({
+            message: 'Session invalidated - logged in from another device',
+            code: 'SESSION_INVALIDATED'
+          });
+        }
+      } catch (dbError) {
+        console.error('Error validating device:', dbError);
+        // Allow request to proceed if DB check fails (fail open for availability)
       }
-    } catch (dbError) {
-      console.error('Error validating session:', dbError);
-      // Allow request to proceed if DB check fails (fail open for availability)
     }
 
     // Attach user info to request object

@@ -1,10 +1,11 @@
 // server/controllers/refreshTokenController.js
-const { getUserByRefreshToken, updateUserRefreshToken } = require('../services/PromarkUsers');
+const { getUserByRefreshToken, updateUserRefreshToken, validateDeviceId } = require('../services/PromarkUsers');
 const { getUserRoles } = require('../services/UserRoles');
 const jwt = require('jsonwebtoken');
 
 const handleRefreshToken = async (req, res) => {
     const cookies = req.cookies;
+    const deviceId = req.headers['x-device-id'] || req.body?.deviceId;
 
     // No refresh token cookie - user needs to login
     if (!cookies?.jwt) {
@@ -22,6 +23,18 @@ const handleRefreshToken = async (req, res) => {
             // Clear the invalid cookie
             res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
             return res.status(403).json({ message: 'Invalid refresh token' });
+        }
+
+        // Validate device ID - blocks logins from different machines
+        if (deviceId) {
+            const isValidDevice = await validateDeviceId(foundUser.Email, deviceId);
+            if (!isValidDevice) {
+                res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
+                return res.status(403).json({
+                    message: 'Session invalidated - logged in from another device',
+                    code: 'DEVICE_MISMATCH'
+                });
+            }
         }
 
         // Get user roles

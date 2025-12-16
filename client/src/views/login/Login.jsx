@@ -6,6 +6,7 @@ import { setCredentials } from '../../features/auth/authSlice';
 import { useLoginMutation } from '../../features/auth/authApiSlice';
 import { useForgotPasswordMutation } from '../../features/resetPasswordApiSlice';
 import useInput from '../../hooks/useInput';
+import { getDeviceId } from '../../utils/deviceId';
 import Icon from '@mdi/react';
 import {
   mdiEmailOutline,
@@ -74,7 +75,8 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const userData = await login({ user, pwd }).unwrap();
+      const deviceId = getDeviceId();
+      const userData = await login({ user, pwd, deviceId }).unwrap();
       dispatch(setCredentials({ ...userData, user }));
       document.cookie = `persist=${persist}; path=/`;
       setUser('');
