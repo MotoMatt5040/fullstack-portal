@@ -17,7 +17,7 @@ jobs:
 
       - name: Debug SSH connection info
         run: |
-          echo "Host: $HOST"
+          echo "Host first 15: ${HOST:0:15}"
         env:
           HOST: ${{ secrets.TESTING_SSH_HOST }}
 
