@@ -1174,8 +1174,9 @@ const getAllStates = async () => {
  * @returns {Array} Available call IDs
  */
 const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
+  // CallIDs can be assigned to multiple projects simultaneously
   const query = `
-    SELECT 
+    SELECT
       c.PhoneNumberID,
       c.PhoneNumber,
       c.CallerName,
@@ -1185,16 +1186,7 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
     INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
     LEFT JOIN FAJITA.dbo.CallIDStatus cs ON c.Status = cs.StatusCode
     WHERE c.StateFIPS = @stateFIPS
-      AND c.Status = 1  -- Only active status
-      AND NOT EXISTS (
-        SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-        WHERE u.PhoneNumberID = c.PhoneNumberID
-          AND (
-            (@startDate BETWEEN u.StartDate AND u.EndDate)
-            OR (@endDate BETWEEN u.StartDate AND u.EndDate)
-            OR (u.StartDate BETWEEN @startDate AND @endDate)
-          )
-      )
+      AND c.Status IN (1, 2)  -- Available or In Use (CallIDs can be shared)
     ORDER BY c.PhoneNumber
   `;
 
@@ -1676,12 +1668,12 @@ const getTopAreaCodesFromSampleTable = async (tableName, limit = 10) => {
 };
 
 /**
- * Find available CallIDs by area code, prioritized by the order of area codes provided
- * Now uses project dates from the Projects table for conflict checking
+ * Find CallIDs by area code, prioritized by the order of area codes provided
+ * CallIDs can be assigned to multiple projects simultaneously
  * @param {Array} areaCodes - Array of area codes in priority order
  * @param {number} count - Number of CallIDs to find
- * @param {number} projectId - Project ID to check dates against
- * @returns {Array} - Array of available CallIDs
+ * @param {number} projectId - Project ID (kept for compatibility but not used for conflict checking)
+ * @returns {Array} - Array of matching CallIDs
  */
 const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
   if (!areaCodes || areaCodes.length === 0) {
@@ -1689,12 +1681,7 @@ const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
   }
 
   const query = `
-    -- Get project dates for conflict checking
-    DECLARE @projectStartDate DATE, @projectEndDate DATE
-    SELECT @projectStartDate = startDate, @projectEndDate = endDate
-    FROM FAJITA.dbo.Projects WHERE projectID = @projectId
-
-    ;WITH AvailableCallIDs AS (
+    ;WITH MatchingCallIDs AS (
       SELECT
         c.PhoneNumberID,
         c.PhoneNumber,
@@ -1709,21 +1696,8 @@ const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
         END as Priority
       FROM FAJITA.dbo.CallIDs c
       INNER JOIN FAJITA.dbo.States s ON c.StateFIPS = s.StateFIPS
-      WHERE c.Status = 1  -- Available status
+      WHERE c.Status IN (1, 2)  -- Available or In Use (CallIDs can be shared across projects)
         AND LEFT(c.PhoneNumber, 3) IN (${areaCodes.map(ac => `'${ac}'`).join(',')})
-        -- Not currently assigned during the project date range
-        AND NOT EXISTS (
-          SELECT 1 FROM FAJITA.dbo.CallIDUsage u
-          INNER JOIN FAJITA.dbo.Projects p ON u.ProjectID = p.projectID
-          WHERE (
-            c.PhoneNumberID IN (u.CallIDL1, u.CallIDL2, u.CallIDC1, u.CallIDC2)
-          )
-          AND (
-            (@projectStartDate BETWEEN p.startDate AND p.endDate)
-            OR (@projectEndDate BETWEEN p.startDate AND p.endDate)
-            OR (p.startDate BETWEEN @projectStartDate AND @projectEndDate)
-          )
-        )
     )
     SELECT TOP (@count)
       PhoneNumberID,
@@ -1733,7 +1707,7 @@ const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
       StateAbbr,
       AreaCode,
       Priority
-    FROM AvailableCallIDs
+    FROM MatchingCallIDs
     ORDER BY Priority, PhoneNumber
   `;
 
