@@ -1,6 +1,7 @@
 // client/src/app/api/apiSlice.jsx
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logOut } from '../../features/auth/authSlice';
+import { getDeviceId } from '../../utils/deviceId';
 
 const BASE_URL = '/api';
 
@@ -12,6 +13,8 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
     }
+    // Include device ID for session validation
+    headers.set('x-device-id', getDeviceId());
     return headers;
   },
 });
@@ -65,12 +68,12 @@ export const baseQueryWithReauth = async (args, api, extraOptions) => {
   if (result?.error?.status === 403) {
     const errorCode = result?.error?.data?.code;
 
-    // Session was invalidated (logged in from another location)
-    if (errorCode === 'SESSION_INVALIDATED') {
+    // Session was invalidated (logged in from another device)
+    if (errorCode === 'SESSION_INVALIDATED' || errorCode === 'DEVICE_MISMATCH') {
       api.dispatch(logOut());
       // Optionally show a message to the user
       window.dispatchEvent(new CustomEvent('session-invalidated', {
-        detail: { message: 'You have been logged out because your account was accessed from another location.' }
+        detail: { message: 'You have been logged out because your account was accessed from another device.' }
       }));
       return result;
     }

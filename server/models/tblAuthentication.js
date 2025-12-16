@@ -23,6 +23,10 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    DeviceId: {
+      type: DataTypes.STRING(64),
+      allowNull: true
+    },
     ResetPasswordToken: {
       type: DataTypes.TEXT,
       allowNull: true
