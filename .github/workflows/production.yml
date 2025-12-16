@@ -49,7 +49,7 @@ jobs:
             if [ -d "$DEPLOY_PATH" ]; then
               echo "🛑 Stopping existing containers..."
               cd $DEPLOY_PATH
-              docker compose --env-file .env.production -f docker-compose.production.yml down || true
+              docker compose --env-file .env.production down || true
               docker compose down || true
             fi
 
