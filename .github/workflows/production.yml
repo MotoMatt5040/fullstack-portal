@@ -55,7 +55,15 @@ jobs:
 
             # Remove old deployment
             echo "🗑️ Removing old deployment..."
+            cd $HOME
             sudo rm -rf $DEPLOY_PATH
+
+            # Verify removal
+            if [ -d "$DEPLOY_PATH" ]; then
+              echo "❌ Failed to remove $DEPLOY_PATH"
+              ls -la $DEPLOY_PATH
+              exit 1
+            fi
 
             # Clone fresh
             echo "📥 Cloning fresh code..."
