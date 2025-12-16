@@ -3156,6 +3156,66 @@ const addComputedVariable = async (tableName, variableDefinition) => {
   });
 };
 
+/**
+ * Remove a computed variable (drop column) from the table
+ * @param {string} tableName - Name of the table
+ * @param {string} columnName - Name of the column to drop
+ * @returns {Object} - Result with success status
+ */
+const removeComputedVariable = async (tableName, columnName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const sanitizedColumnName = sanitizeColumnName(columnName);
+
+        // Check if column exists first
+        const checkQuery = `
+          SELECT COUNT(*) as ColumnExists
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = @tableName
+          AND COLUMN_NAME = @columnName
+        `;
+
+        const checkResult = await pool
+          .request()
+          .input('tableName', sql.NVarChar, tableName)
+          .input('columnName', sql.NVarChar, sanitizedColumnName)
+          .query(checkQuery);
+
+        if (checkResult.recordset[0].ColumnExists === 0) {
+          // Column doesn't exist, just return success (may have been removed already)
+          return {
+            success: true,
+            message: `Column '${sanitizedColumnName}' does not exist (already removed)`,
+            columnName: sanitizedColumnName,
+          };
+        }
+
+        // Drop the column
+        const dropQuery = `
+          ALTER TABLE FAJITA.dbo.[${tableName}]
+          DROP COLUMN [${sanitizedColumnName}]
+        `;
+
+        await pool.request().query(dropQuery);
+        console.log(`Dropped column [${sanitizedColumnName}] from table [${tableName}]`);
+
+        return {
+          success: true,
+          message: `Variable '${sanitizedColumnName}' removed successfully`,
+          columnName: sanitizedColumnName,
+        };
+      } catch (error) {
+        console.error('Error removing computed variable:', error);
+        throw new Error(`Failed to remove computed variable: ${error.message}`);
+      }
+    },
+    fnName: 'removeComputedVariable',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -3195,4 +3255,5 @@ module.exports = {
   // Computed Variables
   previewComputedVariable,
   addComputedVariable,
+  removeComputedVariable,
 };

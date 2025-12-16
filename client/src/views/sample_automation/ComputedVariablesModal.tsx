@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Modal } from '../../components/Modal';
 import Icon from '@mdi/react';
 import {
@@ -24,19 +24,19 @@ import {
 import { useToast } from '../../context/ToastContext';
 import './ComputedVariablesModal.css';
 
-// Operator labels with descriptions
+// Operator labels with symbols
 const OPERATOR_OPTIONS: { value: ConditionOperator; label: string; description: string }[] = [
-  { value: 'equals', label: 'is exactly', description: 'Value matches exactly' },
-  { value: 'not_equals', label: 'is not', description: 'Value does not match' },
-  { value: 'contains', label: 'contains', description: 'Value contains the text' },
+  { value: 'equals', label: '= equals', description: 'Value matches exactly' },
+  { value: 'not_equals', label: '≠ not equal', description: 'Value does not match' },
+  { value: 'greater_than', label: '> greater than', description: 'Value is greater than (numeric)' },
+  { value: 'less_than', label: '< less than', description: 'Value is less than (numeric)' },
+  { value: 'greater_equal', label: '≥ greater or equal', description: 'Value is greater than or equal (numeric)' },
+  { value: 'less_equal', label: '≤ less or equal', description: 'Value is less than or equal (numeric)' },
+  { value: 'contains', label: '∋ contains', description: 'Value contains the text' },
   { value: 'starts_with', label: 'starts with', description: 'Value starts with the text' },
   { value: 'ends_with', label: 'ends with', description: 'Value ends with the text' },
-  { value: 'greater_than', label: 'is greater than', description: 'Value is greater than (numeric)' },
-  { value: 'less_than', label: 'is less than', description: 'Value is less than (numeric)' },
-  { value: 'greater_equal', label: 'is at least', description: 'Value is greater than or equal (numeric)' },
-  { value: 'less_equal', label: 'is at most', description: 'Value is less than or equal (numeric)' },
-  { value: 'is_empty', label: 'is empty', description: 'Value is blank or null' },
-  { value: 'is_not_empty', label: 'has a value', description: 'Value is not blank' },
+  { value: 'is_empty', label: '∅ is empty', description: 'Value is blank or null' },
+  { value: 'is_not_empty', label: '≠∅ not empty', description: 'Value is not blank' },
 ];
 
 const OUTPUT_TYPE_OPTIONS: { value: OutputDataType; label: string; needsLength: boolean }[] = [
@@ -51,7 +51,8 @@ interface ComputedVariablesModalProps {
   onClose: () => void;
   tableName: string;
   availableVariables: string[];
-  onVariableAdded: (variableName: string) => void;
+  onVariableAdded: (variableName: string, definition: ComputedVariableDefinition) => void;
+  editingVariable?: ComputedVariableDefinition | null;
 }
 
 const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -86,6 +87,7 @@ const ComputedVariablesModal: React.FC<ComputedVariablesModalProps> = ({
   tableName,
   availableVariables,
   onVariableAdded,
+  editingVariable,
 }) => {
   const toast = useToast();
   const [definition, setDefinition] = useState<ComputedVariableDefinition>(createEmptyDefinition());
@@ -96,7 +98,16 @@ const ComputedVariablesModal: React.FC<ComputedVariablesModalProps> = ({
   const [previewComputedVariable, { isLoading: isPreviewing }] = usePreviewComputedVariableMutation();
   const [addComputedVariable, { isLoading: isAdding }] = useAddComputedVariableMutation();
 
-  // Reset state when modal opens
+  // Load editing variable when modal opens
+  useEffect(() => {
+    if (isOpen && editingVariable) {
+      setDefinition(editingVariable);
+    } else if (isOpen && !editingVariable) {
+      setDefinition(createEmptyDefinition());
+    }
+  }, [isOpen, editingVariable]);
+
+  // Reset state when modal closes
   const handleClose = useCallback(() => {
     setDefinition(createEmptyDefinition());
     setPreviewData(null);
@@ -104,6 +115,8 @@ const ComputedVariablesModal: React.FC<ComputedVariablesModalProps> = ({
     setPreviewErrors([]);
     onClose();
   }, [onClose]);
+
+  const isEditing = !!editingVariable;
 
   // Update definition field
   const updateDefinition = useCallback((updates: Partial<ComputedVariableDefinition>) => {
@@ -269,16 +282,16 @@ const ComputedVariablesModal: React.FC<ComputedVariablesModalProps> = ({
 
       if (result.success) {
         toast.success(
-          `Variable "${result.newColumnName}" created (${result.rowsUpdated} rows updated in ${result.executionTimeMs}ms)`,
-          'Variable Added'
+          `Variable "${result.newColumnName}" ${isEditing ? 'updated' : 'created'} (${result.rowsUpdated} rows updated in ${result.executionTimeMs}ms)`,
+          isEditing ? 'Variable Updated' : 'Variable Added'
         );
-        onVariableAdded(result.newColumnName);
+        onVariableAdded(result.newColumnName, definition);
         handleClose();
       }
     } catch (error: any) {
       toast.error(error.data?.message || 'Failed to add variable', 'Error');
     }
-  }, [isValid, definition, tableName, addComputedVariable, toast, onVariableAdded, handleClose]);
+  }, [isValid, definition, tableName, addComputedVariable, toast, onVariableAdded, handleClose, isEditing]);
 
   // Check if operator needs a value input
   const operatorNeedsValue = (operator: ConditionOperator) => {
@@ -291,7 +304,7 @@ const ComputedVariablesModal: React.FC<ComputedVariablesModalProps> = ({
         <div className="cvm-header">
           <h2>
             <Icon path={mdiCalculator} size={1} />
-            Create Computed Variable
+            {isEditing ? 'Edit Variable' : 'Create Variable'}
           </h2>
           <button className="cvm-close-btn" onClick={handleClose}>
             <Icon path={mdiClose} size={0.875} />
@@ -625,7 +638,7 @@ const ComputedVariablesModal: React.FC<ComputedVariablesModalProps> = ({
             disabled={!isValid || isAdding}
           >
             <Icon path={mdiCheck} size={0.75} />
-            {isAdding ? 'Applying...' : 'Apply Variable'}
+            {isAdding ? 'Applying...' : isEditing ? 'Update Variable' : 'Apply Variable'}
           </button>
         </div>
       </div>

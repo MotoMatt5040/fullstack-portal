@@ -301,6 +301,17 @@ interface AddComputedVariableResponse {
   executionTimeMs: number;
 }
 
+interface RemoveComputedVariableParams {
+  tableName: string;
+  columnName: string;
+}
+
+interface RemoveComputedVariableResponse {
+  success: boolean;
+  message: string;
+  columnName: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -465,6 +476,18 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
         body: params,
       }),
     }),
+
+    // Computed Variables: Remove from table
+    removeComputedVariable: builder.mutation<
+      RemoveComputedVariableResponse,
+      RemoveComputedVariableParams
+    >({
+      query: (params) => ({
+        url: '/sample-automation/computed-variable/remove',
+        method: 'DELETE',
+        body: params,
+      }),
+    }),
   }),
 });
 
@@ -492,4 +515,5 @@ export const {
   // Computed Variables hooks
   usePreviewComputedVariableMutation,
   useAddComputedVariableMutation,
+  useRemoveComputedVariableMutation,
 } = sampleAutomationApiSlice;

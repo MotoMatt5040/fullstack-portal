@@ -653,55 +653,46 @@
    COMPUTED VARIABLES SECTION
 ======================================== */
 .computed-variables-section {
-  background: var(--background-color);
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-  border: 1px dashed var(--border-color-soft);
+  background: var(--background-color-muted);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
 }
 
 .computed-variables-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
 }
 
 .computed-variables-header h4 {
   color: var(--text-color);
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.375rem;
-}
-
-.computed-variables-description {
-  color: var(--text-color);
-  opacity: 0.6;
-  font-size: 0.75rem;
-  margin: 0 0 0.75rem 0;
+  opacity: 0.7;
 }
 
 .add-variable-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--accent-color);
   color: white;
   border: none;
   border-radius: 0.375rem;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s;
 }
 
 .add-variable-btn:hover:not(:disabled) {
   filter: brightness(1.1);
-  transform: translateY(-1px);
 }
 
 .add-variable-btn:disabled {
@@ -712,9 +703,10 @@
 .added-variables-list {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.375rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
   border-top: 1px solid var(--border-color-soft);
 }
 
@@ -722,28 +714,63 @@
   font-size: 0.6875rem;
   font-weight: 500;
   color: var(--text-color);
-  opacity: 0.7;
+  opacity: 0.5;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  width: 100%;
-  margin-bottom: 0.25rem;
+  margin-right: 0.25rem;
 }
 
 .added-variable-tag {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 0.1875rem 0.375rem 0.1875rem 0.5rem;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   border-radius: 0.25rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 500;
-  color: #8b5cf6;
+  color: var(--accent-color);
 }
 
-.added-variable-tag svg {
-  color: #8b5cf6;
+.added-variable-tag > svg:first-child {
+  opacity: 0.7;
+}
+
+.variable-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.15s;
+  margin-left: 0.125rem;
+}
+
+.variable-action-btn:hover {
+  opacity: 1;
+}
+
+.variable-action-btn.edit {
+  color: var(--accent-color);
+}
+
+.variable-action-btn.edit:hover {
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.variable-action-btn.remove {
+  color: #ef4444;
+}
+
+.variable-action-btn.remove:hover {
+  background: rgba(239, 68, 68, 0.15);
 }
 
 /* ========================================

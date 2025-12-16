@@ -616,20 +616,94 @@ const processFile = async (req, res) => {
       // Fetch distinct age ranges after post-processing completes
       const distinctAgeRangesResult = await SampleAutomation.getDistinctAgeRanges(tableResult.tableName);
 
-      // Auto-assign CallIDs if projectId is provided
+      // Check for existing CallIDs or auto-assign if projectId is provided
       let callIdAssignment = null;
       if (projectId) {
         try {
-          console.log('Auto-assigning CallIDs...');
-          callIdAssignment = await CallIDService.autoAssignCallIDsFromSample(
-            tableResult.tableName,
-            parseInt(projectId, 10),
-            clientId
-          );
-          if (callIdAssignment.success) {
-            console.log(`✅ CallIDs assigned: ${callIdAssignment.assigned?.length || 0} slots filled`);
+          // First check if project already has CallIDs assigned
+          const existingCallIDs = await CallIDService.getProjectCallIDs(parseInt(projectId, 10));
+
+          if (existingCallIDs && existingCallIDs.length > 0) {
+            const existing = existingCallIDs[0];
+            // Check if any CallID slots are filled
+            const hasExistingCallIDs = existing.CallIDL1 || existing.CallIDL2 || existing.CallIDC1 || existing.CallIDC2;
+
+            if (hasExistingCallIDs) {
+              console.log('✅ Project already has CallIDs assigned, reusing existing...');
+              // Format existing CallIDs to match the autoAssign response format
+              const assigned = [];
+              if (existing.CallIDL1) {
+                assigned.push({
+                  slot: 'CallIDL1',
+                  phoneNumberId: existing.CallIDL1,
+                  phoneNumber: existing.PhoneNumberL1,
+                  areaCode: existing.PhoneNumberL1?.substring(0, 3) || '',
+                  stateAbbr: existing.StateAbbrL1 || ''
+                });
+              }
+              if (existing.CallIDL2) {
+                assigned.push({
+                  slot: 'CallIDL2',
+                  phoneNumberId: existing.CallIDL2,
+                  phoneNumber: existing.PhoneNumberL2,
+                  areaCode: existing.PhoneNumberL2?.substring(0, 3) || '',
+                  stateAbbr: existing.StateAbbrL2 || ''
+                });
+              }
+              if (existing.CallIDC1) {
+                assigned.push({
+                  slot: 'CallIDC1',
+                  phoneNumberId: existing.CallIDC1,
+                  phoneNumber: existing.PhoneNumberC1,
+                  areaCode: existing.PhoneNumberC1?.substring(0, 3) || '',
+                  stateAbbr: existing.StateAbbrC1 || ''
+                });
+              }
+              if (existing.CallIDC2) {
+                assigned.push({
+                  slot: 'CallIDC2',
+                  phoneNumberId: existing.CallIDC2,
+                  phoneNumber: existing.PhoneNumberC2,
+                  areaCode: existing.PhoneNumberC2?.substring(0, 3) || '',
+                  stateAbbr: existing.StateAbbrC2 || ''
+                });
+              }
+
+              callIdAssignment = {
+                success: true,
+                message: `Reusing ${assigned.length} existing CallID(s) for project`,
+                projectId: parseInt(projectId, 10),
+                assigned: assigned,
+                reused: true // Flag to indicate these were existing, not newly assigned
+              };
+              console.log(`✅ Reusing ${assigned.length} existing CallID(s)`);
+            } else {
+              // Project has a CallIDUsage row but no CallIDs assigned - auto-assign
+              console.log('Auto-assigning CallIDs (no existing assignments)...');
+              callIdAssignment = await CallIDService.autoAssignCallIDsFromSample(
+                tableResult.tableName,
+                parseInt(projectId, 10),
+                clientId
+              );
+              if (callIdAssignment.success) {
+                console.log(`✅ CallIDs assigned: ${callIdAssignment.assigned?.length || 0} slots filled`);
+              } else {
+                console.log(`⚠️ CallID assignment: ${callIdAssignment.message}`);
+              }
+            }
           } else {
-            console.log(`⚠️ CallID assignment: ${callIdAssignment.message}`);
+            // No CallIDUsage row exists - auto-assign
+            console.log('Auto-assigning CallIDs...');
+            callIdAssignment = await CallIDService.autoAssignCallIDsFromSample(
+              tableResult.tableName,
+              parseInt(projectId, 10),
+              clientId
+            );
+            if (callIdAssignment.success) {
+              console.log(`✅ CallIDs assigned: ${callIdAssignment.assigned?.length || 0} slots filled`);
+            } else {
+              console.log(`⚠️ CallID assignment: ${callIdAssignment.message}`);
+            }
           }
         } catch (callIdError) {
           console.error('⚠️ CallID auto-assignment failed (non-critical):', callIdError.message);
@@ -1403,6 +1477,30 @@ const addComputedVariable = handleAsync(async (req, res) => {
   res.json(result);
 });
 
+/**
+ * Remove a computed variable from the table
+ * DELETE /api/sample-automation/computed-variable/remove
+ */
+const removeComputedVariable = handleAsync(async (req, res) => {
+  const { tableName, columnName } = req.body;
+
+  if (!tableName || !columnName) {
+    return res.status(400).json({
+      success: false,
+      message: 'tableName and columnName are required',
+    });
+  }
+
+  console.log(`Removing computed variable: ${columnName} from table: ${tableName}`);
+
+  const result = await SampleAutomation.removeComputedVariable(
+    tableName,
+    columnName
+  );
+
+  res.json(result);
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -1427,4 +1525,5 @@ module.exports = {
   // Computed Variables
   previewComputedVariable,
   addComputedVariable,
+  removeComputedVariable,
 };

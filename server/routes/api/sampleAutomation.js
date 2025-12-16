@@ -102,6 +102,11 @@ router.route('/computed-variable/add').post(
   sampleAutomationController.addComputedVariable
 );
 
+router.route('/computed-variable/remove').delete(
+  verifyRoles(...allowedRoles),
+  sampleAutomationController.removeComputedVariable
+);
+
 // router.use('/temp', express.static(path.join(__dirname, '../../temp')));
 
 module.exports = router;

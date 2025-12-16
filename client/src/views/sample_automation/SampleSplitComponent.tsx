@@ -10,7 +10,11 @@ import {
   mdiHome,
   mdiPhoneClassic,
   mdiCalculatorVariant,
+  mdiPencil,
+  mdiClose,
 } from '@mdi/js';
+import { useRemoveComputedVariableMutation, type ComputedVariableDefinition } from '../../features/sampleAutomationApiSlice';
+import { useToast } from '../../context/ToastContext';
 import './SampleSplitComponent.css';
 import ComputedVariablesModal from './ComputedVariablesModal';
 
@@ -23,6 +27,7 @@ interface CallIdAssignment {
   areaCodes?: { AreaCode: string; Count: number }[];
   assigned?: { slot: string; phoneNumberId: number; phoneNumber: string; areaCode: string; stateAbbr: string }[];
   warnings?: string[];
+  reused?: boolean;
 }
 
 interface SampleSplitComponentProps {
@@ -50,6 +55,7 @@ const SampleSplitComponent = ({
   projectId = null,
   callIdAssignment = null
 }: SampleSplitComponentProps) => {
+  const toast = useToast();
   const isTarranceClient = clientId === 102;
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
@@ -60,8 +66,12 @@ const SampleSplitComponent = ({
 
   // Computed Variables state
   const [isComputedVarModalOpen, setIsComputedVarModalOpen] = useState(false);
-  const [addedVariables, setAddedVariables] = useState<string[]>([]);
+  const [addedVariables, setAddedVariables] = useState<ComputedVariableDefinition[]>([]);
+  const [editingVariable, setEditingVariable] = useState<ComputedVariableDefinition | null>(null);
   const [availableVariables, setAvailableVariables] = useState<string[]>([]);
+
+  // API mutations
+  const [removeComputedVariable] = useRemoveComputedVariableMutation();
 
   // Initialize available age ranges
   useEffect(() => {
@@ -85,15 +95,68 @@ const SampleSplitComponent = ({
     if (headers && headers.length > 0) {
       const headerNames = headers.map(h => h.name || h);
       // Include any added computed variables
-      setAvailableVariables([...headerNames, ...addedVariables]);
+      const addedVarNames = addedVariables.map(v => v.name);
+      setAvailableVariables([...headerNames, ...addedVarNames]);
     }
   }, [headers, addedVariables]);
 
-  // Handle when a computed variable is added
-  const handleVariableAdded = useCallback((variableName: string) => {
-    setAddedVariables(prev => [...prev, variableName]);
-    // Auto-select the new variable in the header selection
-    setSelectedHeaders(prev => [...prev, variableName]);
+  // Handle when a computed variable is added or updated
+  const handleVariableAdded = useCallback((variableName: string, definition: ComputedVariableDefinition) => {
+    setAddedVariables(prev => {
+      // Check if we're updating an existing variable
+      const existingIndex = prev.findIndex(v => v.id === definition.id);
+      if (existingIndex >= 0) {
+        // Update existing
+        const updated = [...prev];
+        updated[existingIndex] = definition;
+        return updated;
+      }
+      // Add new
+      return [...prev, definition];
+    });
+    // Auto-select the new variable in the header selection (only if new)
+    setSelectedHeaders(prev => {
+      if (!prev.includes(variableName)) {
+        return [...prev, variableName];
+      }
+      return prev;
+    });
+    setEditingVariable(null);
+  }, []);
+
+  // Handle removing a computed variable
+  const handleRemoveVariable = useCallback(async (variableId: string) => {
+    const variable = addedVariables.find(v => v.id === variableId);
+    if (!variable || !tableName) return;
+
+    try {
+      // Drop the column from the database
+      await removeComputedVariable({
+        tableName,
+        columnName: variable.name,
+      }).unwrap();
+
+      // Remove from local state
+      setAddedVariables(prev => prev.filter(v => v.id !== variableId));
+      // Remove from selected headers
+      setSelectedHeaders(prev => prev.filter(h => h !== variable.name));
+
+      toast.success(`Variable "${variable.name}" removed`, 'Variable Removed');
+    } catch (error: any) {
+      toast.error(error.data?.message || 'Failed to remove variable', 'Error');
+    }
+  }, [addedVariables, tableName, removeComputedVariable, toast]);
+
+  // Handle editing a variable
+  const handleEditVariable = useCallback((variable: ComputedVariableDefinition) => {
+    setEditingVariable(variable);
+    setIsComputedVarModalOpen(true);
+  }, []);
+
+  // Handle modal close
+  const handleModalClose = useCallback(() => {
+    setIsComputedVarModalOpen(false);
+    setEditingVariable(null);
   }, []);
 
   // Notify parent of configuration changes
@@ -267,20 +330,64 @@ const SampleSplitComponent = ({
 
   return (
     <div className="sample-split-container">
-      <div 
+      {/* Computed Variables Section - Before the collapsible */}
+      <div className="computed-variables-section">
+        <div className="computed-variables-header">
+          <h4>
+            <Icon path={mdiCalculatorVariant} size={0.65} />
+            Custom Variables
+          </h4>
+          <button
+            onClick={() => setIsComputedVarModalOpen(true)}
+            disabled={!tableName}
+            className="add-variable-btn"
+          >
+            <Icon path={mdiCalculatorVariant} size={0.55} />
+            Add Variable
+          </button>
+        </div>
+        {addedVariables.length > 0 && (
+          <div className="added-variables-list">
+            <span className="added-variables-label">Added:</span>
+            {addedVariables.map((v) => (
+              <span key={v.id} className="added-variable-tag">
+                <Icon path={mdiCalculatorVariant} size={0.45} />
+                {v.name}
+                <button
+                  className="variable-action-btn edit"
+                  onClick={(e) => { e.stopPropagation(); handleEditVariable(v); }}
+                  title="Edit variable"
+                >
+                  <Icon path={mdiPencil} size={0.4} />
+                </button>
+                <button
+                  className="variable-action-btn remove"
+                  onClick={(e) => { e.stopPropagation(); handleRemoveVariable(v.id); }}
+                  title="Remove variable"
+                >
+                  <Icon path={mdiClose} size={0.4} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div
         className="sample-split-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="header-left">
-          <Icon 
-            path={isExpanded ? mdiChevronDown : mdiChevronRight} 
-            size={0.8} 
+          <Icon
+            path={isExpanded ? mdiChevronDown : mdiChevronRight}
+            size={0.8}
           />
           <Icon path={mdiCog} size={0.8} />
           <span>Sample Configuration</span>
         </div>
         <div className="header-summary">
           {selectedHeaders.length} of {headers.length + addedVariables.length} variables selected
+          {addedVariables.length > 0 && ` • ${addedVariables.length} custom`}
           {splitMode === 'all' && ` • ${fileType === 'landline' ? 'Landline' : 'Cell'} file`}
           {splitMode === 'split' && (isTarranceClient ? ' • Split by WPHONE' : ` • Split by age ${selectedAgeRange}`)}
           {householdingEnabled && ` • Householding enabled`}
@@ -481,27 +588,6 @@ const SampleSplitComponent = ({
                 </div>
               )}
             </div>
-            
-            {/* Computed Variables Section */}
-            <div className="computed-variables-section">
-              <button
-                onClick={() => setIsComputedVarModalOpen(true)}
-                disabled={!tableName}
-                className="add-variable-btn"
-                title="Create a new computed variable from existing data"
-              >
-                <Icon path={mdiCalculatorVariant} size={0.7} />
-                Add Variable
-              </button>
-              {addedVariables.length > 0 && (
-                <div className="added-variables-list">
-                  <span className="added-variables-label">Added:</span>
-                  {addedVariables.map((v) => (
-                    <span key={v} className="added-variable-tag">{v}</span>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <div className="extract-actions">
               <button
@@ -538,7 +624,9 @@ const SampleSplitComponent = ({
               {callIdAssignment.success ? (
                 <div className="callid-result">
                   <div className="callid-result-header">
-                    <span className="callid-success">CallIDs Assigned Successfully</span>
+                    <span className="callid-success">
+                      {callIdAssignment.reused ? 'Using Existing CallIDs' : 'CallIDs Assigned Successfully'}
+                    </span>
                   </div>
 
                   {callIdAssignment.areaCodes && callIdAssignment.areaCodes.length > 0 && (
@@ -584,10 +672,11 @@ const SampleSplitComponent = ({
       {/* Computed Variables Modal */}
       <ComputedVariablesModal
         isOpen={isComputedVarModalOpen}
-        onClose={() => setIsComputedVarModalOpen(false)}
+        onClose={handleModalClose}
         tableName={tableName || ''}
         availableVariables={availableVariables}
         onVariableAdded={handleVariableAdded}
+        editingVariable={editingVariable}
       />
     </div>
   );
