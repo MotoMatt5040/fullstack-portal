@@ -15,12 +15,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug SSH connection info
+        run: |
+          echo "Host length: ${#HOST}"
+          echo "Username length: ${#USERNAME}"
+          echo "Key length: ${#KEY}"
+          echo "Host first 5 chars: ${HOST:0:5}"
+        env:
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          USERNAME: ${{ secrets.PRODUCTION_SSH_USERNAME }}
+          KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+
       - name: Deploy to Production Server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.PRODUCTION_SSH_HOST }}
           username: ${{ secrets.PRODUCTION_SSH_USERNAME }}
           key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          debug: true
           script: |
             echo "🚀 Starting PRODUCTION deployment at $(date)"
 
@@ -113,6 +125,13 @@ jobs:
             IMAGE_TAG=${{ vars.IMAGE_TAG }}
 
             EOF
+
+            # Strip leading whitespace from env file
+            sed -i 's/^[[:space:]]*//' .env.production
+
+            # Debug: Show first few lines of env file (without secrets)
+            echo "📋 Env file structure (first 5 lines):"
+            head -5 .env.production
 
             # Verify we're in the right directory
             echo "📂 Files in deploy directory:"
