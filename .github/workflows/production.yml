@@ -49,23 +49,38 @@ jobs:
             if [ -d "$DEPLOY_PATH" ]; then
               echo "🛑 Stopping existing containers..."
               cd $DEPLOY_PATH
-              docker compose --env-file .env.production -f docker-compose.production.yml down || true
+              docker compose --env-file .env.production down || true
               docker compose down || true
             fi
 
             # Remove old deployment
             echo "🗑️ Removing old deployment..."
-            rm -rf $DEPLOY_PATH
+            cd $HOME
+            # Remove everything we can (some caddy files may be root-owned)
+            rm -rf $DEPLOY_PATH/* $DEPLOY_PATH/.* 2>/dev/null || true
+            rmdir $DEPLOY_PATH 2>/dev/null || true
 
-            # Clone fresh
+            # Clone fresh (use temp dir if old dir has root files)
             echo "📥 Cloning fresh code..."
-            mkdir -p $DEPLOY_PATH
-            cd $DEPLOY_PATH
-            git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
-
-            # Checkout production branch
-            git checkout production
-
+            if [ -d "$DEPLOY_PATH" ]; then
+              echo "⚠️ Directory still exists (root-owned files), cloning to temp first..."
+              TEMP_DEPLOY="/tmp/fullstack_portal_deploy"
+              rm -rf $TEMP_DEPLOY
+              mkdir -p $TEMP_DEPLOY
+              cd $TEMP_DEPLOY
+              git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
+              git checkout production
+              # Copy over to deploy path (will overwrite)
+              cp -rf $TEMP_DEPLOY/* $DEPLOY_PATH/
+              cp -rf $TEMP_DEPLOY/.* $DEPLOY_PATH/ 2>/dev/null || true
+              cd $DEPLOY_PATH
+              rm -rf $TEMP_DEPLOY
+            else
+              mkdir -p $DEPLOY_PATH
+              cd $DEPLOY_PATH
+              git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
+              git checkout production
+            fi
             echo "📋 Creating environment file..."
             # Create .env.production file
             cat > .env.production << 'EOF'
