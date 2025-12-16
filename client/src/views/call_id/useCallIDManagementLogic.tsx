@@ -337,6 +337,58 @@ const useCallIDManagementLogic = () => {
 
   // ==================== ACTIONS ====================
 
+  // Helper function to refresh data for a specific tab
+  const refreshTabData = useCallback(
+    (tab: TabType) => {
+      switch (tab) {
+        case 'dashboard':
+          refetchDashboard();
+          refetchActiveAssignments();
+          refetchRecentActivity();
+          break;
+        case 'inventory':
+          getAllCallIDs({ ...filters, page: inventoryPage, limit: inventoryLimit });
+          break;
+        case 'assignments':
+          refetchProjects();
+          break;
+        case 'analytics':
+          refetchUtilization();
+          refetchMostUsed();
+          refetchIdle();
+          refetchCoverage();
+          refetchTimeline();
+          break;
+      }
+    },
+    [
+      filters,
+      inventoryPage,
+      inventoryLimit,
+      refetchDashboard,
+      refetchActiveAssignments,
+      refetchRecentActivity,
+      getAllCallIDs,
+      refetchProjects,
+      refetchUtilization,
+      refetchMostUsed,
+      refetchIdle,
+      refetchCoverage,
+      refetchTimeline,
+    ]
+  );
+
+  // Preload data on hover (without changing active tab)
+  const handleTabHover = useCallback(
+    (tab: TabType) => {
+      // Only preload if hovering over a different tab
+      if (tab !== activeTab) {
+        refreshTabData(tab);
+      }
+    },
+    [activeTab, refreshTabData]
+  );
+
   const handleTabChange = useCallback(
     (tab: TabType) => {
       setActiveTab(tab);
@@ -350,9 +402,10 @@ const useCallIDManagementLogic = () => {
         }
         return newParams;
       });
-      // Data refresh is handled by useEffect watching activeTab
+      // Always refresh data when clicking a tab
+      refreshTabData(tab);
     },
-    [setSearchParams]
+    [setSearchParams, refreshTabData]
   );
 
   const handleFilterChange = useCallback((filterName: string, value: any) => {
@@ -909,6 +962,7 @@ const useCallIDManagementLogic = () => {
 
     // Actions
     handleTabChange,
+    handleTabHover,
     handleFilterChange,
     handleClearFilters,
     handleRefresh,

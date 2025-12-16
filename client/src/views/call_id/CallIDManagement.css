@@ -947,6 +947,11 @@
   color: var(--text-color);
 }
 
+.slot-phone-warning {
+  color: #dc3545;
+  font-weight: 600;
+}
+
 .slot-meta {
   font-size: 0.6875rem;
   color: var(--text-color);

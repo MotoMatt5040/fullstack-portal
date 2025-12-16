@@ -77,6 +77,7 @@ const CallIDManagement: React.FC = () => {
     reassigning,
     ending,
     handleTabChange,
+    handleTabHover,
     handleFilterChange,
     handleClearFilters,
     handleRefresh,
@@ -151,6 +152,7 @@ const CallIDManagement: React.FC = () => {
       <button
         className={`callid-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
         onClick={() => handleTabChange('dashboard')}
+        onMouseEnter={() => handleTabHover('dashboard')}
       >
         <Icon path={mdiChartBox} size={0.8} />
         Dashboard
@@ -158,6 +160,7 @@ const CallIDManagement: React.FC = () => {
       <button
         className={`callid-tab ${activeTab === 'inventory' ? 'active' : ''}`}
         onClick={() => handleTabChange('inventory')}
+        onMouseEnter={() => handleTabHover('inventory')}
       >
         <Icon path={mdiFormatListBulleted} size={0.8} />
         Inventory
@@ -165,6 +168,7 @@ const CallIDManagement: React.FC = () => {
       <button
         className={`callid-tab ${activeTab === 'assignments' ? 'active' : ''}`}
         onClick={() => handleTabChange('assignments')}
+        onMouseEnter={() => handleTabHover('assignments')}
       >
         <Icon path={mdiSwapHorizontal} size={0.8} />
         Assignments
@@ -172,6 +176,7 @@ const CallIDManagement: React.FC = () => {
       <button
         className={`callid-tab ${activeTab === 'analytics' ? 'active' : ''}`}
         onClick={() => handleTabChange('analytics')}
+        onMouseEnter={() => handleTabHover('analytics')}
       >
         <Icon path={mdiChartLine} size={0.8} />
         Analytics
@@ -545,7 +550,7 @@ const CallIDManagement: React.FC = () => {
               <th>Status</th>
               <th>Caller Name</th>
               <th>State</th>
-              <th>Active Project</th>
+              <th>Active Projects</th>
               <th>Date Created</th>
               <th>Actions</th>
             </tr>
@@ -569,8 +574,8 @@ const CallIDManagement: React.FC = () => {
                 <td>
                   <span className='state-badge'>{callID.StateAbbr}</span>
                 </td>
-                <td className='project-id'>
-                  {callID.ActiveProjectID || '-'}
+                <td className='project-ids'>
+                  {callID.ActiveProjectIDs || '-'}
                 </td>
                 <td>{formatDate(callID.DateCreated)}</td>
                 <td className='actions-cell'>
@@ -582,15 +587,13 @@ const CallIDManagement: React.FC = () => {
                     >
                       <Icon path={mdiPencil} size={0.7} />
                     </button>
-                    {!callID.CurrentlyInUse && (
-                      <button
-                        onClick={() => openAssignModal(callID)}
-                        className='btn-action btn-assign'
-                        title='Assign to Project'
-                      >
-                        <Icon path={mdiSwapHorizontal} size={0.7} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => openAssignModal(callID)}
+                      className='btn-action btn-assign'
+                      title='Assign to Project'
+                    >
+                      <Icon path={mdiSwapHorizontal} size={0.7} />
+                    </button>
                     <button
                       onClick={() => openDeleteModal(callID)}
                       className='btn-action btn-delete'
@@ -687,6 +690,7 @@ const CallIDManagement: React.FC = () => {
         PhoneNumber: assignment.PhoneNumber,
         CallerName: assignment.CallerName,
         StateAbbr: assignment.StateAbbr,
+        Status: assignment.Status,
       };
       project.assignments.push(assignment);
     });
@@ -757,7 +761,7 @@ const CallIDManagement: React.FC = () => {
                       <td className='slot-cell'>
                         {l1 ? (
                           <div className='slot-display'>
-                            <div className='slot-phone'>
+                            <div className={`slot-phone ${[3, 4, 5].includes(l1.Status) ? 'slot-phone-warning' : ''}`}>
                               {formatPhoneNumber(l1.PhoneNumber)}
                             </div>
                             <div className='slot-meta'>
@@ -773,7 +777,7 @@ const CallIDManagement: React.FC = () => {
                       <td className='slot-cell'>
                         {l2 ? (
                           <div className='slot-display'>
-                            <div className='slot-phone'>
+                            <div className={`slot-phone ${[3, 4, 5].includes(l2.Status) ? 'slot-phone-warning' : ''}`}>
                               {formatPhoneNumber(l2.PhoneNumber)}
                             </div>
                             <div className='slot-meta'>
@@ -789,7 +793,7 @@ const CallIDManagement: React.FC = () => {
                       <td className='slot-cell'>
                         {c1 ? (
                           <div className='slot-display'>
-                            <div className='slot-phone'>
+                            <div className={`slot-phone ${[3, 4, 5].includes(c1.Status) ? 'slot-phone-warning' : ''}`}>
                               {formatPhoneNumber(c1.PhoneNumber)}
                             </div>
                             <div className='slot-meta'>
@@ -805,7 +809,7 @@ const CallIDManagement: React.FC = () => {
                       <td className='slot-cell'>
                         {c2 ? (
                           <div className='slot-display'>
-                            <div className='slot-phone'>
+                            <div className={`slot-phone ${[3, 4, 5].includes(c2.Status) ? 'slot-phone-warning' : ''}`}>
                               {formatPhoneNumber(c2.PhoneNumber)}
                             </div>
                             <div className='slot-meta'>
