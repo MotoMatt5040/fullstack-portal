@@ -1,6 +1,24 @@
-name: mern-app
+name: promark-portal
 
 services:
+  auth:
+    build:
+      context: ./server/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    env_file: ./.env.testing
+    expose:
+      - "5001"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
   api:
     build:
       context: ./server
@@ -10,7 +28,7 @@ services:
     volumes:
       - ./server_logs:/logs
     networks:
-      - mern-app
+      - promark-portal
 
   client:
     build: 
@@ -23,7 +41,7 @@ services:
     restart: unless-stopped
     env_file: ./.env.testing
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
       - api
 
@@ -46,8 +64,9 @@ services:
       - caddy_config:/caddy_config
       - /var/log/caddy_logs:/var/log/caddy
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
+      - auth
       - api
       - client
 
@@ -56,5 +75,5 @@ volumes:
   caddy_config:
 
 networks:
-  mern-app:
+  promark-portal:
     driver: bridge

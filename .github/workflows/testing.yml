@@ -142,6 +142,9 @@ jobs:
             docker compose --env-file .env.testing -f docker-compose.testing.yml logs --tail=10
 
             # Test endpoints
+            echo "🧪 Testing Auth Service..."
+            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/auth/health" || echo "Auth service not ready"
+
             echo "🧪 Testing API..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" || echo "API not ready"
 

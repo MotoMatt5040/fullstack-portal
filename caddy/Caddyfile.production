@@ -19,6 +19,18 @@
         @blockedRoutes path /config* /settings*
         respond @blockedRoutes 403
 
+        # Auth service routes - login, logout, refresh, password reset
+        handle /api/auth/* {
+            reverse_proxy auth:5001
+        }
+        handle /api/refresh {
+            reverse_proxy auth:5001
+        }
+        handle /api/reset/* {
+            reverse_proxy auth:5001
+        }
+
+        # All other API routes go to the monolith
         handle /api/* {
             reverse_proxy api:5000
 
