@@ -128,10 +128,12 @@ const closeAllPools = async () => {
   }
 };
 
-module.exports = {
-  withDbConnection,
-  getPromarkPool,
-  getVoxcoPool,
-  closeAllPools,
-  sql,
-};
+// Export as default for existing service imports: const withDbConnection = require('./dbConn')
+module.exports = withDbConnection;
+
+// Also attach named exports for: const { withDbConnection } = require('./dbConn')
+module.exports.withDbConnection = withDbConnection;
+module.exports.getPromarkPool = getPromarkPool;
+module.exports.getVoxcoPool = getVoxcoPool;
+module.exports.closeAllPools = closeAllPools;
+module.exports.sql = sql;
