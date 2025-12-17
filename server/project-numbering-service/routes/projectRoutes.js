@@ -26,8 +26,8 @@ const deleteRoles = [
   ROLES_LIST.Executive,
 ];
 
-// Health check (accessible via /api/projects/health through Caddy)
-router.get('/projects/health', (req, res) => {
+// Health check (accessible via /api/project-numbering/health through Caddy)
+router.get('/project-numbering/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     service: 'project-numbering-service',
@@ -38,13 +38,13 @@ router.get('/projects/health', (req, res) => {
 // All routes below require JWT authentication
 router.use(verifyJWT);
 
-// ==================== PROJECTS ROUTES ====================
+// ==================== PROJECT NUMBERING ROUTES ====================
 
 /**
  * Get project statistics
- * GET /api/projects/stats
+ * GET /api/project-numbering/stats
  */
-router.route('/projects/stats')
+router.route('/project-numbering/stats')
   .get(
     verifyRoles(...viewRoles),
     projectNumberingController.handleGetProjectStats
@@ -52,9 +52,9 @@ router.route('/projects/stats')
 
 /**
  * Get next available project number
- * GET /api/projects/next-number
+ * GET /api/project-numbering/next-number
  */
-router.route('/projects/next-number')
+router.route('/project-numbering/next-number')
   .get(
     verifyRoles(...modifyRoles),
     projectNumberingController.handleGetNextProjectNumber
@@ -62,9 +62,9 @@ router.route('/projects/next-number')
 
 /**
  * Search projects
- * POST /api/projects/search
+ * POST /api/project-numbering/search
  */
-router.route('/projects/search')
+router.route('/project-numbering/search')
   .post(
     verifyRoles(...viewRoles),
     projectNumberingController.handleSearchProjects
@@ -72,10 +72,10 @@ router.route('/projects/search')
 
 /**
  * Get all projects (with pagination) or create a new project
- * GET /api/projects
- * POST /api/projects
+ * GET /api/project-numbering
+ * POST /api/project-numbering
  */
-router.route('/projects')
+router.route('/project-numbering')
   .get(
     verifyRoles(...viewRoles),
     projectNumberingController.handleGetAllProjects
@@ -87,11 +87,11 @@ router.route('/projects')
 
 /**
  * Get, update, or delete a specific project
- * GET /api/projects/:number
- * PUT /api/projects/:number
- * DELETE /api/projects/:number
+ * GET /api/project-numbering/:number
+ * PUT /api/project-numbering/:number
+ * DELETE /api/project-numbering/:number
  */
-router.route('/projects/:number')
+router.route('/project-numbering/:number')
   .get(
     verifyRoles(...viewRoles),
     projectNumberingController.handleGetProjectByNumber

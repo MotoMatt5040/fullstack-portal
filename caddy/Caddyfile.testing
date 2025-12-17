@@ -40,10 +40,10 @@
         }
 
         # Project numbering service routes
-        handle /api/projects/* {
+        handle /api/project-numbering/* {
             reverse_proxy projects:5003
         }
-        handle /api/projects {
+        handle /api/project-numbering {
             reverse_proxy projects:5003
         }
 
