@@ -120,6 +120,256 @@ services:
       start_period: 5s
       retries: 3
 
+  sample-automation:
+    build:
+      context: ./server/sample-automation-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: sample-automation-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/sample-automation-service:/app
+      - /app/node_modules
+    expose:
+      - "5006"
+    environment:
+      - PORT=5006
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5006/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  user-management:
+    build:
+      context: ./server/user-management-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: user-management-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/user-management-service:/app
+      - /app/node_modules
+    expose:
+      - "5007"
+    environment:
+      - PORT=5007
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5007/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  quota-management:
+    build:
+      context: ./server/quota-management-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: quota-management-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/quota-management-service:/app
+      - /app/node_modules
+    expose:
+      - "5008"
+    environment:
+      - PORT=5008
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5008/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  reporting:
+    build:
+      context: ./server/reporting-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: reporting-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/reporting-service:/app
+      - /app/node_modules
+    expose:
+      - "5009"
+    environment:
+      - PORT=5009
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5009/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  project-info:
+    build:
+      context: ./server/project-info-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: project-info-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/project-info-service:/app
+      - /app/node_modules
+    expose:
+      - "5010"
+    environment:
+      - PORT=5010
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5010/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  project-publishing:
+    build:
+      context: ./server/project-publishing-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: project-publishing-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/project-publishing-service:/app
+      - /app/node_modules
+    expose:
+      - "5011"
+    environment:
+      - PORT=5011
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5011/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  disposition:
+    build:
+      context: ./server/disposition-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: disposition-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/disposition-service:/app
+      - /app/node_modules
+    expose:
+      - "5012"
+    environment:
+      - PORT=5012
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5012/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  ai-prompting:
+    build:
+      context: ./server/ai-prompting-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: ai-prompting-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/ai-prompting-service:/app
+      - /app/node_modules
+    expose:
+      - "5013"
+    environment:
+      - PORT=5013
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5013/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  github:
+    build:
+      context: ./server/github-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: github-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/github-service:/app
+      - /app/node_modules
+    expose:
+      - "5014"
+    environment:
+      - PORT=5014
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5014/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  promark-employees:
+    build:
+      context: ./server/promark-employees-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: promark-employees-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/promark-employees-service:/app
+      - /app/node_modules
+    expose:
+      - "5015"
+    environment:
+      - PORT=5015
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5015/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
   api:
     build:
       context: ./server
@@ -180,6 +430,16 @@ services:
       - notifications
       - projects
       - callid
+      - sample-automation
+      - user-management
+      - quota-management
+      - reporting
+      - project-info
+      - project-publishing
+      - disposition
+      - ai-prompting
+      - github
+      - promark-employees
       - api
       - client
 

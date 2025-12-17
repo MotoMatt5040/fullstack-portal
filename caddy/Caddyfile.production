@@ -86,6 +86,166 @@
             reverse_proxy callid:5004
         }
 
+        # Sample Automation service routes - use forward_auth for JWT validation
+        handle /api/sample-automation/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy sample-automation:5006
+        }
+        handle /api/sample-automation {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy sample-automation:5006
+        }
+
+        # User Management service routes - use forward_auth for JWT validation
+        handle /api/users/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy user-management:5007
+        }
+        handle /api/users {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy user-management:5007
+        }
+
+        # Quota Management service routes - use forward_auth for JWT validation
+        handle /api/quota-management/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy quota-management:5008
+        }
+        handle /api/quota-management {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy quota-management:5008
+        }
+
+        # Reporting service routes - use forward_auth for JWT validation
+        handle /api/reports/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy reporting:5009
+        }
+        handle /api/reports {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy reporting:5009
+        }
+
+        # Project Info service routes - use forward_auth for JWT validation
+        handle /api/project-info/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy project-info:5010
+        }
+        handle /api/project-info {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy project-info:5010
+        }
+
+        # Project Publishing service routes - use forward_auth for JWT validation
+        handle /api/project-publishing/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy project-publishing:5011
+        }
+        handle /api/project-publishing {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy project-publishing:5011
+        }
+
+        # Disposition Report service routes - use forward_auth for JWT validation
+        handle /api/disposition-report/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy disposition:5012
+        }
+        handle /api/disposition-report {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy disposition:5012
+        }
+
+        # AI Prompting service routes - use forward_auth for JWT validation
+        handle /api/ai/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy ai-prompting:5013
+        }
+        handle /api/ai {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy ai-prompting:5013
+        }
+
+        # GitHub service routes - use forward_auth for JWT validation
+        handle /api/github/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy github:5014
+        }
+        handle /api/github {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy github:5014
+        }
+
+        # Promark Employees service routes - use forward_auth for JWT validation
+        handle /api/promark-employees/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy promark-employees:5015
+        }
+        handle /api/promark-employees {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy promark-employees:5015
+        }
+
         # All other API routes go to the monolith
         handle /api/* {
             reverse_proxy api:5000
