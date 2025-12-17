@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
-const projectInfoRoutes = require('./routes/projectInfoRoutes');
+const { initializeRoles } = require('./config/rolesConfig');
 
 const app = express();
 const PORT = process.env.PORT || 5010;
@@ -16,12 +16,26 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', service: 'project-info-service' });
 });
 
-// Routes
-app.use('/api/project-info', projectInfoRoutes);
+// Initialize roles and start server
+const startServer = async () => {
+  try {
+    // Initialize roles from database before mounting routes
+    await initializeRoles();
 
-// Error handler
-app.use(errorHandler);
+    // Mount routes (after roles are initialized)
+    const projectInfoRoutes = require('./routes/projectInfoRoutes');
+    app.use('/api/project-info', projectInfoRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Project Info service running on port ${PORT}`);
-});
+    // Error handler
+    app.use(errorHandler);
+
+    app.listen(PORT, () => {
+      console.log(`Project Info service running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start Project Info Service:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

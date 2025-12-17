@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
-const projectPublishingRoutes = require('./routes/projectPublishingRoutes');
+const { initializeRoles } = require('./config/rolesConfig');
 
 const app = express();
 const PORT = process.env.PORT || 5011;
@@ -16,12 +16,26 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', service: 'project-publishing-service' });
 });
 
-// Routes
-app.use('/api/project-publishing', projectPublishingRoutes);
+// Initialize roles and start server
+const startServer = async () => {
+  try {
+    // Initialize roles from database before mounting routes
+    await initializeRoles();
 
-// Error handler
-app.use(errorHandler);
+    // Mount routes (after roles are initialized)
+    const projectPublishingRoutes = require('./routes/projectPublishingRoutes');
+    app.use('/api/project-publishing', projectPublishingRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Project Publishing service running on port ${PORT}`);
-});
+    // Error handler
+    app.use(errorHandler);
+
+    app.listen(PORT, () => {
+      console.log(`Project Publishing service running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start Project Publishing Service:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
