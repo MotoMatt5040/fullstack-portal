@@ -2,8 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const verifyJWT = require('../middleware/verifyJWT');
-const verifyRoles = require('../middleware/verifyRoles');
+const { gatewayAuth, verifyRoles } = require('../middleware/gatewayAuth');
 const { ROLES_LIST } = require('../config/rolesConfig');
 const projectNumberingController = require('../controllers/projectNumberingController');
 
@@ -35,8 +34,8 @@ router.get('/project-numbering/health', (req, res) => {
   });
 });
 
-// All routes below require JWT authentication
-router.use(verifyJWT);
+// All routes below require gateway authentication (JWT validated by auth-gateway)
+router.use(gatewayAuth);
 
 // ==================== PROJECT NUMBERING ROUTES ====================
 

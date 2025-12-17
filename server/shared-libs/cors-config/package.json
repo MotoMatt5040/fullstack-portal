@@ -1,0 +1,6 @@
+{
+  "name": "@internal/cors-config",
+  "version": "1.0.0",
+  "description": "Shared CORS configuration for microservices",
+  "main": "index.js"
+}

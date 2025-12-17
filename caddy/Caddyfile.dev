@@ -1,12 +1,11 @@
-{
-    # Disable HTTPS for local development
-    auto_https off
-}
+# Local development with self-signed HTTPS
+localhost {
+    # Use Caddy's internal CA for local dev (self-signed)
+    tls internal
 
-:80 {
     encode gzip
 
-    # Auth service routes - login, logout, refresh, password reset
+    # Auth service routes - login, logout, refresh, password reset (NO forward_auth - these are public)
     handle /api/auth/* {
         reverse_proxy auth:5001
     }
@@ -17,23 +16,61 @@
         reverse_proxy auth:5001
     }
 
-    # Notification service routes - SSE events, broadcasts, support
+    # SSE notifications endpoint - public (no auth required for connection)
+    handle /api/notifications/events {
+        reverse_proxy notifications:5002
+    }
+    handle /api/notifications/health {
+        reverse_proxy notifications:5002
+    }
+
+    # Protected notification routes - use forward_auth for JWT validation
     handle /api/notifications/* {
+        forward_auth auth-gateway:5005 {
+            uri /verify
+            copy_headers X-User-Authenticated X-User-Name X-User-Roles
+        }
         reverse_proxy notifications:5002
     }
     handle /api/support/* {
+        forward_auth auth-gateway:5005 {
+            uri /verify
+            copy_headers X-User-Authenticated X-User-Name X-User-Roles
+        }
         reverse_proxy notifications:5002
     }
 
-    # Project numbering service routes
     handle /api/project-numbering/* {
+        forward_auth auth-gateway:5005 {
+            uri /verify
+            copy_headers X-User-Authenticated X-User-Name X-User-Roles
+        }
         reverse_proxy projects:5003
     }
     handle /api/project-numbering {
+        forward_auth auth-gateway:5005 {
+            uri /verify
+            copy_headers X-User-Authenticated X-User-Name X-User-Roles
+        }
         reverse_proxy projects:5003
     }
 
-    # All other API routes go to the monolith
+    handle /api/callid/* {
+        forward_auth auth-gateway:5005 {
+            uri /verify
+            copy_headers X-User-Authenticated X-User-Name X-User-Roles
+        }
+        reverse_proxy callid:5004
+    }
+    handle /api/callid {
+        forward_auth auth-gateway:5005 {
+            uri /verify
+            copy_headers X-User-Authenticated X-User-Name X-User-Roles
+        }
+        reverse_proxy callid:5004
+    }
+
+    # All other API routes go to the monolith (still has its own JWT middleware)
     handle /api/* {
         reverse_proxy api:5000
     }

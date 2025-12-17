@@ -12,8 +12,7 @@ const {
   getClientCount,
 } = require('../services/notificationService');
 const { handleContactSupport } = require('../controllers/supportController');
-const verifyJWT = require('../middleware/verifyJWT');
-const verifyRoles = require('../middleware/verifyRoles');
+const { gatewayAuth, verifyRoles } = require('../middleware/gatewayAuth');
 const { ROLES_LIST } = require('../config/rolesConfig');
 
 // Health check (accessible via /api/notifications/health through Caddy)
@@ -62,7 +61,7 @@ router.get('/notifications/events', (req, res) => {
 // Admin endpoint to trigger maintenance notification
 router.post(
   '/notifications/maintenance',
-  verifyJWT,
+  gatewayAuth,
   verifyRoles(ROLES_LIST.Admin),
   (req, res) => {
     const { minutes = 5, message } = req.body;
@@ -84,7 +83,7 @@ router.post(
 // Admin endpoint to send a general notification
 router.post(
   '/notifications/broadcast',
-  verifyJWT,
+  gatewayAuth,
   verifyRoles(ROLES_LIST.Admin),
   (req, res) => {
     const { title, message, type = 'info' } = req.body;
@@ -111,7 +110,7 @@ router.post(
 // Admin endpoint to get connected client count
 router.get(
   '/notifications/clients',
-  verifyJWT,
+  gatewayAuth,
   verifyRoles(ROLES_LIST.Admin),
   (req, res) => {
     res.json({
@@ -121,6 +120,6 @@ router.get(
 );
 
 // Support contact endpoint (requires authentication)
-router.post('/support/contact', verifyJWT, handleContactSupport);
+router.post('/support/contact', gatewayAuth, handleContactSupport);
 
 module.exports = router;
