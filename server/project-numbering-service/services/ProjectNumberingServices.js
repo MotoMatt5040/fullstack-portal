@@ -1,7 +1,7 @@
 // Project Numbering Service - ProjectNumberingServices.js
 
 const sql = require('mssql');
-const withDbConnection = require('../config/dbConn');
+const { withDbConnection } = require('../config/dbConn');
 
 /**
  * Get the next available project ID (MAX + 1)

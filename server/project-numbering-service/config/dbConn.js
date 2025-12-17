@@ -1,11 +1,10 @@
-// Project Numbering Service - dbConn.js (FAJITA database only)
+// Project Numbering Service - dbConn.js
 const sql = require('mssql');
 
-const fajitaConfig = {
+const baseConfig = {
   user: process.env.PROMARK_DB_USER,
   password: process.env.PROMARK_DB_PASSWORD,
   server: process.env.PROMARK_DB_SERVER,
-  database: 'FAJITA',
   options: {
     encrypt: true,
     trustServerCertificate: true,
@@ -18,30 +17,50 @@ const fajitaConfig = {
   requestTimeout: 300000,
 };
 
-let poolCache = null;
+const fajitaConfig = { ...baseConfig, database: 'FAJITA' };
+const promarkConfig = { ...baseConfig, database: process.env.PROMARK_DB_NAME || 'CaligulaD' };
 
-const getPool = async () => {
-  if (!poolCache) {
-    poolCache = new sql.ConnectionPool(fajitaConfig)
+let fajitaPoolCache = null;
+let promarkPoolCache = null;
+
+const getFajitaPool = async () => {
+  if (!fajitaPoolCache) {
+    fajitaPoolCache = new sql.ConnectionPool(fajitaConfig)
       .connect()
       .then((pool) => {
         console.log('Connected to FAJITA database');
         return pool;
       })
       .catch((err) => {
-        console.error('Database connection failed:', err);
+        console.error('FAJITA database connection failed:', err);
         process.exit(1);
       });
   }
+  return fajitaPoolCache;
+};
 
-  return poolCache;
+const getPromarkPool = async () => {
+  if (!promarkPoolCache) {
+    promarkPoolCache = new sql.ConnectionPool(promarkConfig)
+      .connect()
+      .then((pool) => {
+        console.log('Connected to PROMARK database');
+        return pool;
+      })
+      .catch((err) => {
+        console.error('PROMARK database connection failed:', err);
+        process.exit(1);
+      });
+  }
+  return promarkPoolCache;
 };
 
 const withDbConnection = async ({
   queryFn,
   fnName = 'anonymous',
+  database = 'fajita',
 }) => {
-  const pool = await getPool();
+  const pool = database === 'promark' ? await getPromarkPool() : await getFajitaPool();
 
   try {
     const res = await queryFn(pool);
@@ -53,4 +72,4 @@ const withDbConnection = async ({
   }
 };
 
-module.exports = withDbConnection;
+module.exports = { withDbConnection, getPromarkPool, getFajitaPool };

@@ -6,7 +6,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const corsOptions = require('./config/corsOptions');
 const errorHandler = require('./middleware/errorHandler');
-const projectRoutes = require('./routes/projectRoutes');
+const { initializeRoles } = require('./config/rolesConfig');
 
 const app = express();
 const PORT = process.env.PROJECT_NUMBERING_PORT || 5003;
@@ -25,13 +25,26 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mount routes - all routes are under /api/projects
-app.use('/api', projectRoutes);
+// Start server after initializing roles
+const startServer = async () => {
+  try {
+    // Initialize roles from database before loading routes
+    await initializeRoles();
 
-// Error handler
-app.use(errorHandler);
+    // Mount routes after roles are loaded
+    const projectRoutes = require('./routes/projectRoutes');
+    app.use('/api', projectRoutes);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Project Numbering Service running on port ${PORT}`);
-});
+    // Error handler
+    app.use(errorHandler);
+
+    app.listen(PORT, () => {
+      console.log(`Project Numbering Service running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start Project Numbering Service:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
