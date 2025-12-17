@@ -5,8 +5,8 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const corsOptions = require('./config/corsOptions');
-const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const { initializeRoles } = require('./config/rolesConfig');
 
 const app = express();
 const PORT = process.env.NOTIFICATION_SERVICE_PORT || 5002;
@@ -28,13 +28,26 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mount notification routes
-app.use('/api', notificationRoutes);
+// Start server after initializing roles
+const startServer = async () => {
+  try {
+    // Initialize roles from database before loading routes
+    await initializeRoles();
 
-// Error handler
-app.use(errorHandler);
+    // Mount routes after roles are loaded
+    const notificationRoutes = require('./routes/notificationRoutes');
+    app.use('/api', notificationRoutes);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`📢 Notification Service running on port ${PORT}`);
-});
+    // Error handler
+    app.use(errorHandler);
+
+    app.listen(PORT, () => {
+      console.log(`Notification Service running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start Notification Service:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
