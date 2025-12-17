@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const gatewayAuth = require('../middleware/gatewayAuth');
+const { gatewayAuth } = require('../middleware/gatewayAuth');
 const controller = require('../controllers/sampleAutomationController');
 
 // All routes require gateway authentication
