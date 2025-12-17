@@ -83,6 +83,13 @@ const SampleSplitComponent = ({
     }
   }, [ageRanges]);
 
+  // Disable householding for Tarrance (TTG) clients
+  useEffect(() => {
+    if (isTarranceClient && householdingEnabled) {
+      setHouseholdingEnabled(false);
+    }
+  }, [isTarranceClient]);
+
   // Initialize selected headers with all headers
   useEffect(() => {
     if (headers && headers.length > 0) {
@@ -390,7 +397,7 @@ const SampleSplitComponent = ({
           {addedVariables.length > 0 && ` • ${addedVariables.length} custom`}
           {splitMode === 'all' && ` • ${fileType === 'landline' ? 'Landline' : 'Cell'} file`}
           {splitMode === 'split' && (isTarranceClient ? ' • Split by WPHONE' : ` • Split by age ${selectedAgeRange}`)}
-          {householdingEnabled && ` • Householding enabled`}
+          {!isTarranceClient && householdingEnabled && ` • Householding enabled`}
         </div>
       </div>
 
@@ -441,39 +448,26 @@ const SampleSplitComponent = ({
             </div>
           )}
 
-          {/* Householding Option - Available for all modes */}
-          <div className="householding-section">
-            <div className="section-header">
-              <div className="householding-toggle">
-                <input
-                  type="checkbox"
-                  id="householding-checkbox"
-                  checked={householdingEnabled}
-                  onChange={(e) => setHouseholdingEnabled(e.target.checked)}
-                  className="householding-checkbox"
-                />
-                <label htmlFor="householding-checkbox" className="householding-label">
-                  <Icon path={mdiHome} size={0.6} className="householding-icon" />
-                  Enable Householding for Landline Records
-                </label>
-              </div>
-              
-              {/* {householdingEnabled && (
-                <div className="householding-info">
-                  <div className="householding-description">
-                    <p>Householding will process records where SOURCE=1 OR (SOURCE=3 and AGERANGE≥{selectedAgeRange || 'selected threshold'}):</p>
-                    <ul>
-                      <li>Rank by IAGE ASC (youngest to oldest)</li>
-                      <li>Keep first record per phone number</li>
-                      <li>Add FNAME2, LNAME2, FNAME3, LNAME3, FNAME4, LNAME4 columns to first record</li>
-                      <li>Move 2nd, 3rd, 4th ranked records to separate duplicate tables</li>
-                      <li>Only keeps first 4 records per phone number</li>
-                    </ul>
-                  </div>
+          {/* Householding Option - Available for all modes except Tarrance (TTG) */}
+          {!isTarranceClient && (
+            <div className="householding-section">
+              <div className="section-header">
+                <div className="householding-toggle">
+                  <input
+                    type="checkbox"
+                    id="householding-checkbox"
+                    checked={householdingEnabled}
+                    onChange={(e) => setHouseholdingEnabled(e.target.checked)}
+                    className="householding-checkbox"
+                  />
+                  <label htmlFor="householding-checkbox" className="householding-label">
+                    <Icon path={mdiHome} size={0.6} className="householding-icon" />
+                    Enable Householding for Landline Records
+                  </label>
                 </div>
-              )} */}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Variable Selection */}
           <div className="header-selection-section">
@@ -532,7 +526,7 @@ const SampleSplitComponent = ({
               {splitMode === 'split' && isTarranceClient && (
                 <li>Split method: WPHONE column (Y=Cell, N=Landline)</li>
               )}
-              <li>Householding: {householdingEnabled ? 'Enabled' : 'Disabled'}</li>
+              {!isTarranceClient && <li>Householding: {householdingEnabled ? 'Enabled' : 'Disabled'}</li>}
             </ul>
           </div>
 
@@ -553,7 +547,7 @@ const SampleSplitComponent = ({
                     <div className="file-name">{fileType === 'landline' ? 'LSAM' : 'CSAM'}_{tableName}.csv</div>
                     <div className="file-description">
                       All records with {selectedHeaders.length} selected columns ({fileType === 'landline' ? 'Landline' : 'Cell'} file)
-                      {householdingEnabled && fileType === 'landline' && ' - Householded'}
+                      {!isTarranceClient && householdingEnabled && fileType === 'landline' && ' - Householded'}
                     </div>
                   </div>
                 </div>
@@ -565,7 +559,7 @@ const SampleSplitComponent = ({
                       <div className="file-name">LSAM_{tableName}.csv</div>
                       <div className="file-description">
                         {isTarranceClient ? (
-                          <>Landline records (WPHONE=N){householdingEnabled && ' - Householded'}</>
+                          <>Landline records (WPHONE=N)</>
                         ) : (
                           <>Landline records (SOURCE=1 OR SOURCE=3 & AGERANGE≥{selectedAgeRange}){householdingEnabled && ' - Householded'}</>
                         )}
