@@ -1,8 +1,9 @@
 {
-    local_certs
+    # Disable HTTPS for local development
+    auto_https off
 }
 
-localhost {
+:80 {
     encode gzip
 
     # Auth service routes - login, logout, refresh, password reset
