@@ -55,6 +55,42 @@ services:
       start_period: 5s
       retries: 3
 
+  callid:
+    build:
+      context: ./server/callid-service
+      dockerfile: Dockerfile
+    container_name: callid-service
+    restart: unless-stopped
+    env_file: ./.env.testing
+    expose:
+      - "5004"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5004/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  auth-gateway:
+    build:
+      context: ./server/auth-gateway
+      dockerfile: Dockerfile
+    container_name: auth-gateway
+    restart: unless-stopped
+    env_file: ./.env.testing
+    expose:
+      - "5005"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5005/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
   api:
     build:
       context: ./server
@@ -103,8 +139,10 @@ services:
       - promark-portal
     depends_on:
       - auth
+      - auth-gateway
       - notifications
       - projects
+      - callid
       - api
       - client
 
