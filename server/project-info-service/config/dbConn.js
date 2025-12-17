@@ -1,66 +1,92 @@
 const sql = require('mssql');
-const databaseTypes = require('./databaseTypes');
 
-const dbConfigs = {
-  [databaseTypes.promark]: {
-    server: process.env.DB_HOST,
-    database: process.env.DB_PROMARK,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    options: {
-      encrypt: false,
-      trustServerCertificate: true,
-      enableArithAbort: true,
-    },
-    pool: {
-      max: 10,
-      min: 0,
-      idleTimeoutMillis: 30000,
-    },
+const promarkConfig = {
+  server: process.env.PROMARK_DB_SERVER,
+  database: process.env.PROMARK_DB_NAME || 'CaligulaD',
+  user: process.env.PROMARK_DB_USER,
+  password: process.env.PROMARK_DB_PASSWORD,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+    enableArithAbort: true,
   },
-  [databaseTypes.voxco]: {
-    server: process.env.VOXCO_HOST,
-    database: process.env.VOXCO_DB,
-    user: process.env.VOXCO_USER,
-    password: process.env.VOXCO_PASSWORD,
-    options: {
-      encrypt: false,
-      trustServerCertificate: true,
-      enableArithAbort: true,
-    },
-    pool: {
-      max: 10,
-      min: 0,
-      idleTimeoutMillis: 30000,
-    },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000,
   },
+  requestTimeout: 300000,
 };
 
-const pools = {};
+const voxcoConfig = {
+  server: process.env.VOXCO_HOST,
+  database: process.env.VOXCO_DB,
+  user: process.env.VOXCO_USER,
+  password: process.env.VOXCO_PASSWORD,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+    enableArithAbort: true,
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000,
+  },
+  requestTimeout: 300000,
+};
+
+let promarkPoolCache = null;
+let voxcoPoolCache = null;
+
+const getPromarkPool = async () => {
+  if (!promarkPoolCache) {
+    promarkPoolCache = new sql.ConnectionPool(promarkConfig)
+      .connect()
+      .then((pool) => {
+        console.log('Connected to PROMARK database');
+        return pool;
+      })
+      .catch((err) => {
+        console.error('PROMARK database connection failed:', err);
+        promarkPoolCache = null;
+        throw err;
+      });
+  }
+  return promarkPoolCache;
+};
+
+const getVoxcoPool = async () => {
+  if (!voxcoPoolCache) {
+    voxcoPoolCache = new sql.ConnectionPool(voxcoConfig)
+      .connect()
+      .then((pool) => {
+        console.log('Connected to VOXCO database');
+        return pool;
+      })
+      .catch((err) => {
+        console.error('VOXCO database connection failed:', err);
+        voxcoPoolCache = null;
+        throw err;
+      });
+  }
+  return voxcoPoolCache;
+};
 
 const withDbConnection = async ({
-  database,
   queryFn,
+  fnName = 'anonymous',
   attempts = 3,
-  fnName = 'Unknown',
   allowAbort = false,
   allowRetry = true,
+  database = 'promark',
 }) => {
-  const config = dbConfigs[database];
-  if (!config) {
-    throw new Error(`Unknown database type: ${database}`);
-  }
-
-  // Get or create pool
-  if (!pools[database]) {
-    pools[database] = new sql.ConnectionPool(config);
-    await pools[database].connect();
-  }
+  const pool = database === 'voxco' ? await getVoxcoPool() : await getPromarkPool();
 
   let lastError;
   for (let i = 0; i < attempts; i++) {
     try {
-      const result = await queryFn(pools[database]);
+      const result = await queryFn(pool);
       return result;
     } catch (error) {
       lastError = error;
@@ -70,21 +96,42 @@ const withDbConnection = async ({
 
       // Reconnect pool if needed
       if (error.code === 'ECONNRESET' || error.code === 'ESOCKET') {
-        try {
-          await pools[database].close();
-        } catch (e) {
-          // Ignore close errors
+        if (database === 'voxco') {
+          voxcoPoolCache = null;
+          await getVoxcoPool();
+        } else {
+          promarkPoolCache = null;
+          await getPromarkPool();
         }
-        pools[database] = new sql.ConnectionPool(config);
-        await pools[database].connect();
       }
     }
   }
 
   if (allowAbort) {
-    return 499; // Signal that the request was aborted/failed
+    return 499;
   }
   throw lastError;
 };
 
-module.exports = withDbConnection;
+const closeAllPools = async () => {
+  if (promarkPoolCache) {
+    const pool = await promarkPoolCache;
+    await pool.close();
+    promarkPoolCache = null;
+    console.log('Closed PROMARK database connection');
+  }
+  if (voxcoPoolCache) {
+    const pool = await voxcoPoolCache;
+    await pool.close();
+    voxcoPoolCache = null;
+    console.log('Closed VOXCO database connection');
+  }
+};
+
+module.exports = {
+  withDbConnection,
+  getPromarkPool,
+  getVoxcoPool,
+  closeAllPools,
+  sql,
+};

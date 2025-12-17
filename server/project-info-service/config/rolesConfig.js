@@ -1,6 +1,5 @@
 // Project Info Service Roles Config - loads from PROMARK database
-const withDbConnection = require('./dbConn');
-const databaseTypes = require('./databaseTypes');
+const { withDbConnection } = require('./dbConn');
 
 const ROLES_LIST = {};
 
@@ -9,20 +8,17 @@ const initializeRoles = async () => {
     console.log('Initializing application roles from database...');
 
     const rolesFromDb = await withDbConnection({
-      database: databaseTypes.promark,
       queryFn: async (pool) => {
         const result = await pool.request().query('SELECT RoleID, RoleName FROM tblRoles');
         return result.recordset;
       },
       fnName: 'getAllRoles',
+      database: 'promark',
     });
 
     if (!rolesFromDb || rolesFromDb.length === 0) {
       throw new Error('No roles found in database. Check tblRoles table.');
     }
-
-    // Clear and rebuild ROLES_LIST
-    Object.keys(ROLES_LIST).forEach(key => delete ROLES_LIST[key]);
 
     rolesFromDb.forEach((role) => {
       ROLES_LIST[role.RoleName] = role.RoleID;
