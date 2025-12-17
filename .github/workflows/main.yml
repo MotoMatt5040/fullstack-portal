@@ -178,6 +178,9 @@ jobs:
             echo "🧪 Testing Auth Service..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/auth/health" || echo "Auth service not ready"
 
+            echo "🧪 Testing Notification Service..."
+            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/notifications/health" || echo "Notification service not ready"
+
             echo "🧪 Testing API..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" || echo "API not ready"
 

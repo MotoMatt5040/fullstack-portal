@@ -31,6 +31,14 @@
             reverse_proxy auth:5001
         }
 
+        # Notification service routes - SSE events, broadcasts, support
+        handle /api/notifications/* {
+            reverse_proxy notifications:5002
+        }
+        handle /api/support/* {
+            reverse_proxy notifications:5002
+        }
+
         # All other API routes go to the monolith
         handle /api/* {
             reverse_proxy api:5000
