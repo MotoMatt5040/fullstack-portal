@@ -13,7 +13,7 @@ CMD ["npm", "run", "dev"]
 
 # Production stage
 FROM base AS production
-RUN npm ci --only=production
+RUN npm install --omit=dev
 COPY . .
 EXPOSE 5005
 CMD ["node", "server.js"]
