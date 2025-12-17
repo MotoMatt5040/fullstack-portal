@@ -1,28 +1,99 @@
 name: promark-portal
 
 services:
+  auth:
+    build:
+      context: ./server/auth-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: auth-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env
+    volumes:
+      - ./server/auth-service:/app
+      - /app/node_modules
+    expose:
+      - "5001"
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  notifications:
+    build:
+      context: ./server/notification-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: notification-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env
+    volumes:
+      - ./server/notification-service:/app
+      - /app/node_modules
+    expose:
+      - "5002"
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  projects:
+    build:
+      context: ./server/project-numbering-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: project-numbering-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env
+    volumes:
+      - ./server/project-numbering-service:/app
+      - /app/node_modules
+    expose:
+      - "5003"
+    networks:
+      - promark-portal
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5003/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
   api:
     build:
       context: ./server
       target: development
+    container_name: api-dev
     restart: unless-stopped
     env_file: ./server/.env
     volumes:
       - ./server:/app
       - /app/node_modules
+    expose:
+      - "5000"
     networks:
       - promark-portal
-    ports:
-      - "5000:5000"
 
   client:
-    build: 
+    build:
       context: ./client
       target: development
       args:
         VITE_DEV_API_URL: ${VITE_DEV_API_URL}
         VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
         VITE_ENV: ${VITE_ENV}
+    container_name: client-dev
     restart: unless-stopped
     env_file: ./client/.env
     environment:
@@ -42,6 +113,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    container_name: caddy-dev
     ports:
       - "80:80"
       - "443:443"
@@ -52,12 +124,16 @@ services:
     networks:
       - promark-portal
     depends_on:
+      - auth
+      - notifications
+      - projects
       - api
       - client
 
 volumes:
   caddy_data:
   caddy_config:
+
 networks:
   promark-portal:
     driver: bridge

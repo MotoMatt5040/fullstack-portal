@@ -1,4 +1,27 @@
 # Project Numbering Service Dockerfile
+
+# Development stage
+FROM node:20-alpine AS development
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies for nodemon)
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 5003
+
+# Start with nodemon for hot reloading
+CMD ["npm", "run", "dev"]
+
+
+# Production stage
 FROM node:20-alpine AS production
 
 WORKDIR /app

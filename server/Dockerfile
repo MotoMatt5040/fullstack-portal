@@ -11,7 +11,7 @@ CMD ["npm", "run", "dev"]
 FROM node:20-bookworm-slim AS dependencies
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 # Production stage
 FROM node:20-bookworm-slim AS production
