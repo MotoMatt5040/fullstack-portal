@@ -26,8 +26,11 @@ const handleLogin = async (req, res) => {
         console.log(`Password hash starts with: ${foundUser.Password ? foundUser.Password.substring(0, 10) : 'N/A'}`);
 
         if (match) {
+            console.log('Password matched, getting roles...');
             const roles = await getUserRoles(foundUser.Email);
+            console.log(`Roles retrieved: ${JSON.stringify(roles)}`);
             // Create JWTs here
+            console.log('Creating access token...');
             const accessToken = jwt.sign(
                 {
                     "UserInfo": {
@@ -46,15 +49,19 @@ const handleLogin = async (req, res) => {
 
             // Update the refresh token and deviceId in the database
             // DeviceId allows multiple tabs on same machine while blocking different machines
+            console.log('Updating refresh token in database...');
             await updateUserRefreshToken(foundUser.Email, refreshToken, accessToken, deviceId);
+            console.log('Refresh token updated, sending response...');
 
             res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
+            console.log('Login successful, returning 200 with accessToken');
             res.status(200).json({ accessToken });
         } else {
+            console.log('Password did not match, returning 401');
             res.sendStatus(401);
         }
     } catch (err) {
-        console.error('Database query failed:', err);
+        console.error('Login error:', err);
         res.sendStatus(500);
     }
 };
