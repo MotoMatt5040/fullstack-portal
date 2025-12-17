@@ -1,34 +1,30 @@
-const withDbConnection = require('./dbConn');
+// Roles configuration - fetches from auth-service at startup
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth:5001';
 
-let ROLES_LIST = {};
+const ROLES_LIST = {};
 
 const initializeRoles = async () => {
   try {
-    const roles = await withDbConnection({
-      database: 'promark',
-      queryFn: async (pool) => {
-        const result = await pool.request().query('SELECT roleid, roleName FROM tblRoles');
-        return result.recordset;
-      },
-      fnName: 'initializeRoles',
-    });
+    console.log('Fetching roles from auth-service...');
+    const response = await fetch(`${AUTH_SERVICE_URL}/api/auth/roles`);
 
-    ROLES_LIST = {};
-    roles.forEach((role) => {
-      const key = role.roleName.replace(/\s+/g, '');
-      ROLES_LIST[key] = role.roleid;
-    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch roles: ${response.status}`);
+    }
 
-    console.log('Quota Management Service: Roles initialized:', Object.keys(ROLES_LIST));
+    const roles = await response.json();
+    Object.assign(ROLES_LIST, roles);
+    console.log('Roles loaded:', Object.keys(ROLES_LIST).join(', '));
   } catch (error) {
-    console.error('Failed to initialize roles:', error);
-    ROLES_LIST = {
+    console.error('Failed to fetch roles:', error.message);
+    // Fallback roles
+    Object.assign(ROLES_LIST, {
       Admin: 5150,
       Executive: 1001,
       Programmer: 2001,
       External: 3001,
       Manager: 4001,
-    };
+    });
     console.log('Using fallback roles');
   }
 };

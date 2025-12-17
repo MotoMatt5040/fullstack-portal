@@ -1,8 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const githubRoutes = require('./routes/githubRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const { initializeRoles } = require('./config/rolesConfig');
 
 const app = express();
 const PORT = process.env.PORT || 5014;
@@ -16,12 +16,18 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', service: 'github-service' });
 });
 
-// Routes - mounted at /api/github to match monolith route
-app.use('/api/github', githubRoutes);
+// Initialize roles and start server
+const startServer = async () => {
+  await initializeRoles();
 
-// Error handler
-app.use(errorHandler);
+  const githubRoutes = require('./routes/githubRoutes');
+  app.use('/api/github', githubRoutes);
 
-app.listen(PORT, () => {
-  console.log(`GitHub service running on port ${PORT}`);
-});
+  app.use(errorHandler);
+
+  app.listen(PORT, () => {
+    console.log(`GitHub service running on port ${PORT}`);
+  });
+};
+
+startServer();

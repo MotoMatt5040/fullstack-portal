@@ -1,35 +1,31 @@
-// Project Publishing Service Roles Config - loads from PROMARK database
-const { withDbConnection } = require('./dbConn');
+// Roles configuration - fetches from auth-service at startup
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth:5001';
 
 const ROLES_LIST = {};
 
 const initializeRoles = async () => {
   try {
-    console.log('Initializing application roles from database...');
+    console.log('Fetching roles from auth-service...');
+    const response = await fetch(`${AUTH_SERVICE_URL}/api/auth/roles`);
 
-    const rolesFromDb = await withDbConnection({
-      queryFn: async (pool) => {
-        const result = await pool.request().query('SELECT RoleID, RoleName FROM tblRoles');
-        return result.recordset;
-      },
-      fnName: 'getAllRoles',
-      database: 'promark',
-    });
-
-    if (!rolesFromDb || rolesFromDb.length === 0) {
-      throw new Error('No roles found in database. Check tblRoles table.');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch roles: ${response.status}`);
     }
 
-    rolesFromDb.forEach((role) => {
-      ROLES_LIST[role.RoleName] = role.RoleID;
-    });
-
-    console.log('Roles successfully loaded:', Object.keys(ROLES_LIST).join(', '));
-    return ROLES_LIST;
+    const roles = await response.json();
+    Object.assign(ROLES_LIST, roles);
+    console.log('Roles loaded:', Object.keys(ROLES_LIST).join(', '));
   } catch (error) {
-    console.error('FATAL ERROR: Could not initialize roles from database.');
-    console.error(error);
-    throw error;
+    console.error('Failed to fetch roles:', error.message);
+    // Fallback roles
+    Object.assign(ROLES_LIST, {
+      Admin: 5150,
+      Executive: 1001,
+      Programmer: 2001,
+      External: 3001,
+      Manager: 4001,
+    });
+    console.log('Using fallback roles');
   }
 };
 

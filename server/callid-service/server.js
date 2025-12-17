@@ -32,25 +32,18 @@ app.get('/api/callid/health', (req, res) => {
 
 // Initialize roles and start server
 const startServer = async () => {
-  try {
-    // Initialize roles from database before mounting routes
-    await initializeRoles();
+  await initializeRoles();
 
-    // Mount CallID routes (after roles are initialized)
-    const callidRoutes = require('./routes/callidRoutes');
-    app.use('/api/callid', callidRoutes);
+  // Mount CallID routes
+  const callidRoutes = require('./routes/callidRoutes');
+  app.use('/api/callid', callidRoutes);
 
-    // Global error handler
-    app.use(errorHandler);
+  // Global error handler
+  app.use(errorHandler);
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`CallID Service running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start CallID Service:', error);
-    process.exit(1);
-  }
+  app.listen(PORT, () => {
+    console.log(`CallID Service running on port ${PORT}`);
+  });
 };
 
 startServer();

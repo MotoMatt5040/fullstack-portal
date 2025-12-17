@@ -1,8 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const dispositionRoutes = require('./routes/dispositionRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const { initializeRoles } = require('./config/rolesConfig');
 
 const app = express();
 const PORT = process.env.PORT || 5012;
@@ -16,12 +16,18 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', service: 'disposition-service' });
 });
 
-// Routes - mounted at /api/disposition-report to match monolith route
-app.use('/api/disposition-report', dispositionRoutes);
+// Initialize roles and start server
+const startServer = async () => {
+  await initializeRoles();
 
-// Error handler
-app.use(errorHandler);
+  const dispositionRoutes = require('./routes/dispositionRoutes');
+  app.use('/api/disposition-report', dispositionRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Disposition service running on port ${PORT}`);
-});
+  app.use(errorHandler);
+
+  app.listen(PORT, () => {
+    console.log(`Disposition service running on port ${PORT}`);
+  });
+};
+
+startServer();

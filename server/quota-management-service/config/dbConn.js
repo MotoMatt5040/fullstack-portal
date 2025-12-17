@@ -2,23 +2,23 @@ const sql = require('mssql');
 
 const promarkConfig = {
   user: process.env.PROMARK_DB_USER,
-  password: process.env.PROMARK_DB_PWD,
-  database: process.env.PROMARK_DB_NAME,
+  password: process.env.PROMARK_DB_PASSWORD,
+  database: process.env.PROMARK_DB_NAME || 'CaligulaD',
   server: process.env.PROMARK_DB_SERVER,
   options: {
-    encrypt: false,
+    encrypt: true,
     trustServerCertificate: true,
     requestTimeout: 90000,
   },
 };
 
 const voxcoConfig = {
-  user: process.env.VOXCO_DB_USER,
-  password: process.env.VOXCO_DB_PWD,
-  database: process.env.VOXCO_DB_NAME,
-  server: process.env.VOXCO_DB_SERVER,
+  user: process.env.VOXCO_USER,
+  password: process.env.VOXCO_PASSWORD,
+  database: process.env.VOXCO_DB,
+  server: process.env.VOXCO_HOST,
   options: {
-    encrypt: false,
+    encrypt: true,
     trustServerCertificate: true,
     requestTimeout: 90000,
   },
@@ -80,4 +80,9 @@ const withDbConnection = async ({
   throw lastError;
 };
 
+// Export as default for existing service imports
 module.exports = withDbConnection;
+
+// Also attach named exports
+module.exports.withDbConnection = withDbConnection;
+module.exports.sql = sql;
