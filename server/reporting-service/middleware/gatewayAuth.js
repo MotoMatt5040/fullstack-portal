@@ -5,24 +5,28 @@
  * The auth-gateway handles JWT validation and forwards user info via headers.
  */
 const gatewayAuth = (req, res, next) => {
-  // Check for user info headers set by auth-gateway
-  const userId = req.headers['x-user-id'];
-  const userRoles = req.headers['x-user-roles'];
-  const username = req.headers['x-user-name'];
+  const isAuthenticated = req.headers['x-user-authenticated'] === 'true';
 
-  if (!userId || !userRoles) {
-    return res.status(401).json({
-      message: 'Unauthorized - Missing gateway authentication headers'
-    });
+  if (!isAuthenticated) {
+    return res.status(401).json({ message: 'Authentication required' });
   }
 
-  // Parse roles from comma-separated string to array of numbers
-  const roles = userRoles.split(',').map(role => parseInt(role.trim(), 10));
+  // Parse user info from gateway headers
+  req.user = req.headers['x-user-name'] || '';
 
-  // Attach user info to request object
-  req.user = userId;
-  req.roles = roles;
-  req.username = username;
+  // Parse roles - handle both JSON array and comma-separated formats
+  const rolesHeader = req.headers['x-user-roles'];
+  if (rolesHeader) {
+    try {
+      // Try JSON array first
+      req.roles = JSON.parse(rolesHeader);
+    } catch {
+      // Fall back to comma-separated string
+      req.roles = rolesHeader.split(',').map(r => parseInt(r.trim(), 10)).filter(r => !isNaN(r));
+    }
+  } else {
+    req.roles = [];
+  }
 
   next();
 };
