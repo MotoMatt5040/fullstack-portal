@@ -21,6 +21,9 @@ const handleLogin = async (req, res) => {
         }
 
         const match = await bcrypt.compare(pwd, foundUser.Password);
+        console.log(`Password match result: ${match}`);
+        console.log(`Password field exists: ${!!foundUser.Password}`);
+        console.log(`Password hash starts with: ${foundUser.Password ? foundUser.Password.substring(0, 10) : 'N/A'}`);
 
         if (match) {
             const roles = await getUserRoles(foundUser.Email);
