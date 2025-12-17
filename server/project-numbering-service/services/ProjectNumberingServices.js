@@ -1,19 +1,19 @@
+// Project Numbering Service - ProjectNumberingServices.js
+
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { fajita } = require('../utils/databaseTypes');
 
 /**
  * Get the next available project ID (MAX + 1)
  */
 const getNextProjectNumber = async () => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const query = `
-        SELECT ISNULL(MAX(projectID) + 1, 1) as nextNumber 
+        SELECT ISNULL(MAX(projectID) + 1, 1) as nextNumber
         FROM dbo.Projects
       `;
-      
+
       const result = await pool.request().query(query);
       return result.recordset[0].nextNumber;
     },
@@ -26,7 +26,6 @@ const getNextProjectNumber = async () => {
  */
 const createProject = async (projectData, username) => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const { projectID, modes } = projectData;
 
@@ -35,12 +34,12 @@ const createProject = async (projectData, username) => {
       }
 
       const transaction = pool.transaction();
-      
+
       try {
         await transaction.begin();
-        
+
         const request = transaction.request();
-        
+
         request.input('projectID', sql.Int, projectID);
         request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
         request.input('projectName', sql.NVarChar, projectData.projectName);
@@ -56,30 +55,30 @@ const createProject = async (projectData, username) => {
         request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
         request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
         request.input('createdBy', sql.NVarChar, username);
-        
+
         const result = await request.query(`
-          INSERT INTO dbo.Projects 
+          INSERT INTO dbo.Projects
           (
-            projectID, 
-            clientProjectID, projectName, NSize, clientTime, promarkTime, openends, 
-            startDate, endDate, client, contactName, contactNumber, dataProcessing, 
+            projectID,
+            clientProjectID, projectName, NSize, clientTime, promarkTime, openends,
+            startDate, endDate, client, contactName, contactNumber, dataProcessing,
             multiCallID,
             createdBy, updatedBy
           )
-          VALUES 
+          VALUES
           (
-            @projectID, 
-            @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends, 
-            @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing, 
+            @projectID,
+            @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends,
+            @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing,
             @multiCallID,
             @createdBy, @createdBy
           );
-          
+
           SELECT @projectID as id;
         `);
-        
+
         const newId = result.recordset[0].id;
-        
+
         // Insert modes if provided
         if (modes && Array.isArray(modes) && modes.length > 0) {
           for (const modeID of modes) {
@@ -92,9 +91,9 @@ const createProject = async (projectData, username) => {
               `);
           }
         }
-        
+
         await transaction.commit();
-        
+
         return { id: newId, projectID: newId };
       } catch (error) {
         await transaction.rollback();
@@ -116,41 +115,40 @@ const getAllProjects = async (options = {}) => {
     sortOrder = 'DESC',
     searchTerm = null,
   } = options;
-  
+
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const offset = (page - 1) * limit;
       const request = pool.request();
-      
+
       request.input('limit', sql.Int, limit);
       request.input('offset', sql.Int, offset);
-      
+
       let whereClause = '';
       if (searchTerm) {
         request.input('searchTerm', sql.NVarChar, `%${searchTerm}%`);
         whereClause = `
-          WHERE projectName LIKE @searchTerm 
-          OR clientProjectID LIKE @searchTerm 
+          WHERE projectName LIKE @searchTerm
+          OR clientProjectID LIKE @searchTerm
           OR CAST(projectID AS NVARCHAR) LIKE @searchTerm
           OR client LIKE @searchTerm
           OR contactName LIKE @searchTerm
         `;
       }
-      
+
       // Validate sortBy to prevent SQL injection
       const allowedSortColumns = [
-        'projectID', 'clientProjectID', 'projectName', 'NSize', 'clientTime', 
-        'promarkTime', 'startDate', 'endDate', 'client', 
+        'projectID', 'clientProjectID', 'projectName', 'NSize', 'clientTime',
+        'promarkTime', 'startDate', 'endDate', 'client',
         'contactName', 'contactNumber', 'dataProcessing', 'multiCallID'
       ];
       const validSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'projectID';
       const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-      
+
       const query = `
-        SELECT 
-          p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime, 
-          p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
+        SELECT
+          p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime,
+          p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber,
           p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
           (
             SELECT modeID
@@ -163,12 +161,12 @@ const getAllProjects = async (options = {}) => {
         ORDER BY ${validSortBy} ${validSortOrder}
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY;
-        
+
         SELECT COUNT(*) as total FROM dbo.Projects p ${whereClause};
       `;
-      
+
       const result = await request.query(query);
-      
+
       // Parse the JSON modes for each project
       const projects = result.recordsets[0].map(project => {
         let modes = [];
@@ -185,7 +183,7 @@ const getAllProjects = async (options = {}) => {
           modesJSON: undefined, // Remove the JSON string from response
         };
       });
-      
+
       return {
         projects,
         total: result.recordsets[1][0].total,
@@ -203,31 +201,30 @@ const getAllProjects = async (options = {}) => {
  */
 const getProjectByNumber = async (projectID) => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const result = await pool
         .request()
         .input('projectID', sql.Int, projectID)
         .query(`
-          SELECT 
-            p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime, 
-            p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
+          SELECT
+            p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime,
+            p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber,
             p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy
           FROM dbo.Projects p
           WHERE p.projectID = @projectID;
-          
+
           SELECT modeID
           FROM dbo.ProjectModes
           WHERE projectID = @projectID;
         `);
-      
+
       if (!result.recordsets[0][0]) {
         return null;
       }
-      
+
       const project = result.recordsets[0][0];
       const modes = result.recordsets[1].map(m => m.modeID);
-      
+
       return {
         ...project,
         modes,
@@ -242,15 +239,14 @@ const getProjectByNumber = async (projectID) => {
  */
 const updateProject = async (projectID, projectData, username) => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const transaction = pool.transaction();
-      
+
       try {
         await transaction.begin();
-        
+
         const request = transaction.request();
-        
+
         request.input('projectID', sql.Int, projectID);
         request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
         request.input('projectName', sql.NVarChar, projectData.projectName);
@@ -266,10 +262,10 @@ const updateProject = async (projectID, projectData, username) => {
         request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
         request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
         request.input('updatedBy', sql.NVarChar, username);
-        
+
         await request.query(`
           UPDATE dbo.Projects
-          SET 
+          SET
             clientProjectID = @clientProjectID,
             projectName = @projectName,
             NSize = @NSize,
@@ -286,12 +282,12 @@ const updateProject = async (projectID, projectData, username) => {
             updatedBy = @updatedBy
           WHERE projectID = @projectID
         `);
-        
+
         // Delete existing modes
         await transaction.request()
           .input('projectID', sql.Int, projectID)
           .query(`DELETE FROM dbo.ProjectModes WHERE projectID = @projectID`);
-        
+
         // Insert new modes if provided
         if (projectData.modes && Array.isArray(projectData.modes) && projectData.modes.length > 0) {
           for (const modeID of projectData.modes) {
@@ -304,9 +300,9 @@ const updateProject = async (projectID, projectData, username) => {
               `);
           }
         }
-        
+
         await transaction.commit();
-        
+
         return true;
       } catch (error) {
         await transaction.rollback();
@@ -322,14 +318,13 @@ const updateProject = async (projectID, projectData, username) => {
  */
 const deleteProject = async (projectID) => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       // CASCADE DELETE will handle ProjectModes
       const result = await pool
         .request()
         .input('projectID', sql.Int, projectID)
         .query('DELETE FROM dbo.Projects WHERE projectID = @projectID');
-      
+
       return result.rowsAffected[0] > 0;
     },
     fnName: 'deleteProject',
@@ -341,52 +336,51 @@ const deleteProject = async (projectID) => {
  */
 const searchProjects = async (criteria) => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const request = pool.request();
       const conditions = [];
-      
+
       if (criteria.projectID) {
         request.input('projectID', sql.Int, criteria.projectID);
         conditions.push('p.projectID = @projectID');
       }
-      
+
       if (criteria.clientProjectID) {
         request.input('clientProjectID', sql.NVarChar, `%${criteria.clientProjectID}%`);
         conditions.push('p.clientProjectID LIKE @clientProjectID');
       }
-      
+
       if (criteria.projectName) {
         request.input('projectName', sql.NVarChar, `%${criteria.projectName}%`);
         conditions.push('p.projectName LIKE @projectName');
       }
-      
+
       if (criteria.client) {
         request.input('client', sql.NVarChar, `%${criteria.client}%`);
         conditions.push('p.client LIKE @client');
       }
-      
+
       if (criteria.startDateFrom) {
         request.input('startDateFrom', sql.Date, criteria.startDateFrom);
         conditions.push('p.startDate >= @startDateFrom');
       }
-      
+
       if (criteria.startDateTo) {
         request.input('startDateTo', sql.Date, criteria.startDateTo);
         conditions.push('p.startDate <= @startDateTo');
       }
-      
+
       if (criteria.contactName) {
         request.input('contactName', sql.NVarChar, `%${criteria.contactName}%`);
         conditions.push('p.contactName LIKE @contactName');
       }
-      
+
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-      
+
       const query = `
-        SELECT 
-          p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime, 
-          p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber, 
+        SELECT
+          p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime,
+          p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber,
           p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
           (
             SELECT modeID
@@ -398,9 +392,9 @@ const searchProjects = async (criteria) => {
         ${whereClause}
         ORDER BY p.projectID DESC
       `;
-      
+
       const result = await request.query(query);
-      
+
       // Parse the JSON modes for each project
       const projects = result.recordset.map(project => {
         let modes = [];
@@ -417,7 +411,7 @@ const searchProjects = async (criteria) => {
           modesJSON: undefined,
         };
       });
-      
+
       return projects;
     },
     fnName: 'searchProjects',
@@ -429,10 +423,9 @@ const searchProjects = async (criteria) => {
  */
 const getProjectStats = async () => {
   return withDbConnection({
-    database: fajita,
     queryFn: async (pool) => {
       const result = await pool.request().query(`
-        SELECT 
+        SELECT
           COUNT(*) as totalProjects,
           COUNT(CASE WHEN openends = 'y' THEN 1 END) as projectsWithOpenEnds,
           COUNT(CASE WHEN dataProcessing = 1 THEN 1 END) as projectsWithDP,
@@ -440,7 +433,7 @@ const getProjectStats = async () => {
           COUNT(CASE WHEN multiCallID = 1 THEN 1 END) as projectsWithMultiCallID
         FROM dbo.Projects
       `);
-      
+
       return result.recordset[0];
     },
     fnName: 'getProjectStats',

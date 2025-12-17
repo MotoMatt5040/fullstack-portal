@@ -181,6 +181,9 @@ jobs:
             echo "🧪 Testing Notification Service..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/notifications/health" || echo "Notification service not ready"
 
+            echo "🧪 Testing Project Numbering Service..."
+            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/projects/health" || echo "Project numbering service not ready"
+
             echo "🧪 Testing API..."
             curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" || echo "API not ready"
 

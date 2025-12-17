@@ -39,6 +39,14 @@
             reverse_proxy notifications:5002
         }
 
+        # Project numbering service routes
+        handle /api/projects/* {
+            reverse_proxy projects:5003
+        }
+        handle /api/projects {
+            reverse_proxy projects:5003
+        }
+
         # All other API routes go to the monolith
         handle /api/* {
             reverse_proxy api:5000

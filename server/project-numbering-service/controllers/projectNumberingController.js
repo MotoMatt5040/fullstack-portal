@@ -1,5 +1,7 @@
+// Project Numbering Service - projectNumberingController.js
+
 const ProjectNumberingServices = require('../services/ProjectNumberingServices');
-const handleAsync = require('./asyncController');
+const handleAsync = require('../middleware/asyncController');
 
 /**
  * @desc Get all projects with pagination and sorting
@@ -8,7 +10,7 @@ const handleAsync = require('./asyncController');
  */
 const handleGetAllProjects = handleAsync(async (req, res) => {
   const { page, limit, sortBy, sortOrder, search } = req.query;
-  
+
   const options = {
     page: parseInt(page) || 1,
     limit: parseInt(limit) || 75,
@@ -16,9 +18,9 @@ const handleGetAllProjects = handleAsync(async (req, res) => {
     sortOrder: sortOrder || 'DESC',
     searchTerm: search || null,
   };
-  
+
   const result = await ProjectNumberingServices.getAllProjects(options);
-  
+
   res.status(200).json(result);
 });
 
@@ -39,23 +41,23 @@ const handleGetNextProjectNumber = handleAsync(async (req, res) => {
  */
 const handleCreateProject = handleAsync(async (req, res) => {
   const username = req.user; // From JWT token via auth middleware
-  
+
   // Validate required fields
   if (!req.body.projectName) {
     return res.status(400).json({ message: 'Project name is required' });
   }
-  
+
   // Validate date format if provided
   if (req.body.startDate && !isValidDate(req.body.startDate)) {
     return res.status(400).json({ message: 'Invalid start date format. Use YYYY-MM-DD' });
   }
-  
+
   if (req.body.endDate && !isValidDate(req.body.endDate)) {
     return res.status(400).json({ message: 'Invalid end date format. Use YYYY-MM-DD' });
   }
-  
+
   const result = await ProjectNumberingServices.createProject(req.body, username);
-  
+
   res.status(201).json({
     message: 'Project created successfully',
     project: result,
@@ -69,17 +71,17 @@ const handleCreateProject = handleAsync(async (req, res) => {
  */
 const handleGetProjectByNumber = handleAsync(async (req, res) => {
   const projectNumber = parseInt(req.params.number);
-  
+
   if (isNaN(projectNumber)) {
     return res.status(400).json({ message: 'Invalid project number' });
   }
-  
+
   const project = await ProjectNumberingServices.getProjectByNumber(projectNumber);
-  
+
   if (!project) {
     return res.status(404).json({ message: 'Project not found' });
   }
-  
+
   res.status(200).json(project);
 });
 
@@ -91,33 +93,33 @@ const handleGetProjectByNumber = handleAsync(async (req, res) => {
 const handleUpdateProject = handleAsync(async (req, res) => {
   const projectNumber = parseInt(req.params.number);
   const username = req.user;
-  
+
   if (isNaN(projectNumber)) {
     return res.status(400).json({ message: 'Invalid project number' });
   }
-  
+
   // Validate required fields
   if (!req.body.projectName) {
     return res.status(400).json({ message: 'Project name is required' });
   }
-  
+
   // Check if project exists
   const existingProject = await ProjectNumberingServices.getProjectByNumber(projectNumber);
   if (!existingProject) {
     return res.status(404).json({ message: 'Project not found' });
   }
-  
+
   // Validate date format if provided
   if (req.body.startDate && !isValidDate(req.body.startDate)) {
     return res.status(400).json({ message: 'Invalid start date format. Use YYYY-MM-DD' });
   }
-  
+
   if (req.body.endDate && !isValidDate(req.body.endDate)) {
     return res.status(400).json({ message: 'Invalid end date format. Use YYYY-MM-DD' });
   }
-  
+
   await ProjectNumberingServices.updateProject(projectNumber, req.body, username);
-  
+
   res.status(200).json({
     message: 'Project updated successfully',
     projectID: projectNumber,
@@ -131,23 +133,23 @@ const handleUpdateProject = handleAsync(async (req, res) => {
  */
 const handleDeleteProject = handleAsync(async (req, res) => {
   const projectNumber = parseInt(req.params.number);
-  
+
   if (isNaN(projectNumber)) {
     return res.status(400).json({ message: 'Invalid project number' });
   }
-  
+
   // Check if project exists
   const existingProject = await ProjectNumberingServices.getProjectByNumber(projectNumber);
   if (!existingProject) {
     return res.status(404).json({ message: 'Project not found' });
   }
-  
+
   const deleted = await ProjectNumberingServices.deleteProject(projectNumber);
-  
+
   if (!deleted) {
     return res.status(500).json({ message: 'Failed to delete project' });
   }
-  
+
   res.status(200).json({
     message: 'Project deleted successfully',
     projectID: projectNumber,
@@ -161,7 +163,7 @@ const handleDeleteProject = handleAsync(async (req, res) => {
  */
 const handleSearchProjects = handleAsync(async (req, res) => {
   const results = await ProjectNumberingServices.searchProjects(req.body);
-  
+
   res.status(200).json({
     count: results.length,
     projects: results,
@@ -182,7 +184,7 @@ const handleGetProjectStats = handleAsync(async (req, res) => {
 const isValidDate = (dateString) => {
   const regex = /^\d{4}-\d{2}-\d{2}$/;
   if (!regex.test(dateString)) return false;
-  
+
   const date = new Date(dateString);
   return date instanceof Date && !isNaN(date);
 };
