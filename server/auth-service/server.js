@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const corsOptions = require('./config/corsOptions');
 const authRoutes = require('./routes/authRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const { sequelize } = require('./models');
 
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 5001;
@@ -18,10 +19,20 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let dbStatus = 'unknown';
+  try {
+    await sequelize.authenticate();
+    dbStatus = 'connected';
+  } catch (error) {
+    dbStatus = `error: ${error.message}`;
+  }
+
   res.status(200).json({
     status: 'healthy',
     service: 'auth-service',
+    database: dbStatus,
+    dbName: process.env.PROMARK_DB_NAME || 'CaligulaD',
     timestamp: new Date().toISOString()
   });
 });
@@ -33,6 +44,14 @@ app.use('/api', authRoutes);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🔐 Auth Service running on port ${PORT}`);
+app.listen(PORT, async () => {
+  console.log(`Auth Service running on port ${PORT}`);
+
+  // Test database connection
+  try {
+    await sequelize.authenticate();
+    console.log(`Auth Service: Database connection established (${process.env.PROMARK_DB_NAME || 'CaligulaD'})`);
+  } catch (error) {
+    console.error('Auth Service: Unable to connect to database:', error.message);
+  }
 });

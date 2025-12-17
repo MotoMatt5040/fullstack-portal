@@ -6,12 +6,16 @@ const jwt = require('jsonwebtoken');
 
 const handleLogin = async (req, res) => {
     const { user, pwd, deviceId } = req.body;
+    console.log(`Login attempt for user: ${user}`);
+
     if (!user || !pwd) {
         return res.status(400).json({ 'message': 'Please include a username and password' });
     }
 
     try {
         const foundUser = await getUserByEmail(user);
+        console.log(`User lookup result: ${foundUser ? 'found' : 'not found'}`);
+
         if (!foundUser) {
             return res.status(401).json({ 'message': 'Invalid username or password' });
         }
