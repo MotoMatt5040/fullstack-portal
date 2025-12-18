@@ -1,8 +1,7 @@
-const sql = require('mssql');
+const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
 const path = require('path');
 const fs = require('fs').promises;
-const withDbConnection = require('../config/dbConn');
-const { promark } = require('../config/databaseTypes');
+const { PROMARK: promark } = DATABASE_TYPES;
 const {
   getPromarkConstantsAsHeaders,
   getPromarkConstantDefault,

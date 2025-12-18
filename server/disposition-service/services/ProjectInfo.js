@@ -1,5 +1,4 @@
-const withDbConnection = require('../config/dbConn');
-const { sql } = require('../config/dbConn');
+const { withDbConnection, sql } = require('@internal/db-connection');
 
 /**
  * Get web projects from Voxco database

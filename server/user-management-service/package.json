@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@internal/auth-middleware": "file:./shared-libs/auth-middleware",
+    "@internal/cors-config": "file:./shared-libs/cors-config",
+    "@internal/db-connection": "file:./shared-libs/db-connection",
     "@internal/error-handler": "file:./shared-libs/error-handler",
     "@internal/roles-config": "file:./shared-libs/roles-config",
     "bcrypt": "^5.1.0",

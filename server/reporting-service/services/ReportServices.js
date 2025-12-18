@@ -1,6 +1,5 @@
-const sql = require('mssql');
-const withDbConnection = require('../config/dbConn');
-const { promark } = require('../config/databaseTypes');
+const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
+const { PROMARK: promark } = DATABASE_TYPES;
 
 const getLiveReportData = async (projectId) => {
   const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';

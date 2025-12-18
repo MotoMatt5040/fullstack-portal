@@ -4,12 +4,13 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { initializeRoles } = require('@internal/roles-config');
 const errorHandler = require('@internal/error-handler');
+const { corsOptions } = require('@internal/cors-config');
 
 const app = express();
 const PORT = process.env.PORT || 5008;
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 

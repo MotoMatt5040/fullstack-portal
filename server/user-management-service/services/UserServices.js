@@ -1,5 +1,4 @@
-const sql = require('mssql');
-const withDbConnection = require('../config/dbConn');
+const { withDbConnection, sql } = require('@internal/db-connection');
 
 const createUser = async (email, hashedPwd) => {
   return withDbConnection({

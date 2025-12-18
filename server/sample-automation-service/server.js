@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const { corsOptions, credentials } = require('./config/corsOptions');
+const { corsOptions, credentials } = require('@internal/cors-config');
 const errorHandler = require('@internal/error-handler');
 const { initializeRoles } = require('@internal/roles-config');
 
@@ -59,14 +59,14 @@ startServer();
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Closing connections...');
-  const { closeAllPools } = require('./config/dbConn');
+  const { closeAllPools } = require('@internal/db-connection');
   await closeAllPools();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received. Closing connections...');
-  const { closeAllPools } = require('./config/dbConn');
+  const { closeAllPools } = require('@internal/db-connection');
   await closeAllPools();
   process.exit(0);
 });

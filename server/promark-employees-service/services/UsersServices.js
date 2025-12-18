@@ -1,7 +1,8 @@
-const { withDbConnection, sql } = require('../config/dbConn');
+const { withDbConnection, sql } = require('@internal/db-connection');
 
 const getAllUsers = async () => {
   return withDbConnection({
+    database: 'promark',
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -26,6 +27,7 @@ const getAllUsers = async () => {
 
 const addUserRoles = async (uuid, roles) => {
   return withDbConnection({
+    database: 'promark',
     queryFn: async (pool) => {
       // Prepare the roles array to be passed as a comma-separated string to the query
       const rolesString = roles.join(',');
@@ -59,6 +61,7 @@ const addUserRoles = async (uuid, roles) => {
  */
 const removeUserRoles = async (uuid, roles) => {
   return withDbConnection({
+    database: 'promark',
     queryFn: async (pool) => {
       const rolesString = roles.join(',');
 
@@ -83,6 +86,7 @@ const removeUserRoles = async (uuid, roles) => {
 
 const getUserByEmail = async (email) => {
   return withDbConnection({
+    database: 'promark',
     queryFn: async (pool) => {
       const result = await pool
         .request()

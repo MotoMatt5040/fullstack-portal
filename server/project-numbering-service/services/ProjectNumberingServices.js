@@ -1,13 +1,13 @@
 // Project Numbering Service - ProjectNumberingServices.js
 
-const sql = require('mssql');
-const { withDbConnection } = require('../config/dbConn');
+const { withDbConnection, sql } = require('@internal/db-connection');
 
 /**
  * Get the next available project ID (MAX + 1)
  */
 const getNextProjectNumber = async () => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const query = `
         SELECT ISNULL(MAX(projectID) + 1, 1) as nextNumber
@@ -26,6 +26,7 @@ const getNextProjectNumber = async () => {
  */
 const createProject = async (projectData, username) => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const { projectID, modes } = projectData;
 
@@ -117,6 +118,7 @@ const getAllProjects = async (options = {}) => {
   } = options;
 
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const offset = (page - 1) * limit;
       const request = pool.request();
@@ -201,6 +203,7 @@ const getAllProjects = async (options = {}) => {
  */
 const getProjectByNumber = async (projectID) => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -239,6 +242,7 @@ const getProjectByNumber = async (projectID) => {
  */
 const updateProject = async (projectID, projectData, username) => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const transaction = pool.transaction();
 
@@ -318,6 +322,7 @@ const updateProject = async (projectID, projectData, username) => {
  */
 const deleteProject = async (projectID) => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       // CASCADE DELETE will handle ProjectModes
       const result = await pool
@@ -336,6 +341,7 @@ const deleteProject = async (projectID) => {
  */
 const searchProjects = async (criteria) => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const request = pool.request();
       const conditions = [];
@@ -423,6 +429,7 @@ const searchProjects = async (criteria) => {
  */
 const getProjectStats = async () => {
   return withDbConnection({
+    database: 'fajita',
     queryFn: async (pool) => {
       const result = await pool.request().query(`
         SELECT

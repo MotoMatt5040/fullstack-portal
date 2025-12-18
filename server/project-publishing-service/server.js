@@ -3,12 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const errorHandler = require('@internal/error-handler');
 const { initializeRoles } = require('@internal/roles-config');
+const { corsOptions } = require('@internal/cors-config');
 
 const app = express();
 const PORT = process.env.PORT || 5011;
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint

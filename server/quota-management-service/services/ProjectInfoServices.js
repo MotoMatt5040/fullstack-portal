@@ -1,6 +1,5 @@
-const sql = require('mssql');
-const withDbConnection = require('../config/dbConn');
-const { voxco } = require('../config/databaseTypes');
+const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
+const { VOXCO: voxco } = DATABASE_TYPES;
 
 const getPhoneProjects = async (projectId) => {
   return withDbConnection({

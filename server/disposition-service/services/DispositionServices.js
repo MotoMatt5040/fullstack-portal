@@ -1,6 +1,6 @@
 const axios = require('../api/axios');
 const projectInfo = require('./ProjectInfo');
-const withDbConnection = require('../config/dbConn');
+const { withDbConnection } = require('@internal/db-connection');
 
 /**
  * Get web disposition data from Voxco API

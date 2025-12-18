@@ -1,4 +1,4 @@
-const { sql, withDbConnection } = require('../config/dbConn');
+const { sql, withDbConnection } = require('@internal/db-connection');
 
 /**
  * CallID Service
@@ -55,9 +55,10 @@ const getDashboardMetrics = async () => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
-      
+
       const statusBreakdown = result.recordsets[0];
       const totalCallIDs = result.recordsets[1][0].TotalCallIDs;
       const activeProjects = result.recordsets[2][0].ActiveProjects;
@@ -73,7 +74,6 @@ const getDashboardMetrics = async () => {
       };
     },
     fnName: 'getDashboardMetrics',
-    attempts: 3
   });
 };
 
@@ -173,12 +173,12 @@ const getCurrentActiveAssignments = async () => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
     },
     fnName: 'getCurrentActiveAssignments',
-    attempts: 3
   });
 };
 
@@ -223,13 +223,13 @@ const getRecentActivity = async () => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
     },
     fnName: 'getRecentActivity',
-    attempts: 3
-  });
+    });
 };
 
 // ==================== INVENTORY QUERIES ====================
@@ -319,7 +319,8 @@ const getAllCallIDs = async (filters = {}) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const request = pool.request();
 
       if (filters.status) request.input('status', sql.TinyInt, filters.status);
@@ -349,8 +350,7 @@ const getAllCallIDs = async (filters = {}) => {
       };
     },
     fnName: 'getAllCallIDs',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -388,15 +388,15 @@ const getCallIDById = async (phoneNumberId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
         .query(query);
       return result.recordset[0];
     },
     fnName: 'getCallIDById',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -415,7 +415,8 @@ const createCallID = async (callIdData) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumber', sql.NVarChar(10), phoneNumber)
         .input('status', sql.TinyInt, status || 1)
@@ -427,8 +428,7 @@ const createCallID = async (callIdData) => {
       return getCallIDById(newId);
     },
     fnName: 'createCallID',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -458,7 +458,8 @@ const updateCallID = async (phoneNumberId, updates) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const request = pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId);
       
@@ -470,8 +471,7 @@ const updateCallID = async (phoneNumberId, updates) => {
       return getCallIDById(phoneNumberId);
     },
     fnName: 'updateCallID',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -510,15 +510,15 @@ const deleteCallID = async (phoneNumberId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
         .query(query);
       return result.recordset[0];
     },
     fnName: 'deleteCallID',
-    attempts: 3
-  });
+    });
 };
 
 // ==================== USAGE/ASSIGNMENT QUERIES ====================
@@ -556,15 +556,15 @@ const getCallIDUsageHistory = async (phoneNumberId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
         .query(query);
       return result.recordset;
     },
     fnName: 'getCallIDUsageHistory',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -613,15 +613,15 @@ const getProjectCallIDs = async (projectId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
         .query(query);
       return result.recordset;
     },
     fnName: 'getProjectCallIDs',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -645,7 +645,8 @@ const assignCallIDToProject = async (assignmentData) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -654,8 +655,7 @@ const assignCallIDToProject = async (assignmentData) => {
       return result.recordset[0];
     },
     fnName: 'assignCallIDToProject',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -730,7 +730,8 @@ const endAssignment = async (projectId, phoneNumberId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -738,8 +739,7 @@ const endAssignment = async (projectId, phoneNumberId) => {
       return result.recordset[0];
     },
     fnName: 'endAssignment',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -789,7 +789,8 @@ const reassignCallID = async (data) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
         .input('oldPhoneNumberId', sql.Int, oldPhoneNumberId)
@@ -802,8 +803,7 @@ const reassignCallID = async (data) => {
       };
     },
     fnName: 'reassignCallID',
-    attempts: 3
-  });
+    });
 };
 
 // ==================== ANALYTICS QUERIES ====================
@@ -845,7 +845,8 @@ const getUtilizationMetrics = async () => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       
       const totalNumbers = result.recordsets[0][0].TotalNumbers;
@@ -864,8 +865,7 @@ const getUtilizationMetrics = async () => {
       };
     },
     fnName: 'getUtilizationMetrics',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -910,15 +910,15 @@ const getMostUsedCallIDs = async (limit = 10) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('limit', sql.Int, limit)
         .query(query);
       return result.recordset;
     },
     fnName: 'getMostUsedCallIDs',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -968,15 +968,15 @@ const getIdleCallIDs = async (days = 30) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('days', sql.Int, days)
         .query(query);
       return result.recordset;
     },
     fnName: 'getIdleCallIDs',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1026,13 +1026,13 @@ const getStateCoverage = async () => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
     },
     fnName: 'getStateCoverage',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1083,15 +1083,15 @@ const getUsageTimeline = async (months = 6) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('months', sql.Int, months)
         .query(query);
       return result.recordset;
     },
     fnName: 'getUsageTimeline',
-    attempts: 3
-  });
+    });
 };
 
 // ==================== LOOKUP/UTILITY QUERIES ====================
@@ -1104,13 +1104,13 @@ const getAllStatusCodes = async () => {
   const query = `SELECT StatusCode, StatusDescription FROM FAJITA.dbo.CallIDStatus ORDER BY StatusCode`;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
     },
     fnName: 'getAllStatusCodes',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1121,13 +1121,13 @@ const getAllStates = async () => {
   const query = `SELECT StateFIPS, StateAbbr, StateName FROM FAJITA.dbo.States ORDER BY StateName`;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
     },
     fnName: 'getAllStates',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1155,7 +1155,8 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('stateFIPS', sql.Char(2), stateFIPS)
         .input('startDate', sql.DateTime, startDate)
@@ -1164,8 +1165,7 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
       return result.recordset;
     },
     fnName: 'getAvailableCallIDsForState',
-    attempts: 3
-  });
+    });
 };
 
 
@@ -1197,13 +1197,13 @@ const getAllProjectsWithAssignments = async () => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
     },
     fnName: 'getAllProjectsWithAssignments',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1246,7 +1246,8 @@ const checkAssignmentConflict = async (phoneNumberId, projectId, excludeProjectI
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const request = pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
         .input('projectId', sql.Int, parseInt(projectId, 10));
@@ -1264,8 +1265,7 @@ const checkAssignmentConflict = async (phoneNumberId, projectId, excludeProjectI
       };
     },
     fnName: 'checkAssignmentConflict',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1289,7 +1289,8 @@ const updateAssignment = async (projectId, phoneNumberId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -1298,8 +1299,7 @@ const updateAssignment = async (projectId, phoneNumberId) => {
       return result.recordset[0];
     },
     fnName: 'updateAssignment',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1350,7 +1350,8 @@ const swapCallIDAssignment = async (fromProjectId, toProjectId, phoneNumberId, s
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       await pool.request()
         .input('fromProjectId', sql.Int, parseInt(fromProjectId, 10))
         .input('toProjectId', sql.Int, parseInt(toProjectId, 10))
@@ -1363,8 +1364,7 @@ const swapCallIDAssignment = async (fromProjectId, toProjectId, phoneNumberId, s
       };
     },
     fnName: 'swapCallIDAssignment',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1469,7 +1469,8 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       console.log('[updateProjectSlot] Executing query for:', { projectId, slotName, phoneNumberId });
       const request = pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -1482,8 +1483,7 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId) => {
       return result.recordset[0];
     },
     fnName: 'updateProjectSlot',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1530,15 +1530,15 @@ const removeProjectSlot = async (projectId, slotName) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
         .query(query);
       return result.recordset[0];
     },
     fnName: 'removeProjectSlot',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1567,7 +1567,8 @@ const getTopAreaCodesFromSampleTable = async (tableName, limit = 10) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       // First check which columns exist
       const checkResult = await pool.request()
         .input('tableName', sql.NVarChar, tableName)
@@ -1621,8 +1622,7 @@ const getTopAreaCodesFromSampleTable = async (tableName, limit = 10) => {
       };
     },
     fnName: 'getTopAreaCodesFromSampleTable',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1670,7 +1670,8 @@ const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, projectId)
         .input('count', sql.Int, count)
@@ -1679,8 +1680,7 @@ const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
       return result.recordset;
     },
     fnName: 'findAvailableCallIDsByAreaCodes',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1707,7 +1707,8 @@ const getProjectDetails = async (projectId) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, projectId)
         .query(query);
@@ -1715,8 +1716,7 @@ const getProjectDetails = async (projectId) => {
       return result.recordset[0] || null;
     },
     fnName: 'getProjectDetails',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1729,7 +1729,8 @@ const getProjectDetails = async (projectId) => {
  */
 const autoAssignCallIDsFromSample = async (tableName, projectId, clientId) => {
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       console.log(`[autoAssignCallIDs] Starting for project ${projectId}, table ${tableName}, client ${clientId}`);
 
       // Execute the stored procedure with clientId parameter
@@ -1778,8 +1779,7 @@ const autoAssignCallIDsFromSample = async (tableName, projectId, clientId) => {
       };
     },
     fnName: 'autoAssignCallIDsFromSample',
-    attempts: 3
-  });
+    });
 };
 
 /**
@@ -1809,7 +1809,8 @@ const updateSampleTableCallIDs = async (tableName, callIdData) => {
   `;
 
   return withDbConnection({
-        queryFn: async (pool) => {
+    database: 'fajita',
+    queryFn: async (pool) => {
       console.log(`[updateSampleTableCallIDs] Executing: ${query}`);
       const result = await pool.request().query(query);
       console.log(`[updateSampleTableCallIDs] Updated ${result.rowsAffected[0]} rows`);
@@ -1821,8 +1822,7 @@ const updateSampleTableCallIDs = async (tableName, callIdData) => {
       };
     },
     fnName: 'updateSampleTableCallIDs',
-    attempts: 3
-  });
+    });
 };
 
 module.exports = {
