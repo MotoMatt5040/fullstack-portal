@@ -5,6 +5,9 @@ FROM node:20-alpine AS development
 
 WORKDIR /app
 
+# Copy shared-libs first
+COPY shared-libs ./shared-libs
+
 # Copy package files
 COPY auth-service/package*.json ./
 
@@ -25,6 +28,9 @@ CMD ["npm", "run", "dev"]
 FROM node:20-alpine AS production
 
 WORKDIR /app
+
+# Copy shared-libs first
+COPY shared-libs ./shared-libs
 
 # Copy package files
 COPY auth-service/package*.json ./

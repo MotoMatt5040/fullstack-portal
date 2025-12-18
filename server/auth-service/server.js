@@ -4,9 +4,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const corsOptions = require('./config/corsOptions');
+const { corsOptions } = require('@internal/cors-config');
 const authRoutes = require('./routes/authRoutes');
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('@internal/error-handler');
 const { sequelize } = require('./models');
 
 const app = express();
