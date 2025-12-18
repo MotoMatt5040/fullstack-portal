@@ -3,8 +3,8 @@ name: promark-portal
 services:
   auth:
     build:
-      context: ./server/auth-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: auth-service/Dockerfile
     container_name: auth-service
     restart: unless-stopped
     env_file: ./.env.production
