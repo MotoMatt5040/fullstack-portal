@@ -1,10 +1,10 @@
 const sql = require('mssql');
 
 const baseConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT) || 1433,
+  user: process.env.VOXCO_DB_USER,
+  password: process.env.VOXCO_DB_PASSWORD,
+  server: process.env.VOXCO_DB_SERVER,
+  port: parseInt(process.env.VOXCO_DB_PORT) || 1433,
   options: {
     encrypt: false,
     trustServerCertificate: true,
@@ -23,7 +23,7 @@ const baseConfig = {
 const databases = {
   voxco: {
     ...baseConfig,
-    database: process.env.DB_VOXCO || 'VoxcoSystem',
+    database: process.env.VOXCO_DB_NAME || 'VoxcoSystem',
   },
 };
 

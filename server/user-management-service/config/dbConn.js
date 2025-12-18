@@ -2,10 +2,10 @@ const sql = require('mssql');
 
 // Database configurations
 const promarkConfig = {
-  server: process.env.DB_HOST,
-  database: process.env.PROMARK_DB,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  server: process.env.PROMARK_DB_SERVER,
+  database: process.env.PROMARK_DB_NAME || 'CaligulaD',
+  user: process.env.PROMARK_DB_USER,
+  password: process.env.PROMARK_DB_PASSWORD,
   options: {
     encrypt: false,
     trustServerCertificate: true,
