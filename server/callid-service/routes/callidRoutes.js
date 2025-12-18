@@ -1,8 +1,8 @@
 // CallID Service Routes
 const express = require('express');
 const router = express.Router();
-const { gatewayAuth, verifyRoles } = require('../middleware/gatewayAuth');
-const { ROLES_LIST } = require('../config/rolesConfig');
+const { gatewayAuth, verifyRoles } = require('@internal/auth-middleware');
+const { ROLES_LIST } = require('@internal/roles-config');
 const callIDController = require('../controllers/callIDController');
 
 // Use gateway auth - JWT already validated by auth-gateway via Caddy

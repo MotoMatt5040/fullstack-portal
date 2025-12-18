@@ -12,8 +12,8 @@ const {
   getClientCount,
 } = require('../services/notificationService');
 const { handleContactSupport } = require('../controllers/supportController');
-const { gatewayAuth, verifyRoles } = require('../middleware/gatewayAuth');
-const { ROLES_LIST } = require('../config/rolesConfig');
+const { gatewayAuth, verifyRoles } = require('@internal/auth-middleware');
+const { ROLES_LIST } = require('@internal/roles-config');
 
 // Health check (accessible via /api/notifications/health through Caddy)
 router.get('/notifications/health', (req, res) => {

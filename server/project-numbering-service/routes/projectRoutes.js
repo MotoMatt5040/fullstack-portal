@@ -2,8 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { gatewayAuth, verifyRoles } = require('../middleware/gatewayAuth');
-const { ROLES_LIST } = require('../config/rolesConfig');
+const { gatewayAuth, verifyRoles } = require('@internal/auth-middleware');
+const { ROLES_LIST } = require('@internal/roles-config');
 const projectNumberingController = require('../controllers/projectNumberingController');
 
 // Define allowed roles - all internal users can view, admin/executive can modify

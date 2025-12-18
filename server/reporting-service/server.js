@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
-const { initializeRoles } = require('./config/rolesConfig');
+const { initializeRoles } = require('@internal/roles-config');
 
 const app = express();
 const PORT = process.env.PORT || 5009;

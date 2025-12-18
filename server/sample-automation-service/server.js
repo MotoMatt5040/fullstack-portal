@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const { corsOptions, credentials } = require('./config/corsOptions');
 const errorHandler = require('./middleware/errorHandler');
-const { initializeRoles } = require('./config/rolesConfig');
+const { initializeRoles } = require('@internal/roles-config');
 
 const app = express();
 const PORT = process.env.PORT || 5006;

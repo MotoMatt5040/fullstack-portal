@@ -26,14 +26,15 @@ services:
 
   notifications:
     build:
-      context: ./server/notification-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: notification-service/Dockerfile
       target: development
     container_name: notification-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/notification-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5002"
@@ -49,14 +50,15 @@ services:
 
   projects:
     build:
-      context: ./server/project-numbering-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: project-numbering-service/Dockerfile
       target: development
     container_name: project-numbering-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/project-numbering-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5003"
@@ -72,14 +74,15 @@ services:
 
   callid:
     build:
-      context: ./server/callid-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: callid-service/Dockerfile
       target: development
     container_name: callid-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/callid-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5004"
@@ -122,14 +125,15 @@ services:
 
   sample-automation:
     build:
-      context: ./server/sample-automation-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: sample-automation-service/Dockerfile
       target: development
     container_name: sample-automation-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/sample-automation-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5006"
@@ -147,14 +151,15 @@ services:
 
   user-management:
     build:
-      context: ./server/user-management-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: user-management-service/Dockerfile
       target: development
     container_name: user-management-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/user-management-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5007"
@@ -172,14 +177,15 @@ services:
 
   quota-management:
     build:
-      context: ./server/quota-management-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: quota-management-service/Dockerfile
       target: development
     container_name: quota-management-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/quota-management-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5008"
@@ -197,14 +203,15 @@ services:
 
   reporting:
     build:
-      context: ./server/reporting-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: reporting-service/Dockerfile
       target: development
     container_name: reporting-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/reporting-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5009"
@@ -222,14 +229,15 @@ services:
 
   project-info:
     build:
-      context: ./server/project-info-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: project-info-service/Dockerfile
       target: development
     container_name: project-info-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/project-info-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5010"
@@ -247,14 +255,15 @@ services:
 
   project-publishing:
     build:
-      context: ./server/project-publishing-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: project-publishing-service/Dockerfile
       target: development
     container_name: project-publishing-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/project-publishing-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5011"
@@ -272,14 +281,15 @@ services:
 
   disposition:
     build:
-      context: ./server/disposition-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: disposition-service/Dockerfile
       target: development
     container_name: disposition-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/disposition-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5012"
@@ -297,14 +307,15 @@ services:
 
   ai-prompting:
     build:
-      context: ./server/ai-prompting-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: ai-prompting-service/Dockerfile
       target: development
     container_name: ai-prompting-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/ai-prompting-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5013"
@@ -322,14 +333,15 @@ services:
 
   github:
     build:
-      context: ./server/github-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: github-service/Dockerfile
       target: development
     container_name: github-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/github-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5014"
@@ -347,14 +359,15 @@ services:
 
   promark-employees:
     build:
-      context: ./server/promark-employees-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: promark-employees-service/Dockerfile
       target: development
     container_name: promark-employees-service-dev
     restart: unless-stopped
     env_file: ./server/.env.dev
     volumes:
       - ./server/promark-employees-service:/app
+      - ./server/shared-libs:/app/shared-libs
       - /app/node_modules
     expose:
       - "5015"

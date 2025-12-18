@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const gatewayAuth = require('../middleware/gatewayAuth');
-const verifyRoles = require('../middleware/verifyRoles');
-const { ROLES_LIST } = require('../config/rolesConfig');
+const { gatewayAuth, verifyRoles } = require('@internal/auth-middleware');
+const { ROLES_LIST } = require('@internal/roles-config');
 const promarkEmployeesController = require('../controllers/promarkEmployeesController');
 
 // All routes require authentication via gateway

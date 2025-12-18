@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { ROLES_LIST } = require('../config/rolesConfig');
-const gatewayAuth = require('../middleware/gatewayAuth');
-const verifyRoles = require('../middleware/verifyRoles');
+const { ROLES_LIST } = require('@internal/roles-config');
+const { gatewayAuth, verifyRoles } = require('@internal/auth-middleware');
 const projectPublishingController = require('../controllers/projectPublishingController');
 
 // Apply gateway auth to all routes

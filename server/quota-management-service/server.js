@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { initializeRoles } = require('./config/rolesConfig');
+const { initializeRoles } = require('@internal/roles-config');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();

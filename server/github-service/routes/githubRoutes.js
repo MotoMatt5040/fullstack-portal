@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const gatewayAuth = require('../middleware/gatewayAuth');
+const { gatewayAuth } = require('@internal/auth-middleware');
 const githubController = require('../controllers/githubController');
 
 // All routes require authentication via gateway

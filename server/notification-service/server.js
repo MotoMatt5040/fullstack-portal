@@ -6,7 +6,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const corsOptions = require('./config/corsOptions');
 const errorHandler = require('./middleware/errorHandler');
-const { initializeRoles } = require('./config/rolesConfig');
+const { initializeRoles } = require('@internal/roles-config');
 
 const app = express();
 const PORT = process.env.NOTIFICATION_SERVICE_PORT || 5002;

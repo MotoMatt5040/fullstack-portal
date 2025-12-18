@@ -110,10 +110,34 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
+/**
+ * Gateway Auth Middleware
+ * Trusts headers set by the auth-gateway via Caddy forward_auth
+ */
+const gatewayAuth = (req, res, next) => {
+  const isAuthenticated = req.headers['x-user-authenticated'] === 'true';
+
+  if (!isAuthenticated) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  // Parse user info from gateway headers
+  req.user = req.headers['x-user-name'] || '';
+
+  try {
+    req.roles = JSON.parse(req.headers['x-user-roles'] || '[]');
+  } catch {
+    req.roles = [];
+  }
+
+  next();
+};
+
 module.exports = {
   createVerifyJWT,
   verifyJWT,
   verifyRoles,
   handleAsync,
   errorHandler,
+  gatewayAuth,
 };
