@@ -13,10 +13,10 @@ const promarkConfig = {
 };
 
 const voxcoConfig = {
-  user: process.env.VOXCO_USER,
-  password: process.env.VOXCO_PASSWORD,
-  database: process.env.VOXCO_DB,
-  server: process.env.VOXCO_HOST,
+  user: process.env.VOXCO_DB_USER,
+  password: process.env.VOXCO_DB_PASSWORD,
+  database: process.env.VOXCO_DB_NAME || 'VoxcoSystem',
+  server: process.env.VOXCO_DB_SERVER,
   options: {
     encrypt: true,
     trustServerCertificate: true,
