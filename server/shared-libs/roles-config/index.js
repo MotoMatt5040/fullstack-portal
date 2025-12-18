@@ -64,7 +64,7 @@ const initializeRoles = async () => {
       ROLES_LIST[role.RoleName] = role.RoleID;
     });
 
-    console.log('Roles successfully loaded:', Object.keys(ROLES_LIST).join(', '));
+    console.log('Roles successfully loaded:', Object.entries(ROLES_LIST).map(([name, id]) => `${name}=${id}`).join(', '));
     return ROLES_LIST;
   } catch (error) {
     console.error('FATAL ERROR: Could not initialize roles from database.');
