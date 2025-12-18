@@ -3,8 +3,8 @@ name: promark-portal
 services:
   auth:
     build:
-      context: ./server/auth-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: auth-service/Dockerfile
     container_name: auth-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -21,8 +21,8 @@ services:
 
   notifications:
     build:
-      context: ./server/notification-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: notification-service/Dockerfile
     container_name: notification-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -39,8 +39,8 @@ services:
 
   projects:
     build:
-      context: ./server/project-numbering-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: project-numbering-service/Dockerfile
     container_name: project-numbering-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -57,8 +57,8 @@ services:
 
   callid:
     build:
-      context: ./server/callid-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: callid-service/Dockerfile
     container_name: callid-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -93,8 +93,8 @@ services:
 
   sample-automation:
     build:
-      context: ./server/sample-automation-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: sample-automation-service/Dockerfile
     container_name: sample-automation-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -111,8 +111,8 @@ services:
 
   user-management:
     build:
-      context: ./server/user-management-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: user-management-service/Dockerfile
     container_name: user-management-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -129,8 +129,8 @@ services:
 
   quota-management:
     build:
-      context: ./server/quota-management-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: quota-management-service/Dockerfile
     container_name: quota-management-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -147,8 +147,8 @@ services:
 
   reporting:
     build:
-      context: ./server/reporting-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: reporting-service/Dockerfile
     container_name: reporting-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -165,8 +165,8 @@ services:
 
   project-info:
     build:
-      context: ./server/project-info-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: project-info-service/Dockerfile
     container_name: project-info-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -183,8 +183,8 @@ services:
 
   project-publishing:
     build:
-      context: ./server/project-publishing-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: project-publishing-service/Dockerfile
     container_name: project-publishing-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -201,8 +201,8 @@ services:
 
   disposition:
     build:
-      context: ./server/disposition-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: disposition-service/Dockerfile
     container_name: disposition-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -219,8 +219,8 @@ services:
 
   ai-prompting:
     build:
-      context: ./server/ai-prompting-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: ai-prompting-service/Dockerfile
     container_name: ai-prompting-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -237,8 +237,8 @@ services:
 
   github:
     build:
-      context: ./server/github-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: github-service/Dockerfile
     container_name: github-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -255,8 +255,8 @@ services:
 
   promark-employees:
     build:
-      context: ./server/promark-employees-service
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: promark-employees-service/Dockerfile
     container_name: promark-employees-service
     restart: unless-stopped
     env_file: ./.env.testing
@@ -283,7 +283,7 @@ services:
       - promark-portal
 
   client:
-    build: 
+    build:
       context: ./client
       target: production
       args:
@@ -311,7 +311,6 @@ services:
     environment:
       VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
     volumes:
-      # - ./caddy/Caddyfile.testing:/etc/caddy/Caddyfile
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
       - /var/log/caddy_logs:/var/log/caddy
