@@ -66,7 +66,7 @@ app.get('/verify', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       return res.status(403).json({ message: 'Invalid token', code: 'INVALID_TOKEN' });
     }
-    console.log('JWT valid for user:', decoded?.UserInfo?.username);
+    console.log('JWT valid for user:', decoded?.UserInfo?.username, 'roles:', decoded?.UserInfo?.roles);
 
     if (!decoded?.UserInfo?.username || !decoded?.UserInfo?.roles) {
       res.setHeader('X-Auth-Error', 'MALFORMED_TOKEN');
