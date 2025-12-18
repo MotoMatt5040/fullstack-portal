@@ -6,13 +6,13 @@ FROM node:20-alpine AS development
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY auth-service/package*.json ./
 
 # Install all dependencies (including devDependencies for nodemon)
 RUN npm install
 
 # Copy application code
-COPY . .
+COPY auth-service .
 
 # Expose port
 EXPOSE 5001
@@ -27,13 +27,13 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY auth-service/package*.json ./
 
 # Install production dependencies
 RUN npm install --omit=dev
 
 # Copy application code
-COPY . .
+COPY auth-service .
 
 # Expose port
 EXPOSE 5001
