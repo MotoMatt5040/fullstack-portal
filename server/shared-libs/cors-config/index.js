@@ -5,11 +5,14 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://localhost:3000',
   'http://localhost:5173',
+  'http://localhost',
   'https://localhost',
   'https://api.dashboard.promarkresearch.com',
   'https://dashboard.promarkresearch.com',
   'https://portaldevelopment1.promarkresearch.com',
-];
+  process.env.FRONTEND_URL,
+  process.env.VITE_DOMAIN_NAME ? `https://${process.env.VITE_DOMAIN_NAME}` : null,
+].filter(Boolean);
 
 const corsOptions = {
   origin: (origin, callback) => {

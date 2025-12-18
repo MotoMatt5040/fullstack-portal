@@ -11,7 +11,10 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(tasklist:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": [],
     "ask": []
