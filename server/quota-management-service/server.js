@@ -18,16 +18,17 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', service: 'quota-management-service' });
 });
 
-// Routes
-app.use('/api/quota-management', require('./routes/quotaManagementRoutes'));
-
-// Error handler
-app.use(errorHandler);
-
 // Initialize roles and start server
 const startServer = async () => {
   try {
     await initializeRoles();
+
+    // Routes must be registered AFTER roles are initialized
+    app.use('/api/quota-management', require('./routes/quotaManagementRoutes'));
+
+    // Error handler
+    app.use(errorHandler);
+
     app.listen(PORT, () => {
       console.log(`Quota Management Service running on port ${PORT}`);
     });
