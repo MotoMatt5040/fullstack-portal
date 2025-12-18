@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('@internal/error-handler');
 const { initializeRoles } = require('@internal/roles-config');
 
 const app = express();

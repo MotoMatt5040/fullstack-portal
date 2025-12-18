@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { initializeRoles } = require('@internal/roles-config');
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('@internal/error-handler');
 
 const app = express();
 const PORT = process.env.PORT || 5008;

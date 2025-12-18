@@ -6,7 +6,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const { corsOptions, credentials } = require('./config/corsOptions');
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('@internal/error-handler');
 const { initializeRoles } = require('@internal/roles-config');
 
 const app = express();
