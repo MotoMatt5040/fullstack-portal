@@ -7,7 +7,7 @@ const controller = require('../controllers/sampleAutomationController');
 router.use(gatewayAuth);
 
 // File processing routes
-router.post('/process-file', controller.upload, controller.processFile);
+router.post('/process', controller.upload, controller.processFile);
 router.post('/detect-headers', controller.uploadSingle, controller.detectHeaders);
 router.get('/supported-file-types', controller.getSupportedFileTypes);
 
