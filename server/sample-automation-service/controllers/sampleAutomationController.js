@@ -3,6 +3,7 @@ const path = require('path');
 const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
 const SampleAutomation = require('../services/SampleAutomationServices');
+const CallIDApiClient = require('../services/CallIDApiClient');
 const handleAsync = require('./asyncController');
 
 const upload = multer({
@@ -552,6 +553,52 @@ const processFile = async (req, res) => {
       const updatedHeaders = await SampleAutomation.getTableHeaders(tableResult.tableName);
       const distinctAgeRangesResult = await SampleAutomation.getDistinctAgeRanges(tableResult.tableName);
 
+      // Handle CallID auto-assignment if projectId is provided
+      console.log('========== CALLID ASSIGNMENT DEBUG ==========');
+      console.log(`projectId: ${projectId} (type: ${typeof projectId})`);
+      console.log(`clientId: ${clientId}`);
+      console.log(`tableName: ${tableResult.tableName}`);
+      console.log(`req.headers['x-user-authenticated']: ${req.headers['x-user-authenticated']}`);
+      console.log(`req.headers['x-user-name']: ${req.headers['x-user-name']}`);
+      console.log(`req.headers['x-user-roles']: ${req.headers['x-user-roles']}`);
+
+      let callIdAssignment = null;
+      if (projectId) {
+        // Build gateway headers for service-to-service communication
+        const gatewayHeaders = {
+          authenticated: req.headers['x-user-authenticated'] || 'true',
+          username: req.headers['x-user-name'] || req.user || '',
+          roles: req.headers['x-user-roles'] || JSON.stringify(req.roles || []),
+        };
+        console.log(`gatewayHeaders:`, gatewayHeaders);
+
+        if (gatewayHeaders.authenticated === 'true') {
+          console.log('Handling CallID assignment...');
+          try {
+            callIdAssignment = await CallIDApiClient.handleCallIDAssignment(
+              tableResult.tableName,
+              parseInt(projectId, 10),
+              clientId,
+              gatewayHeaders
+            );
+            console.log('CallID assignment result:', JSON.stringify(callIdAssignment, null, 2));
+          } catch (callIdError) {
+            console.error('CallID assignment threw error:', callIdError);
+          }
+
+          if (callIdAssignment?.success) {
+            console.log(`✅ CallID assignment complete: ${callIdAssignment.assigned?.length || 0} CallIDs`);
+          } else if (callIdAssignment) {
+            console.log(`⚠️ CallID assignment: ${callIdAssignment.message}`);
+          }
+        } else {
+          console.log('⚠️ User not authenticated for CallID assignment');
+        }
+      } else {
+        console.log('⚠️ No projectId provided, skipping CallID assignment');
+      }
+      console.log('========== END CALLID ASSIGNMENT DEBUG ==========');
+
       const sessionId = generateSessionId();
       const responseMessage = filesToProcess.length > 1
         ? `Successfully merged ${filesToProcess.length} files into table ${tableResult.tableName}`
@@ -576,6 +623,7 @@ const processFile = async (req, res) => {
         promarkConstantsAdded: tableResult.promarkConstantsAdded,
         mappedHeadersUsed: Object.keys(customHeaders).length > 0,
         distinctAgeRanges: distinctAgeRangesResult.ageRanges,
+        callIdAssignment: callIdAssignment,
       });
 
     } catch (sqlError) {
