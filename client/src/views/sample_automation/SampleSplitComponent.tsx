@@ -336,9 +336,9 @@ const SampleSplitComponent = ({
   };
 
   return (
-    <div className="sample-split-container">
+    <div className="sample-split-container" data-tour="sample-split-container">
       {/* Computed Variables Section - Before the collapsible */}
-      <div className="computed-variables-section">
+      <div className="computed-variables-section" data-tour="computed-variables-section">
         <div className="computed-variables-header">
           <h4>
             <Icon path={mdiCalculatorVariant} size={0.65} />
@@ -382,6 +382,7 @@ const SampleSplitComponent = ({
 
       <div
         className="sample-split-header"
+        data-tour="sample-config-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="header-left">
@@ -404,7 +405,7 @@ const SampleSplitComponent = ({
       {isExpanded && (
         <div className="sample-split-content">
           {/* Split Mode Toggle */}
-          <div className="split-mode-section">
+          <div className="split-mode-section" data-tour="output-mode-section">
             <label className="section-label">Output Mode:</label>
             <div className="toggle-group">
               <button
@@ -424,7 +425,7 @@ const SampleSplitComponent = ({
 
           {/* File Type Selection - Only shown when splitMode is 'all' */}
           {splitMode === 'all' && (
-            <div className="split-mode-section">
+            <div className="split-mode-section" data-tour="file-type-section">
               <label className="section-label">File Type (for $N column & filename):</label>
               <div className="toggle-group">
                 <button
@@ -450,7 +451,7 @@ const SampleSplitComponent = ({
 
           {/* Householding Option - Available for all modes except Tarrance (TTG) */}
           {!isTarranceClient && (
-            <div className="householding-section">
+            <div className="householding-section" data-tour="householding-section">
               <div className="section-header">
                 <div className="householding-toggle">
                   <input
@@ -470,7 +471,7 @@ const SampleSplitComponent = ({
           )}
 
           {/* Variable Selection */}
-          <div className="header-selection-section">
+          <div className="header-selection-section" data-tour="variable-selection-section">
             <div className="section-header">
               <label className="section-label">Select Variables to Include:</label>
               <button
@@ -531,7 +532,7 @@ const SampleSplitComponent = ({
           </div>
 
           {/* Extract Section */}
-          <div className="extract-section">
+          <div className="extract-section" data-tour="extract-section">
             <div className="extract-header">
               <h4>Extract Files</h4>
               <p className="extract-description">
@@ -607,7 +608,7 @@ const SampleSplitComponent = ({
 
           {/* CallID Auto-Assignment Section - Shows results from automatic assignment during processing */}
           {callIdAssignment && (
-            <div className="callid-section">
+            <div className="callid-section" data-tour="callid-section">
               <div className="callid-header">
                 <h4>
                   <Icon path={mdiPhoneClassic} size={0.75} />

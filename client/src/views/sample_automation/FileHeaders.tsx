@@ -265,16 +265,16 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   }
 
   return (
-    <div className='headers-section'>
+    <div className='headers-section' data-tour='headers-section'>
       {/* Toolbar */}
-      <div className='headers-toolbar'>
-        <div className='headers-stats'>
+      <div className='headers-toolbar' data-tour='headers-toolbar'>
+        <div className='headers-stats' data-tour='headers-stats'>
           <span>{selectedFiles.length} files</span>
           <span className='mapped'>{progressStats.mappedHeaders} mapped</span>
           <span className='unmapped'>{progressStats.unmappedHeaders} unmapped</span>
           <span className='custom'>{progressStats.customHeaders} custom</span>
         </div>
-        <div className='headers-controls'>
+        <div className='headers-controls' data-tour='headers-controls'>
           <select
             value={filterMode}
             onChange={(e) => setFilterMode(e.target.value as FilterMode)}
@@ -291,6 +291,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
             onClick={() => setIsUnlocked(!isUnlocked)}
             className={`lock-btn ${isUnlocked ? 'unlocked' : 'locked'}`}
             title={isUnlocked ? 'DB saves enabled' : 'DB saves locked'}
+            data-tour='lock-button'
           >
             <Icon path={isUnlocked ? mdiLockOpen : mdiLock} size={0.65} />
           </button>
@@ -327,7 +328,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
       )}
 
       {/* File List */}
-      <div className='file-list'>
+      <div className='file-list' data-tour='file-list'>
         {selectedFiles.map((fileWrapper) => {
           const { file, id } = fileWrapper;
           const isChecked = checkedFiles.has(id);
