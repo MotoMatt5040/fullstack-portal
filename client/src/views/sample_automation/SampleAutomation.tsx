@@ -7,8 +7,10 @@ import {
   mdiPlay,
   mdiCheck,
   mdiTableLarge,
+  mdiHelpCircleOutline,
 } from '@mdi/js';
 import { useSampleAutomationLogic } from './useSampleAutomationLogic';
+import { useSampleAutomationTour } from './SampleAutomationTour';
 import './SampleAutomation.css';
 import FileHeaders from './FileHeaders';
 import SampleSplitComponent from './SampleSplitComponent';
@@ -105,6 +107,9 @@ const SampleAutomation: React.FC = () => {
     new Set([1])
   );
 
+  // Product tour
+  const { startTour } = useSampleAutomationTour({ autoStart: true });
+
   const toggleStep = (step: number) => {
     setExpandedSteps((prev) => {
       const updated = new Set(prev);
@@ -169,6 +174,14 @@ const SampleAutomation: React.FC = () => {
             </p>
           </div>
         </div>
+        <button
+          className='btn-tour'
+          onClick={startTour}
+          title='Take a guided tour'
+        >
+          <Icon path={mdiHelpCircleOutline} size={0.85} />
+          <span>Tour</span>
+        </button>
       </header>
 
       {/* Processing Banner */}
