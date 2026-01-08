@@ -531,6 +531,62 @@ const SampleSplitComponent = ({
             </ul>
           </div>
 
+          {/* CallID Auto-Assignment Section - Shows results from automatic assignment during processing */}
+          {callIdAssignment && (
+            <div className="callid-section" data-tour="callid-section">
+              <div className="callid-header">
+                <h4>
+                  <Icon path={mdiPhoneClassic} size={0.75} />
+                  CallID Assignment
+                </h4>
+              </div>
+
+              {callIdAssignment.success ? (
+                <div className="callid-result">
+                  <div className="callid-result-header">
+                    <span className="callid-success">
+                      {callIdAssignment.reused ? 'Using Existing CallIDs' : 'CallIDs Assigned Successfully'}
+                    </span>
+                  </div>
+
+                  {callIdAssignment.areaCodes && callIdAssignment.areaCodes.length > 0 && (
+                    <div className="callid-area-codes">
+                      <strong>Top Area Codes:</strong>{' '}
+                      {callIdAssignment.areaCodes.slice(0, 5).map((ac, idx) => (
+                        <span key={ac.AreaCode} className="area-code-badge">
+                          {ac.AreaCode} ({ac.Count})
+                          {idx < Math.min(4, (callIdAssignment.areaCodes?.length || 0) - 1) && ', '}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="callid-assignments">
+                    {callIdAssignment.assigned && callIdAssignment.assigned.map((assignment) => (
+                      <div key={assignment.slot} className="callid-assignment-item">
+                        <span className="slot-name">{assignment.slot.replace('CallID', '')}:</span>
+                        <span className="phone-number">{assignment.phoneNumber}</span>
+                        <span className="area-info">({assignment.areaCode} - {assignment.stateAbbr})</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {callIdAssignment.warnings && callIdAssignment.warnings.length > 0 && (
+                    <div className="callid-warnings">
+                      {callIdAssignment.warnings.map((warning, idx) => (
+                        <span key={idx} className="callid-warning">{warning}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="callid-error">
+                  {callIdAssignment.message || 'CallID assignment was not successful'}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Extract Section */}
           <div className="extract-section" data-tour="extract-section">
             <div className="extract-header">
@@ -539,7 +595,7 @@ const SampleSplitComponent = ({
                 Generate CSV files based on your configuration
               </p>
             </div>
-            
+
             <div className="extract-preview">
               {splitMode === 'all' ? (
                 <div className="file-preview">
@@ -605,62 +661,6 @@ const SampleSplitComponent = ({
               )}
             </div>
           </div>
-
-          {/* CallID Auto-Assignment Section - Shows results from automatic assignment during processing */}
-          {callIdAssignment && (
-            <div className="callid-section" data-tour="callid-section">
-              <div className="callid-header">
-                <h4>
-                  <Icon path={mdiPhoneClassic} size={0.75} />
-                  CallID Assignment
-                </h4>
-              </div>
-
-              {callIdAssignment.success ? (
-                <div className="callid-result">
-                  <div className="callid-result-header">
-                    <span className="callid-success">
-                      {callIdAssignment.reused ? 'Using Existing CallIDs' : 'CallIDs Assigned Successfully'}
-                    </span>
-                  </div>
-
-                  {callIdAssignment.areaCodes && callIdAssignment.areaCodes.length > 0 && (
-                    <div className="callid-area-codes">
-                      <strong>Top Area Codes:</strong>{' '}
-                      {callIdAssignment.areaCodes.slice(0, 5).map((ac, idx) => (
-                        <span key={ac.AreaCode} className="area-code-badge">
-                          {ac.AreaCode} ({ac.Count})
-                          {idx < Math.min(4, (callIdAssignment.areaCodes?.length || 0) - 1) && ', '}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="callid-assignments">
-                    {callIdAssignment.assigned && callIdAssignment.assigned.map((assignment) => (
-                      <div key={assignment.slot} className="callid-assignment-item">
-                        <span className="slot-name">{assignment.slot.replace('CallID', '')}:</span>
-                        <span className="phone-number">{assignment.phoneNumber}</span>
-                        <span className="area-info">({assignment.areaCode} - {assignment.stateAbbr})</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {callIdAssignment.warnings && callIdAssignment.warnings.length > 0 && (
-                    <div className="callid-warnings">
-                      {callIdAssignment.warnings.map((warning, idx) => (
-                        <span key={idx} className="callid-warning">{warning}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="callid-error">
-                  {callIdAssignment.message || 'CallID assignment was not successful'}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 

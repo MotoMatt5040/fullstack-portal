@@ -297,21 +297,21 @@ const tourSteps = [
     },
   },
   {
-    element: '[data-tour="extract-section"]',
-    popover: {
-      title: 'Extract Files',
-      description:
-        'Preview the output files and click "Extract Files" to generate your CSV files based on the current configuration.',
-      side: 'top' as const,
-      align: 'center' as const,
-    },
-  },
-  {
     element: '[data-tour="callid-section"]',
     popover: {
       title: 'CallID Assignment',
       description:
         'Shows the automatically assigned CallIDs for your sample. These phone numbers are used for caller ID display during dialing.',
+      side: 'top' as const,
+      align: 'center' as const,
+    },
+  },
+  {
+    element: '[data-tour="extract-section"]',
+    popover: {
+      title: 'Extract Files',
+      description:
+        'Preview the output files and click "Extract Files" to generate your CSV files based on the current configuration.',
       side: 'top' as const,
       align: 'center' as const,
     },
@@ -532,6 +532,68 @@ export const useSampleAutomationTour = ({
       return () => clearTimeout(timer);
     }
   }, [autoStart, hasCompletedTour, startTour]);
+
+  // Auto-advance when required conditions are met
+  useEffect(() => {
+    if (!isTourActive) return;
+
+    const checkAndAdvance = () => {
+      const stepIndex = driverRef.current?.getActiveIndex() ?? -1;
+
+      // Check conditions based on current step and auto-advance if met
+      if (stepIndex === STEP_1_HEADER) {
+        const step1Content = document.querySelector('[data-tour="step-1-header"]')?.closest('.workflow-step')?.querySelector('.step-content');
+        if (step1Content) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === STEP_2_HEADER) {
+        const step2Content = document.querySelector('[data-tour="step-2-header"]')?.closest('.workflow-step')?.querySelector('.step-content');
+        if (step2Content) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === HEADERS_SECTION) {
+        const expandedFileContent = document.querySelector('[data-tour="file-list"] .headers-content');
+        if (expandedFileContent) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === STEP_3_HEADER) {
+        const step3Content = document.querySelector('[data-tour="step-3-header"]')?.closest('.workflow-step')?.querySelector('.step-content');
+        if (step3Content) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === SAMPLE_CONFIG_HEADER) {
+        const sampleConfigContent = document.querySelector('[data-tour="sample-config-header"]')?.closest('.sample-split-container')?.querySelector('.sample-split-content');
+        if (sampleConfigContent) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === PROCESS_ACTIONS) {
+        const step3Completed = document.querySelector('[data-tour="step-3-header"] .step-number.completed');
+        if (step3Completed) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === DROP_ZONE_STEP) {
+        const dropZoneHasFiles = document.querySelector('.drop-zone.has-files');
+        if (dropZoneHasFiles) {
+          driverRef.current?.moveNext();
+        }
+      }
+    };
+
+    // Set up MutationObserver to watch for DOM changes
+    const observer = new MutationObserver(() => {
+      // Debounce the check slightly to avoid rapid firing
+      setTimeout(checkAndAdvance, 50);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, [isTourActive]);
 
   // Get current step index
   const getCurrentStep = useCallback(() => {
