@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiFileMultiple,
@@ -123,6 +123,32 @@ const SampleAutomation: React.FC = () => {
       return updated;
     });
   };
+
+  // Auto-expand step 2 when files are uploaded
+  useEffect(() => {
+    if (selectedFiles?.length > 0) {
+      // Small delay to allow file processing UI to update first
+      const timer = setTimeout(() => {
+        setExpandedSteps((prev) => {
+          const updated = new Set(prev);
+          updated.add(2);
+          return updated;
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedFiles?.length]);
+
+  // Auto-expand step 3 when processing completes
+  useEffect(() => {
+    if (processResult && processResult.tableName) {
+      setExpandedSteps((prev) => {
+        const updated = new Set(prev);
+        updated.add(3);
+        return updated;
+      });
+    }
+  }, [processResult]);
 
   // Calculate step statuses
   const isConfigComplete =
