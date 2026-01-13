@@ -15,6 +15,20 @@ const PROCESS_ACTIONS = 16;     // Process Your Files step
 const STEP_3_HEADER = 17;       // Results & Export header
 const SAMPLE_CONFIG_HEADER = 21; // Sample Configuration header
 
+// Steps that are mode-specific (will be skipped based on output mode selection)
+// After output-mode-section (step 22), the order is:
+// 23: file-type-section (All Records mode only)
+// 24: householding-section
+// 25: variable-selection-section
+// 26: split-logic-section (Split mode only)
+// 27: callid-section
+// 28: extract-section
+// 29: extract-button (requires clicking)
+// 30: conclusion
+const FILE_TYPE_STEP = 23;      // File Type section (All Records mode only)
+const SPLIT_LOGIC_STEP = 26;    // Split Logic section (Split mode only)
+const EXTRACT_BUTTON_STEP = 29; // Extract button (requires clicking)
+
 interface SampleAutomationTourProps {
   /** If true, the tour will start automatically on first visit */
   autoStart?: boolean;
@@ -267,6 +281,7 @@ const tourSteps = [
     },
   },
   {
+    // This step is only shown in "All Records" mode
     element: '[data-tour="file-type-section"]',
     popover: {
       title: 'File Type',
@@ -297,6 +312,17 @@ const tourSteps = [
     },
   },
   {
+    // This step is only shown in "Split" mode
+    element: '[data-tour="split-logic-section"]',
+    popover: {
+      title: 'Split Configuration',
+      description:
+        'Configure how records are split into Landline and Cell files. Select an age threshold (or use WPHONE for Tarrance clients) and preview the split logic.',
+      side: 'bottom' as const,
+      align: 'start' as const,
+    },
+  },
+  {
     element: '[data-tour="callid-section"]',
     popover: {
       title: 'CallID Assignment',
@@ -311,7 +337,17 @@ const tourSteps = [
     popover: {
       title: 'Extract Files',
       description:
-        'Preview the output files and click "Extract Files" to generate your CSV files based on the current configuration.',
+        'Preview the output files you\'ll generate. The file names and record counts are shown based on your configuration.',
+      side: 'top' as const,
+      align: 'center' as const,
+    },
+  },
+  {
+    element: '[data-tour="extract-button"]',
+    popover: {
+      title: 'Generate Your Files',
+      description:
+        'Click the "Extract Files" button to generate your CSV files. This will create the output files based on your current configuration.',
       side: 'top' as const,
       align: 'center' as const,
     },
@@ -342,6 +378,9 @@ export const useSampleAutomationTour = ({
 
   // Store driver instance ref so we can call moveNext() from event listeners
   const driverRef = useRef<Driver | null>(null);
+
+  // Track the last step index to detect direction (forward vs backward)
+  const lastStepIndexRef = useRef<number>(-1);
 
   // Check if tour has been completed before
   const hasCompletedTour = useCallback(() => {
@@ -458,6 +497,18 @@ export const useSampleAutomationTour = ({
             shakeNextButton('Please upload at least one file to continue');
             return;
           }
+        } else if (stepIndex === EXTRACT_BUTTON_STEP) {
+          // Check if files have been extracted (status message shows success or is extracting)
+          const extractBtn = document.querySelector('[data-tour="extract-button"]') as HTMLButtonElement;
+          const isExtracting = extractBtn?.textContent?.includes('Extracting');
+          // Check for success via the process status message
+          const statusMessage = document.querySelector('.process-status');
+          const extractionComplete = statusMessage?.textContent?.includes('extracted successfully') ||
+                                     statusMessage?.textContent?.includes('downloading');
+          if (!extractionComplete && !isExtracting) {
+            shakeNextButton('Click the Extract Files button to generate your files');
+            return;
+          }
         }
 
         // Check if on dropdown steps and if a selection was made
@@ -485,7 +536,13 @@ export const useSampleAutomationTour = ({
         // Use setTimeout to ensure driverRef is set
         setTimeout(() => {
           const stepIndex = driverRef.current?.getActiveIndex() ?? -1;
-          console.log('[Tour Debug] onHighlightStarted, stepIndex:', stepIndex);
+          const lastIndex = lastStepIndexRef.current;
+          const isGoingForward = stepIndex > lastIndex;
+
+          console.log('[Tour Debug] onHighlightStarted, stepIndex:', stepIndex, 'lastIndex:', lastIndex, 'forward:', isGoingForward);
+
+          // Update last step index for next comparison
+          lastStepIndexRef.current = stepIndex;
 
           if (stepIndex === PROJECT_SELECT_STEP) {
             console.log('[Tour Debug] Arriving at project select step, pre-opening menu');
@@ -497,12 +554,35 @@ export const useSampleAutomationTour = ({
             // Close any open menus when moving to other steps
             setKeepMenuOpen(null);
           }
+
+          // Only skip steps when going forward, not when going back
+          if (!isGoingForward) {
+            return;
+          }
+
+          // Conditional step skipping based on output mode (only when going forward)
+          const isSplitMode = document.querySelector('[data-tour="output-mode-section"] .toggle-btn.active')?.textContent?.includes('Split');
+
+          // Skip File Type step if in Split mode (element won't exist)
+          if (stepIndex === FILE_TYPE_STEP && isSplitMode) {
+            console.log('[Tour Debug] Skipping File Type step (Split mode active)');
+            driverRef.current?.moveNext();
+            return;
+          }
+
+          // Skip Split Logic step if in All Records mode
+          if (stepIndex === SPLIT_LOGIC_STEP && !isSplitMode) {
+            console.log('[Tour Debug] Skipping Split Logic step (All Records mode)');
+            driverRef.current?.moveNext();
+            return;
+          }
         }, 0);
       },
       onDestroyed: () => {
         setIsTourActive(false);
         setKeepMenuOpen(null);
         driverRef.current = null;
+        lastStepIndexRef.current = -1;
         markTourCompleted();
         onTourEnd?.();
       },
@@ -574,6 +654,14 @@ export const useSampleAutomationTour = ({
       } else if (stepIndex === DROP_ZONE_STEP) {
         const dropZoneHasFiles = document.querySelector('.drop-zone.has-files');
         if (dropZoneHasFiles) {
+          driverRef.current?.moveNext();
+        }
+      } else if (stepIndex === EXTRACT_BUTTON_STEP) {
+        // Auto-advance when extraction completes
+        const statusMessage = document.querySelector('.process-status');
+        const extractionComplete = statusMessage?.textContent?.includes('extracted successfully') ||
+                                   statusMessage?.textContent?.includes('downloading');
+        if (extractionComplete) {
           driverRef.current?.moveNext();
         }
       }

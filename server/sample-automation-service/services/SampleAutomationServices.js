@@ -1397,6 +1397,63 @@ const updateVTYPEBySplit = async (tableName, ageThreshold, clientId = null) => {
 };
 
 /**
+ * Update VTYPE column for all records with a single value (for "All Records" mode)
+ * @param {string} tableName - The table to update
+ * @param {number} vtypeValue - The VTYPE value (1=landline, 2=cell)
+ */
+const updateVTYPEForAllRecords = async (tableName, vtypeValue) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Updating VTYPE to ${vtypeValue} for all records in table: ${tableName}`);
+
+        // Check if VTYPE column exists
+        const checkVTypeSQL = `
+          SELECT COUNT(*) as ColumnExists
+          FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = @tableName
+          AND COLUMN_NAME = 'VTYPE'
+        `;
+
+        const vtypeCheck = await pool
+          .request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(checkVTypeSQL);
+
+        // Create VTYPE column if it doesn't exist
+        if (vtypeCheck.recordset[0].ColumnExists === 0) {
+          console.log(`Creating VTYPE column in table: ${tableName}`);
+          const addColumnSQL = `ALTER TABLE FAJITA.dbo.[${tableName}] ADD VTYPE INT`;
+          await pool.request().query(addColumnSQL);
+        }
+
+        // Update all records to the specified VTYPE value
+        const updateSQL = `UPDATE FAJITA.dbo.[${tableName}] SET VTYPE = @vtypeValue`;
+        const result = await pool
+          .request()
+          .input('vtypeValue', sql.Int, vtypeValue)
+          .query(updateSQL);
+
+        console.log(`VTYPE updated to ${vtypeValue} for ${result.rowsAffected[0]} records`);
+
+        return {
+          success: true,
+          vtypeValue,
+          recordsUpdated: result.rowsAffected[0],
+          message: `VTYPE set to ${vtypeValue} for all records`,
+        };
+      } catch (error) {
+        console.error(`Error updating VTYPE for all records:`, error);
+        throw new Error(`Failed to update VTYPE for all records: ${error.message}`);
+      }
+    },
+    fnName: 'updateVTYPEForAllRecords',
+  });
+};
+
+/**
  * Apply WDNC scrubbing to table
  */
 const applyWDNCScrubbing = async (tableName) => {
@@ -2360,6 +2417,7 @@ const extractFilesFromTable = async (config) => {
     queryFn: async (pool) => {
       try {
         console.log(`Starting file extraction from table: ${tableName}`);
+        console.log(`[Extract Debug] splitMode: "${splitMode}", selectedAgeRange: "${selectedAgeRange}", clientId: ${clientId}`);
 
         const finalHeaders = [...selectedHeaders];
 
@@ -2371,7 +2429,8 @@ const extractFilesFromTable = async (config) => {
           finalHeaders.push('BATCH');
         }
 
-        if (splitMode === 'split' && !finalHeaders.includes('VTYPE')) {
+        // Always include VTYPE - it indicates file type (1=landline, 2=cell)
+        if (!finalHeaders.includes('VTYPE')) {
           finalHeaders.push('VTYPE');
         }
 
@@ -2398,10 +2457,19 @@ const extractFilesFromTable = async (config) => {
           }
         });
 
-        // Update VTYPE if in split mode
+        // Update VTYPE based on mode
         let vtypeUpdate = null;
         if (splitMode === 'split') {
+          // Split mode: VTYPE based on age threshold or WPHONE (for Tarrance)
+          console.log(`[Extract Debug] Calling updateVTYPEBySplit with tableName: ${tableName}, ageRange: ${selectedAgeRange}, clientId: ${clientId}`);
           vtypeUpdate = await updateVTYPEBySplit(tableName, selectedAgeRange, clientId);
+          console.log(`[Extract Debug] VTYPE update result:`, vtypeUpdate);
+        } else {
+          // All Records mode: VTYPE based on fileType (landline=1, cell=2)
+          const vtypeValue = config.fileType === 'cell' ? 2 : 1;
+          console.log(`[Extract Debug] Setting VTYPE to ${vtypeValue} for all records (fileType: ${config.fileType})`);
+          vtypeUpdate = await updateVTYPEForAllRecords(tableName, vtypeValue);
+          console.log(`[Extract Debug] VTYPE update result:`, vtypeUpdate);
         }
 
         // Create $N column
@@ -2629,6 +2697,7 @@ module.exports = {
   convertAgeToIAge,
   padColumns,
   updateVTYPEBySplit,
+  updateVTYPEForAllRecords,
   applyWDNCScrubbing,
   createDollarNColumn,
   createVFREQColumns,

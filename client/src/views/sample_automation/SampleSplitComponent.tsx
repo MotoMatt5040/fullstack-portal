@@ -57,7 +57,8 @@ const SampleSplitComponent = ({
 }: SampleSplitComponentProps) => {
   const toast = useToast();
   const isTarranceClient = clientId === 102;
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Auto-expand when tableName is available (processing just completed)
+  const [isExpanded, setIsExpanded] = useState(!!tableName);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
   const [splitMode, setSplitMode] = useState('all'); // 'all' or 'split'
   const [selectedAgeRange, setSelectedAgeRange] = useState('');
@@ -213,7 +214,7 @@ const SampleSplitComponent = ({
     if (splitMode !== 'split') return null;
 
     return (
-      <div className="split-logic-container">
+      <div className="split-logic-container" data-tour="split-logic-section">
         <div className="split-logic-header">
           <Icon path={mdiCallSplit} size={0.7} className="split-icon" />
           <span>Split Configuration</span>
@@ -234,7 +235,7 @@ const SampleSplitComponent = ({
         )}
 
         {!isTarranceClient && (
-          <div className="age-range-selector">
+          <div className="age-range-selector" data-tour="age-range-selector">
             <label htmlFor="ageRangeSelect" className="form-label">
               Age Range Threshold:
             </label>
@@ -258,7 +259,7 @@ const SampleSplitComponent = ({
           </div>
         )}
 
-        <div className="split-preview">
+        <div className="split-preview" data-tour="split-preview">
           <div className="split-group landline-group">
             <div className="split-group-header">
               <Icon path={mdiPhone} size={0.6} />
@@ -645,6 +646,7 @@ const SampleSplitComponent = ({
                 onClick={handleExtract}
                 disabled={!canExtract() || isExtracting}
                 className="extract-btn"
+                data-tour="extract-button"
               >
                 {isExtracting ? 'Extracting...' : 'Extract Files'}
               </button>
