@@ -36,6 +36,7 @@ import ContactSupport from './views/support/ContactSupport';
 import SampleAutomation from './views/sample_automation/SampleAutomation';
 import CallID from './views/call_id/CallIDManagement';
 import ProjectNumbering from './views/project_numbering/ProjectNumbering';
+import QuotaSetupGuidePage from './views/docs/QuotaSetupGuidePage';
 
 function App() {
   useGetRolesQuery();
@@ -71,6 +72,7 @@ function App() {
 
         <Route path='unauthorized' element={<Unauthorized />} />
         <Route path='reset-password' element={<ResetPassword />} />
+        <Route path='docs/quota-setup' element={<QuotaSetupGuidePage />} />
 
         <Route
           element={

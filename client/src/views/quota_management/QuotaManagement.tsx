@@ -1,13 +1,12 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import Select from 'react-select';
 import Icon from '@mdi/react';
-import { mdiChartBox } from '@mdi/js';
+import { mdiChartBox, mdiHelpCircleOutline } from '@mdi/js';
 
 import './QuotaManagement.css';
 import useQuotaManagementLogic from './useQuotaManagementLogic';
 import QuotaManagementTable from './QuotaManagementTable';
 import ExportExcelButton from '../../components/ExportExcelButton';
-import { SkeletonTable } from '../../components/Skeleton';
 
 const QuotaManagement = () => {
   const {
@@ -62,6 +61,14 @@ const QuotaManagement = () => {
           <p className='quota-subtitle'>View and monitor project quotas</p>
         </div>
         <div className='quota-header-right'>
+          <button
+            className='quota-help-btn'
+            onClick={() => window.open('/docs/quota-setup', '_blank')}
+            title='Quota Setup Guide'
+          >
+            <Icon path={mdiHelpCircleOutline} size={0.9} />
+            Setup Guide
+          </button>
           {selectedProject && Object.keys(quotas).length > 0 && (
             <ExportExcelButton tableId={`${selectedProject}-quotas`} />
           )}
