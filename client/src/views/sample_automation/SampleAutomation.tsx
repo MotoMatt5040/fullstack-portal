@@ -107,9 +107,10 @@ const SampleAutomation: React.FC = () => {
     new Set([1])
   );
 
-  // Product tour
+  // Product tour - pass clientId for client-specific tour customization
   const { startTour, keepMenuOpen, closeDropdownAndAdvance } = useSampleAutomationTour({
     autoStart: true,
+    clientId: selectedClientId,
   });
 
   const toggleStep = (step: number) => {

@@ -85,15 +85,27 @@ const createTableFromFileData = async (processedData, tableName) => {
           throw new Error('No data array found in processed data');
         }
 
-        // Generate unique table name with timestamp
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/[:.]/g, '_')
-          .slice(0, -5);
-        const sanitizedTableName = sanitizeTableName(tableName);
-        const finalTableName = `uploaded_${sanitizedTableName}_${timestamp}`;
+        // Generate table name: SA_{projectId}_{MMDD_HHMM}
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hour = String(now.getHours()).padStart(2, '0');
+        const minute = String(now.getMinutes()).padStart(2, '0');
+        const timestamp = `${month}${day}_${hour}${minute}`;
+        const finalTableName = `SA_${tableName}_${timestamp}`;
 
         console.log('Generated table name:', finalTableName);
+
+        // Force certain columns to be TEXT type regardless of detected type
+        // This prevents issues with columns like RDATE where the first row might
+        // look numeric (20260113) but other rows have date strings (1/13/2026 0:00)
+        const columnsToForceText = ['RDATE', 'REGDATE', 'DOB', 'BIRTHDATE'];
+        headers.forEach(header => {
+          if (columnsToForceText.includes(header.name?.toUpperCase())) {
+            console.log(`Forcing ${header.name} column to TEXT type (was: ${header.type})`);
+            header.type = 'TEXT';
+          }
+        });
 
         // Get Promark internal variables and combine with original headers
         const promarkConstants = getPromarkConstantsAsHeaders();

@@ -5,39 +5,40 @@ import 'driver.js/dist/driver.css';
 const TOUR_STORAGE_KEY = 'sample-automation-tour-completed';
 
 // Step indices for special steps (0-indexed)
-const STEP_1_HEADER = 3;        // Configuration & Upload header
-const PROJECT_SELECT_STEP = 4;
-const VENDOR_SELECT_STEP = 5;
-const DROP_ZONE_STEP = 9;       // Upload Your Files step
-const STEP_2_HEADER = 10;       // Header Review header
-const HEADERS_SECTION = 11;     // Header Mapping Section (inside Step 2)
-const PROCESS_ACTIONS = 16;     // Process Your Files step
-const STEP_3_HEADER = 17;       // Results & Export header
-const SAMPLE_CONFIG_HEADER = 21; // Sample Configuration header
-
-// Steps that are mode-specific (will be skipped based on output mode selection)
-// After output-mode-section (step 22), the order is:
-// 23: file-type-section (All Records mode only)
-// 24: householding-section
-// 25: variable-selection-section
-// 26: split-logic-section (Split mode only)
-// 27: callid-section
-// 28: extract-section
-// 29: extract-button (requires clicking)
-// 30: conclusion
-const FILE_TYPE_STEP = 23;      // File Type section (All Records mode only)
-const SPLIT_LOGIC_STEP = 26;    // Split Logic section (Split mode only)
-const EXTRACT_BUTTON_STEP = 29; // Extract button (requires clicking)
+// These are computed dynamically based on whether Tarrance client is selected
+// (Tarrance skips the vendor step, shifting all subsequent indices by -1)
+const getStepIndices = (isTarrance: boolean) => {
+  const vendorOffset = isTarrance ? 0 : 1; // No vendor step for Tarrance
+  return {
+    STEP_1_HEADER: 3,
+    PROJECT_SELECT_STEP: 4,
+    VENDOR_SELECT_STEP: isTarrance ? -1 : 5, // -1 means step doesn't exist
+    DROP_ZONE_STEP: 4 + vendorOffset + 4,      // 8 for Tarrance, 9 otherwise
+    STEP_2_HEADER: 4 + vendorOffset + 5,       // 9 for Tarrance, 10 otherwise
+    HEADERS_SECTION: 4 + vendorOffset + 6,     // 10 for Tarrance, 11 otherwise
+    PROCESS_ACTIONS: 4 + vendorOffset + 11,    // 15 for Tarrance, 16 otherwise
+    STEP_3_HEADER: 4 + vendorOffset + 12,      // 16 for Tarrance, 17 otherwise
+    SAMPLE_CONFIG_HEADER: 4 + vendorOffset + 16, // 20 for Tarrance, 21 otherwise
+    FILE_TYPE_STEP: 4 + vendorOffset + 18,     // 22 for Tarrance, 23 otherwise
+    SPLIT_LOGIC_STEP: 4 + vendorOffset + 21,   // 25 for Tarrance, 26 otherwise
+    EXTRACT_BUTTON_STEP: 4 + vendorOffset + 24, // 28 for Tarrance, 29 otherwise
+  };
+};
 
 interface SampleAutomationTourProps {
   /** If true, the tour will start automatically on first visit */
   autoStart?: boolean;
   /** Callback when tour is completed or skipped */
   onTourEnd?: () => void;
+  /** Current selected client ID - used to customize tour steps */
+  clientId?: number | null;
 }
 
-// Comprehensive tour step definitions
-const tourSteps = [
+// Tarrance client ID
+const TARRANCE_CLIENT_ID = 102;
+
+// Generate tour steps based on client context
+const getTourSteps = (isTarrance: boolean) => [
   // Welcome
   {
     element: '[data-tour="page-header"]',
@@ -94,8 +95,8 @@ const tourSteps = [
       align: 'start' as const,
     },
   },
-  {
-    // Vendor select - menu will auto-open when this step is reached
+  // Vendor select step - skipped for Tarrance clients
+  ...(isTarrance ? [] : [{
     element: '[data-tour="vendor-select"]',
     popover: {
       title: 'Select a Vendor',
@@ -104,7 +105,7 @@ const tourSteps = [
       side: 'right' as const,
       align: 'start' as const,
     },
-  },
+  }]),
   {
     element: '[data-tour="client-display"]',
     popover: {
@@ -316,8 +317,9 @@ const tourSteps = [
     element: '[data-tour="split-logic-section"]',
     popover: {
       title: 'Split Configuration',
-      description:
-        'Configure how records are split into Landline and Cell files. Select an age threshold (or use WPHONE for Tarrance clients) and preview the split logic.',
+      description: isTarrance
+        ? 'Records are automatically split based on the WPHONE column: Y = Cell, N = Landline. No configuration needed.'
+        : 'Configure how records are split into Landline and Cell files. Select an age threshold to determine which records go to each file type.',
       side: 'bottom' as const,
       align: 'start' as const,
     },
@@ -369,7 +371,28 @@ const tourSteps = [
 export const useSampleAutomationTour = ({
   autoStart = true,
   onTourEnd,
+  clientId = null,
 }: SampleAutomationTourProps = {}) => {
+  // Check if current client is Tarrance
+  const isTarranceClient = clientId === TARRANCE_CLIENT_ID;
+
+  // Get step indices based on client (Tarrance skips vendor step)
+  const stepIndices = getStepIndices(isTarranceClient);
+  const {
+    STEP_1_HEADER,
+    PROJECT_SELECT_STEP,
+    VENDOR_SELECT_STEP,
+    DROP_ZONE_STEP,
+    STEP_2_HEADER,
+    HEADERS_SECTION,
+    PROCESS_ACTIONS,
+    STEP_3_HEADER,
+    SAMPLE_CONFIG_HEADER,
+    FILE_TYPE_STEP,
+    SPLIT_LOGIC_STEP,
+    EXTRACT_BUTTON_STEP,
+  } = stepIndices;
+
   // Track if tour is currently active
   const [isTourActive, setIsTourActive] = useState(false);
 
@@ -439,7 +462,7 @@ export const useSampleAutomationTour = ({
       stagePadding: 10,
       stageRadius: 8,
       popoverClass: 'sample-automation-tour-popover',
-      steps: tourSteps,
+      steps: getTourSteps(isTarranceClient),
       nextBtnText: 'Next →',
       prevBtnText: '← Back',
       doneBtnText: 'Finish',
@@ -548,6 +571,13 @@ export const useSampleAutomationTour = ({
             console.log('[Tour Debug] Arriving at project select step, pre-opening menu');
             setKeepMenuOpen('project');
           } else if (stepIndex === VENDOR_SELECT_STEP) {
+            // Skip vendor step entirely for Tarrance clients
+            if (isTarranceClient && isGoingForward) {
+              console.log('[Tour Debug] Skipping vendor step (Tarrance client)');
+              setKeepMenuOpen(null);
+              driverRef.current?.moveNext();
+              return;
+            }
             console.log('[Tour Debug] Arriving at vendor select step, pre-opening menu');
             setKeepMenuOpen('vendor');
           } else {
@@ -587,7 +617,7 @@ export const useSampleAutomationTour = ({
         onTourEnd?.();
       },
     });
-  }, [markTourCompleted, onTourEnd, shakeNextButton]);
+  }, [markTourCompleted, onTourEnd, shakeNextButton, isTarranceClient, stepIndices]);
 
   // Start the tour
   const startTour = useCallback(() => {
@@ -681,7 +711,7 @@ export const useSampleAutomationTour = ({
     });
 
     return () => observer.disconnect();
-  }, [isTourActive]);
+  }, [isTourActive, STEP_1_HEADER, STEP_2_HEADER, HEADERS_SECTION, STEP_3_HEADER, SAMPLE_CONFIG_HEADER, PROCESS_ACTIONS, DROP_ZONE_STEP, EXTRACT_BUTTON_STEP]);
 
   // Get current step index
   const getCurrentStep = useCallback(() => {

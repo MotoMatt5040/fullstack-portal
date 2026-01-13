@@ -2,6 +2,20 @@ const BaseFileProcessor = require('./BaseFileProcessor');
 const ExcelJS = require('exceljs');
 
 class ExcelProcessor extends BaseFileProcessor {
+  // Process cell value - convert Date objects to mm/dd/yyyy format
+  // so they can be processed by sp_FormatRDateColumn stored procedure
+  processCellValue(value, headerName) {
+    // Check if value is a Date object (Excel stores dates as Date objects)
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      // Return in mm/dd/yyyy format for the stored procedure to convert
+      const month = value.getMonth() + 1;
+      const day = value.getDate();
+      const year = value.getFullYear();
+      return `${month}/${day}/${year}`;
+    }
+    return value;
+  }
+
   async process() {
     try {
       const workbook = new ExcelJS.Workbook();
@@ -41,10 +55,11 @@ class ExcelProcessor extends BaseFileProcessor {
         row.eachCell((cell, colNumber) => {
           const headerName = headers[colNumber - 1]?.name;
           if (headerName) {
-            rowData[headerName] = cell.value;
+            // Process cell value, converting Date objects to YYYYMMDD
+            rowData[headerName] = this.processCellValue(cell.value, headerName);
 
             if (rowNumber === 2) {
-              headers[colNumber - 1].type = this.detectDataType(cell.value);
+              headers[colNumber - 1].type = this.detectDataType(rowData[headerName]);
             }
           }
         });

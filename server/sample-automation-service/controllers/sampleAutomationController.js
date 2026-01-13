@@ -528,13 +528,9 @@ const processFile = async (req, res) => {
     try {
       console.log('Creating SQL table...');
 
-      const baseTableName = filesToProcess.length > 1
-        ? `merged_${filesToProcess.length}_files`
-        : path.basename(processedFileNames[0], path.extname(processedFileNames[0]));
-
       const tableResult = await SampleAutomation.createTableFromFileData(
         processedData,
-        baseTableName
+        projectId
       );
 
       console.log('✅ Table created:', tableResult.tableName);

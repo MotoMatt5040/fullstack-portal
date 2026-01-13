@@ -25,6 +25,34 @@ const callIdApi = axios.create({
 });
 
 /**
+ * Get top area codes from a sample table
+ * @param {string} tableName - Sample table name to analyze
+ * @param {Object} gatewayHeaders - Gateway headers for authentication
+ * @returns {Promise<Object>} - Object with areaCodes array and columnsFound info
+ */
+const getTopAreaCodes = async (tableName, gatewayHeaders) => {
+  console.log(`[CallIDApiClient] getTopAreaCodes called with tableName=${tableName}`);
+
+  const url = `/api/callid/auto-assign/area-codes?tableName=${encodeURIComponent(tableName)}`;
+  console.log(`[CallIDApiClient] Making GET request to: ${CALLID_SERVICE_URL}${url}`);
+
+  try {
+    const response = await callIdApi.get(url, {
+      headers: {
+        'x-user-authenticated': gatewayHeaders.authenticated,
+        'x-user-name': gatewayHeaders.username,
+        'x-user-roles': gatewayHeaders.roles,
+      },
+    });
+    console.log(`[CallIDApiClient] getTopAreaCodes response:`, JSON.stringify(response.data, null, 2));
+    return response.data;
+  } catch (error) {
+    console.error(`[CallIDApiClient] Error getting top area codes:`, error.message);
+    throw error;
+  }
+};
+
+/**
  * Get CallIDs assigned to a project
  * @param {number} projectId - Project ID
  * @param {string} authToken - JWT token for authentication
@@ -155,6 +183,105 @@ const updateSampleTableCallIDs = async (tableName, callIdData) => {
 };
 
 /**
+ * Match existing CallIDs to the correct slots based on new file's area codes
+ * @param {Object} existing - Existing CallID data from getProjectCallIDs
+ * @param {Array} topAreaCodes - Array of {AreaCode, Count} from new sample table
+ * @returns {Object} - Mapping of slot names to phone numbers based on area code match
+ */
+const matchCallIDsToSlots = (existing, topAreaCodes) => {
+  console.log(`[CallIDApiClient] matchCallIDsToSlots called`);
+  console.log(`[CallIDApiClient] Existing CallIDs:`, JSON.stringify(existing, null, 2));
+  console.log(`[CallIDApiClient] Top area codes from new file:`, JSON.stringify(topAreaCodes, null, 2));
+
+  // Extract existing CallIDs with their area codes
+  const existingCallIDs = [];
+  if (existing.PhoneNumberL1) {
+    existingCallIDs.push({
+      originalSlot: 'L1',
+      phoneNumber: existing.PhoneNumberL1,
+      phoneNumberId: existing.CallIDL1,
+      areaCode: existing.PhoneNumberL1.substring(0, 3),
+      stateAbbr: existing.StateAbbrL1,
+    });
+  }
+  if (existing.PhoneNumberL2) {
+    existingCallIDs.push({
+      originalSlot: 'L2',
+      phoneNumber: existing.PhoneNumberL2,
+      phoneNumberId: existing.CallIDL2,
+      areaCode: existing.PhoneNumberL2.substring(0, 3),
+      stateAbbr: existing.StateAbbrL2,
+    });
+  }
+  if (existing.PhoneNumberC1) {
+    existingCallIDs.push({
+      originalSlot: 'C1',
+      phoneNumber: existing.PhoneNumberC1,
+      phoneNumberId: existing.CallIDC1,
+      areaCode: existing.PhoneNumberC1.substring(0, 3),
+      stateAbbr: existing.StateAbbrC1,
+    });
+  }
+  if (existing.PhoneNumberC2) {
+    existingCallIDs.push({
+      originalSlot: 'C2',
+      phoneNumber: existing.PhoneNumberC2,
+      phoneNumberId: existing.CallIDC2,
+      areaCode: existing.PhoneNumberC2.substring(0, 3),
+      stateAbbr: existing.StateAbbrC2,
+    });
+  }
+
+  console.log(`[CallIDApiClient] Extracted ${existingCallIDs.length} existing CallIDs`);
+
+  // Create area code priority map from new file (lower index = higher priority)
+  const areaCodePriority = {};
+  topAreaCodes.forEach((ac, index) => {
+    areaCodePriority[ac.AreaCode] = index;
+  });
+
+  // Sort existing CallIDs by how well they match the new file's area codes
+  // CallIDs matching top area codes should be assigned first
+  const sortedCallIDs = [...existingCallIDs].sort((a, b) => {
+    const priorityA = areaCodePriority[a.areaCode] !== undefined ? areaCodePriority[a.areaCode] : 9999;
+    const priorityB = areaCodePriority[b.areaCode] !== undefined ? areaCodePriority[b.areaCode] : 9999;
+    return priorityA - priorityB;
+  });
+
+  console.log(`[CallIDApiClient] Sorted CallIDs by area code priority:`, sortedCallIDs.map(c => `${c.areaCode} (priority: ${areaCodePriority[c.areaCode] ?? 'none'})`));
+
+  // Assign to slots: L1, L2, C1, C2 in order of area code priority
+  const slotOrder = ['L1', 'L2', 'C1', 'C2'];
+  const result = {
+    phoneNumberL1: null,
+    phoneNumberL2: null,
+    phoneNumberC1: null,
+    phoneNumberC2: null,
+    assigned: [],
+  };
+
+  sortedCallIDs.forEach((callId, index) => {
+    if (index < slotOrder.length) {
+      const newSlot = slotOrder[index];
+      const slotKey = `phoneNumber${newSlot}`;
+      result[slotKey] = callId.phoneNumber;
+      result.assigned.push({
+        slot: `CallID${newSlot}`,
+        phoneNumberId: callId.phoneNumberId,
+        phoneNumber: callId.phoneNumber,
+        areaCode: callId.areaCode,
+        stateAbbr: callId.stateAbbr,
+        originalSlot: callId.originalSlot,
+        movedFromSlot: callId.originalSlot !== newSlot,
+      });
+      console.log(`[CallIDApiClient] Assigned ${callId.phoneNumber} (area ${callId.areaCode}) to slot ${newSlot} (was ${callId.originalSlot})`);
+    }
+  });
+
+  return result;
+};
+
+/**
  * Format existing CallIDs to match the autoAssign response format
  * @param {Object} existing - Existing CallID data from getProjectCallIDs
  * @param {number} projectId - Project ID
@@ -244,18 +371,29 @@ const handleCallIDAssignment = async (tableName, projectId, clientId, gatewayHea
         existing.CallIDL1 || existing.CallIDL2 || existing.CallIDC1 || existing.CallIDC2;
 
       if (hasExistingCallIDs) {
-        console.log('[CallIDApiClient] Project already has CallIDs assigned, reusing existing...');
+        console.log('[CallIDApiClient] Project already has CallIDs assigned, analyzing new file to match slots...');
 
-        const callIdAssignment = formatExistingCallIDs(existing, parseInt(projectId, 10));
-        console.log(`[CallIDApiClient] Reusing ${callIdAssignment.assigned.length} existing CallID(s)`);
+        // Get top area codes from the NEW sample table to determine correct slot placement
+        let topAreaCodesResult;
+        try {
+          topAreaCodesResult = await getTopAreaCodes(tableName, gatewayHeaders);
+          console.log(`[CallIDApiClient] Top area codes from new file:`, JSON.stringify(topAreaCodesResult, null, 2));
+        } catch (areaCodeError) {
+          console.error('[CallIDApiClient] Failed to get area codes, falling back to original slot order:', areaCodeError.message);
+          topAreaCodesResult = { areaCodes: [] };
+        }
 
-        // Update the sample table's CallID columns with the existing phone numbers
+        // Match existing CallIDs to correct slots based on new file's area codes
+        const matchedSlots = matchCallIDsToSlots(existing, topAreaCodesResult.areaCodes || []);
+        console.log(`[CallIDApiClient] Matched ${matchedSlots.assigned.length} CallID(s) to slots based on new file`);
+
+        // Update the sample table's CallID columns with the MATCHED phone numbers
         try {
           const updateResult = await updateSampleTableCallIDs(tableName, {
-            phoneNumberL1: existing.PhoneNumberL1,
-            phoneNumberL2: existing.PhoneNumberL2,
-            phoneNumberC1: existing.PhoneNumberC1,
-            phoneNumberC2: existing.PhoneNumberC2,
+            phoneNumberL1: matchedSlots.phoneNumberL1,
+            phoneNumberL2: matchedSlots.phoneNumberL2,
+            phoneNumberC1: matchedSlots.phoneNumberC1,
+            phoneNumberC2: matchedSlots.phoneNumberC2,
           });
           if (updateResult.success) {
             console.log(`[CallIDApiClient] Sample table CallID columns updated: ${updateResult.rowsAffected} rows`);
@@ -266,7 +404,15 @@ const handleCallIDAssignment = async (tableName, projectId, clientId, gatewayHea
           console.error('[CallIDApiClient] Failed to update sample table CallID columns:', updateError.message);
         }
 
-        return callIdAssignment;
+        // Return formatted response with matched assignments
+        return {
+          success: true,
+          message: `Reusing ${matchedSlots.assigned.length} existing CallID(s) for project (re-matched to new file's area codes)`,
+          projectId: parseInt(projectId, 10),
+          assigned: matchedSlots.assigned,
+          reused: true,
+          rematched: true, // Flag indicating CallIDs were re-matched to new area codes
+        };
       } else {
         // Project has a CallIDUsage row but no CallIDs assigned - auto-assign
         console.log('[CallIDApiClient] Auto-assigning CallIDs (no existing assignments)...');
