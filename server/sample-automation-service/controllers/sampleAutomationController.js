@@ -1140,6 +1140,269 @@ const removeComputedVariable = handleAsync(async (req, res) => {
   res.json(result);
 });
 
+// =====================================================
+// Extraction Defaults Handlers
+// =====================================================
+
+/**
+ * Get resolved extraction variables using hierarchy
+ */
+const getExtractionVariables = handleAsync(async (req, res) => {
+  const { projectId, clientId, vendorId } = req.query;
+
+  if (!clientId) {
+    return res.status(400).json({
+      success: false,
+      message: 'clientId is required',
+    });
+  }
+
+  const variables = await SampleAutomation.getExtractionVariables(
+    projectId ? parseInt(projectId) : null,
+    parseInt(clientId),
+    vendorId ? parseInt(vendorId) : null
+  );
+
+  res.json({
+    success: true,
+    variables,
+  });
+});
+
+/**
+ * Get master extraction defaults (global defaults for all files)
+ */
+const getMasterExtractionDefaults = handleAsync(async (req, res) => {
+  const defaults = await SampleAutomation.getMasterExtractionDefaults();
+
+  res.json({
+    success: true,
+    defaults,
+  });
+});
+
+/**
+ * Save master extraction defaults
+ */
+const saveMasterExtractionDefaults = handleAsync(async (req, res) => {
+  const { variables } = req.body;
+
+  if (!Array.isArray(variables)) {
+    return res.status(400).json({
+      success: false,
+      message: 'variables array is required',
+    });
+  }
+
+  const result = await SampleAutomation.saveMasterExtractionDefaults(variables);
+
+  res.json({
+    success: true,
+    ...result,
+  });
+});
+
+/**
+ * Get client-level extraction defaults
+ */
+const getClientExtractionDefaults = handleAsync(async (req, res) => {
+  const { clientId } = req.params;
+
+  if (!clientId) {
+    return res.status(400).json({
+      success: false,
+      message: 'clientId is required',
+    });
+  }
+
+  const defaults = await SampleAutomation.getClientExtractionDefaults(parseInt(clientId));
+
+  res.json({
+    success: true,
+    defaults,
+  });
+});
+
+/**
+ * Get vendor+client extraction defaults
+ */
+const getVendorClientExtractionDefaults = handleAsync(async (req, res) => {
+  const { vendorId, clientId } = req.params;
+
+  if (!vendorId || !clientId) {
+    return res.status(400).json({
+      success: false,
+      message: 'vendorId and clientId are required',
+    });
+  }
+
+  const defaults = await SampleAutomation.getVendorClientExtractionDefaults(
+    parseInt(vendorId),
+    parseInt(clientId)
+  );
+
+  res.json({
+    success: true,
+    defaults,
+  });
+});
+
+/**
+ * Get project-level extraction overrides
+ */
+const getProjectExtractionOverrides = handleAsync(async (req, res) => {
+  const { projectId } = req.params;
+
+  if (!projectId) {
+    return res.status(400).json({
+      success: false,
+      message: 'projectId is required',
+    });
+  }
+
+  const overrides = await SampleAutomation.getProjectExtractionOverrides(parseInt(projectId));
+
+  res.json({
+    success: true,
+    overrides,
+  });
+});
+
+/**
+ * Save client-level extraction defaults
+ */
+const saveClientExtractionDefaults = handleAsync(async (req, res) => {
+  const { clientId } = req.params;
+  const { variables } = req.body;
+
+  if (!clientId) {
+    return res.status(400).json({
+      success: false,
+      message: 'clientId is required',
+    });
+  }
+
+  if (!Array.isArray(variables)) {
+    return res.status(400).json({
+      success: false,
+      message: 'variables must be an array',
+    });
+  }
+
+  const result = await SampleAutomation.saveClientExtractionDefaults(
+    parseInt(clientId),
+    variables
+  );
+
+  res.json({
+    success: true,
+    ...result,
+  });
+});
+
+/**
+ * Save vendor+client extraction defaults
+ */
+const saveVendorClientExtractionDefaults = handleAsync(async (req, res) => {
+  const { vendorId, clientId } = req.params;
+  const { variables } = req.body;
+
+  if (!vendorId || !clientId) {
+    return res.status(400).json({
+      success: false,
+      message: 'vendorId and clientId are required',
+    });
+  }
+
+  if (!Array.isArray(variables)) {
+    return res.status(400).json({
+      success: false,
+      message: 'variables must be an array',
+    });
+  }
+
+  const result = await SampleAutomation.saveVendorClientExtractionDefaults(
+    parseInt(vendorId),
+    parseInt(clientId),
+    variables
+  );
+
+  res.json({
+    success: true,
+    ...result,
+  });
+});
+
+/**
+ * Save project-level extraction overrides
+ */
+const saveProjectExtractionOverrides = handleAsync(async (req, res) => {
+  const { projectId } = req.params;
+  const { clientId, vendorId, variables } = req.body;
+
+  if (!projectId) {
+    return res.status(400).json({
+      success: false,
+      message: 'projectId is required',
+    });
+  }
+
+  if (!clientId) {
+    return res.status(400).json({
+      success: false,
+      message: 'clientId is required in body',
+    });
+  }
+
+  if (!Array.isArray(variables)) {
+    return res.status(400).json({
+      success: false,
+      message: 'variables must be an array',
+    });
+  }
+
+  const result = await SampleAutomation.saveProjectExtractionOverrides(
+    parseInt(projectId),
+    parseInt(clientId),
+    vendorId ? parseInt(vendorId) : null,
+    variables
+  );
+
+  res.json({
+    success: true,
+    ...result,
+  });
+});
+
+/**
+ * Delete a single extraction default/override
+ */
+const deleteExtractionDefault = handleAsync(async (req, res) => {
+  const { type, id } = req.params;
+
+  if (!type || !id) {
+    return res.status(400).json({
+      success: false,
+      message: 'type and id are required',
+    });
+  }
+
+  const validTypes = ['client', 'vendorClient', 'project'];
+  if (!validTypes.includes(type)) {
+    return res.status(400).json({
+      success: false,
+      message: `type must be one of: ${validTypes.join(', ')}`,
+    });
+  }
+
+  const success = await SampleAutomation.deleteExtractionDefault(type, parseInt(id));
+
+  res.json({
+    success,
+    message: success ? 'Deleted successfully' : 'Record not found',
+  });
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -1164,4 +1427,15 @@ module.exports = {
   previewComputedVariable,
   addComputedVariable,
   removeComputedVariable,
+  // Extraction Defaults
+  getExtractionVariables,
+  getMasterExtractionDefaults,
+  getClientExtractionDefaults,
+  getVendorClientExtractionDefaults,
+  getProjectExtractionOverrides,
+  saveMasterExtractionDefaults,
+  saveClientExtractionDefaults,
+  saveVendorClientExtractionDefaults,
+  saveProjectExtractionOverrides,
+  deleteExtractionDefault,
 };

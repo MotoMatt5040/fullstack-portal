@@ -199,6 +199,21 @@
   border-color: var(--accent-color);
 }
 
+/* Green highlighting for extraction default headers */
+.header-checkbox-item.is-default {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+}
+
+.header-checkbox-item.is-default.selected {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+}
+
+.header-checkbox-item.is-default .header-checkbox {
+  accent-color: #10b981;
+}
+
 .header-checkbox {
   margin: 0;
   cursor: pointer;

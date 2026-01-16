@@ -43,4 +43,16 @@ router.post('/computed-variable/preview', controller.previewComputedVariable);
 router.post('/computed-variable/add', controller.addComputedVariable);
 router.delete('/computed-variable/remove', controller.removeComputedVariable);
 
+// Extraction defaults routes
+router.get('/extraction-variables', controller.getExtractionVariables);
+router.get('/extraction-defaults/master', controller.getMasterExtractionDefaults);
+router.put('/extraction-defaults/master', controller.saveMasterExtractionDefaults);
+router.get('/extraction-defaults/client/:clientId', controller.getClientExtractionDefaults);
+router.put('/extraction-defaults/client/:clientId', controller.saveClientExtractionDefaults);
+router.get('/extraction-defaults/vendor/:vendorId/client/:clientId', controller.getVendorClientExtractionDefaults);
+router.put('/extraction-defaults/vendor/:vendorId/client/:clientId', controller.saveVendorClientExtractionDefaults);
+router.get('/extraction-overrides/project/:projectId', controller.getProjectExtractionOverrides);
+router.put('/extraction-overrides/project/:projectId', controller.saveProjectExtractionOverrides);
+router.delete('/extraction-defaults/:type/:id', controller.deleteExtractionDefault);
+
 module.exports = router;

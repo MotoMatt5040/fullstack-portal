@@ -52,6 +52,7 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
     { to: '/summary-report', icon: mdiFileDocumentOutline, label: 'Summary Report', visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]) },
     { to: '/disposition-report', icon: mdiFileDocumentOutline, label: 'Disposition Report', visible: true },
     { to: '/sample-automation', icon: mdiCog, label: 'Sample Automation', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
+    { to: '/extraction-defaults', icon: mdiCog, label: 'Extraction Defaults', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
     { to: '/call-id', icon: mdiPhone, label: 'Call ID Management', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
     { to: '/project-numbering', icon: mdiNumeric, label: 'Project Numbering', visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]) },
     { to: '/ai-prompting', icon: mdiRobot, label: 'AI Prompting', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },

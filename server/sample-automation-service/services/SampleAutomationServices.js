@@ -2686,6 +2686,465 @@ const extractFilesFromTable = async (config) => {
   return result;
 };
 
+// =====================================================
+// Extraction Defaults Functions
+// =====================================================
+
+/**
+ * Get resolved extraction variables using hierarchy:
+ * 1. Project overrides (highest priority)
+ * 2. Vendor + Client defaults
+ * 3. Client defaults (base layer)
+ * @param {number|null} projectId - Project ID for overrides (optional)
+ * @param {number} clientId - Client ID (required)
+ * @param {number|null} vendorId - Vendor ID (optional)
+ * @returns {Array} - Array of { variableName, source }
+ */
+const getExtractionVariables = async (projectId, clientId, vendorId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .input('ProjectID', sql.Int, projectId)
+        .input('ClientID', sql.Int, clientId)
+        .input('VendorID', sql.Int, vendorId)
+        .execute('FAJITA.dbo.sp_GetExtractionVariables');
+
+      return result.recordset.map((row) => ({
+        variableName: row.VariableName,
+        source: row.Source,
+      }));
+    },
+    fnName: 'getExtractionVariables',
+  });
+};
+
+/**
+ * Get master extraction defaults (global defaults for all files)
+ * @returns {Array} - Array of { id, variableName }
+ */
+const getMasterExtractionDefaults = async () => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request().query(`
+          SELECT ID, VariableName, CreatedDate, ModifiedDate
+          FROM FAJITA.dbo.ExtractionDefaultsMaster
+          ORDER BY VariableName
+        `);
+
+      return result.recordset.map((row) => ({
+        id: row.ID,
+        variableName: row.VariableName,
+        createdDate: row.CreatedDate,
+        modifiedDate: row.ModifiedDate,
+      }));
+    },
+    fnName: 'getMasterExtractionDefaults',
+  });
+};
+
+/**
+ * Save master extraction defaults (bulk upsert)
+ * @param {Array} variables - Array of { variableName }
+ * @returns {Object} - { added, deleted }
+ */
+const saveMasterExtractionDefaults = async (variables) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      // Get existing defaults
+      const existing = await pool.request().query(`
+            SELECT ID, VariableName
+            FROM FAJITA.dbo.ExtractionDefaultsMaster
+          `);
+
+      const existingMap = new Map(
+        existing.recordset.map((row) => [row.VariableName.toLowerCase(), row.ID])
+      );
+
+      const newNames = new Set(variables.map((v) => v.variableName.toLowerCase()));
+
+      let added = 0;
+      let deleted = 0;
+
+      // Delete variables that are no longer in the list
+      for (const [name, id] of existingMap) {
+        if (!newNames.has(name)) {
+          await pool.request().input('ID', sql.Int, id).query(`
+                DELETE FROM FAJITA.dbo.ExtractionDefaultsMaster WHERE ID = @ID
+              `);
+          deleted++;
+        }
+      }
+
+      // Add new variables
+      for (const variable of variables) {
+        const lowerName = variable.variableName.toLowerCase();
+        if (!existingMap.has(lowerName)) {
+          await pool.request().input('VariableName', sql.NVarChar, variable.variableName)
+            .query(`
+                INSERT INTO FAJITA.dbo.ExtractionDefaultsMaster (VariableName)
+                VALUES (@VariableName)
+              `);
+          added++;
+        }
+      }
+
+      return { added, deleted };
+    },
+    fnName: 'saveMasterExtractionDefaults',
+  });
+};
+
+/**
+ * Get client-level extraction defaults
+ * @param {number} clientId - Client ID
+ * @returns {Array} - Array of { id, variableName }
+ */
+const getClientExtractionDefaults = async (clientId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request().input('ClientID', sql.Int, clientId)
+        .query(`
+          SELECT ID, VariableName, CreatedDate, ModifiedDate
+          FROM FAJITA.dbo.ExtractionDefaultsClient
+          WHERE ClientID = @ClientID
+          ORDER BY VariableName
+        `);
+
+      return result.recordset.map((row) => ({
+        id: row.ID,
+        variableName: row.VariableName,
+        createdDate: row.CreatedDate,
+        modifiedDate: row.ModifiedDate,
+      }));
+    },
+    fnName: 'getClientExtractionDefaults',
+  });
+};
+
+/**
+ * Get vendor+client extraction defaults
+ * @param {number} vendorId - Vendor ID
+ * @param {number} clientId - Client ID
+ * @returns {Array} - Array of { id, variableName }
+ */
+const getVendorClientExtractionDefaults = async (vendorId, clientId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .input('VendorID', sql.Int, vendorId)
+        .input('ClientID', sql.Int, clientId).query(`
+          SELECT ID, VariableName, CreatedDate, ModifiedDate
+          FROM FAJITA.dbo.ExtractionDefaultsVendorClient
+          WHERE VendorID = @VendorID AND ClientID = @ClientID
+          ORDER BY VariableName
+        `);
+
+      return result.recordset.map((row) => ({
+        id: row.ID,
+        variableName: row.VariableName,
+        createdDate: row.CreatedDate,
+        modifiedDate: row.ModifiedDate,
+      }));
+    },
+    fnName: 'getVendorClientExtractionDefaults',
+  });
+};
+
+/**
+ * Get project-level extraction overrides
+ * @param {number} projectId - Project ID
+ * @returns {Array} - Array of { id, variableName, clientId, vendorId }
+ */
+const getProjectExtractionOverrides = async (projectId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const result = await pool.request().input('ProjectID', sql.Int, projectId)
+        .query(`
+          SELECT ID, VariableName, ClientID, VendorID, CreatedDate, ModifiedDate
+          FROM FAJITA.dbo.ExtractionOverridesProject
+          WHERE ProjectID = @ProjectID
+          ORDER BY VariableName
+        `);
+
+      return result.recordset.map((row) => ({
+        id: row.ID,
+        variableName: row.VariableName,
+        clientId: row.ClientID,
+        vendorId: row.VendorID,
+        createdDate: row.CreatedDate,
+        modifiedDate: row.ModifiedDate,
+      }));
+    },
+    fnName: 'getProjectExtractionOverrides',
+  });
+};
+
+/**
+ * Save client-level extraction defaults (bulk upsert)
+ * @param {number} clientId - Client ID
+ * @param {Array} variables - Array of { variableName }
+ * @returns {Object} - { added, deleted }
+ */
+const saveClientExtractionDefaults = async (clientId, variables) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
+
+      try {
+        // Get existing variables for this client
+        const existingResult = await transaction
+          .request()
+          .input('ClientID', sql.Int, clientId).query(`
+            SELECT ID, VariableName
+            FROM FAJITA.dbo.ExtractionDefaultsClient
+            WHERE ClientID = @ClientID
+          `);
+
+        const existing = new Map(
+          existingResult.recordset.map((r) => [r.VariableName.toUpperCase(), r])
+        );
+        const incoming = new Map(
+          variables.map((v) => [v.variableName.toUpperCase(), v])
+        );
+
+        let added = 0,
+          deleted = 0;
+
+        // Delete variables not in incoming list
+        for (const [varName, row] of existing) {
+          if (!incoming.has(varName)) {
+            await transaction.request().input('ID', sql.Int, row.ID).query(`
+                DELETE FROM FAJITA.dbo.ExtractionDefaultsClient WHERE ID = @ID
+              `);
+            deleted++;
+          }
+        }
+
+        // Insert new variables (no updates needed since we only track name)
+        for (const variable of variables) {
+          const upperName = variable.variableName.toUpperCase();
+          if (!existing.has(upperName)) {
+            await transaction
+              .request()
+              .input('ClientID', sql.Int, clientId)
+              .input('VariableName', sql.NVarChar, variable.variableName).query(`
+                INSERT INTO FAJITA.dbo.ExtractionDefaultsClient (ClientID, VariableName)
+                VALUES (@ClientID, @VariableName)
+              `);
+            added++;
+          }
+        }
+
+        await transaction.commit();
+        return { added, deleted };
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    },
+    fnName: 'saveClientExtractionDefaults',
+  });
+};
+
+/**
+ * Save vendor+client extraction defaults (bulk upsert)
+ * @param {number} vendorId - Vendor ID
+ * @param {number} clientId - Client ID
+ * @param {Array} variables - Array of { variableName }
+ * @returns {Object} - { added, deleted }
+ */
+const saveVendorClientExtractionDefaults = async (
+  vendorId,
+  clientId,
+  variables
+) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
+
+      try {
+        // Get existing variables for this vendor+client
+        const existingResult = await transaction
+          .request()
+          .input('VendorID', sql.Int, vendorId)
+          .input('ClientID', sql.Int, clientId).query(`
+            SELECT ID, VariableName
+            FROM FAJITA.dbo.ExtractionDefaultsVendorClient
+            WHERE VendorID = @VendorID AND ClientID = @ClientID
+          `);
+
+        const existing = new Map(
+          existingResult.recordset.map((r) => [r.VariableName.toUpperCase(), r])
+        );
+        const incoming = new Map(
+          variables.map((v) => [v.variableName.toUpperCase(), v])
+        );
+
+        let added = 0,
+          deleted = 0;
+
+        // Delete variables not in incoming list
+        for (const [varName, row] of existing) {
+          if (!incoming.has(varName)) {
+            await transaction.request().input('ID', sql.Int, row.ID).query(`
+                DELETE FROM FAJITA.dbo.ExtractionDefaultsVendorClient WHERE ID = @ID
+              `);
+            deleted++;
+          }
+        }
+
+        // Insert new variables (no updates needed since we only track name)
+        for (const variable of variables) {
+          const upperName = variable.variableName.toUpperCase();
+          if (!existing.has(upperName)) {
+            await transaction
+              .request()
+              .input('VendorID', sql.Int, vendorId)
+              .input('ClientID', sql.Int, clientId)
+              .input('VariableName', sql.NVarChar, variable.variableName).query(`
+                INSERT INTO FAJITA.dbo.ExtractionDefaultsVendorClient (VendorID, ClientID, VariableName)
+                VALUES (@VendorID, @ClientID, @VariableName)
+              `);
+            added++;
+          }
+        }
+
+        await transaction.commit();
+        return { added, deleted };
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    },
+    fnName: 'saveVendorClientExtractionDefaults',
+  });
+};
+
+/**
+ * Save project-level extraction overrides (bulk upsert)
+ * @param {number} projectId - Project ID
+ * @param {number} clientId - Client ID
+ * @param {number|null} vendorId - Vendor ID (optional)
+ * @param {Array} variables - Array of { variableName }
+ * @returns {Object} - { added, deleted }
+ */
+const saveProjectExtractionOverrides = async (
+  projectId,
+  clientId,
+  vendorId,
+  variables
+) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
+
+      try {
+        // Get existing variables for this project
+        const existingResult = await transaction
+          .request()
+          .input('ProjectID', sql.Int, projectId).query(`
+            SELECT ID, VariableName
+            FROM FAJITA.dbo.ExtractionOverridesProject
+            WHERE ProjectID = @ProjectID
+          `);
+
+        const existing = new Map(
+          existingResult.recordset.map((r) => [r.VariableName.toUpperCase(), r])
+        );
+        const incoming = new Map(
+          variables.map((v) => [v.variableName.toUpperCase(), v])
+        );
+
+        let added = 0,
+          deleted = 0;
+
+        // Delete variables not in incoming list
+        for (const [varName, row] of existing) {
+          if (!incoming.has(varName)) {
+            await transaction.request().input('ID', sql.Int, row.ID).query(`
+                DELETE FROM FAJITA.dbo.ExtractionOverridesProject WHERE ID = @ID
+              `);
+            deleted++;
+          }
+        }
+
+        // Insert new variables (no updates needed since we only track name)
+        for (const variable of variables) {
+          const upperName = variable.variableName.toUpperCase();
+          if (!existing.has(upperName)) {
+            await transaction
+              .request()
+              .input('ProjectID', sql.Int, projectId)
+              .input('ClientID', sql.Int, clientId)
+              .input('VendorID', sql.Int, vendorId)
+              .input('VariableName', sql.NVarChar, variable.variableName).query(`
+                INSERT INTO FAJITA.dbo.ExtractionOverridesProject (ProjectID, ClientID, VendorID, VariableName)
+                VALUES (@ProjectID, @ClientID, @VendorID, @VariableName)
+              `);
+            added++;
+          }
+        }
+
+        await transaction.commit();
+        return { added, deleted };
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    },
+    fnName: 'saveProjectExtractionOverrides',
+  });
+};
+
+/**
+ * Delete a single extraction default/override by ID and type
+ * @param {string} type - 'client', 'vendorClient', or 'project'
+ * @param {number} id - Record ID
+ * @returns {boolean} - Success
+ */
+const deleteExtractionDefault = async (type, id) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      let tableName;
+      switch (type) {
+        case 'client':
+          tableName = 'ExtractionDefaultsClient';
+          break;
+        case 'vendorClient':
+          tableName = 'ExtractionDefaultsVendorClient';
+          break;
+        case 'project':
+          tableName = 'ExtractionOverridesProject';
+          break;
+        default:
+          throw new Error(`Invalid type: ${type}`);
+      }
+
+      const result = await pool.request().input('ID', sql.Int, id).query(`
+          DELETE FROM FAJITA.dbo.[${tableName}] WHERE ID = @ID
+        `);
+
+      return result.rowsAffected[0] > 0;
+    },
+    fnName: 'deleteExtractionDefault',
+  });
+};
+
 module.exports = {
   createTableFromFileData,
   getClients,
@@ -2726,4 +3185,15 @@ module.exports = {
   previewComputedVariable,
   addComputedVariable,
   removeComputedVariable,
+  // Extraction Defaults
+  getExtractionVariables,
+  getMasterExtractionDefaults,
+  getClientExtractionDefaults,
+  getVendorClientExtractionDefaults,
+  getProjectExtractionOverrides,
+  saveMasterExtractionDefaults,
+  saveClientExtractionDefaults,
+  saveVendorClientExtractionDefaults,
+  saveProjectExtractionOverrides,
+  deleteExtractionDefault,
 };

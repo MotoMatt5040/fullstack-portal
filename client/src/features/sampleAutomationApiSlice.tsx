@@ -312,6 +312,79 @@ interface RemoveComputedVariableResponse {
   columnName: string;
 }
 
+// ============================================================================
+// EXTRACTION DEFAULTS INTERFACES
+// ============================================================================
+
+export interface ExtractionVariable {
+  variableName: string;
+  source?: 'Project' | 'VendorClient' | 'Client';
+}
+
+export interface ExtractionDefault {
+  id: number;
+  variableName: string;
+  createdDate?: string;
+  modifiedDate?: string;
+}
+
+export interface ExtractionOverride extends ExtractionDefault {
+  clientId: number;
+  vendorId: number | null;
+}
+
+interface GetExtractionVariablesParams {
+  clientId: number;
+  vendorId?: number | null;
+  projectId?: number | null;
+}
+
+interface GetExtractionVariablesResponse {
+  success: boolean;
+  variables: ExtractionVariable[];
+}
+
+interface GetMasterExtractionDefaultsResponse {
+  success: boolean;
+  defaults: ExtractionDefault[];
+}
+
+interface GetClientExtractionDefaultsResponse {
+  success: boolean;
+  defaults: ExtractionDefault[];
+}
+
+interface GetVendorClientExtractionDefaultsResponse {
+  success: boolean;
+  defaults: ExtractionDefault[];
+}
+
+interface GetProjectExtractionOverridesResponse {
+  success: boolean;
+  overrides: ExtractionOverride[];
+}
+
+interface SaveExtractionDefaultsParams {
+  variables: Array<{ variableName: string }>;
+}
+
+interface SaveExtractionDefaultsResponse {
+  success: boolean;
+  added: number;
+  deleted: number;
+}
+
+interface SaveProjectOverridesParams {
+  clientId: number;
+  vendorId?: number | null;
+  variables: Array<{ variableName: string }>;
+}
+
+interface DeleteExtractionDefaultResponse {
+  success: boolean;
+  message: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -488,6 +561,162 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
         body: params,
       }),
     }),
+
+    // ========================================================================
+    // EXTRACTION DEFAULTS ENDPOINTS
+    // ========================================================================
+
+    // Get resolved extraction variables (uses hierarchy: Project > VendorClient > Client)
+    getExtractionVariables: builder.query<
+      GetExtractionVariablesResponse,
+      GetExtractionVariablesParams
+    >({
+      query: ({ clientId, vendorId, projectId }) => {
+        const params = new URLSearchParams();
+        params.append('clientId', clientId.toString());
+        if (vendorId !== null && vendorId !== undefined) {
+          params.append('vendorId', vendorId.toString());
+        }
+        if (projectId !== null && projectId !== undefined) {
+          params.append('projectId', projectId.toString());
+        }
+        return {
+          url: `/sample-automation/extraction-variables?${params.toString()}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['ExtractionDefaults'],
+    }),
+
+    // Get master extraction defaults (global defaults for all files)
+    getMasterExtractionDefaults: builder.query<
+      GetMasterExtractionDefaultsResponse,
+      void
+    >({
+      query: () => ({
+        url: '/sample-automation/extraction-defaults/master',
+        method: 'GET',
+      }),
+      providesTags: [{ type: 'ExtractionDefaults', id: 'master' }],
+    }),
+
+    // Save master extraction defaults
+    saveMasterExtractionDefaults: builder.mutation<
+      SaveExtractionDefaultsResponse,
+      { variables: SaveExtractionDefaultsParams['variables'] }
+    >({
+      query: ({ variables }) => ({
+        url: '/sample-automation/extraction-defaults/master',
+        method: 'PUT',
+        body: { variables },
+      }),
+      invalidatesTags: [
+        'ExtractionDefaults',
+        { type: 'ExtractionDefaults', id: 'master' },
+      ],
+    }),
+
+    // Get client-level extraction defaults
+    getClientExtractionDefaults: builder.query<
+      GetClientExtractionDefaultsResponse,
+      number
+    >({
+      query: (clientId) => ({
+        url: `/sample-automation/extraction-defaults/client/${clientId}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, clientId) => [
+        { type: 'ExtractionDefaults', id: `client-${clientId}` },
+      ],
+    }),
+
+    // Get vendor+client extraction defaults
+    getVendorClientExtractionDefaults: builder.query<
+      GetVendorClientExtractionDefaultsResponse,
+      { vendorId: number; clientId: number }
+    >({
+      query: ({ vendorId, clientId }) => ({
+        url: `/sample-automation/extraction-defaults/vendor/${vendorId}/client/${clientId}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, { vendorId, clientId }) => [
+        { type: 'ExtractionDefaults', id: `vendor-${vendorId}-client-${clientId}` },
+      ],
+    }),
+
+    // Get project-level extraction overrides
+    getProjectExtractionOverrides: builder.query<
+      GetProjectExtractionOverridesResponse,
+      number
+    >({
+      query: (projectId) => ({
+        url: `/sample-automation/extraction-overrides/project/${projectId}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, projectId) => [
+        { type: 'ExtractionDefaults', id: `project-${projectId}` },
+      ],
+    }),
+
+    // Save client-level extraction defaults
+    saveClientExtractionDefaults: builder.mutation<
+      SaveExtractionDefaultsResponse,
+      { clientId: number; variables: SaveExtractionDefaultsParams['variables'] }
+    >({
+      query: ({ clientId, variables }) => ({
+        url: `/sample-automation/extraction-defaults/client/${clientId}`,
+        method: 'PUT',
+        body: { variables },
+      }),
+      invalidatesTags: (result, error, { clientId }) => [
+        'ExtractionDefaults',
+        { type: 'ExtractionDefaults', id: `client-${clientId}` },
+      ],
+    }),
+
+    // Save vendor+client extraction defaults
+    saveVendorClientExtractionDefaults: builder.mutation<
+      SaveExtractionDefaultsResponse,
+      { vendorId: number; clientId: number; variables: SaveExtractionDefaultsParams['variables'] }
+    >({
+      query: ({ vendorId, clientId, variables }) => ({
+        url: `/sample-automation/extraction-defaults/vendor/${vendorId}/client/${clientId}`,
+        method: 'PUT',
+        body: { variables },
+      }),
+      invalidatesTags: (result, error, { vendorId, clientId }) => [
+        'ExtractionDefaults',
+        { type: 'ExtractionDefaults', id: `vendor-${vendorId}-client-${clientId}` },
+      ],
+    }),
+
+    // Save project-level extraction overrides
+    saveProjectExtractionOverrides: builder.mutation<
+      SaveExtractionDefaultsResponse,
+      SaveProjectOverridesParams & { projectId: number }
+    >({
+      query: ({ projectId, clientId, vendorId, variables }) => ({
+        url: `/sample-automation/extraction-overrides/project/${projectId}`,
+        method: 'PUT',
+        body: { clientId, vendorId, variables },
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        'ExtractionDefaults',
+        { type: 'ExtractionDefaults', id: `project-${projectId}` },
+      ],
+    }),
+
+    // Delete extraction default/override
+    deleteExtractionDefault: builder.mutation<
+      DeleteExtractionDefaultResponse,
+      { type: 'client' | 'vendor-client' | 'project'; id: number }
+    >({
+      query: ({ type, id }) => ({
+        url: `/sample-automation/extraction-defaults/${type}/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['ExtractionDefaults'],
+    }),
   }),
 });
 
@@ -516,4 +745,19 @@ export const {
   usePreviewComputedVariableMutation,
   useAddComputedVariableMutation,
   useRemoveComputedVariableMutation,
+  // Extraction Defaults hooks
+  useGetExtractionVariablesQuery,
+  useLazyGetExtractionVariablesQuery,
+  useGetMasterExtractionDefaultsQuery,
+  useSaveMasterExtractionDefaultsMutation,
+  useGetClientExtractionDefaultsQuery,
+  useLazyGetClientExtractionDefaultsQuery,
+  useGetVendorClientExtractionDefaultsQuery,
+  useLazyGetVendorClientExtractionDefaultsQuery,
+  useGetProjectExtractionOverridesQuery,
+  useLazyGetProjectExtractionOverridesQuery,
+  useSaveClientExtractionDefaultsMutation,
+  useSaveVendorClientExtractionDefaultsMutation,
+  useSaveProjectExtractionOverridesMutation,
+  useDeleteExtractionDefaultMutation,
 } = sampleAutomationApiSlice;

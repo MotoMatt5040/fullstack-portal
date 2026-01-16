@@ -190,7 +190,7 @@
 .workflow-step {
   background: var(--background-color-elevated);
   border-radius: 0.5rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .step-header {

@@ -630,6 +630,7 @@ const SampleAutomation: React.FC = () => {
                   fileType={fileType}
                   setFileType={setFileType}
                   clientId={selectedClientId}
+                  vendorId={selectedVendorId}
                   projectId={selectedProjectId}
                   callIdAssignment={processResult.callIdAssignment}
                 />

@@ -405,6 +405,10 @@ export const useSampleAutomationTour = ({
   // Track the last step index to detect direction (forward vs backward)
   const lastStepIndexRef = useRef<number>(-1);
 
+  // Track current clientId in a ref so callbacks always have the latest value
+  const clientIdRef = useRef<number | null>(clientId);
+  clientIdRef.current = clientId;
+
   // Check if tour has been completed before
   const hasCompletedTour = useCallback(() => {
     return localStorage.getItem(TOUR_STORAGE_KEY) === 'true';
@@ -572,8 +576,11 @@ export const useSampleAutomationTour = ({
             setKeepMenuOpen('project');
           } else if (stepIndex === VENDOR_SELECT_STEP) {
             // Skip vendor step entirely for Tarrance clients
-            if (isTarranceClient && isGoingForward) {
-              console.log('[Tour Debug] Skipping vendor step (Tarrance client)');
+            // Use clientIdRef to get the current value (may have changed since tour started)
+            const currentClientId = clientIdRef.current;
+            const isTarranceNow = currentClientId === TARRANCE_CLIENT_ID;
+            if (isTarranceNow && isGoingForward) {
+              console.log('[Tour Debug] Skipping vendor step (Tarrance client selected)');
               setKeepMenuOpen(null);
               driverRef.current?.moveNext();
               return;

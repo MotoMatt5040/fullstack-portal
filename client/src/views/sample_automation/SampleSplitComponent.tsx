@@ -13,7 +13,13 @@ import {
   mdiPencil,
   mdiClose,
 } from '@mdi/js';
-import { useRemoveComputedVariableMutation, type ComputedVariableDefinition } from '../../features/sampleAutomationApiSlice';
+import {
+  useRemoveComputedVariableMutation,
+  useGetMasterExtractionDefaultsQuery,
+  useGetClientExtractionDefaultsQuery,
+  useGetVendorClientExtractionDefaultsQuery,
+  type ComputedVariableDefinition,
+} from '../../features/sampleAutomationApiSlice';
 import { useToast } from '../../context/ToastContext';
 import './SampleSplitComponent.css';
 import ComputedVariablesModal from './ComputedVariablesModal';
@@ -39,6 +45,7 @@ interface SampleSplitComponentProps {
   fileType?: 'landline' | 'cell';
   setFileType?: (type: 'landline' | 'cell') => void;
   clientId?: number | null;
+  vendorId?: number | null;
   projectId?: string | null;
   callIdAssignment?: CallIdAssignment | null;
 }
@@ -52,6 +59,7 @@ const SampleSplitComponent = ({
   fileType = 'landline',
   setFileType = () => {},
   clientId = null,
+  vendorId = null,
   projectId = null,
   callIdAssignment = null
 }: SampleSplitComponentProps) => {
@@ -64,6 +72,7 @@ const SampleSplitComponent = ({
   const [selectedAgeRange, setSelectedAgeRange] = useState('');
   const [availableAgeRanges, setAvailableAgeRanges] = useState([]);
   const [householdingEnabled, setHouseholdingEnabled] = useState(false);
+  const [defaultHeaders, setDefaultHeaders] = useState<Set<string>>(new Set());
 
   // Computed Variables state
   const [isComputedVarModalOpen, setIsComputedVarModalOpen] = useState(false);
@@ -73,6 +82,19 @@ const SampleSplitComponent = ({
 
   // API mutations
   const [removeComputedVariable] = useRemoveComputedVariableMutation();
+
+  // Fetch extraction defaults for pre-selecting headers (skip for Tarrance - they always need all variables)
+  // Master defaults are always fetched (they apply to all files)
+  const { data: masterDefaults } = useGetMasterExtractionDefaultsQuery(undefined, {
+    skip: isTarranceClient,
+  });
+  const { data: clientDefaults } = useGetClientExtractionDefaultsQuery(clientId!, {
+    skip: !clientId || isTarranceClient,
+  });
+  const { data: vendorClientDefaults } = useGetVendorClientExtractionDefaultsQuery(
+    { vendorId: vendorId!, clientId: clientId! },
+    { skip: !vendorId || !clientId || isTarranceClient }
+  );
 
   // Initialize available age ranges
   useEffect(() => {
@@ -91,12 +113,53 @@ const SampleSplitComponent = ({
     }
   }, [isTarranceClient]);
 
-  // Initialize selected headers with all headers
+  // Initialize selected headers based on extraction defaults (if available)
   useEffect(() => {
     if (headers && headers.length > 0) {
-      setSelectedHeaders(headers.map(h => h.name || h));
+      const headerNames = headers.map(h => h.name || h);
+
+      // Get default variable names from extraction defaults
+      // Priority: vendorClient defaults > client defaults > master defaults > all headers
+      // Master defaults are always included as the base, then layer on client/vendor-client
+      const defaultVars: string[] = [];
+
+      // Start with master defaults (always apply)
+      if (masterDefaults?.defaults?.length) {
+        masterDefaults.defaults.forEach(d => defaultVars.push(d.variableName));
+      }
+
+      // Add client or vendor+client specific defaults
+      if (vendorId && vendorClientDefaults?.defaults?.length) {
+        // Add vendor+client defaults (on top of master)
+        vendorClientDefaults.defaults.forEach(d => {
+          if (!defaultVars.some(v => v.toLowerCase() === d.variableName.toLowerCase())) {
+            defaultVars.push(d.variableName);
+          }
+        });
+      } else if (clientDefaults?.defaults?.length) {
+        // Add client defaults (on top of master)
+        clientDefaults.defaults.forEach(d => {
+          if (!defaultVars.some(v => v.toLowerCase() === d.variableName.toLowerCase())) {
+            defaultVars.push(d.variableName);
+          }
+        });
+      }
+
+      if (defaultVars.length > 0) {
+        // Filter to only headers that exist in the file (case-insensitive match)
+        const matchingHeaders = headerNames.filter(h =>
+          defaultVars.some(dv => dv.toLowerCase() === h.toLowerCase())
+        );
+        // Track which headers came from defaults (for green highlighting)
+        setDefaultHeaders(new Set(matchingHeaders.map(h => h.toLowerCase())));
+        setSelectedHeaders(matchingHeaders.length > 0 ? matchingHeaders : headerNames);
+      } else {
+        // No defaults configured - select all headers
+        setDefaultHeaders(new Set());
+        setSelectedHeaders(headerNames);
+      }
     }
-  }, [headers]);
+  }, [headers, masterDefaults, clientDefaults, vendorClientDefaults, vendorId]);
 
   // Update available variables for computed variables modal
   useEffect(() => {
@@ -487,11 +550,12 @@ const SampleSplitComponent = ({
               {headers.map((header, index) => {
                 const headerName = header.name || header;
                 const isSelected = selectedHeaders.includes(headerName);
+                const isDefault = defaultHeaders.has(headerName.toLowerCase());
 
                 return (
                   <div
                     key={index}
-                    className={`header-checkbox-item ${isSelected ? 'selected' : ''}`}
+                    className={`header-checkbox-item ${isSelected ? 'selected' : ''} ${isDefault ? 'is-default' : ''}`}
                     onClick={() => handleHeaderToggle(headerName)}
                   >
                     <input
