@@ -5,6 +5,7 @@ import UserForm from '../secure/AddUser';
 import UpdateUserRoles from '../users/UpdateUserRoles';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { SkeletonTable } from '../../components/Skeleton';
+import OnlineUsers from './OnlineUsers';
 import Icon from '@mdi/react';
 import {
   mdiAccountGroup,
@@ -20,6 +21,7 @@ import {
   mdiAccountCircle,
   mdiDomain,
   mdiWrench,
+  mdiCircle,
 } from '@mdi/js';
 import {
   useSendMaintenanceNotificationMutation,
@@ -67,6 +69,7 @@ const UserManagement = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [maintenanceMinutes, setMaintenanceMinutes] = useState(5);
+  const [activeTab, setActiveTab] = useState<'users' | 'online'>('users');
 
   const toast = useToast();
   const [sendMaintenanceNotification, { isLoading: isSendingMaintenance }] =
@@ -239,7 +242,30 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Data Section */}
+      {/* Tabs */}
+      <div className='user-management-tabs'>
+        <button
+          className={`user-management-tab ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          <Icon path={mdiDomain} size={0.75} />
+          Clients & Users
+        </button>
+        <button
+          className={`user-management-tab ${activeTab === 'online' ? 'active' : ''}`}
+          onClick={() => setActiveTab('online')}
+        >
+          <Icon path={mdiCircle} size={0.5} className='online-tab-indicator' />
+          Online Users
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'online' ? (
+        <div className='user-management-data-section'>
+          <OnlineUsers />
+        </div>
+      ) : (
       <div className='user-management-data-section'>
         <div className='user-management-data-header'>
           <h2 className='user-management-data-title'>
@@ -352,6 +378,7 @@ const UserManagement = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Add User Modal */}
       <Modal isOpen={isAddModalOpen} onClose={handleModalClose}>

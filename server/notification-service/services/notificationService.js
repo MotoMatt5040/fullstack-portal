@@ -1,15 +1,22 @@
 // Notification Service - SSE notification service for broadcasting messages to all connected clients
 
-const clients = new Map(); // Map of client ID to response object
+// Map of client ID to { res, username, currentPage, connectedAt }
+const clients = new Map();
 
 /**
  * Add a new SSE client connection
  * @param {string} clientId - Unique client identifier
  * @param {object} res - Express response object
+ * @param {string} username - Username from auth headers
  */
-const addClient = (clientId, res) => {
-  clients.set(clientId, res);
-  console.log(`SSE client connected: ${clientId}. Total clients: ${clients.size}`);
+const addClient = (clientId, res, username = 'Anonymous') => {
+  clients.set(clientId, {
+    res,
+    username,
+    currentPage: '/',
+    connectedAt: new Date().toISOString(),
+  });
+  console.log(`SSE client connected: ${clientId} (${username}). Total clients: ${clients.size}`);
 };
 
 /**
@@ -17,8 +24,40 @@ const addClient = (clientId, res) => {
  * @param {string} clientId - Unique client identifier
  */
 const removeClient = (clientId) => {
+  const client = clients.get(clientId);
+  const username = client?.username || 'Unknown';
   clients.delete(clientId);
-  console.log(`SSE client disconnected: ${clientId}. Total clients: ${clients.size}`);
+  console.log(`SSE client disconnected: ${clientId} (${username}). Total clients: ${clients.size}`);
+};
+
+/**
+ * Update client's current page
+ * @param {string} clientId - Unique client identifier
+ * @param {string} page - Current page/route
+ */
+const updateClientPage = (clientId, page) => {
+  const client = clients.get(clientId);
+  if (client) {
+    client.currentPage = page;
+    clients.set(clientId, client);
+  }
+};
+
+/**
+ * Get all connected users with their details
+ * @returns {Array} Array of { clientId, username, currentPage, connectedAt }
+ */
+const getConnectedUsers = () => {
+  const users = [];
+  clients.forEach((client, clientId) => {
+    users.push({
+      clientId,
+      username: client.username,
+      currentPage: client.currentPage,
+      connectedAt: client.connectedAt,
+    });
+  });
+  return users;
 };
 
 /**
@@ -29,9 +68,9 @@ const removeClient = (clientId) => {
 const broadcast = (event, data) => {
   const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
-  clients.forEach((res, clientId) => {
+  clients.forEach((client, clientId) => {
     try {
-      res.write(message);
+      client.res.write(message);
     } catch (error) {
       console.error(`Error sending to client ${clientId}:`, error);
       removeClient(clientId);
@@ -82,8 +121,10 @@ const getClientCount = () => clients.size;
 module.exports = {
   addClient,
   removeClient,
+  updateClientPage,
   broadcast,
   sendMaintenanceNotification,
   sendNotification,
   getClientCount,
+  getConnectedUsers,
 };
