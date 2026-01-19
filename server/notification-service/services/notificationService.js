@@ -4,6 +4,31 @@
 const clients = new Map();
 
 /**
+ * Update user's last active timestamp in the database
+ * @param {string} username - User's email/username
+ */
+const updateUserLastActive = async (username) => {
+  if (!username || username === 'Anonymous') return;
+
+  try {
+    const response = await fetch('http://user-management:3000/last-active', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-gateway-auth': 'internal-service',
+      },
+      body: JSON.stringify({ email: username }),
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to update last active for ${username}: ${response.status}`);
+    }
+  } catch (error) {
+    console.error(`Error updating last active for ${username}:`, error.message);
+  }
+};
+
+/**
  * Add a new SSE client connection
  * @param {string} clientId - Unique client identifier
  * @param {object} res - Express response object
@@ -17,6 +42,9 @@ const addClient = (clientId, res, username = 'Anonymous') => {
     connectedAt: new Date().toISOString(),
   });
   console.log(`SSE client connected: ${clientId} (${username}). Total clients: ${clients.size}`);
+
+  // Update last active timestamp in database
+  updateUserLastActive(username);
 };
 
 /**
@@ -40,6 +68,9 @@ const updateClientPage = (clientId, page) => {
   if (client) {
     client.currentPage = page;
     clients.set(clientId, client);
+
+    // Update last active timestamp in database
+    updateUserLastActive(client.username);
   }
 };
 

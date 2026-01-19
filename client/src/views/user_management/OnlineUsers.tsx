@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiAccountCircle,
@@ -9,6 +9,19 @@ import {
 } from '@mdi/js';
 import { useGetOnlineUsersQuery } from '../../features/notificationsApiSlice';
 import './OnlineUsers.css';
+
+interface OnlineUser {
+  clientId: string;
+  username: string;
+  currentPage: string;
+  connectedAt: string;
+}
+
+interface GroupedUser {
+  username: string;
+  pages: string[];
+  connectedAt: string; // Earliest connection time
+}
 
 // Map routes to friendly page names
 const getPageName = (path: string): string => {
@@ -60,7 +73,41 @@ const OnlineUsers: React.FC = () => {
     pollingInterval: 10000, // Poll every 10 seconds
   });
 
-  const users = data?.users || [];
+  const rawUsers: OnlineUser[] = data?.users || [];
+
+  // Group users by username (excluding Anonymous), combine their pages, and sort alphabetically
+  const groupedUsers = useMemo(() => {
+    const userMap = new Map<string, GroupedUser>();
+
+    // Filter out Anonymous users and group by username
+    rawUsers
+      .filter((user) => user.username && user.username !== 'Anonymous')
+      .forEach((user) => {
+        const existing = userMap.get(user.username);
+        if (existing) {
+          // Add page if not already in the list
+          const pageName = getPageName(user.currentPage);
+          if (!existing.pages.includes(pageName)) {
+            existing.pages.push(pageName);
+          }
+          // Keep earliest connection time
+          if (new Date(user.connectedAt) < new Date(existing.connectedAt)) {
+            existing.connectedAt = user.connectedAt;
+          }
+        } else {
+          userMap.set(user.username, {
+            username: user.username,
+            pages: [getPageName(user.currentPage)],
+            connectedAt: user.connectedAt,
+          });
+        }
+      });
+
+    // Convert to array and sort alphabetically by username
+    return Array.from(userMap.values()).sort((a, b) =>
+      a.username.localeCompare(b.username, undefined, { sensitivity: 'base' })
+    );
+  }, [rawUsers]);
 
   return (
     <div className="online-users">
@@ -68,7 +115,7 @@ const OnlineUsers: React.FC = () => {
         <h2 className="online-users-title">
           <Icon path={mdiCircle} size={0.5} className="online-indicator" />
           Online Now
-          <span className="online-users-count">{users.length}</span>
+          <span className="online-users-count">{groupedUsers.length}</span>
         </h2>
         <button
           onClick={() => refetch()}
@@ -82,12 +129,12 @@ const OnlineUsers: React.FC = () => {
       <div className="online-users-content">
         {isLoading ? (
           <div className="online-users-loading">Loading...</div>
-        ) : users.length === 0 ? (
+        ) : groupedUsers.length === 0 ? (
           <div className="online-users-empty">No users currently online</div>
         ) : (
           <div className="online-users-list">
-            {users.map((user) => (
-              <div key={user.clientId} className="online-user-card">
+            {groupedUsers.map((user) => (
+              <div key={user.username} className="online-user-card">
                 <div className="online-user-avatar">
                   <Icon path={mdiAccountCircle} size={1.25} />
                   <span className="online-user-status" />
@@ -97,7 +144,7 @@ const OnlineUsers: React.FC = () => {
                   <div className="online-user-details">
                     <span className="online-user-page">
                       <Icon path={mdiMapMarker} size={0.5} />
-                      {getPageName(user.currentPage)}
+                      {user.pages.join(', ')}
                     </span>
                     <span className="online-user-time">
                       <Icon path={mdiClock} size={0.5} />

@@ -71,4 +71,9 @@ router
     userController.handleTestEmail
   );
 
+// POST to update last active timestamp
+router
+  .route('/last-active')
+  .post(userController.handleUpdateLastActive);
+
 module.exports = router;

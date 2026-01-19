@@ -22,6 +22,7 @@ import {
   mdiDomain,
   mdiWrench,
   mdiCircle,
+  mdiClock,
 } from '@mdi/js';
 import {
   useSendMaintenanceNotificationMutation,
@@ -34,6 +35,7 @@ interface User {
   email: string;
   roles: string[];
   clientname: string;
+  lastActive: string | null;
 }
 
 const getRoleBadgeClass = (role: string): string => {
@@ -43,6 +45,24 @@ const getRoleBadgeClass = (role: string): string => {
   if (roleLower === 'manager') return 'manager';
   if (roleLower === 'executive') return 'executive';
   return '';
+};
+
+// Format last active time as relative time
+const formatLastActive = (dateString: string | null): string => {
+  if (!dateString) return 'Never';
+
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 };
 
 const UserManagement = () => {
@@ -285,6 +305,7 @@ const UserManagement = () => {
                 <tr>
                   <th>Client / User</th>
                   <th>Roles</th>
+                  <th>Last Active</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -313,6 +334,7 @@ const UserManagement = () => {
                             {client.userCount} user{client.userCount !== 1 ? 's' : ''}
                           </span>
                         </td>
+                        <td></td>
                         <td></td>
                       </tr>
 
@@ -343,6 +365,12 @@ const UserManagement = () => {
                                   </span>
                                 ))}
                               </div>
+                            </td>
+                            <td>
+                              <span className='user-management-last-active'>
+                                <Icon path={mdiClock} size={0.5} />
+                                {formatLastActive(user.lastActive)}
+                              </span>
                             </td>
                             <td>
                               <div className='user-management-actions'>

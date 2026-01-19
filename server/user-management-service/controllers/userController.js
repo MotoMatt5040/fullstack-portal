@@ -647,6 +647,22 @@ const handleTestEmail = handleAsync(async (req, res) => {
   }
 });
 
+const handleUpdateLastActive = handleAsync(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    await User.updateLastActive(email);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error updating last active:', error);
+    res.status(500).json({ message: 'Failed to update last active', error: error.message });
+  }
+});
+
 module.exports = {
   handleGetClients,
   handleCreateUser,
@@ -658,5 +674,6 @@ module.exports = {
   handleUpdateUserProfile,
   handleGetUsersByClientId,
   handleUpdateUserRoles,
-  handleDeleteUser
+  handleDeleteUser,
+  handleUpdateLastActive,
 };

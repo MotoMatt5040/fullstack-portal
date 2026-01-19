@@ -408,6 +408,20 @@
   color: #059669;
 }
 
+/* Last Active */
+.user-management-last-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+.user-management-last-active svg {
+  opacity: 0.5;
+}
+
 /* Actions */
 .user-management-actions {
   display: flex;

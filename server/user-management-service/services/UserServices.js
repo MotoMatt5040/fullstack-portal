@@ -142,13 +142,14 @@ const getAllUsersWithClient = async () => {
           SELECT
             a.email,
             STRING_AGG(r.roleName, ', ') AS roles,
-            c.clientname
+            c.clientname,
+            a.LastActive
           FROM tblAuthentication a
           LEFT JOIN tblUserRoles ur ON a.uuid = ur.uuid
           LEFT JOIN tblRoles r ON ur.role = r.roleid
           LEFT JOIN tblUserProfiles up ON a.uuid = up.uuid
           LEFT JOIN tblClients c ON up.clientid = c.clientid
-          GROUP BY a.uuid, a.email, c.clientname
+          GROUP BY a.uuid, a.email, c.clientname, a.LastActive
           ORDER BY
             CASE WHEN STRING_AGG(r.roleName, ', ') IS NULL THEN 1 ELSE 0 END,
             a.email ASC
@@ -326,6 +327,21 @@ const deleteUserByEmail = async (email) => {
   });
 };
 
+const updateLastActive = async (email) => {
+  return withDbConnection({
+    database: 'promark',
+    queryFn: async (pool) => {
+      const result = await pool
+        .request()
+        .input('email', sql.NVarChar, email)
+        .input('lastActive', sql.DateTime, new Date())
+        .query('UPDATE tblAuthentication SET LastActive = @lastActive WHERE email = @email');
+      return result.rowsAffected;
+    },
+    fnName: 'updateLastActive',
+  });
+};
+
 module.exports = {
   createUser,
   getClients,
@@ -343,4 +359,5 @@ module.exports = {
   getUsersByClientId,
   getAllUsersWithClient,
   deleteUserByEmail,
+  updateLastActive,
 };
