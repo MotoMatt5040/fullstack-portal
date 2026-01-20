@@ -139,26 +139,22 @@ const ResetPassword = () => {
     setState((prev) => ({ ...prev, error: null }));
 
     try {
-  console.log('🔍 Frontend: About to call resetPassword...');
-  const response = await resetPassword({
-    token,
-    email: emailParam,
-    newPassword: passwordForm.newPassword,
-  }).unwrap();
-  
-  setState((prev) => ({
-    ...prev,
-    success: response.success || 'Password reset successfully!',
-  }));
-} catch (error) {
-  console.error('❌ Frontend: Error caught:', error);
-  console.error('❌ Frontend: Error data:', error?.data);
-  console.error('❌ Frontend: Error message:', error?.data?.message);
-  setState((prev) => ({
-    ...prev,
-    error: error?.data?.message || 'Network error. Please try again.',
-  }));
-}
+      const response = await resetPassword({
+        token,
+        email: emailParam,
+        newPassword: passwordForm.newPassword,
+      }).unwrap();
+
+      setState((prev) => ({
+        ...prev,
+        success: response.success || 'Password reset successfully!',
+      }));
+    } catch (error: any) {
+      setState((prev) => ({
+        ...prev,
+        error: error?.data?.message || 'Network error. Please try again.',
+      }));
+    }
 
     // try {
     //   const response = await resetPassword({

@@ -566,13 +566,10 @@ export const useSampleAutomationTour = ({
           const lastIndex = lastStepIndexRef.current;
           const isGoingForward = stepIndex > lastIndex;
 
-          console.log('[Tour Debug] onHighlightStarted, stepIndex:', stepIndex, 'lastIndex:', lastIndex, 'forward:', isGoingForward);
-
           // Update last step index for next comparison
           lastStepIndexRef.current = stepIndex;
 
           if (stepIndex === PROJECT_SELECT_STEP) {
-            console.log('[Tour Debug] Arriving at project select step, pre-opening menu');
             setKeepMenuOpen('project');
           } else if (stepIndex === VENDOR_SELECT_STEP) {
             // Skip vendor step entirely for Tarrance clients
@@ -580,12 +577,10 @@ export const useSampleAutomationTour = ({
             const currentClientId = clientIdRef.current;
             const isTarranceNow = currentClientId === TARRANCE_CLIENT_ID;
             if (isTarranceNow && isGoingForward) {
-              console.log('[Tour Debug] Skipping vendor step (Tarrance client selected)');
               setKeepMenuOpen(null);
               driverRef.current?.moveNext();
               return;
             }
-            console.log('[Tour Debug] Arriving at vendor select step, pre-opening menu');
             setKeepMenuOpen('vendor');
           } else {
             // Close any open menus when moving to other steps
@@ -602,14 +597,12 @@ export const useSampleAutomationTour = ({
 
           // Skip File Type step if in Split mode (element won't exist)
           if (stepIndex === FILE_TYPE_STEP && isSplitMode) {
-            console.log('[Tour Debug] Skipping File Type step (Split mode active)');
             driverRef.current?.moveNext();
             return;
           }
 
           // Skip Split Logic step if in All Records mode
           if (stepIndex === SPLIT_LOGIC_STEP && !isSplitMode) {
-            console.log('[Tour Debug] Skipping Split Logic step (All Records mode)');
             driverRef.current?.moveNext();
             return;
           }
@@ -727,7 +720,6 @@ export const useSampleAutomationTour = ({
 
   // Close the dropdown menu after selection and advance to next step
   const closeDropdownAndAdvance = useCallback(() => {
-    console.log('[Tour Debug] closeDropdownAndAdvance called');
     setKeepMenuOpen(null);
     // Small delay to let the menu close before advancing
     setTimeout(() => {

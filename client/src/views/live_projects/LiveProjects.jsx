@@ -72,7 +72,6 @@ const LiveProjects = () => {
 			const filteredSummaryData = liveProjectData.data.filter(
 				(project) => project.recloc === 99
 			);
-			// console.log(filteredSummaryData)
 			setSummaryData(filteredSummaryData);
 
 			const filteredDetailData = liveProjectData.data.filter(
@@ -82,12 +81,6 @@ const LiveProjects = () => {
 		}
 	}, [projectid, location]);
 
-	useEffect(() => {
-		summaryData.map((d) => {
-			console.log(d);
-			
-		});
-	}, [summaryData])
 
 	let content = (
 		<section>

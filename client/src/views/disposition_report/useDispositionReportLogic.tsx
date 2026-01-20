@@ -371,14 +371,10 @@ const transformWebDropoutData = useCallback(
   ]);
 
   useEffect(() => {
-    console.log('🔍 Raw webCountsData:', webCountsData);
-
     if (webCountsData) {
       const transformed = transformWebDropoutData(webCountsData);
-      console.log('📊 Transformed webDropoutChartData:', transformed);
       setWebDropoutChartData(transformed);
     } else {
-      console.log('❌ No webCountsData available');
       setWebDropoutChartData([]);
     }
   }, [webCountsData, transformWebDropoutData]);

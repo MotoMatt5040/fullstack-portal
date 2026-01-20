@@ -82,9 +82,7 @@ const ExtractionDefaults: React.FC = () => {
 
   // Load master defaults when data changes
   useEffect(() => {
-    console.log('Master defaults data:', masterDefaultsData);
     if (masterDefaultsData?.defaults) {
-      console.log('Setting master variables:', masterDefaultsData.defaults);
       setMasterVariables(
         masterDefaultsData.defaults.map((d) => ({
           id: d.id,
