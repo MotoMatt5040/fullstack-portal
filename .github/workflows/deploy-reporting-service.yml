@@ -1,0 +1,75 @@
+name: Deploy Reporting Service
+
+on:
+  push:
+    branches:
+      - main
+      - testing
+    paths:
+      - 'server/reporting-service/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-testing:
+    if: github.ref == 'refs/heads/testing'
+    runs-on: ubuntu-latest
+    environment: testing
+
+    steps:
+      - name: Deploy Reporting Service to Testing
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.TESTING_SSH_HOST }}
+          username: ${{ secrets.TESTING_SSH_USERNAME }}
+          key: ${{ secrets.TESTING_SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Deploying reporting-service to TESTING at $(date)"
+
+            DEPLOY_PATH="$HOME/fullstack_portal"
+            cd $DEPLOY_PATH
+
+            echo "📥 Pulling latest code..."
+            git pull origin testing
+
+            echo "🔨 Rebuilding reporting service..."
+            docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --build --no-deps reporting
+
+            echo "⏳ Waiting for service to start..."
+            sleep 10
+
+            echo "🧪 Health Check:"
+            echo -n "  Reporting Service: " && docker exec reporting-service node -e "require('http').get('http://localhost:5009/health', (r) => { console.log(r.statusCode === 200 ? '✅ OK' : '❌ Not ready'); process.exit(0); })" || echo "❌ Not ready"
+
+            echo "✅ Reporting service deployment to TESTING completed at $(date)"
+
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy Reporting Service to Production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_SSH_HOST }}
+          username: ${{ secrets.PRODUCTION_SSH_USERNAME }}
+          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Deploying reporting-service to PRODUCTION at $(date)"
+
+            DEPLOY_PATH="$HOME/fullstack_portal"
+            cd $DEPLOY_PATH
+
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            echo "🔨 Rebuilding reporting service..."
+            docker compose --env-file .env.production up -d --build --no-deps reporting
+
+            echo "⏳ Waiting for service to start..."
+            sleep 10
+
+            echo "🧪 Health Check:"
+            echo -n "  Reporting Service: " && docker exec reporting-service node -e "require('http').get('http://localhost:5009/health', (r) => { console.log(r.statusCode === 200 ? '✅ OK' : '❌ Not ready'); process.exit(0); })" || echo "❌ Not ready"
+
+            echo "✅ Reporting service deployment to PRODUCTION completed at $(date)"

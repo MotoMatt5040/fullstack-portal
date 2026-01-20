@@ -61,11 +61,22 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/__tests__/setup.js"
+    ],
+    "moduleNameMapper": {
+      "^bcrypt$": "<rootDir>/node_modules/bcrypt",
+      "^jsonwebtoken$": "<rootDir>/node_modules/jsonwebtoken"
+    },
     "collectCoverageFrom": [
       "**/*.js",
       "!node_modules/**",
       "!coverage/**",
-      "!models/**"
+      "!models/**",
+      "!__tests__/**"
     ]
   }
 }
