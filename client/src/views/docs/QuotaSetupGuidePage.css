@@ -1,0 +1,290 @@
+/* =================================================================
+   Docs Page - Wiki-Style Documentation
+   ================================================================= */
+
+.docs-page {
+  min-height: 100vh;
+  background: var(--background-color);
+  color: var(--text-color);
+  padding: 2rem;
+}
+
+/* =================================================================
+   Header
+   ================================================================= */
+
+.docs-header {
+  max-width: 900px;
+  margin: 0 auto 1.5rem;
+}
+
+.docs-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color-soft);
+  padding-bottom: 0.5rem;
+}
+
+.docs-intro {
+  color: var(--label-text-color);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* =================================================================
+   Table of Contents (Wiki-style)
+   ================================================================= */
+
+.docs-nav {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  background: var(--background-color-muted);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+}
+
+.docs-nav-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.docs-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.docs-nav-links a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.docs-nav-links a:hover {
+  text-decoration: underline;
+}
+
+.docs-nav-links a::before {
+  content: '';
+  display: inline-block;
+  width: 1rem;
+}
+
+.docs-nav-links .nav-indent-1::before {
+  width: 1.5rem;
+}
+
+.docs-nav-links .nav-indent-2::before {
+  width: 2.5rem;
+}
+
+/* =================================================================
+   Content
+   ================================================================= */
+
+.docs-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.docs-content section {
+  margin-bottom: 2rem;
+}
+
+.docs-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: var(--text-color);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.docs-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem 0;
+  color: var(--text-color);
+}
+
+.docs-content p {
+  margin: 0 0 0.75rem 0;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.docs-content code {
+  background: rgba(175, 184, 193, 0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 85%;
+  color: var(--text-color);
+}
+
+.docs-content code.docs-code {
+  display: block;
+  background: rgba(175, 184, 193, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+  color: var(--text-color);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.docs-code-block {
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* =================================================================
+   Tables
+   ================================================================= */
+
+.docs-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.docs-table th,
+.docs-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color-soft);
+  border-right: 1px solid var(--border-color-soft);
+}
+
+.docs-table th:last-child,
+.docs-table td:last-child {
+  border-right: none;
+}
+
+.docs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.docs-table th {
+  background: var(--background-color-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.docs-table td {
+  background: var(--background-color);
+}
+
+.docs-table tbody tr:nth-child(even) td {
+  background: var(--background-color-elevated);
+}
+
+/* Warning table */
+.docs-table-warning th {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+/* =================================================================
+   Warning Section
+   ================================================================= */
+
+.docs-warning-section {
+  background: rgba(220, 38, 38, 0.03);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.docs-warning-section h2 {
+  color: #dc2626;
+  border-bottom-color: rgba(220, 38, 38, 0.3);
+}
+
+.docs-warning {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* =================================================================
+   Lists
+   ================================================================= */
+
+.docs-content ol,
+.docs-content ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.docs-content li {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.docs-content ul ul {
+  margin-top: 0.25rem;
+}
+
+/* =================================================================
+   Responsive
+   ================================================================= */
+
+@media (max-width: 768px) {
+  .docs-page {
+    padding: 1rem;
+  }
+
+  .docs-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .docs-nav {
+    padding: 0.75rem 1rem;
+  }
+
+  .docs-nav-links a {
+    font-size: 0.85rem;
+  }
+
+  .docs-table {
+    font-size: 0.8rem;
+  }
+
+  .docs-table th,
+  .docs-table td {
+    padding: 0.375rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .docs-page {
+    padding: 0.75rem;
+  }
+
+  .docs-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .docs-content h2 {
+    font-size: 1.1rem;
+  }
+}

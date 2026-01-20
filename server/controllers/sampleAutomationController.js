@@ -677,6 +677,23 @@ const processFile = async (req, res) => {
                 reused: true // Flag to indicate these were existing, not newly assigned
               };
               console.log(`✅ Reusing ${assigned.length} existing CallID(s)`);
+
+              // Update the sample table's CallID columns with the existing phone numbers
+              try {
+                const updateResult = await CallIDService.updateSampleTableCallIDs(tableResult.tableName, {
+                  phoneNumberL1: existing.PhoneNumberL1,
+                  phoneNumberL2: existing.PhoneNumberL2,
+                  phoneNumberC1: existing.PhoneNumberC1,
+                  phoneNumberC2: existing.PhoneNumberC2
+                });
+                if (updateResult.success) {
+                  console.log(`✅ Sample table CallID columns updated: ${updateResult.rowsAffected} rows`);
+                } else {
+                  console.log(`⚠️ Sample table CallID update: ${updateResult.message}`);
+                }
+              } catch (updateError) {
+                console.error('⚠️ Failed to update sample table CallID columns:', updateError.message);
+              }
             } else {
               // Project has a CallIDUsage row but no CallIDs assigned - auto-assign
               console.log('Auto-assigning CallIDs (no existing assignments)...');

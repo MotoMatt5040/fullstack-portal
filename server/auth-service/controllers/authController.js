@@ -1,0 +1,86 @@
+// Auth Service - authController.js
+const { getUserByEmail, updateUserRefreshToken, getUserByRefreshToken, clearRefreshToken } = require('../services/PromarkUsers');
+const { getUserRoles } = require('../services/UserRoles');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const handleLogin = async (req, res) => {
+    const { user, pwd, deviceId } = req.body;
+    console.log(`Login attempt for user: ${user}`);
+
+    if (!user || !pwd) {
+        return res.status(400).json({ 'message': 'Please include a username and password' });
+    }
+
+    try {
+        const foundUser = await getUserByEmail(user);
+        console.log(`User lookup result: ${foundUser ? 'found' : 'not found'}`);
+
+        if (!foundUser) {
+            return res.status(401).json({ 'message': 'Invalid username or password' });
+        }
+
+        const match = await bcrypt.compare(pwd, foundUser.Password);
+        console.log(`Password match result: ${match}`);
+        console.log(`Password field exists: ${!!foundUser.Password}`);
+        console.log(`Password hash starts with: ${foundUser.Password ? foundUser.Password.substring(0, 10) : 'N/A'}`);
+
+        if (match) {
+            console.log('Password matched, getting roles...');
+            const roles = await getUserRoles(foundUser.Email);
+            console.log(`Roles retrieved: ${JSON.stringify(roles)}`);
+            // Create JWTs here
+            console.log('Creating access token...');
+            const accessToken = jwt.sign(
+                {
+                    "UserInfo": {
+                        "username": foundUser.Email,
+                        "roles": roles
+                    }
+                },
+                process.env.ACCESS_TOKEN_SECRET,
+                { expiresIn: '15m' } // 15 minutes for prod
+            );
+            const refreshToken = jwt.sign(
+                { "username": foundUser.Email },
+                process.env.REFRESH_TOKEN_SECRET,
+                { expiresIn: '24h' } // 24 Hours for production
+            );
+
+            // Update the refresh token and deviceId in the database
+            // DeviceId allows multiple tabs on same machine while blocking different machines
+            console.log('Updating refresh token in database...');
+            await updateUserRefreshToken(foundUser.Email, refreshToken, accessToken, deviceId);
+            console.log('Refresh token updated, sending response...');
+
+            res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
+            console.log('Login successful, returning 200 with accessToken');
+            res.status(200).json({ accessToken });
+        } else {
+            console.log('Password did not match, returning 401');
+            res.sendStatus(401);
+        }
+    } catch (err) {
+        console.error('Login error:', err);
+        res.sendStatus(500);
+    }
+};
+
+const handleLogout = async (req, res) => {
+    const cookies = req.cookies;
+    if (!cookies?.jwt) return res.sendStatus(204); // No content
+    const refreshToken = cookies.jwt;
+    console.log('Logging out user with refresh token');
+    // Clear the cookie
+    res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
+    // Check if refresh token is in db
+    const foundUser = await getUserByRefreshToken(refreshToken);
+    if (!foundUser) {
+        return res.sendStatus(204); // No content
+    }
+    // Clear the refresh token in db
+    await clearRefreshToken(foundUser.Email);
+    res.sendStatus(204); // No content
+};
+
+module.exports = { handleLogin, handleLogout };

@@ -1,0 +1,499 @@
+/* ========================================
+   EXTRACTION DEFAULTS - STYLING
+======================================== */
+
+.extraction-defaults {
+  padding: 1.25rem 1.5rem;
+  min-height: 100vh;
+  background: var(--background-color);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1400px) {
+  .extraction-defaults {
+    padding: 1.5rem 2.5rem;
+  }
+}
+
+/* ========================================
+   HEADER
+======================================== */
+.extraction-defaults-header {
+  margin-bottom: 1.5rem;
+}
+
+.extraction-defaults-header .header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 0.25rem 0;
+}
+
+.extraction-defaults-header .header-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  margin: 0;
+}
+
+/* ========================================
+   SELECTORS
+======================================== */
+.extraction-defaults-selectors {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+}
+
+.selector-group {
+  flex: 1;
+  max-width: 300px;
+}
+
+.selector-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.7;
+  margin-bottom: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.select-wrapper {
+  position: relative;
+  z-index: 100;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 0.625rem 2rem 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.375rem;
+  background: var(--background-color);
+  color: var(--text-color);
+  cursor: pointer;
+  appearance: none;
+  transition: border-color 0.15s ease;
+}
+
+.select-wrapper select:hover {
+  border-color: var(--border-color);
+}
+
+.select-wrapper select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.select-wrapper select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.select-wrapper .select-icon {
+  position: absolute;
+  right: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+/* ========================================
+   TABS
+======================================== */
+.extraction-defaults-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-color-soft);
+  margin-bottom: 1.25rem;
+}
+
+.tab-button {
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  opacity: 0.6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-button:hover:not(:disabled) {
+  opacity: 1;
+  background: var(--background-color-hover);
+}
+
+.tab-button.active {
+  opacity: 1;
+  color: var(--accent-color);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-color);
+}
+
+.tab-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.unsaved-indicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #f59e0b;
+  border-radius: 50%;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* ========================================
+   CONTENT
+======================================== */
+.extraction-defaults-content {
+  background: var(--background-color-elevated);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  min-height: 300px;
+}
+
+/* Empty & Loading States */
+.empty-state,
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.empty-state svg {
+  margin-bottom: 0.75rem;
+  opacity: 0.4;
+}
+
+.empty-state p,
+.loading-state p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Add Variable Form */
+.add-variable-form {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.add-variable-form input {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.375rem;
+  background: var(--background-color);
+  color: var(--text-color);
+  transition: border-color 0.15s ease;
+}
+
+.add-variable-form input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #fff;
+  background: var(--accent-color);
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-add:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variables List */
+.variables-list {
+  margin-bottom: 1.25rem;
+}
+
+.empty-variables {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.empty-variables p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Variables Table */
+.variables-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.variables-table th,
+.variables-table td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.variables-table th {
+  background: var(--background-color-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.variables-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.variables-table tbody tr:hover {
+  background: var(--background-color-hover);
+}
+
+.col-name {
+  /* flex grow */
+}
+
+.col-actions {
+  width: 80px;
+  text-align: right;
+}
+
+.variable-name-input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--text-color);
+  transition: all 0.15s ease;
+}
+
+.variable-name-input:hover {
+  background: var(--background-color);
+  border-color: var(--border-color-soft);
+}
+
+.variable-name-input:focus {
+  outline: none;
+  background: var(--background-color);
+  border-color: var(--accent-color);
+}
+
+.new-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.25rem;
+  background: var(--background-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--background-color-hover);
+  border-color: var(--border-color);
+}
+
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-icon.btn-delete:hover:not(:disabled) {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+/* Save Section */
+.save-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color-soft);
+}
+
+.btn-save {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  background: var(--background-color);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-save.has-changes {
+  color: #fff;
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.btn-save.has-changes:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.unsaved-warning {
+  font-size: 0.8125rem;
+  color: #f59e0b;
+}
+
+/* ========================================
+   INFO SECTION
+======================================== */
+.extraction-defaults-info {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--background-color-muted);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+}
+
+.extraction-defaults-info h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 0.75rem 0;
+}
+
+.extraction-defaults-info ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.extraction-defaults-info li {
+  font-size: 0.8125rem;
+  color: var(--text-color);
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.extraction-defaults-info li:last-child {
+  margin-bottom: 0;
+}
+
+.extraction-defaults-info strong {
+  color: var(--text-color);
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+@media (max-width: 768px) {
+  .extraction-defaults {
+    padding: 1rem;
+  }
+
+  .extraction-defaults-selectors {
+    flex-direction: column;
+  }
+
+  .selector-group {
+    max-width: none;
+  }
+
+  .add-variable-form {
+    flex-direction: column;
+  }
+
+  .variables-table th,
+  .variables-table td {
+    padding: 0.5rem;
+  }
+
+  .col-actions {
+    width: 100px;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+}

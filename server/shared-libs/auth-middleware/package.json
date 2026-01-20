@@ -1,0 +1,9 @@
+{
+  "name": "@internal/auth-middleware",
+  "version": "1.0.0",
+  "description": "Shared JWT and role verification middleware for microservices",
+  "main": "index.js",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}

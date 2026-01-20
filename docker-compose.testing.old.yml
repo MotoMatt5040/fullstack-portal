@@ -1,4 +1,4 @@
-name: mern-app
+name: promark-portal
 
 services:
   api:
@@ -10,7 +10,7 @@ services:
     volumes:
       - ./server_logs:/logs
     networks:
-      - mern-app
+      - promark-portal
 
   client:
     build: 
@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     env_file: ./.env.testing
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
       - api
 
@@ -46,7 +46,7 @@ services:
       - caddy_config:/caddy_config
       - /var/log/caddy_logs:/var/log/caddy
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
       - api
       - client
@@ -56,5 +56,5 @@ volumes:
   caddy_config:
 
 networks:
-  mern-app:
+  promark-portal:
     driver: bridge

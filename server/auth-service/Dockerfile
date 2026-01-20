@@ -1,0 +1,52 @@
+# Auth Service Dockerfile
+
+# Development stage
+FROM node:20-alpine AS development
+
+WORKDIR /app
+
+# Copy shared-libs first
+COPY shared-libs ./shared-libs
+
+# Copy package files
+COPY auth-service/package*.json ./
+
+# Install all dependencies (including devDependencies for nodemon)
+RUN npm install
+
+# Copy application code
+COPY auth-service .
+
+# Expose port
+EXPOSE 5001
+
+# Start with nodemon for hot reloading
+CMD ["npm", "run", "dev"]
+
+
+# Production stage
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Copy shared-libs first
+COPY shared-libs ./shared-libs
+
+# Copy package files
+COPY auth-service/package*.json ./
+
+# Install production dependencies
+RUN npm install --omit=dev
+
+# Copy application code
+COPY auth-service .
+
+# Expose port
+EXPOSE 5001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+
+# Start the server
+CMD ["node", "server.js"]

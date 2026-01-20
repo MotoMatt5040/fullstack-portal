@@ -22,6 +22,18 @@ interface ClientCountResponse {
   clientCount: number;
 }
 
+interface OnlineUser {
+  clientId: string;
+  username: string;
+  currentPage: string;
+  connectedAt: string;
+}
+
+interface OnlineUsersResponse {
+  users: OnlineUser[];
+  count: number;
+}
+
 export const notificationsApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     sendMaintenanceNotification: builder.mutation<NotificationResponse, MaintenanceRequest>({
@@ -41,6 +53,9 @@ export const notificationsApiSlice = apiSlice.injectEndpoints({
     getConnectedClients: builder.query<ClientCountResponse, void>({
       query: () => '/notifications/clients',
     }),
+    getOnlineUsers: builder.query<OnlineUsersResponse, void>({
+      query: () => '/notifications/online-users',
+    }),
   }),
 });
 
@@ -48,4 +63,5 @@ export const {
   useSendMaintenanceNotificationMutation,
   useSendBroadcastNotificationMutation,
   useGetConnectedClientsQuery,
+  useGetOnlineUsersQuery,
 } = notificationsApiSlice;

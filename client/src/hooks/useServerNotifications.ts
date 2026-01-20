@@ -3,7 +3,8 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCurrentToken } from '../features/auth/authSlice';
+import { useLocation } from 'react-router-dom';
+import { selectCurrentToken, selectCurrentUser } from '../features/auth/authSlice';
 
 interface MaintenanceNotification {
   type: 'maintenance';
@@ -30,6 +31,7 @@ interface UseServerNotificationsOptions {
 interface RootState {
   auth: {
     token: string | null;
+    user: string | null;
   };
 }
 
@@ -37,7 +39,10 @@ export const useServerNotifications = (options: UseServerNotificationsOptions = 
   const { onMaintenance, onNotification, onConnected, onDisconnected } = options;
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clientIdRef = useRef<string | null>(null);
   const token = useSelector((state: RootState) => selectCurrentToken(state));
+  const user = useSelector((state: RootState) => selectCurrentUser(state));
+  const location = useLocation();
   const [isConnected, setIsConnected] = useState(false);
 
   // Store callbacks in refs to avoid recreating the connect function
@@ -81,11 +86,19 @@ export const useServerNotifications = (options: UseServerNotificationsOptions = 
     }
 
     try {
-      const eventSource = new EventSource('/api/notifications/events');
+      // Include username in the connection URL
+      const username = encodeURIComponent(user || 'Anonymous');
+      const eventSource = new EventSource(`/api/notifications/events?username=${username}`);
       eventSourceRef.current = eventSource;
 
-      eventSource.addEventListener('connected', () => {
+      eventSource.addEventListener('connected', (event) => {
         console.log('Connected to notification service');
+        try {
+          const data = JSON.parse(event.data);
+          clientIdRef.current = data.clientId;
+        } catch {
+          // Ignore parse errors
+        }
         setIsConnected(true);
         onConnectedRef.current?.();
       });
@@ -157,7 +170,26 @@ export const useServerNotifications = (options: UseServerNotificationsOptions = 
     };
   }, [token, connect, disconnect]);
 
-  return { isConnected, reconnect: connect, disconnect };
+  // Send page updates when location changes
+  useEffect(() => {
+    if (isConnected && clientIdRef.current && token) {
+      fetch('/api/notifications/page', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          clientId: clientIdRef.current,
+          page: location.pathname,
+        }),
+      }).catch(() => {
+        // Silently ignore page update errors
+      });
+    }
+  }, [location.pathname, isConnected, token]);
+
+  return { isConnected, reconnect: connect, disconnect, clientId: clientIdRef.current };
 };
 
 export default useServerNotifications;

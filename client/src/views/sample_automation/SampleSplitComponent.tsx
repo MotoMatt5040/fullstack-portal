@@ -13,7 +13,13 @@ import {
   mdiPencil,
   mdiClose,
 } from '@mdi/js';
-import { useRemoveComputedVariableMutation, type ComputedVariableDefinition } from '../../features/sampleAutomationApiSlice';
+import {
+  useRemoveComputedVariableMutation,
+  useGetMasterExtractionDefaultsQuery,
+  useGetClientExtractionDefaultsQuery,
+  useGetVendorClientExtractionDefaultsQuery,
+  type ComputedVariableDefinition,
+} from '../../features/sampleAutomationApiSlice';
 import { useToast } from '../../context/ToastContext';
 import './SampleSplitComponent.css';
 import ComputedVariablesModal from './ComputedVariablesModal';
@@ -39,6 +45,7 @@ interface SampleSplitComponentProps {
   fileType?: 'landline' | 'cell';
   setFileType?: (type: 'landline' | 'cell') => void;
   clientId?: number | null;
+  vendorId?: number | null;
   projectId?: string | null;
   callIdAssignment?: CallIdAssignment | null;
 }
@@ -52,17 +59,20 @@ const SampleSplitComponent = ({
   fileType = 'landline',
   setFileType = () => {},
   clientId = null,
+  vendorId = null,
   projectId = null,
   callIdAssignment = null
 }: SampleSplitComponentProps) => {
   const toast = useToast();
   const isTarranceClient = clientId === 102;
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Auto-expand when tableName is available (processing just completed)
+  const [isExpanded, setIsExpanded] = useState(!!tableName);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
   const [splitMode, setSplitMode] = useState('all'); // 'all' or 'split'
   const [selectedAgeRange, setSelectedAgeRange] = useState('');
   const [availableAgeRanges, setAvailableAgeRanges] = useState([]);
   const [householdingEnabled, setHouseholdingEnabled] = useState(false);
+  const [defaultHeaders, setDefaultHeaders] = useState<Set<string>>(new Set());
 
   // Computed Variables state
   const [isComputedVarModalOpen, setIsComputedVarModalOpen] = useState(false);
@@ -72,6 +82,19 @@ const SampleSplitComponent = ({
 
   // API mutations
   const [removeComputedVariable] = useRemoveComputedVariableMutation();
+
+  // Fetch extraction defaults for pre-selecting headers (skip for Tarrance - they always need all variables)
+  // Master defaults are always fetched (they apply to all files)
+  const { data: masterDefaults } = useGetMasterExtractionDefaultsQuery(undefined, {
+    skip: isTarranceClient,
+  });
+  const { data: clientDefaults } = useGetClientExtractionDefaultsQuery(clientId!, {
+    skip: !clientId || isTarranceClient,
+  });
+  const { data: vendorClientDefaults } = useGetVendorClientExtractionDefaultsQuery(
+    { vendorId: vendorId!, clientId: clientId! },
+    { skip: !vendorId || !clientId || isTarranceClient }
+  );
 
   // Initialize available age ranges
   useEffect(() => {
@@ -83,12 +106,60 @@ const SampleSplitComponent = ({
     }
   }, [ageRanges]);
 
-  // Initialize selected headers with all headers
+  // Disable householding for Tarrance (TTG) clients
+  useEffect(() => {
+    if (isTarranceClient && householdingEnabled) {
+      setHouseholdingEnabled(false);
+    }
+  }, [isTarranceClient]);
+
+  // Initialize selected headers based on extraction defaults (if available)
   useEffect(() => {
     if (headers && headers.length > 0) {
-      setSelectedHeaders(headers.map(h => h.name || h));
+      const headerNames = headers.map(h => h.name || h);
+
+      // Get default variable names from extraction defaults
+      // Priority: vendorClient defaults > client defaults > master defaults > all headers
+      // Master defaults are always included as the base, then layer on client/vendor-client
+      const defaultVars: string[] = [];
+
+      // Start with master defaults (always apply)
+      if (masterDefaults?.defaults?.length) {
+        masterDefaults.defaults.forEach(d => defaultVars.push(d.variableName));
+      }
+
+      // Add client or vendor+client specific defaults
+      if (vendorId && vendorClientDefaults?.defaults?.length) {
+        // Add vendor+client defaults (on top of master)
+        vendorClientDefaults.defaults.forEach(d => {
+          if (!defaultVars.some(v => v.toLowerCase() === d.variableName.toLowerCase())) {
+            defaultVars.push(d.variableName);
+          }
+        });
+      } else if (clientDefaults?.defaults?.length) {
+        // Add client defaults (on top of master)
+        clientDefaults.defaults.forEach(d => {
+          if (!defaultVars.some(v => v.toLowerCase() === d.variableName.toLowerCase())) {
+            defaultVars.push(d.variableName);
+          }
+        });
+      }
+
+      if (defaultVars.length > 0) {
+        // Filter to only headers that exist in the file (case-insensitive match)
+        const matchingHeaders = headerNames.filter(h =>
+          defaultVars.some(dv => dv.toLowerCase() === h.toLowerCase())
+        );
+        // Track which headers came from defaults (for green highlighting)
+        setDefaultHeaders(new Set(matchingHeaders.map(h => h.toLowerCase())));
+        setSelectedHeaders(matchingHeaders.length > 0 ? matchingHeaders : headerNames);
+      } else {
+        // No defaults configured - select all headers
+        setDefaultHeaders(new Set());
+        setSelectedHeaders(headerNames);
+      }
     }
-  }, [headers]);
+  }, [headers, masterDefaults, clientDefaults, vendorClientDefaults, vendorId]);
 
   // Update available variables for computed variables modal
   useEffect(() => {
@@ -206,7 +277,7 @@ const SampleSplitComponent = ({
     if (splitMode !== 'split') return null;
 
     return (
-      <div className="split-logic-container">
+      <div className="split-logic-container" data-tour="split-logic-section">
         <div className="split-logic-header">
           <Icon path={mdiCallSplit} size={0.7} className="split-icon" />
           <span>Split Configuration</span>
@@ -227,7 +298,7 @@ const SampleSplitComponent = ({
         )}
 
         {!isTarranceClient && (
-          <div className="age-range-selector">
+          <div className="age-range-selector" data-tour="age-range-selector">
             <label htmlFor="ageRangeSelect" className="form-label">
               Age Range Threshold:
             </label>
@@ -251,7 +322,7 @@ const SampleSplitComponent = ({
           </div>
         )}
 
-        <div className="split-preview">
+        <div className="split-preview" data-tour="split-preview">
           <div className="split-group landline-group">
             <div className="split-group-header">
               <Icon path={mdiPhone} size={0.6} />
@@ -329,9 +400,9 @@ const SampleSplitComponent = ({
   };
 
   return (
-    <div className="sample-split-container">
+    <div className="sample-split-container" data-tour="sample-split-container">
       {/* Computed Variables Section - Before the collapsible */}
-      <div className="computed-variables-section">
+      <div className="computed-variables-section" data-tour="computed-variables-section">
         <div className="computed-variables-header">
           <h4>
             <Icon path={mdiCalculatorVariant} size={0.65} />
@@ -375,6 +446,7 @@ const SampleSplitComponent = ({
 
       <div
         className="sample-split-header"
+        data-tour="sample-config-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="header-left">
@@ -390,14 +462,14 @@ const SampleSplitComponent = ({
           {addedVariables.length > 0 && ` • ${addedVariables.length} custom`}
           {splitMode === 'all' && ` • ${fileType === 'landline' ? 'Landline' : 'Cell'} file`}
           {splitMode === 'split' && (isTarranceClient ? ' • Split by WPHONE' : ` • Split by age ${selectedAgeRange}`)}
-          {householdingEnabled && ` • Householding enabled`}
+          {!isTarranceClient && householdingEnabled && ` • Householding enabled`}
         </div>
       </div>
 
       {isExpanded && (
         <div className="sample-split-content">
           {/* Split Mode Toggle */}
-          <div className="split-mode-section">
+          <div className="split-mode-section" data-tour="output-mode-section">
             <label className="section-label">Output Mode:</label>
             <div className="toggle-group">
               <button
@@ -417,7 +489,7 @@ const SampleSplitComponent = ({
 
           {/* File Type Selection - Only shown when splitMode is 'all' */}
           {splitMode === 'all' && (
-            <div className="split-mode-section">
+            <div className="split-mode-section" data-tour="file-type-section">
               <label className="section-label">File Type (for $N column & filename):</label>
               <div className="toggle-group">
                 <button
@@ -441,42 +513,29 @@ const SampleSplitComponent = ({
             </div>
           )}
 
-          {/* Householding Option - Available for all modes */}
-          <div className="householding-section">
-            <div className="section-header">
-              <div className="householding-toggle">
-                <input
-                  type="checkbox"
-                  id="householding-checkbox"
-                  checked={householdingEnabled}
-                  onChange={(e) => setHouseholdingEnabled(e.target.checked)}
-                  className="householding-checkbox"
-                />
-                <label htmlFor="householding-checkbox" className="householding-label">
-                  <Icon path={mdiHome} size={0.6} className="householding-icon" />
-                  Enable Householding for Landline Records
-                </label>
-              </div>
-              
-              {/* {householdingEnabled && (
-                <div className="householding-info">
-                  <div className="householding-description">
-                    <p>Householding will process records where SOURCE=1 OR (SOURCE=3 and AGERANGE≥{selectedAgeRange || 'selected threshold'}):</p>
-                    <ul>
-                      <li>Rank by IAGE ASC (youngest to oldest)</li>
-                      <li>Keep first record per phone number</li>
-                      <li>Add FNAME2, LNAME2, FNAME3, LNAME3, FNAME4, LNAME4 columns to first record</li>
-                      <li>Move 2nd, 3rd, 4th ranked records to separate duplicate tables</li>
-                      <li>Only keeps first 4 records per phone number</li>
-                    </ul>
-                  </div>
+          {/* Householding Option - Available for all modes except Tarrance (TTG) */}
+          {!isTarranceClient && (
+            <div className="householding-section" data-tour="householding-section">
+              <div className="section-header">
+                <div className="householding-toggle">
+                  <input
+                    type="checkbox"
+                    id="householding-checkbox"
+                    checked={householdingEnabled}
+                    onChange={(e) => setHouseholdingEnabled(e.target.checked)}
+                    className="householding-checkbox"
+                  />
+                  <label htmlFor="householding-checkbox" className="householding-label">
+                    <Icon path={mdiHome} size={0.6} className="householding-icon" />
+                    Enable Householding for Landline Records
+                  </label>
                 </div>
-              )} */}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Variable Selection */}
-          <div className="header-selection-section">
+          <div className="header-selection-section" data-tour="variable-selection-section">
             <div className="section-header">
               <label className="section-label">Select Variables to Include:</label>
               <button
@@ -491,11 +550,12 @@ const SampleSplitComponent = ({
               {headers.map((header, index) => {
                 const headerName = header.name || header;
                 const isSelected = selectedHeaders.includes(headerName);
+                const isDefault = defaultHeaders.has(headerName.toLowerCase());
 
                 return (
                   <div
                     key={index}
-                    className={`header-checkbox-item ${isSelected ? 'selected' : ''}`}
+                    className={`header-checkbox-item ${isSelected ? 'selected' : ''} ${isDefault ? 'is-default' : ''}`}
                     onClick={() => handleHeaderToggle(headerName)}
                   >
                     <input
@@ -532,88 +592,13 @@ const SampleSplitComponent = ({
               {splitMode === 'split' && isTarranceClient && (
                 <li>Split method: WPHONE column (Y=Cell, N=Landline)</li>
               )}
-              <li>Householding: {householdingEnabled ? 'Enabled' : 'Disabled'}</li>
+              {!isTarranceClient && <li>Householding: {householdingEnabled ? 'Enabled' : 'Disabled'}</li>}
             </ul>
-          </div>
-
-          {/* Extract Section */}
-          <div className="extract-section">
-            <div className="extract-header">
-              <h4>Extract Files</h4>
-              <p className="extract-description">
-                Generate CSV files based on your configuration
-              </p>
-            </div>
-            
-            <div className="extract-preview">
-              {splitMode === 'all' ? (
-                <div className="file-preview">
-                  <div className="file-icon">{fileType === 'landline' ? '📞' : '📱'}</div>
-                  <div className="file-info">
-                    <div className="file-name">{fileType === 'landline' ? 'LSAM' : 'CSAM'}_{tableName}.csv</div>
-                    <div className="file-description">
-                      All records with {selectedHeaders.length} selected columns ({fileType === 'landline' ? 'Landline' : 'Cell'} file)
-                      {householdingEnabled && fileType === 'landline' && ' - Householded'}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="split-files-preview">
-                  <div className="file-preview landline-file">
-                    <div className="file-icon">📞</div>
-                    <div className="file-info">
-                      <div className="file-name">LSAM_{tableName}.csv</div>
-                      <div className="file-description">
-                        {isTarranceClient ? (
-                          <>Landline records (WPHONE=N){householdingEnabled && ' - Householded'}</>
-                        ) : (
-                          <>Landline records (SOURCE=1 OR SOURCE=3 & AGERANGE≥{selectedAgeRange}){householdingEnabled && ' - Householded'}</>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="file-preview cell-file">
-                    <div className="file-icon">📱</div>
-                    <div className="file-info">
-                      <div className="file-name">CSAM_{tableName}.csv</div>
-                      <div className="file-description">
-                        {isTarranceClient ? (
-                          <>Cell records (WPHONE=Y)</>
-                        ) : (
-                          <>Cell records (SOURCE=2 OR SOURCE=3 & AGERANGE&lt;{selectedAgeRange})</>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="extract-actions">
-              <button
-                onClick={handleExtract}
-                disabled={!canExtract() || isExtracting}
-                className="extract-btn"
-              >
-                {isExtracting ? 'Extracting...' : 'Extract Files'}
-              </button>
-
-              {!canExtract() && (
-                <div className="extract-validation">
-                  {selectedHeaders.length === 0 && (
-                    <span className="validation-error">Select at least one variable</span>
-                  )}
-                  {splitMode === 'split' && !isTarranceClient && !selectedAgeRange && (
-                    <span className="validation-error">Select an age range threshold</span>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* CallID Auto-Assignment Section - Shows results from automatic assignment during processing */}
           {callIdAssignment && (
-            <div className="callid-section">
+            <div className="callid-section" data-tour="callid-section">
               <div className="callid-header">
                 <h4>
                   <Icon path={mdiPhoneClassic} size={0.75} />
@@ -666,6 +651,82 @@ const SampleSplitComponent = ({
               )}
             </div>
           )}
+
+          {/* Extract Section */}
+          <div className="extract-section" data-tour="extract-section">
+            <div className="extract-header">
+              <h4>Extract Files</h4>
+              <p className="extract-description">
+                Generate CSV files based on your configuration
+              </p>
+            </div>
+
+            <div className="extract-preview">
+              {splitMode === 'all' ? (
+                <div className="file-preview">
+                  <div className="file-icon">{fileType === 'landline' ? '📞' : '📱'}</div>
+                  <div className="file-info">
+                    <div className="file-name">{fileType === 'landline' ? 'LSAM' : 'CSAM'}_{tableName}.csv</div>
+                    <div className="file-description">
+                      All records with {selectedHeaders.length} selected columns ({fileType === 'landline' ? 'Landline' : 'Cell'} file)
+                      {!isTarranceClient && householdingEnabled && fileType === 'landline' && ' - Householded'}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="split-files-preview">
+                  <div className="file-preview landline-file">
+                    <div className="file-icon">📞</div>
+                    <div className="file-info">
+                      <div className="file-name">LSAM_{tableName}.csv</div>
+                      <div className="file-description">
+                        {isTarranceClient ? (
+                          <>Landline records (WPHONE=N)</>
+                        ) : (
+                          <>Landline records (SOURCE=1 OR SOURCE=3 & AGERANGE≥{selectedAgeRange}){householdingEnabled && ' - Householded'}</>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="file-preview cell-file">
+                    <div className="file-icon">📱</div>
+                    <div className="file-info">
+                      <div className="file-name">CSAM_{tableName}.csv</div>
+                      <div className="file-description">
+                        {isTarranceClient ? (
+                          <>Cell records (WPHONE=Y)</>
+                        ) : (
+                          <>Cell records (SOURCE=2 OR SOURCE=3 & AGERANGE&lt;{selectedAgeRange})</>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="extract-actions">
+              <button
+                onClick={handleExtract}
+                disabled={!canExtract() || isExtracting}
+                className="extract-btn"
+                data-tour="extract-button"
+              >
+                {isExtracting ? 'Extracting...' : 'Extract Files'}
+              </button>
+
+              {!canExtract() && (
+                <div className="extract-validation">
+                  {selectedHeaders.length === 0 && (
+                    <span className="validation-error">Select at least one variable</span>
+                  )}
+                  {splitMode === 'split' && !isTarranceClient && !selectedAgeRange && (
+                    <span className="validation-error">Select an age range threshold</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

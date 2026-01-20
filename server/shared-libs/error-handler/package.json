@@ -1,0 +1,6 @@
+{
+  "name": "@internal/error-handler",
+  "version": "1.0.0",
+  "description": "Shared error handler middleware for microservices",
+  "main": "index.js"
+}

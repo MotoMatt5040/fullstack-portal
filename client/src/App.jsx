@@ -34,8 +34,10 @@ import DispositionReport from './views/disposition_report/DispositionReport';
 import AIPrompting from './views/ai_prompting/AIPrompting';
 import ContactSupport from './views/support/ContactSupport';
 import SampleAutomation from './views/sample_automation/SampleAutomation';
+import ExtractionDefaults from './views/sample_automation/ExtractionDefaults';
 import CallID from './views/call_id/CallIDManagement';
 import ProjectNumbering from './views/project_numbering/ProjectNumbering';
+import QuotaSetupGuidePage from './views/docs/QuotaSetupGuidePage';
 
 function App() {
   useGetRolesQuery();
@@ -71,6 +73,7 @@ function App() {
 
         <Route path='unauthorized' element={<Unauthorized />} />
         <Route path='reset-password' element={<ResetPassword />} />
+        <Route path='docs/quota-setup' element={<QuotaSetupGuidePage />} />
 
         <Route
           element={
@@ -125,6 +128,7 @@ function App() {
           }
         >
           <Route path='sample-automation' element={<SampleAutomation />} />
+          <Route path='extraction-defaults' element={<ExtractionDefaults />} />
           <Route path='call-id' element={<CallID />} />
         </Route>
         <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>

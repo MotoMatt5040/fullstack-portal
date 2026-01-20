@@ -1816,6 +1816,50 @@ const autoAssignCallIDsFromSample = async (tableName, projectId, clientId) => {
   });
 };
 
+/**
+ * Update sample table's CallID columns with existing phone numbers
+ * Used when reusing existing Call IDs that are already assigned to a project
+ * @param {string} tableName - Sample table name to update
+ * @param {Object} callIdData - Object containing phoneNumber values for each slot
+ * @returns {Object} - Result with success status
+ */
+const updateSampleTableCallIDs = async (tableName, callIdData) => {
+  const { phoneNumberL1, phoneNumberL2, phoneNumberC1, phoneNumberC2 } = callIdData;
+
+  // Build SET clause dynamically based on which phone numbers are provided
+  const setClauses = [];
+  if (phoneNumberL1) setClauses.push(`CALLIDL1 = '${phoneNumberL1}'`);
+  if (phoneNumberL2) setClauses.push(`CALLIDL2 = '${phoneNumberL2}'`);
+  if (phoneNumberC1) setClauses.push(`CALLIDC1 = '${phoneNumberC1}'`);
+  if (phoneNumberC2) setClauses.push(`CALLIDC2 = '${phoneNumberC2}'`);
+
+  if (setClauses.length === 0) {
+    return { success: false, message: 'No CallID phone numbers provided to update' };
+  }
+
+  const query = `
+    UPDATE FAJITA.dbo.[${tableName}]
+    SET ${setClauses.join(', ')}
+  `;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      console.log(`[updateSampleTableCallIDs] Executing: ${query}`);
+      const result = await pool.request().query(query);
+      console.log(`[updateSampleTableCallIDs] Updated ${result.rowsAffected[0]} rows`);
+
+      return {
+        success: true,
+        message: `Updated ${result.rowsAffected[0]} rows with existing CallID phone numbers`,
+        rowsAffected: result.rowsAffected[0]
+      };
+    },
+    fnName: 'updateSampleTableCallIDs',
+    attempts: 3
+  });
+};
+
 module.exports = {
   // Dashboard
   getDashboardMetrics,
@@ -1861,5 +1905,6 @@ module.exports = {
   getTopAreaCodesFromSampleTable,
   findAvailableCallIDsByAreaCodes,
   getProjectDetails,
-  autoAssignCallIDsFromSample
+  autoAssignCallIDsFromSample,
+  updateSampleTableCallIDs
 };

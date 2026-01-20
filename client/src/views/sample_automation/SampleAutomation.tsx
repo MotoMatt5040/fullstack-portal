@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import Select from 'react-select';
+import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiFileMultiple,
@@ -7,11 +6,14 @@ import {
   mdiPlay,
   mdiCheck,
   mdiTableLarge,
+  mdiHelpCircleOutline,
 } from '@mdi/js';
 import { useSampleAutomationLogic } from './useSampleAutomationLogic';
+import { useSampleAutomationTour } from './SampleAutomationTour';
 import './SampleAutomation.css';
 import FileHeaders from './FileHeaders';
 import SampleSplitComponent from './SampleSplitComponent';
+import TourableSelect from './TourableSelect';
 
 const SampleAutomation: React.FC = () => {
   const {
@@ -105,6 +107,12 @@ const SampleAutomation: React.FC = () => {
     new Set([1])
   );
 
+  // Product tour - pass clientId for client-specific tour customization
+  const { startTour, keepMenuOpen, closeDropdownAndAdvance } = useSampleAutomationTour({
+    autoStart: true,
+    clientId: selectedClientId,
+  });
+
   const toggleStep = (step: number) => {
     setExpandedSteps((prev) => {
       const updated = new Set(prev);
@@ -116,6 +124,32 @@ const SampleAutomation: React.FC = () => {
       return updated;
     });
   };
+
+  // Auto-expand step 2 when files are uploaded
+  useEffect(() => {
+    if (selectedFiles?.length > 0) {
+      // Small delay to allow file processing UI to update first
+      const timer = setTimeout(() => {
+        setExpandedSteps((prev) => {
+          const updated = new Set(prev);
+          updated.add(2);
+          return updated;
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedFiles?.length]);
+
+  // Auto-expand step 3 when processing completes
+  useEffect(() => {
+    if (processResult && processResult.tableName) {
+      setExpandedSteps((prev) => {
+        const updated = new Set(prev);
+        updated.add(3);
+        return updated;
+      });
+    }
+  }, [processResult]);
 
   // Calculate step statuses
   const isConfigComplete =
@@ -159,7 +193,7 @@ const SampleAutomation: React.FC = () => {
   return (
     <section className='sample-automation'>
       {/* Page Header */}
-      <header className='page-header'>
+      <header className='page-header' data-tour='page-header'>
         <div className='header-title'>
           <Icon path={mdiFileMultiple} size={1.25} color='var(--accent-color)' />
           <div>
@@ -169,6 +203,15 @@ const SampleAutomation: React.FC = () => {
             </p>
           </div>
         </div>
+        <button
+          className='btn-tour'
+          onClick={startTour}
+          title='Take a guided tour'
+          data-tour='tour-button'
+        >
+          <Icon path={mdiHelpCircleOutline} size={0.85} />
+          <span>Tour</span>
+        </button>
       </header>
 
       {/* Processing Banner */}
@@ -198,10 +241,10 @@ const SampleAutomation: React.FC = () => {
       )}
 
       {/* Workflow Steps */}
-      <div className='workflow-container'>
+      <div className='workflow-container' data-tour='workflow-container'>
         {/* Step 1: Configuration & Upload */}
-        <div className='workflow-step'>
-          <div className='step-header' onClick={() => toggleStep(1)}>
+        <div className='workflow-step' data-tour='step-1'>
+          <div className='step-header' data-tour='step-1-header' onClick={() => toggleStep(1)}>
             <div className={`step-number ${isStep1Complete ? 'completed' : ''}`}>
               {isStep1Complete ? <Icon path={mdiCheck} size={0.7} /> : '1'}
             </div>
@@ -218,49 +261,67 @@ const SampleAutomation: React.FC = () => {
 
           {expandedSteps.has(1) && (
             <div className='step-content'>
-              <div className='config-grid'>
+              <div className='config-grid' data-tour='config-grid'>
                 {/* Project */}
                 <div className='config-item'>
                   <label>Project</label>
-                  <Select
-                    classNamePrefix='my-select'
-                    options={projectListOptions}
-                    value={
-                      projectListOptions.find(
-                        (opt) => opt.value === selectedProjectId
-                      ) || null
-                    }
-                    onChange={handleProjectChange}
-                    isDisabled={isAnyProcessing || isLoading}
-                    placeholder={isLoading ? 'Loading...' : 'Select project'}
-                    isClearable
-                    menuPortalTarget={document.body}
-                    styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                  />
+                  <div
+                    className={`select-tour-wrapper ${keepMenuOpen === 'project' ? 'menu-open' : ''}`}
+                    data-tour='project-select'
+                  >
+                    <TourableSelect
+                      options={projectListOptions}
+                      value={
+                        projectListOptions.find(
+                          (opt) => opt.value === selectedProjectId
+                        ) || null
+                      }
+                      onChange={(option) => {
+                        handleProjectChange(option);
+                        // Close dropdown and advance tour after selection
+                        if (keepMenuOpen === 'project') {
+                          closeDropdownAndAdvance();
+                        }
+                      }}
+                      isDisabled={isAnyProcessing || isLoading}
+                      placeholder={isLoading ? 'Loading...' : 'Select project'}
+                      isClearable
+                      menuIsOpen={keepMenuOpen === 'project' ? true : undefined}
+                    />
+                  </div>
                 </div>
 
                 {/* Vendor */}
                 <div className='config-item'>
                   <label>Vendor</label>
-                  <Select
-                    classNamePrefix='my-select'
-                    options={vendors}
-                    value={
-                      vendors.find((v) => v.value === selectedVendorId) || null
-                    }
-                    onChange={handleVendorChange}
-                    isDisabled={isAnyProcessing || isLoadingClientsAndVendors}
-                    placeholder={
-                      isLoadingClientsAndVendors ? 'Loading...' : 'Select vendor'
-                    }
-                    isClearable
-                    menuPortalTarget={document.body}
-                    styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                  />
+                  <div
+                    className={`select-tour-wrapper ${keepMenuOpen === 'vendor' ? 'menu-open' : ''}`}
+                    data-tour='vendor-select'
+                  >
+                    <TourableSelect
+                      options={vendors}
+                      value={
+                        vendors.find((v) => v.value === selectedVendorId) || null
+                      }
+                      onChange={(option) => {
+                        handleVendorChange(option);
+                        // Close dropdown and advance tour after selection
+                        if (keepMenuOpen === 'vendor') {
+                          closeDropdownAndAdvance();
+                        }
+                      }}
+                      isDisabled={isAnyProcessing || isLoadingClientsAndVendors}
+                      placeholder={
+                        isLoadingClientsAndVendors ? 'Loading...' : 'Select vendor'
+                      }
+                      isClearable
+                      menuIsOpen={keepMenuOpen === 'vendor' ? true : undefined}
+                    />
+                  </div>
                 </div>
 
                 {/* Client (auto-populated from project) */}
-                <div className='config-item'>
+                <div className='config-item' data-tour='client-display'>
                   <label>Client</label>
                   <div className='client-display'>
                     {selectedClientName || (
@@ -272,7 +333,7 @@ const SampleAutomation: React.FC = () => {
                 </div>
 
                 {/* Age Base Date */}
-                <div className='config-item'>
+                <div className='config-item' data-tour='age-base-date'>
                   <label>Age Base Date</label>
                   <div className='toggle-group'>
                     <button
@@ -295,7 +356,7 @@ const SampleAutomation: React.FC = () => {
                 </div>
 
                 {/* File ID */}
-                <div className='config-item'>
+                <div className='config-item' data-tour='file-id'>
                   <label>File ID (optional)</label>
                   <input
                     type='number'
@@ -310,15 +371,16 @@ const SampleAutomation: React.FC = () => {
               </div>
 
               {/* File Drop Zone */}
-              <div
-                className={`drop-zone ${dragActive ? 'drag-active' : ''} ${
-                  hasFiles ? 'has-files' : ''
-                }`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onClick={openFileDialog}
-              >
+              <div className='drop-zone-tour-wrapper' data-tour='drop-zone'>
+                <div
+                  className={`drop-zone ${dragActive ? 'drag-active' : ''} ${
+                    hasFiles ? 'has-files' : ''
+                  }`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={openFileDialog}
+                >
                 <input
                   ref={fileInputRef}
                   type='file'
@@ -368,14 +430,15 @@ const SampleAutomation: React.FC = () => {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           )}
         </div>
 
         {/* Step 2: Header Review */}
-        <div className='workflow-step'>
-          <div className='step-header' onClick={() => toggleStep(2)}>
+        <div className='workflow-step' data-tour='step-2'>
+          <div className='step-header' data-tour='step-2-header' onClick={() => toggleStep(2)}>
             <div
               className={`step-number ${
                 isStep2Complete ? 'completed' : !hasFiles ? 'disabled' : ''
@@ -409,8 +472,9 @@ const SampleAutomation: React.FC = () => {
               />
 
               {/* Process Actions */}
-              <div className='process-actions'>
+              <div className='process-actions' data-tour='process-actions'>
                 <button
+                  data-tour='process-button'
                   onClick={handleProcessFiles}
                   disabled={
                     !selectedProjectId ||
@@ -445,8 +509,8 @@ const SampleAutomation: React.FC = () => {
         </div>
 
         {/* Step 3: Results & Export */}
-        <div className='workflow-step'>
-          <div className='step-header' onClick={() => toggleStep(3)}>
+        <div className='workflow-step' data-tour='step-3'>
+          <div className='step-header' data-tour='step-3-header' onClick={() => toggleStep(3)}>
             <div
               className={`step-number ${
                 isStep3Complete ? 'completed' : !isStep2Complete ? 'disabled' : ''
@@ -468,8 +532,8 @@ const SampleAutomation: React.FC = () => {
           {expandedSteps.has(3) && processResult && (
             <div className='step-content'>
               {/* Results Grid */}
-              <div className='results-section'>
-                <div className='results-grid'>
+              <div className='results-section' data-tour='results-section'>
+                <div className='results-grid' data-tour='results-grid'>
                   <div className='result-card'>
                     <div className='result-label'>Table Created</div>
                     <div className='result-value'>{processResult.tableName}</div>
@@ -496,7 +560,7 @@ const SampleAutomation: React.FC = () => {
 
                 {/* Table Preview */}
                 {tablePreview && (
-                  <div className='preview-section'>
+                  <div className='preview-section' data-tour='data-preview'>
                     <div className='preview-header'>
                       <h4 className='preview-title'>
                         <Icon
@@ -566,6 +630,7 @@ const SampleAutomation: React.FC = () => {
                   fileType={fileType}
                   setFileType={setFileType}
                   clientId={selectedClientId}
+                  vendorId={selectedVendorId}
                   projectId={selectedProjectId}
                   callIdAssignment={processResult.callIdAssignment}
                 />

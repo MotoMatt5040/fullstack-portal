@@ -7,6 +7,7 @@ type User = {
   email: string;
   roles: string[];
   clientname: string; // Assuming the user object includes the client name
+  lastActive: string | null; // Timestamp of last activity
 };
 
 interface GroupedClient {

@@ -1,39 +1,425 @@
-name: mern-app
+name: promark-portal
 
 services:
+  auth:
+    build:
+      context: ./server
+      dockerfile: auth-service/Dockerfile
+      target: development
+    container_name: auth-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/auth-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5001"
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  notifications:
+    build:
+      context: ./server
+      dockerfile: notification-service/Dockerfile
+      target: development
+    container_name: notification-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/notification-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5002"
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  projects:
+    build:
+      context: ./server
+      dockerfile: project-numbering-service/Dockerfile
+      target: development
+    container_name: project-numbering-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/project-numbering-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5003"
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5003/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  callid:
+    build:
+      context: ./server
+      dockerfile: callid-service/Dockerfile
+      target: development
+    container_name: callid-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/callid-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5004"
+    environment:
+      - PORT=5004
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5004/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  auth-gateway:
+    build:
+      context: ./server/auth-gateway
+      dockerfile: Dockerfile
+      target: development
+    container_name: auth-gateway-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/auth-gateway:/app
+      - /app/node_modules
+    expose:
+      - "5005"
+    environment:
+      - PORT=5005
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5005/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  sample-automation:
+    build:
+      context: ./server
+      dockerfile: sample-automation-service/Dockerfile
+      target: development
+    container_name: sample-automation-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/sample-automation-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5006"
+    environment:
+      - PORT=5006
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5006/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  user-management:
+    build:
+      context: ./server
+      dockerfile: user-management-service/Dockerfile
+      target: development
+    container_name: user-management-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/user-management-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5007"
+    environment:
+      - PORT=5007
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5007/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  quota-management:
+    build:
+      context: ./server
+      dockerfile: quota-management-service/Dockerfile
+      target: development
+    container_name: quota-management-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/quota-management-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5008"
+    environment:
+      - PORT=5008
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5008/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  reporting:
+    build:
+      context: ./server
+      dockerfile: reporting-service/Dockerfile
+      target: development
+    container_name: reporting-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/reporting-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5009"
+    environment:
+      - PORT=5009
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5009/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  project-info:
+    build:
+      context: ./server
+      dockerfile: project-info-service/Dockerfile
+      target: development
+    container_name: project-info-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/project-info-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5010"
+    environment:
+      - PORT=5010
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5010/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  project-publishing:
+    build:
+      context: ./server
+      dockerfile: project-publishing-service/Dockerfile
+      target: development
+    container_name: project-publishing-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/project-publishing-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5011"
+    environment:
+      - PORT=5011
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5011/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  disposition:
+    build:
+      context: ./server
+      dockerfile: disposition-service/Dockerfile
+      target: development
+    container_name: disposition-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/disposition-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5012"
+    environment:
+      - PORT=5012
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5012/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  ai-prompting:
+    build:
+      context: ./server
+      dockerfile: ai-prompting-service/Dockerfile
+      target: development
+    container_name: ai-prompting-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/ai-prompting-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5013"
+    environment:
+      - PORT=5013
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5013/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  github:
+    build:
+      context: ./server
+      dockerfile: github-service/Dockerfile
+      target: development
+    container_name: github-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/github-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5014"
+    environment:
+      - PORT=5014
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5014/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  promark-employees:
+    build:
+      context: ./server
+      dockerfile: promark-employees-service/Dockerfile
+      target: development
+    container_name: promark-employees-service-dev
+    restart: unless-stopped
+    env_file: ./server/.env.dev
+    volumes:
+      - ./server/promark-employees-service:/app
+      - ./server/shared-libs:/app/shared-libs
+      - /app/node_modules
+    expose:
+      - "5015"
+    environment:
+      - PORT=5015
+    networks:
+      - promark-portal
+    command: sh -c "npm install --include=dev && npm run dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5015/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
   api:
     build:
       context: ./server
       target: development
+    container_name: api-dev
     restart: unless-stopped
-    env_file: ./server/.env
+    env_file: ./server/.env.dev
     volumes:
       - ./server:/app
       - /app/node_modules
+    expose:
+      - "5000"
     networks:
-      - mern-app
-    ports:
-      - "5000:5000"
+      - promark-portal
 
   client:
-    build: 
+    build:
       context: ./client
       target: development
       args:
         VITE_DEV_API_URL: ${VITE_DEV_API_URL}
         VITE_DOMAIN_NAME: ${VITE_DOMAIN_NAME}
         VITE_ENV: ${VITE_ENV}
+    container_name: client-dev
     restart: unless-stopped
     env_file: ./client/.env
     environment:
       - VITE_DEV_API_URL=${VITE_DEV_API_URL}
       - VITE_DOMAIN_NAME=${VITE_DOMAIN_NAME}
       - VITE_ENV=${VITE_ENV}
+      - DOCKER_ENV=true
     volumes:
       - ./client:/app
       - /app/node_modules
     networks:
-      - mern-app
+      - promark-portal
     ports:
       - "5173:5173"
     command: npm start -- --host
@@ -42,6 +428,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    container_name: caddy-dev
     ports:
       - "80:80"
       - "443:443"
@@ -50,14 +437,30 @@ services:
       - caddy_data:/caddy_data
       - caddy_config:/caddy_config
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
+      - auth
+      - auth-gateway
+      - notifications
+      - projects
+      - callid
+      - sample-automation
+      - user-management
+      - quota-management
+      - reporting
+      - project-info
+      - project-publishing
+      - disposition
+      - ai-prompting
+      - github
+      - promark-employees
       - api
       - client
 
 volumes:
   caddy_data:
   caddy_config:
+
 networks:
-  mern-app:
+  promark-portal:
     driver: bridge

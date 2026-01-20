@@ -5,6 +5,7 @@ import UserForm from '../secure/AddUser';
 import UpdateUserRoles from '../users/UpdateUserRoles';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { SkeletonTable } from '../../components/Skeleton';
+import OnlineUsers from './OnlineUsers';
 import Icon from '@mdi/react';
 import {
   mdiAccountGroup,
@@ -20,6 +21,8 @@ import {
   mdiAccountCircle,
   mdiDomain,
   mdiWrench,
+  mdiCircle,
+  mdiClock,
 } from '@mdi/js';
 import {
   useSendMaintenanceNotificationMutation,
@@ -32,6 +35,7 @@ interface User {
   email: string;
   roles: string[];
   clientname: string;
+  lastActive: string | null;
 }
 
 const getRoleBadgeClass = (role: string): string => {
@@ -41,6 +45,24 @@ const getRoleBadgeClass = (role: string): string => {
   if (roleLower === 'manager') return 'manager';
   if (roleLower === 'executive') return 'executive';
   return '';
+};
+
+// Format last active time as relative time
+const formatLastActive = (dateString: string | null): string => {
+  if (!dateString) return 'Never';
+
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 };
 
 const UserManagement = () => {
@@ -67,6 +89,7 @@ const UserManagement = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [maintenanceMinutes, setMaintenanceMinutes] = useState(5);
+  const [activeTab, setActiveTab] = useState<'users' | 'online'>('users');
 
   const toast = useToast();
   const [sendMaintenanceNotification, { isLoading: isSendingMaintenance }] =
@@ -239,7 +262,30 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Data Section */}
+      {/* Tabs */}
+      <div className='user-management-tabs'>
+        <button
+          className={`user-management-tab ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          <Icon path={mdiDomain} size={0.75} />
+          Clients & Users
+        </button>
+        <button
+          className={`user-management-tab ${activeTab === 'online' ? 'active' : ''}`}
+          onClick={() => setActiveTab('online')}
+        >
+          <Icon path={mdiCircle} size={0.5} className='online-tab-indicator' />
+          Online Users
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'online' ? (
+        <div className='user-management-data-section'>
+          <OnlineUsers />
+        </div>
+      ) : (
       <div className='user-management-data-section'>
         <div className='user-management-data-header'>
           <h2 className='user-management-data-title'>
@@ -259,6 +305,7 @@ const UserManagement = () => {
                 <tr>
                   <th>Client / User</th>
                   <th>Roles</th>
+                  <th>Last Active</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -287,6 +334,7 @@ const UserManagement = () => {
                             {client.userCount} user{client.userCount !== 1 ? 's' : ''}
                           </span>
                         </td>
+                        <td></td>
                         <td></td>
                       </tr>
 
@@ -317,6 +365,12 @@ const UserManagement = () => {
                                   </span>
                                 ))}
                               </div>
+                            </td>
+                            <td>
+                              <span className='user-management-last-active'>
+                                <Icon path={mdiClock} size={0.5} />
+                                {formatLastActive(user.lastActive)}
+                              </span>
                             </td>
                             <td>
                               <div className='user-management-actions'>
@@ -352,6 +406,7 @@ const UserManagement = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Add User Modal */}
       <Modal isOpen={isAddModalOpen} onClose={handleModalClose}>

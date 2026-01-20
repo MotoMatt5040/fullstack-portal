@@ -1,6 +1,276 @@
-name: mern-app
+name: promark-portal
 
 services:
+  auth:
+    build:
+      context: ./server
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5001"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  notifications:
+    build:
+      context: ./server
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5002"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  projects:
+    build:
+      context: ./server
+      dockerfile: project-numbering-service/Dockerfile
+    container_name: project-numbering-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5003"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5003/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  callid:
+    build:
+      context: ./server
+      dockerfile: callid-service/Dockerfile
+    container_name: callid-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5004"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5004/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  auth-gateway:
+    build:
+      context: ./server/auth-gateway
+      dockerfile: Dockerfile
+    container_name: auth-gateway
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5005"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5005/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  sample-automation:
+    build:
+      context: ./server
+      dockerfile: sample-automation-service/Dockerfile
+    container_name: sample-automation-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5006"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5006/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  user-management:
+    build:
+      context: ./server
+      dockerfile: user-management-service/Dockerfile
+    container_name: user-management-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5007"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5007/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  quota-management:
+    build:
+      context: ./server
+      dockerfile: quota-management-service/Dockerfile
+    container_name: quota-management-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5008"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5008/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  reporting:
+    build:
+      context: ./server
+      dockerfile: reporting-service/Dockerfile
+    container_name: reporting-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5009"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5009/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  project-info:
+    build:
+      context: ./server
+      dockerfile: project-info-service/Dockerfile
+    container_name: project-info-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5010"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5010/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  project-publishing:
+    build:
+      context: ./server
+      dockerfile: project-publishing-service/Dockerfile
+    container_name: project-publishing-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5011"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5011/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  disposition:
+    build:
+      context: ./server
+      dockerfile: disposition-service/Dockerfile
+    container_name: disposition-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5012"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5012/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  ai-prompting:
+    build:
+      context: ./server
+      dockerfile: ai-prompting-service/Dockerfile
+    container_name: ai-prompting-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5013"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5013/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  github:
+    build:
+      context: ./server
+      dockerfile: github-service/Dockerfile
+    container_name: github-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5014"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5014/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+  promark-employees:
+    build:
+      context: ./server
+      dockerfile: promark-employees-service/Dockerfile
+    container_name: promark-employees-service
+    restart: unless-stopped
+    env_file: ./.env.production
+    expose:
+      - "5015"
+    networks:
+      - promark-portal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5015/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
   api:
     build:
       context: ./server
@@ -10,7 +280,7 @@ services:
     volumes:
       - ./server_logs:/logs
     networks:
-      - mern-app
+      - promark-portal
 
   client:
     build: 
@@ -23,7 +293,7 @@ services:
     restart: unless-stopped
     env_file: ./.env.production
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
       - api
 
@@ -46,8 +316,23 @@ services:
       - caddy_config:/caddy_config
       - /var/log/caddy_logs:/var/log/caddy
     networks:
-      - mern-app
+      - promark-portal
     depends_on:
+      - auth
+      - auth-gateway
+      - notifications
+      - projects
+      - callid
+      - sample-automation
+      - user-management
+      - quota-management
+      - reporting
+      - project-info
+      - project-publishing
+      - disposition
+      - ai-prompting
+      - github
+      - promark-employees
       - api
       - client
 
@@ -56,5 +341,5 @@ volumes:
   caddy_config:
 
 networks:
-  mern-app:
+  promark-portal:
     driver: bridge
