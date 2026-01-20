@@ -141,21 +141,13 @@ jobs:
             echo "📜 Container logs:"
             docker compose --env-file .env.testing -f docker-compose.testing.yml logs --tail=10
 
-            # Test endpoints
-            echo "🧪 Testing Auth Service..."
-            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/auth/health" || echo "Auth service not ready"
-
-            echo "🧪 Testing Notification Service..."
-            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/notifications/health" || echo "Notification service not ready"
-
-            echo "🧪 Testing Project Numbering Service..."
-            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/project-numbering/health" || echo "Project numbering service not ready"
-
-            echo "🧪 Testing API..."
-            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" || echo "API not ready"
-
-            echo "🧪 Testing Frontend..."
-            curl -f "https://${{ secrets.VITE_DOMAIN_NAME }}" || echo "Frontend not ready"
+            # Test endpoints (silent curl, clean output)
+            echo "🧪 Health Checks:"
+            echo -n "  Auth Service: " && curl -sf "https://${{ secrets.VITE_DOMAIN_NAME }}/api/auth/health" > /dev/null && echo "✅ OK" || echo "❌ Not ready"
+            echo -n "  Notification Service: " && curl -sf "https://${{ secrets.VITE_DOMAIN_NAME }}/api/notifications/health" > /dev/null && echo "✅ OK" || echo "❌ Not ready"
+            echo -n "  Project Numbering: " && curl -sf "https://${{ secrets.VITE_DOMAIN_NAME }}/api/project-numbering/health" > /dev/null && echo "✅ OK" || echo "❌ Not ready"
+            echo -n "  API: " && curl -sf "https://${{ secrets.VITE_DOMAIN_NAME }}/api/health" > /dev/null && echo "✅ OK" || echo "❌ Not ready"
+            echo -n "  Frontend: " && curl -sf "https://${{ secrets.VITE_DOMAIN_NAME }}" > /dev/null && echo "✅ OK" || echo "❌ Not ready"
 
             echo "✅ TESTING Deployment completed at $(date)"
             echo "🌐 Site available at: https://${{ secrets.VITE_DOMAIN_NAME }}"
