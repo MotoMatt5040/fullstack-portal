@@ -316,20 +316,12 @@ export const useSampleAutomationLogic = () => {
         const currentVendorId = selectedVendorIdRef.current;
         const currentClientId = selectedClientIdRef.current;
 
-        console.log('Fetching header mappings for file:', fileId, {
-          vendorId: currentVendorId,
-          clientId: currentClientId,
-          headerCount: originalHeaders.length,
-        });
-
         // Get header mappings from database
         const mappingsResult = await getHeaderMappings({
           vendorId: currentVendorId,
           clientId: currentClientId,
           originalHeaders,
         }).unwrap();
-
-        console.log('Header mappings received:', mappingsResult);
 
         // Apply mappings to create mapped headers array
         const mappedHeaders = originalHeaders.map((originalHeader) => {
@@ -348,13 +340,7 @@ export const useSampleAutomationLogic = () => {
           },
         }));
 
-        console.log(`Applied mappings for file ${fileId}:`, {
-          originalCount: originalHeaders.length,
-          mappedCount: mappedHeaders.length,
-          mappingsFound: Object.keys(mappingsResult.data).length,
-        });
       } catch (error) {
-        console.error('Error fetching header mappings:', error);
         // Fallback: use original headers as mapped headers
         setFileHeaders((prev) => ({
           ...prev,
@@ -376,7 +362,6 @@ export const useSampleAutomationLogic = () => {
         const result = await detectHeaders(file).unwrap();
         return result.headers || [];
       } catch (error) {
-        console.error('Error detecting headers via backend:', error);
         throw new Error(
           `Failed to read headers from ${file.name}: ${error.message}`
         );
@@ -388,52 +373,22 @@ export const useSampleAutomationLogic = () => {
   // Automatically process files when they're uploaded
   // In the useEffect that auto-processes files
   useEffect(() => {
-    console.log('🔍 useEffect triggered');
-    console.log('selectedFiles:', selectedFiles);
-    console.log('fileHeaders:', fileHeaders);
-
     selectedFiles.forEach(async (fileWrapper) => {
-      console.log(
-        `📁 Processing file: ${fileWrapper.file.name}, ID: ${fileWrapper.id}`
-      );
-
       // Skip if we already have header data for this file
       if (fileHeaders[fileWrapper.id]) {
-        console.log(
-          `⏭️ Skipping ${fileWrapper.file.name} - already has headers`
-        );
         return;
       }
 
       try {
-        console.log(
-          `🔎 Auto-detecting headers for file: ${fileWrapper.file.name}`
-        );
-
         // Step 1: Detect headers from the file using backend
         const detectedHeaders = await detectHeadersFromFile(fileWrapper.file);
-        console.log(
-          `✅ Detected ${detectedHeaders.length} headers:`,
-          detectedHeaders
-        );
 
         // Step 2: Fetch database mappings and apply them
-        console.log(`🔄 Fetching mappings for ${fileWrapper.id}...`);
         await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders);
-        console.log(`✅ Mappings applied for ${fileWrapper.id}`);
 
         // Step 3: Mark file as processed
         setCheckedFiles((prev) => new Set([...prev, fileWrapper.id]));
-
-        console.log(
-          `✅ Header processing complete for file: ${fileWrapper.file.name}`
-        );
       } catch (error) {
-        console.error(
-          `❌ Failed to process headers for ${fileWrapper.file.name}:`,
-          error
-        );
-
         // Fallback: set empty header data so file doesn't get stuck
         setFileHeaders((prev) => ({
           ...prev,
@@ -555,11 +510,6 @@ export const useSampleAutomationLogic = () => {
             setSelectedClientId(selectedProject.clientId);
             selectedClientIdRef.current = selectedProject.clientId;
             setSelectedClientName(selectedProject.clientName || '');
-            console.log(
-              'Auto-populated client from project:',
-              selectedProject.clientId,
-              selectedProject.clientName
-            );
           } else {
             // Clear client if project has no client
             setSelectedClientId(null);
@@ -586,12 +536,6 @@ export const useSampleAutomationLogic = () => {
         selectedVendorIdRef.current = newValue; // SET REF IMMEDIATELY
         setProcessStatus('');
 
-        console.log(
-          'Vendor changed to:',
-          newValue,
-          'Re-fetching mappings for all files'
-        );
-
         // Re-fetch mappings for all files when vendor changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
@@ -611,12 +555,6 @@ export const useSampleAutomationLogic = () => {
         setSelectedClientId(newValue);
         selectedClientIdRef.current = newValue; // SET REF IMMEDIATELY
         setProcessStatus('');
-
-        console.log(
-          'Client changed to:',
-          newValue,
-          'Re-fetching mappings for all files'
-        );
 
         // Re-fetch mappings for all files when client changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
@@ -833,7 +771,6 @@ export const useSampleAutomationLogic = () => {
 
         // Fetch table preview after successful upload
         if (result.tableName) {
-          console.log('Fetching preview for table:', result.tableName);
           try {
             const preview = await getTablePreview({
               tableName: result.tableName,
@@ -1014,18 +951,12 @@ const downloadFile = useCallback(async (url, filename) => {
     // Clean up file after download with delay using RTK Query
     setTimeout(async () => {
       try {
-        const result = await cleanupTempFile(filename).unwrap();
-        if (result.success) {
-          console.log('✅ File cleanup successful:', filename);
-        } else {
-          console.log('⚠️ File cleanup failed:', result.message);
-        }
+        await cleanupTempFile(filename).unwrap();
       } catch (error) {
-        console.log('❌ Cleanup request failed:', error.message);
+        // Cleanup failed silently
       }
     }, 3000); // 3 second delay to ensure download started
   } catch (error) {
-    console.error('❌ Download failed:', error);
     throw error;
   }
 }, [token, cleanupTempFile]);
@@ -1117,7 +1048,6 @@ const handleExtractFiles = useCallback(async (config) => {
         }
       }
 
-      console.log('Files extracted:', result);
       toast.success(`${totalFilesDownloaded} file${totalFilesDownloaded !== 1 ? 's' : ''} downloading`, 'Export Complete');
 
       // Clear status after a delay
@@ -1129,8 +1059,7 @@ const handleExtractFiles = useCallback(async (config) => {
       setProcessStatus(`❌ Extraction failed: ${result.message}`);
       toast.error(result.message || 'Extraction failed', 'Export Failed');
     }
-  } catch (error) {
-    console.error('Error extracting files:', error);
+  } catch (error: any) {
     const errorMessage = error?.data?.message || error?.message || 'Failed to extract files';
     setProcessStatus(`❌ Error extracting files: ${errorMessage}`);
     toast.error(errorMessage, 'Export Failed');
@@ -1139,7 +1068,6 @@ const handleExtractFiles = useCallback(async (config) => {
 
   // Handle split configuration changes
 const handleSplitConfigChange = useCallback(async (config: any) => {
-  console.log('Split configuration changed:', config);
   setSplitConfiguration(config);
 
   // Handle extract action
@@ -1156,17 +1084,14 @@ const handleSplitConfigChange = useCallback(async (config: any) => {
 // Fetch distinct age ranges from processed table
 const fetchDistinctAgeRanges = useCallback(async (tableName: string) => {
   if (!tableName) return;
-  
+
   try {
-    console.log('Fetching distinct age ranges for table:', tableName);
     const result = await getDistinctAgeRanges({ tableName }).unwrap();
-    
+
     if (result.success) {
       setDistinctAgeRanges(result.ageRanges || []);
-      console.log('Age ranges fetched:', result.ageRanges);
     }
   } catch (error) {
-    console.error('Failed to fetch age ranges:', error);
     setDistinctAgeRanges([]);
   }
 }, [getDistinctAgeRanges]);
@@ -1197,12 +1122,10 @@ const generateSplitFiles = useCallback(async () => {
 
     if (result.success) {
       setProcessStatus(`✅ Split files generated successfully!`);
-      console.log('Split files generated:', result);
     } else {
       setProcessStatus(`❌ Failed to generate split files: ${result.message}`);
     }
   } catch (error: any) {
-    console.error('Error generating split files:', error);
     setProcessStatus(`❌ Error generating split files: ${error.message}`);
   }
 }, [splitConfiguration, processResult]);

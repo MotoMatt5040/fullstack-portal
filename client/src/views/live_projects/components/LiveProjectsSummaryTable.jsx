@@ -2,14 +2,6 @@ import React from 'react';
 import '../liveProjectsTable.css';
 
 const LiveProjectsSummaryTable = ({ data }) => {
-  const handleCellClick = (eid) => {
-    console.log('cell: ', eid);
-  };
-
-  const handleRowClick = (eid) => {
-    console.log('row: ', eid);
-  };
-
   return (
     <section>
       <table>

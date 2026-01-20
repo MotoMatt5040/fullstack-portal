@@ -194,20 +194,17 @@ export const useAIPromptingLogic = () => {
       };
 
       await addAiPrompt(payload).unwrap();
-      console.log('Prompt updated successfully!');
     } catch (error) {
-      console.error('Failed to update prompt:', error);
+      // Failed to update prompt
     }
   }, [systemPrompt, addAiPrompt, currentUser, projectId, questionNumber, questionSummary, tone]);
 
   const handleUpdateDefaultPrompt = useCallback(async () => {
     if (!systemPrompt.trim()) {
-      console.error('Cannot update default prompt with an empty prompt.');
       return;
     }
 
     if (!currentUser) {
-      console.error('No user information available.');
       return;
     }
 
@@ -219,9 +216,8 @@ export const useAIPromptingLogic = () => {
       };
 
       await updateDefaultPrompt(payload).unwrap();
-      console.log('Default prompt updated successfully!');
     } catch (error) {
-      console.error('Failed to update default prompt:', error);
+      // Failed to update default prompt
     }
   }, [systemPrompt, tone, updateDefaultPrompt, currentUser]);
 
@@ -386,12 +382,10 @@ export const useAIPromptingLogic = () => {
           };
 
           try {
-            console.log('Payload Object:', payloadObject);
             const payload = await getAiResponse(payloadObject).unwrap();
             responses.push(payload);
             wordCounts.push(countWords(payload));
           } catch (error) {
-            console.error('Failed to get AI response:', error);
             const errorMsg = 'Error: Could not generate a response.';
             responses.push(errorMsg);
             wordCounts.push(countWords(errorMsg));

@@ -81,8 +81,7 @@ const IssueForm = () => {
     };
 
     try {
-      const response = await createIssue(issueData).unwrap();
-      console.log("Feedback submitted:", response);
+      await createIssue(issueData).unwrap();
 
       // Show success message
       setSuccessMessage("Thank you for your feedback! Your submission has been received and our team will review it soon.");

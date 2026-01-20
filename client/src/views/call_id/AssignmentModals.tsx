@@ -497,24 +497,16 @@ export const ProjectSlotsModal: React.FC<ProjectSlotsModalProps> = ({
   };
 
   const handleSaveSlot = async (slotName: string) => {
-    console.log('[ProjectSlotsModal] handleSaveSlot called with:', slotName);
     const newPhoneNumberId = slots[slotName];
     const currentPhoneNumberId = currentAssignments?.[slotName];
 
-    console.log('[ProjectSlotsModal] newPhoneNumberId:', newPhoneNumberId);
-    console.log('[ProjectSlotsModal] currentPhoneNumberId:', currentPhoneNumberId);
-    console.log('[ProjectSlotsModal] projectId:', projectId);
-
     if (newPhoneNumberId === currentPhoneNumberId) {
-      console.log('[ProjectSlotsModal] No changes detected, returning early');
       setError('No changes to save');
       return;
     }
 
     // Dates are now retrieved from the Projects table automatically
-    console.log('[ProjectSlotsModal] Calling onUpdateSlot (dates from Projects table)');
     const result = await onUpdateSlot(projectId, slotName, newPhoneNumberId);
-    console.log('[ProjectSlotsModal] onUpdateSlot result:', result);
 
     if (!result.success) {
       setError(result.error || 'Failed to update slot');
