@@ -123,6 +123,7 @@ export const apiSlice = createApi({
     'SampleAutomationClients',
     'SampleAutomationVendors',
     'HeaderMappings',
+    'SampleTables',
   ],
   endpoints: (builder) => ({}),
 });

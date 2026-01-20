@@ -385,6 +385,69 @@ interface DeleteExtractionDefaultResponse {
   message: string;
 }
 
+// ============================================================================
+// SAMPLE TRACKING INTERFACES
+// ============================================================================
+
+export interface SampleTableParent {
+  tableName: string;
+  rowCount: number;
+  projectId: string | null;
+  timestamp: string | null;
+  createdDate: Date | null;
+}
+
+export interface SampleTableDerivative {
+  tableName: string;
+  rowCount: number;
+  type: string;
+}
+
+export interface SampleTableFamily {
+  parentTable: SampleTableParent;
+  derivatives: SampleTableDerivative[];
+}
+
+interface GetSampleTablesParams {
+  projectId?: string;
+  limit?: number;
+}
+
+interface GetSampleTablesResponse {
+  success: boolean;
+  data: SampleTableFamily[];
+  count: number;
+}
+
+interface SampleTableColumn {
+  name: string;
+  dataType: string;
+  maxLength: number | null;
+  nullable: boolean;
+  position: number;
+}
+
+interface GetSampleTableDetailsResponse {
+  success: boolean;
+  data: {
+    tableName: string;
+    columns: SampleTableColumn[];
+    totalRows: number;
+    sampleRows: Record<string, any>[];
+  };
+}
+
+interface DeleteSampleTableParams {
+  tableName: string;
+  includeDerivatives?: boolean;
+}
+
+interface DeleteSampleTableResponse {
+  success: boolean;
+  deletedTables: string[];
+  message: string;
+}
+
 export const sampleAutomationApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Process file by uploading FormData
@@ -717,6 +780,46 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
       }),
       invalidatesTags: ['ExtractionDefaults'],
     }),
+
+    // ========================================================================
+    // SAMPLE TRACKING ENDPOINTS
+    // ========================================================================
+
+    // Get all sample tables with their relationships
+    getSampleTables: builder.query<GetSampleTablesResponse, GetSampleTablesParams>({
+      query: ({ projectId, limit } = {}) => {
+        const params = new URLSearchParams();
+        if (projectId) params.append('projectId', projectId);
+        if (limit) params.append('limit', limit.toString());
+        const queryString = params.toString();
+        return {
+          url: `/sample-automation/sample-tables${queryString ? `?${queryString}` : ''}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['SampleTables'],
+    }),
+
+    // Get detailed information about a specific sample table
+    getSampleTableDetails: builder.query<GetSampleTableDetailsResponse, string>({
+      query: (tableName) => ({
+        url: `/sample-automation/sample-tables/${encodeURIComponent(tableName)}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, tableName) => [
+        { type: 'SampleTables', id: tableName },
+      ],
+    }),
+
+    // Delete a sample table and optionally its derivatives
+    deleteSampleTable: builder.mutation<DeleteSampleTableResponse, DeleteSampleTableParams>({
+      query: ({ tableName, includeDerivatives = true }) => ({
+        url: `/sample-automation/sample-tables/${encodeURIComponent(tableName)}`,
+        method: 'DELETE',
+        body: { includeDerivatives },
+      }),
+      invalidatesTags: ['SampleTables'],
+    }),
   }),
 });
 
@@ -760,4 +863,10 @@ export const {
   useSaveVendorClientExtractionDefaultsMutation,
   useSaveProjectExtractionOverridesMutation,
   useDeleteExtractionDefaultMutation,
+  // Sample Tracking hooks
+  useGetSampleTablesQuery,
+  useLazyGetSampleTablesQuery,
+  useGetSampleTableDetailsQuery,
+  useLazyGetSampleTableDetailsQuery,
+  useDeleteSampleTableMutation,
 } = sampleAutomationApiSlice;

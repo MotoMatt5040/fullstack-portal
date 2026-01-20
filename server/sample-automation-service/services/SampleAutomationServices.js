@@ -3111,6 +3111,277 @@ const saveProjectExtractionOverrides = async (
 };
 
 /**
+ * Get all SA_* tables from INFORMATION_SCHEMA with their metadata and related tables
+ * @param {Object} options - Filter options
+ * @param {string} options.projectId - Filter by project ID (optional)
+ * @param {number} options.limit - Maximum number of table families to return (default: 50)
+ * @returns {Array} - Array of table family objects with parent and related tables
+ */
+const getSampleTables = async (options = {}) => {
+  const { projectId, limit = 50 } = options;
+
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        // Get all SA_* tables from INFORMATION_SCHEMA with row counts from sys.partitions
+        // Filter out empty tables (0 rows) as they shouldn't exist
+        let query = `
+          SELECT
+            t.TABLE_NAME,
+            t.TABLE_SCHEMA,
+            (
+              SELECT SUM(p.rows)
+              FROM FAJITA.sys.partitions p
+              JOIN FAJITA.sys.tables tbl ON p.object_id = tbl.object_id
+              JOIN FAJITA.sys.schemas s ON tbl.schema_id = s.schema_id
+              WHERE tbl.name = t.TABLE_NAME
+                AND s.name = t.TABLE_SCHEMA
+                AND p.index_id IN (0, 1)
+            ) as ROW_COUNT
+          FROM FAJITA.INFORMATION_SCHEMA.TABLES t
+          WHERE t.TABLE_SCHEMA = 'dbo'
+            AND t.TABLE_NAME LIKE 'SA[_]%'
+            AND t.TABLE_TYPE = 'BASE TABLE'
+            AND (
+              SELECT SUM(p.rows)
+              FROM FAJITA.sys.partitions p
+              JOIN FAJITA.sys.tables tbl ON p.object_id = tbl.object_id
+              JOIN FAJITA.sys.schemas s ON tbl.schema_id = s.schema_id
+              WHERE tbl.name = t.TABLE_NAME
+                AND s.name = t.TABLE_SCHEMA
+                AND p.index_id IN (0, 1)
+            ) > 0
+        `;
+
+        const request = pool.request();
+
+        if (projectId) {
+          query += ` AND t.TABLE_NAME LIKE @projectPattern`;
+          request.input('projectPattern', sql.NVarChar, `SA_${projectId}_%`);
+        }
+
+        query += ` ORDER BY t.TABLE_NAME DESC`;
+
+        const tablesResult = await request.query(query);
+
+        // Group tables into families (parent + derivatives)
+        const tableFamilies = new Map();
+        const derivativeSuffixes = ['_LANDLINE', '_CELL', '_LSAM', '_CSAM', '_DUPLICATES',
+          'duplicate2', 'duplicate3', 'duplicate4', '_WDNC'];
+
+        for (const row of tablesResult.recordset) {
+          const tableName = row.TABLE_NAME;
+
+          // Check if this is a derivative table
+          let isDerivative = false;
+          let parentName = null;
+
+          for (const suffix of derivativeSuffixes) {
+            if (tableName.endsWith(suffix)) {
+              isDerivative = true;
+              parentName = tableName.slice(0, -suffix.length);
+              break;
+            }
+          }
+
+          if (isDerivative && parentName) {
+            // Add to parent's derivatives
+            if (!tableFamilies.has(parentName)) {
+              tableFamilies.set(parentName, {
+                parentTable: null,
+                derivatives: []
+              });
+            }
+            tableFamilies.get(parentName).derivatives.push({
+              tableName: tableName,
+              rowCount: row.ROW_COUNT || 0,
+              type: tableName.replace(parentName, '').replace(/^_/, '')
+            });
+          } else {
+            // This is a parent table
+            if (!tableFamilies.has(tableName)) {
+              tableFamilies.set(tableName, {
+                parentTable: null,
+                derivatives: []
+              });
+            }
+
+            // Parse the table name to extract project ID and timestamp
+            // Format: SA_{projectId}_{MMDD_HHMM}
+            const match = tableName.match(/^SA_(\d+)_(\d{4})_(\d{4})$/);
+
+            tableFamilies.get(tableName).parentTable = {
+              tableName: tableName,
+              rowCount: row.ROW_COUNT || 0,
+              projectId: match ? match[1] : null,
+              timestamp: match ? `${match[2]}_${match[3]}` : null,
+              createdDate: match ? parseTableTimestamp(match[2], match[3]) : null
+            };
+          }
+        }
+
+        // Convert to array and filter out incomplete families
+        const families = Array.from(tableFamilies.values())
+          .filter(f => f.parentTable !== null)
+          .sort((a, b) => {
+            // Sort by table name descending (newest first)
+            return b.parentTable.tableName.localeCompare(a.parentTable.tableName);
+          })
+          .slice(0, limit);
+
+        return families;
+      } catch (error) {
+        console.error('Error getting sample tables:', error);
+        throw new Error(`Failed to get sample tables: ${error.message}`);
+      }
+    },
+    fnName: 'getSampleTables',
+  });
+};
+
+/**
+ * Parse table timestamp from MMDD and HHMM parts
+ */
+const parseTableTimestamp = (datePart, timePart) => {
+  try {
+    const month = parseInt(datePart.slice(0, 2), 10) - 1;
+    const day = parseInt(datePart.slice(2, 4), 10);
+    const hour = parseInt(timePart.slice(0, 2), 10);
+    const minute = parseInt(timePart.slice(2, 4), 10);
+    const year = new Date().getFullYear();
+
+    return new Date(year, month, day, hour, minute);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Get detailed information about a specific table including columns and sample data
+ * @param {string} tableName - The table name to get details for
+ * @returns {Object} - Table details including columns and sample rows
+ */
+const getSampleTableDetails = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        // Get column information
+        const columnsResult = await pool
+          .request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(`
+            SELECT
+              COLUMN_NAME,
+              DATA_TYPE,
+              CHARACTER_MAXIMUM_LENGTH,
+              IS_NULLABLE,
+              ORDINAL_POSITION
+            FROM FAJITA.INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = 'dbo'
+              AND TABLE_NAME = @tableName
+            ORDER BY ORDINAL_POSITION
+          `);
+
+        // Get row count
+        const countResult = await pool.request().query(`
+          SELECT COUNT(*) as total FROM FAJITA.dbo.[${tableName}]
+        `);
+
+        // Get sample rows (first 10)
+        const sampleResult = await pool.request().query(`
+          SELECT TOP 10 * FROM FAJITA.dbo.[${tableName}]
+        `);
+
+        return {
+          tableName,
+          columns: columnsResult.recordset.map(col => ({
+            name: col.COLUMN_NAME,
+            dataType: col.DATA_TYPE,
+            maxLength: col.CHARACTER_MAXIMUM_LENGTH,
+            nullable: col.IS_NULLABLE === 'YES',
+            position: col.ORDINAL_POSITION
+          })),
+          totalRows: countResult.recordset[0].total,
+          sampleRows: sampleResult.recordset
+        };
+      } catch (error) {
+        console.error('Error getting table details:', error);
+        throw new Error(`Failed to get table details: ${error.message}`);
+      }
+    },
+    fnName: 'getSampleTableDetails',
+  });
+};
+
+/**
+ * Delete a sample table and all its derivative tables
+ * @param {string} tableName - The parent table name
+ * @param {boolean} includeDerivatives - Whether to delete derivative tables too
+ * @returns {Object} - Result with deleted tables
+ */
+const deleteSampleTable = async (tableName, includeDerivatives = true) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const deletedTables = [];
+        const derivativeSuffixes = ['_LANDLINE', '_CELL', '_LSAM', '_CSAM', '_DUPLICATES',
+          'duplicate2', 'duplicate3', 'duplicate4', '_WDNC'];
+
+        // Delete derivative tables first if requested
+        if (includeDerivatives) {
+          for (const suffix of derivativeSuffixes) {
+            const derivativeName = `${tableName}${suffix}`;
+
+            // Check if derivative exists
+            const existsResult = await pool
+              .request()
+              .input('tableName', sql.NVarChar, derivativeName)
+              .query(`
+                SELECT COUNT(*) as exists_count
+                FROM FAJITA.INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tableName
+              `);
+
+            if (existsResult.recordset[0].exists_count > 0) {
+              await pool.request().query(`DROP TABLE FAJITA.dbo.[${derivativeName}]`);
+              deletedTables.push(derivativeName);
+            }
+          }
+        }
+
+        // Delete the parent table
+        const existsResult = await pool
+          .request()
+          .input('tableName', sql.NVarChar, tableName)
+          .query(`
+            SELECT COUNT(*) as exists_count
+            FROM FAJITA.INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tableName
+          `);
+
+        if (existsResult.recordset[0].exists_count > 0) {
+          await pool.request().query(`DROP TABLE FAJITA.dbo.[${tableName}]`);
+          deletedTables.push(tableName);
+        }
+
+        return {
+          success: true,
+          deletedTables,
+          message: `Deleted ${deletedTables.length} table(s)`
+        };
+      } catch (error) {
+        console.error('Error deleting sample table:', error);
+        throw new Error(`Failed to delete sample table: ${error.message}`);
+      }
+    },
+    fnName: 'deleteSampleTable',
+  });
+};
+
+/**
  * Delete a single extraction default/override by ID and type
  * @param {string} type - 'client', 'vendorClient', or 'project'
  * @param {number} id - Record ID
@@ -3196,4 +3467,8 @@ module.exports = {
   saveVendorClientExtractionDefaults,
   saveProjectExtractionOverrides,
   deleteExtractionDefault,
+  // Sample Tracking
+  getSampleTables,
+  getSampleTableDetails,
+  deleteSampleTable,
 };
