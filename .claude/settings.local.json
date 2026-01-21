@@ -14,7 +14,11 @@
       "Bash(curl:*)",
       "Bash(cat:*)",
       "Bash(docker compose:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose ps:*)"
     ],
     "deny": [],
     "ask": []

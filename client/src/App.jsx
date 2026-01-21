@@ -39,6 +39,7 @@ import SampleTracking from './views/sample_automation/SampleTracking';
 import CallID from './views/call_id/CallIDManagement';
 import ProjectNumbering from './views/project_numbering/ProjectNumbering';
 import QuotaSetupGuidePage from './views/docs/QuotaSetupGuidePage';
+import HeaderMappings from './views/header_mappings/HeaderMappings';
 
 function App() {
   useGetRolesQuery();
@@ -131,6 +132,7 @@ function App() {
           <Route path='sample-automation' element={<SampleAutomation />} />
           <Route path='extraction-defaults' element={<ExtractionDefaults />} />
           <Route path='sample-tracking' element={<SampleTracking />} />
+          <Route path='header-mappings' element={<HeaderMappings />} />
           <Route path='call-id' element={<CallID />} />
         </Route>
         <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>

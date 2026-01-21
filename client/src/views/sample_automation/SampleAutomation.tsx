@@ -100,6 +100,10 @@ const SampleAutomation: React.FC = () => {
     // File type
     fileType,
     setFileType,
+
+    // Include/Exclude header toggling
+    handleIncludeExcludedHeader,
+    handleExcludeIncludedHeader,
   } = useSampleAutomationLogic();
 
   // Step expansion state
@@ -469,6 +473,8 @@ const SampleAutomation: React.FC = () => {
                 onValidationModeChange={setAllowExtraHeaders}
                 onSaveMappingToDB={handleSaveMappingToDB}
                 onUpdateLocalMapping={handleUpdateLocalMapping}
+                onIncludeExcludedHeader={handleIncludeExcludedHeader}
+                onExcludeIncludedHeader={handleExcludeIncludedHeader}
               />
 
               {/* Process Actions */}

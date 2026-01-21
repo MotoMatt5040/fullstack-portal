@@ -406,6 +406,115 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
 };
 
 /**
+ * Get all header mappings for management page (with optional filters)
+ * @param {Object} filters - Optional filters { vendorId, clientId, search }
+ * @returns {Array} - Array of all header mappings
+ */
+const getAllHeaderMappings = async (filters = {}) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const request = pool.request();
+        let whereConditions = [];
+
+        if (filters.vendorId) {
+          request.input('vendorId', filters.vendorId);
+          whereConditions.push('hm.VendorID = @vendorId');
+        }
+
+        if (filters.clientId) {
+          request.input('clientId', filters.clientId);
+          whereConditions.push('hm.ClientID = @clientId');
+        }
+
+        if (filters.search) {
+          request.input('search', `%${filters.search.toUpperCase()}%`);
+          whereConditions.push('(UPPER(hm.OriginalHeader) LIKE @search OR UPPER(hm.MappedHeader) LIKE @search)');
+        }
+
+        const whereClause = whereConditions.length > 0
+          ? `WHERE ${whereConditions.join(' AND ')}`
+          : '';
+
+        const query = `
+          SELECT
+            hm.OriginalHeader,
+            hm.MappedHeader,
+            hm.VendorID,
+            hm.ClientID,
+            COALESCE(v.VendorName, 'Global') as VendorName,
+            COALESCE(c.ClientName, 'Global') as ClientName,
+            hm.CreatedDate,
+            hm.ModifiedDate
+          FROM FAJITA.dbo.HeaderMappings hm
+          LEFT JOIN FAJITA.dbo.Vendors v ON v.VendorID = hm.VendorID
+          LEFT JOIN CaligulaD.dbo.tblClients c ON c.ClientID = hm.ClientID
+          ${whereClause}
+          ORDER BY hm.OriginalHeader ASC, v.VendorName ASC, c.ClientName ASC
+        `;
+
+        const result = await request.query(query);
+        return result.recordset.map(row => ({
+          originalHeader: row.OriginalHeader,
+          mappedHeader: row.MappedHeader,
+          vendorId: row.VendorID,
+          clientId: row.ClientID,
+          vendorName: row.VendorName,
+          clientName: row.ClientName,
+          createdDate: row.CreatedDate,
+          modifiedDate: row.ModifiedDate,
+        }));
+      } catch (error) {
+        console.error('Error in getAllHeaderMappings service:', error);
+        throw new Error(`Failed to fetch all header mappings: ${error.message}`);
+      }
+    },
+    fnName: 'getAllHeaderMappings',
+  });
+};
+
+/**
+ * Delete a specific header mapping
+ * @param {string} originalHeader - Original header name
+ * @param {number|null} vendorId - Vendor ID (null for global)
+ * @param {number|null} clientId - Client ID (null for global)
+ * @returns {boolean} - True if deleted successfully
+ */
+const deleteHeaderMapping = async (originalHeader, vendorId, clientId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const request = pool.request();
+        request.input('originalHeader', originalHeader.toUpperCase());
+
+        let vendorCondition = vendorId ? 'VendorID = @vendorId' : 'VendorID IS NULL';
+        let clientCondition = clientId ? 'ClientID = @clientId' : 'ClientID IS NULL';
+
+        if (vendorId) request.input('vendorId', vendorId);
+        if (clientId) request.input('clientId', clientId);
+
+        const query = `
+          DELETE FROM FAJITA.dbo.HeaderMappings
+          WHERE UPPER(OriginalHeader) = @originalHeader
+          AND ${vendorCondition}
+          AND ${clientCondition}
+        `;
+
+        const result = await request.query(query);
+        console.log(`Deleted header mapping: ${originalHeader} (vendor: ${vendorId}, client: ${clientId})`);
+        return result.rowsAffected[0] > 0;
+      } catch (error) {
+        console.error('Error in deleteHeaderMapping service:', error);
+        throw new Error(`Failed to delete header mapping: ${error.message}`);
+      }
+    },
+    fnName: 'deleteHeaderMapping',
+  });
+};
+
+/**
  * Sanitize table name for SQL Server compatibility
  * @param {string} tableName - Raw table name
  * @returns {string} - Sanitized table name
@@ -3223,6 +3332,8 @@ module.exports = {
   getClientsAndVendors,
   getHeaderMappings,
   saveHeaderMappings,
+  getAllHeaderMappings,
+  deleteHeaderMapping,
   getTablePreview,
   createDNCScrubbed,
   formatPhoneNumbersInTable,

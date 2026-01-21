@@ -303,6 +303,91 @@ const buildFinalHeaders = (allHeaders, isMultiFile) => {
 };
 
 /**
+ * Apply variable exclusions - removes excluded variables from headers and data
+ * This happens AFTER header mapping, so we're working with final/mapped header names
+ * @param {Array} headers - Array of header objects
+ * @param {Array} data - Array of data rows
+ * @param {Set} excludedVariables - Set of variable names to exclude (uppercase)
+ * @param {Map} projectInclusions - Map of variables that should be included for this project (overrides exclusions)
+ * @returns {Object} - { filteredHeaders, filteredData, excludedCount }
+ */
+const applyVariableExclusions = (headers, data, excludedVariables, projectInclusions = new Map()) => {
+  // System columns that should never be excluded
+  const systemColumns = new Set(['FILE', '_source_file', '_file_index']);
+
+  // Determine which headers to keep
+  const headersToKeep = [];
+  const headersToExclude = [];
+
+  for (const header of headers) {
+    const upperName = header.name.toUpperCase();
+
+    // Always keep system columns
+    if (systemColumns.has(header.name)) {
+      headersToKeep.push(header);
+      continue;
+    }
+
+    // Check if this variable is excluded
+    if (excludedVariables.has(upperName)) {
+      // Check if there's a project-specific inclusion override
+      if (projectInclusions.has(upperName)) {
+        // Keep it but rename to the mapped name
+        const mappedName = projectInclusions.get(upperName);
+        headersToKeep.push({
+          ...header,
+          name: mappedName,
+          originalName: header.name,
+        });
+        console.log(`Variable "${header.name}" is excluded but included for this project as "${mappedName}"`);
+      } else {
+        // Exclude this header
+        headersToExclude.push(header.name);
+      }
+    } else {
+      // Not excluded, keep it
+      headersToKeep.push(header);
+    }
+  }
+
+  if (headersToExclude.length > 0) {
+    console.log(`Excluding ${headersToExclude.length} variable(s):`, headersToExclude.slice(0, 10).join(', ') + (headersToExclude.length > 10 ? '...' : ''));
+  }
+
+  // Build set of header names to keep for fast lookup
+  const keepSet = new Set(headersToKeep.map(h => h.name));
+  const headerNameMap = new Map(); // Maps old names to new names for project inclusions
+
+  headersToKeep.forEach(h => {
+    if (h.originalName && h.originalName !== h.name) {
+      headerNameMap.set(h.originalName, h.name);
+    }
+  });
+
+  // Filter data to only include kept columns
+  const filteredData = data.map(row => {
+    const newRow = {};
+    for (const [key, value] of Object.entries(row)) {
+      // Check if this column should be kept
+      if (keepSet.has(key)) {
+        newRow[key] = value;
+      } else if (headerNameMap.has(key)) {
+        // Renamed column (project inclusion override)
+        newRow[headerNameMap.get(key)] = value;
+      }
+    }
+    return newRow;
+  });
+
+  return {
+    filteredHeaders: headersToKeep,
+    filteredData,
+    excludedCount: headersToExclude.length,
+    excludedHeaders: headersToExclude,
+  };
+};
+
+/**
  * Run post-processing steps on the created table
  */
 const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMode, fileType, tableHeaders) => {
@@ -509,19 +594,50 @@ const processFile = async (req, res) => {
 
     const { allProcessedData, allHeaders, totalOriginalRows, processedFileNames } = processedFiles;
 
-    const finalHeaders = buildFinalHeaders(allHeaders, filesToProcess.length > 1);
+    let finalHeaders = buildFinalHeaders(allHeaders, filesToProcess.length > 1);
 
     await cleanupFiles(filesToProcess);
 
+    // Apply variable exclusions (after header mapping)
+    console.log('Checking for variable exclusions...');
+    let filteredData = allProcessedData;
+    try {
+      const excludedVariables = await SampleAutomation.getExcludedVariableSet();
+      const projectInclusions = projectId
+        ? await SampleAutomation.getProjectInclusionsMap(parseInt(projectId))
+        : new Map();
+
+      if (excludedVariables.size > 0) {
+        console.log(`Found ${excludedVariables.size} excluded variable(s)`);
+        const exclusionResult = applyVariableExclusions(
+          finalHeaders,
+          allProcessedData,
+          excludedVariables,
+          projectInclusions
+        );
+
+        finalHeaders = exclusionResult.filteredHeaders;
+        filteredData = exclusionResult.filteredData;
+
+        if (exclusionResult.excludedCount > 0) {
+          console.log(`✅ Excluded ${exclusionResult.excludedCount} variable(s) from data`);
+        }
+      } else {
+        console.log('No variable exclusions configured');
+      }
+    } catch (exclusionError) {
+      console.warn('⚠️ Error applying variable exclusions (continuing without):', exclusionError.message);
+    }
+
     console.log('Processing Summary:');
     console.log(`- Files processed: ${filesToProcess.length}`);
-    console.log(`- Total rows: ${allProcessedData.length}`);
+    console.log(`- Total rows: ${filteredData.length}`);
     console.log(`- Columns: ${finalHeaders.length}`);
 
     const processedData = {
       headers: finalHeaders,
-      data: allProcessedData,
-      totalRows: allProcessedData.length,
+      data: filteredData,
+      totalRows: filteredData.length,
       sourceFiles: processedFileNames,
     };
 
@@ -720,6 +836,75 @@ const saveHeaderMappings = handleAsync(async (req, res) => {
   });
 });
 
+/**
+ * Get all header mappings (for management page)
+ * @route GET /api/sample-automation/header-mappings/all
+ */
+const getAllHeaderMappings = handleAsync(async (req, res) => {
+  const { vendorId, clientId, search } = req.query;
+
+  console.log('Fetching all header mappings with filters:', {
+    vendorId: vendorId || 'all',
+    clientId: clientId || 'all',
+    search: search || 'none',
+  });
+
+  const filters = {};
+  if (vendorId) filters.vendorId = parseInt(vendorId);
+  if (clientId) filters.clientId = parseInt(clientId);
+  if (search) filters.search = search;
+
+  const mappings = await SampleAutomation.getAllHeaderMappings(filters);
+
+  console.log(`Found ${mappings.length} header mappings`);
+
+  res.json({
+    success: true,
+    data: mappings,
+    count: mappings.length,
+    message: `Found ${mappings.length} header mappings`,
+  });
+});
+
+/**
+ * Delete a header mapping
+ * @route DELETE /api/sample-automation/header-mappings
+ */
+const deleteHeaderMapping = handleAsync(async (req, res) => {
+  const { originalHeader, vendorId, clientId } = req.body;
+
+  if (!originalHeader) {
+    return res.status(400).json({
+      success: false,
+      message: 'originalHeader is required',
+    });
+  }
+
+  console.log('Deleting header mapping:', {
+    originalHeader,
+    vendorId: vendorId || 'null',
+    clientId: clientId || 'null',
+  });
+
+  const result = await SampleAutomation.deleteHeaderMapping(
+    originalHeader,
+    vendorId || null,
+    clientId || null
+  );
+
+  if (result.deleted) {
+    res.json({
+      success: true,
+      message: `Successfully deleted mapping for "${originalHeader}"`,
+    });
+  } else {
+    res.status(404).json({
+      success: false,
+      message: `No mapping found for "${originalHeader}" with specified vendor/client`,
+    });
+  }
+});
+
 const getSupportedFileTypes = async (req, res) => {
   try {
     res.json({
@@ -843,10 +1028,29 @@ const detectHeaders = handleAsync(async (req, res) => {
 
   const headerNames = result.headers.map((h) => sanitizeHeaderName(h.name));
 
+  // Filter out excluded variables from the header list
+  let filteredHeaders = headerNames;
+  let excludedHeaders = [];
+  try {
+    const excludedVariables = await SampleAutomation.getExcludedVariableSet();
+    if (excludedVariables.size > 0) {
+      filteredHeaders = headerNames.filter(h => !excludedVariables.has(h.toUpperCase()));
+      excludedHeaders = headerNames.filter(h => excludedVariables.has(h.toUpperCase()));
+      if (excludedHeaders.length > 0) {
+        console.log(`Header detection: filtered out ${excludedHeaders.length} excluded variable(s)`);
+      }
+    }
+  } catch (error) {
+    console.warn('Could not apply variable exclusions to header detection:', error.message);
+  }
+
   res.json({
     success: true,
-    headers: headerNames,
-    message: `Detected ${headerNames.length} headers`,
+    headers: filteredHeaders,
+    excludedHeaders,
+    totalDetected: headerNames.length,
+    excludedCount: excludedHeaders.length,
+    message: `Detected ${filteredHeaders.length} headers${excludedHeaders.length > 0 ? ` (${excludedHeaders.length} excluded)` : ''}`,
   });
 });
 
@@ -1466,6 +1670,181 @@ const deleteSampleTable = handleAsync(async (req, res) => {
   res.json(result);
 });
 
+// ============================================================================
+// Variable Exclusions Controllers
+// ============================================================================
+
+/**
+ * Get all variable exclusions
+ */
+const getVariableExclusions = handleAsync(async (req, res) => {
+  const { search } = req.query;
+
+  const exclusions = await SampleAutomation.getVariableExclusions({ search });
+
+  res.json({
+    success: true,
+    data: exclusions,
+  });
+});
+
+/**
+ * Add a new variable exclusion
+ */
+const addVariableExclusion = handleAsync(async (req, res) => {
+  const { variableName, description } = req.body;
+  const createdBy = req.user?.email || req.user?.username || 'system';
+
+  if (!variableName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Variable name is required',
+    });
+  }
+
+  const exclusion = await SampleAutomation.addVariableExclusion(variableName, description, createdBy);
+
+  res.json({
+    success: true,
+    data: exclusion,
+  });
+});
+
+/**
+ * Update a variable exclusion
+ */
+const updateVariableExclusion = handleAsync(async (req, res) => {
+  const { exclusionId } = req.params;
+  const { description } = req.body;
+
+  if (!exclusionId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Exclusion ID is required',
+    });
+  }
+
+  const exclusion = await SampleAutomation.updateVariableExclusion(parseInt(exclusionId), description);
+
+  res.json({
+    success: true,
+    data: exclusion,
+  });
+});
+
+/**
+ * Delete a variable exclusion
+ */
+const deleteVariableExclusion = handleAsync(async (req, res) => {
+  const { exclusionId } = req.params;
+
+  if (!exclusionId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Exclusion ID is required',
+    });
+  }
+
+  const result = await SampleAutomation.deleteVariableExclusion(parseInt(exclusionId));
+
+  res.json({
+    success: true,
+    ...result,
+  });
+});
+
+/**
+ * Get project variable inclusions
+ */
+const getProjectVariableInclusions = handleAsync(async (req, res) => {
+  const { projectId } = req.params;
+
+  if (!projectId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Project ID is required',
+    });
+  }
+
+  const inclusions = await SampleAutomation.getProjectVariableInclusions(parseInt(projectId));
+
+  res.json({
+    success: true,
+    data: inclusions,
+  });
+});
+
+/**
+ * Add a project variable inclusion
+ */
+const addProjectVariableInclusion = handleAsync(async (req, res) => {
+  const { projectId } = req.params;
+  const { originalVariableName, mappedVariableName } = req.body;
+  const createdBy = req.user?.email || req.user?.username || 'system';
+
+  if (!projectId || !originalVariableName || !mappedVariableName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Project ID, original variable name, and mapped variable name are required',
+    });
+  }
+
+  const inclusion = await SampleAutomation.addProjectVariableInclusion(
+    parseInt(projectId),
+    originalVariableName,
+    mappedVariableName,
+    createdBy
+  );
+
+  res.json({
+    success: true,
+    data: inclusion,
+  });
+});
+
+/**
+ * Update a project variable inclusion
+ */
+const updateProjectVariableInclusion = handleAsync(async (req, res) => {
+  const { inclusionId } = req.params;
+  const { mappedVariableName } = req.body;
+
+  if (!inclusionId || !mappedVariableName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Inclusion ID and mapped variable name are required',
+    });
+  }
+
+  const inclusion = await SampleAutomation.updateProjectVariableInclusion(parseInt(inclusionId), mappedVariableName);
+
+  res.json({
+    success: true,
+    data: inclusion,
+  });
+});
+
+/**
+ * Delete a project variable inclusion
+ */
+const deleteProjectVariableInclusion = handleAsync(async (req, res) => {
+  const { inclusionId } = req.params;
+
+  if (!inclusionId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Inclusion ID is required',
+    });
+  }
+
+  const result = await SampleAutomation.deleteProjectVariableInclusion(parseInt(inclusionId));
+
+  res.json({
+    success: true,
+    ...result,
+  });
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -1477,7 +1856,9 @@ module.exports = {
   handleGetVendors,
   handleGetClientsAndVendors,
   getHeaderMappings,
+  getAllHeaderMappings,
   saveHeaderMappings,
+  deleteHeaderMapping,
   detectHeaders,
   uploadSingle: upload.single('file'),
   getTablePreview,
@@ -1505,4 +1886,13 @@ module.exports = {
   getSampleTables,
   getSampleTableDetails,
   deleteSampleTable,
+  // Variable Exclusions
+  getVariableExclusions,
+  addVariableExclusion,
+  updateVariableExclusion,
+  deleteVariableExclusion,
+  getProjectVariableInclusions,
+  addProjectVariableInclusion,
+  updateProjectVariableInclusion,
+  deleteProjectVariableInclusion,
 };

@@ -848,6 +848,91 @@ const getHeaderMappings = handleAsync(async (req, res) => {
 });
 
 /**
+ * Get all header mappings (for management page)
+ * @route GET /api/sample-automation/header-mappings/all
+ */
+const getAllHeaderMappings = handleAsync(async (req, res) => {
+  try {
+    const { vendorId, clientId, search } = req.query;
+
+    console.log('Fetching all header mappings with filters:', {
+      vendorId: vendorId || 'all',
+      clientId: clientId || 'all',
+      search: search || 'none',
+    });
+
+    const filters = {};
+    if (vendorId) filters.vendorId = parseInt(vendorId);
+    if (clientId) filters.clientId = parseInt(clientId);
+    if (search) filters.search = search;
+
+    const mappings = await SampleAutomation.getAllHeaderMappings(filters);
+
+    console.log(`Found ${mappings.length} header mappings`);
+
+    res.json({
+      success: true,
+      data: mappings,
+      count: mappings.length,
+      message: `Found ${mappings.length} header mappings`,
+    });
+  } catch (error) {
+    console.error('Error in getAllHeaderMappings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch header mappings',
+    });
+  }
+});
+
+/**
+ * Delete a header mapping
+ * @route DELETE /api/sample-automation/header-mappings
+ */
+const deleteHeaderMapping = handleAsync(async (req, res) => {
+  try {
+    const { originalHeader, vendorId, clientId } = req.body;
+
+    if (!originalHeader) {
+      return res.status(400).json({
+        success: false,
+        message: 'originalHeader is required',
+      });
+    }
+
+    console.log('Deleting header mapping:', {
+      originalHeader,
+      vendorId: vendorId || 'null',
+      clientId: clientId || 'null',
+    });
+
+    const result = await SampleAutomation.deleteHeaderMapping(
+      originalHeader,
+      vendorId || null,
+      clientId || null
+    );
+
+    if (result.deleted) {
+      res.json({
+        success: true,
+        message: `Successfully deleted mapping for "${originalHeader}"`,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: `No mapping found for "${originalHeader}" with specified vendor/client`,
+      });
+    }
+  } catch (error) {
+    console.error('Error in deleteHeaderMapping:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to delete header mapping',
+    });
+  }
+});
+
+/**
  * Save header mappings to database
  * @route POST /api/sample-automation/header-mappings
  */
@@ -1529,7 +1614,9 @@ module.exports = {
   handleGetVendors,
   handleGetClientsAndVendors,
   getHeaderMappings,
+  getAllHeaderMappings,
   saveHeaderMappings,
+  deleteHeaderMapping,
   detectHeaders,
   uploadSingle: upload.single('file'),
   getTablePreview,
