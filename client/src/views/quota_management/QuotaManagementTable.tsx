@@ -1,5 +1,12 @@
 import React, { memo, useMemo, useState, useCallback, useEffect } from 'react';
 
+// Status thresholds helper
+const getStatusFromPercent = (percent: number): string => {
+  if (percent >= 110) return 'over';      // Purple - exceeded target
+  if (percent >= 100) return 'complete';  // Red - met objective
+  return 'behind';                        // Green - not yet met
+};
+
 // Types
 interface RowData {
   Objective?: number | string;
@@ -31,7 +38,14 @@ interface Props {
   quotaData: QuotaData;
   visibleStypes: VisibleStypes;
   isInternalUser?: boolean;
+  showVisualIndicators?: boolean;
+  visibleColumns?: string[];
+  visibleModes?: string[];
 }
+
+// Default visible columns and modes
+const DEFAULT_VISIBLE_COLUMNS = ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'];
+const DEFAULT_VISIBLE_MODES = ['Phone', 'Web'];
 
 // Constants
 const COLUMN_DISPLAY_NAMES: Record<string, string> = {
@@ -182,6 +196,33 @@ const TableCell = memo<TableCellProps>(({ rowKey, group, subGroup, col, cellData
 
 TableCell.displayName = 'TableCell';
 
+// Progress bar cell component for Total Freq% column
+const ProgressCell = memo<{
+  value: string;
+  objective: number;
+  frequency: number;
+  className: string;
+}>(({ value, objective, frequency, className }) => {
+  const percent = objective > 0 ? (frequency / objective) * 100 : 0;
+  const status = getStatusFromPercent(percent);
+
+  return (
+    <td className={`${className} cell-with-progress`}>
+      <div className={`cell-progress-wrapper status-${status}`}>
+        <span className="cell-progress-value">{value}</span>
+        <div className="cell-progress-bar">
+          <div
+            className="cell-progress-fill"
+            style={{ width: `${Math.min(percent, 100)}%` }}
+          />
+        </div>
+      </div>
+    </td>
+  );
+});
+
+ProgressCell.displayName = 'ProgressCell';
+
 // Memoized table row component
 const TableRow = memo<{
   rowKey: string;
@@ -189,7 +230,22 @@ const TableRow = memo<{
   visibleStypes: VisibleStypes;
   activeTooltip: string | null;
   onTooltipToggle: (cellId: string | null) => void;
-}>(({ rowKey, rowData, visibleStypes, activeTooltip, onTooltipToggle }) => {
+  showVisualIndicators?: boolean;
+}>(({ rowKey, rowData, visibleStypes, activeTooltip, onTooltipToggle, showVisualIndicators = false }) => {
+  // Calculate row status based on Total data (only for rows with actual data)
+  const rowStatus = useMemo(() => {
+    if (!showVisualIndicators) return null;
+    const totalData = rowData?.Total?.Total || rowData?.Total || {};
+    const objective = parseInt(totalData.TotalObjective) || 0;
+    const frequency = parseInt(totalData.Frequency) || 0;
+    // Only show status if both objective and frequency have meaningful values
+    if (objective > 0 && frequency > 0) {
+      const percent = (frequency / objective) * 100;
+      return getStatusFromPercent(percent);
+    }
+    return null;
+  }, [rowData, showVisualIndicators]);
+
   const cells = useMemo(() => {
     // These flags will track if we've already added the border for a group in this row
     let isFirstInPhoneGroup = true;
@@ -219,6 +275,29 @@ const TableRow = memo<{
             }
           }
 
+          // Render progress bar for Total Freq% column (only if visual indicators enabled and has actual data)
+          const isProjectTotal = (group.startsWith('blankSpace') || group.startsWith('Project')) && subGroup === 'Total' && col === 'Freq%';
+          if (showVisualIndicators && isProjectTotal && cellData) {
+            const objective = parseInt(cellData.TotalObjective as string) || 0;
+            const frequency = parseInt(cellData.Frequency as string) || 0;
+            const freqPercent = cellData['Freq%']?.toString() || '';
+            const headerName = getDisplayName(col);
+            const baseClassName = `${getCellClassName(headerName, freqPercent, subGroup)} ${extraClassName || ''}`;
+
+            // Only show progress bar if there's meaningful data (not header rows)
+            if (objective > 0 && frequency > 0) {
+              return (
+                <ProgressCell
+                  key={`${rowKey}-${group}-${subGroup}-${col}`}
+                  value={freqPercent}
+                  objective={objective}
+                  frequency={frequency}
+                  className={baseClassName}
+                />
+              );
+            }
+          }
+
           return (
             <TableCell
               key={`${rowKey}-${group}-${subGroup}-${col}`}
@@ -235,9 +314,11 @@ const TableRow = memo<{
         });
       })
     );
-  }, [rowKey, rowData, visibleStypes, activeTooltip, onTooltipToggle]);
+  }, [rowKey, rowData, visibleStypes, activeTooltip, onTooltipToggle, showVisualIndicators]);
 
-  return <tr key={rowKey}>{cells}</tr>;
+  const rowClassName = rowStatus ? `row-status-${rowStatus}` : '';
+
+  return <tr key={rowKey} className={rowClassName}>{cells}</tr>;
 });
 
 TableRow.displayName = 'TableRow';
@@ -247,6 +328,9 @@ const QuotaManagementTable: React.FC<Props> = memo(({
   id,
   quotaData,
   visibleStypes,
+  showVisualIndicators = false,
+  visibleColumns = DEFAULT_VISIBLE_COLUMNS,
+  visibleModes = DEFAULT_VISIBLE_MODES,
 }) => {
   // State for tracking which tooltip is active
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -275,12 +359,48 @@ const QuotaManagementTable: React.FC<Props> = memo(({
     };
   }, [activeTooltip]);
 
+  // Filter visibleStypes based on visibleColumns and visibleModes
+  const filteredStypes = useMemo(() => {
+    const result: VisibleStypes = {};
+
+    Object.entries(visibleStypes).forEach(([group, subGroups]) => {
+      // Filter out mode groups (Phone/Web) if not in visibleModes
+      // Keep blankSpace and Project groups always visible
+      const isBlankOrProject = group.startsWith('blankSpace') || group.startsWith('Project');
+      const isModeGroup = group === 'Phone' || group === 'Web';
+
+      if (isModeGroup && !visibleModes.includes(group)) {
+        return; // Skip this group
+      }
+
+      const filteredSubGroups: { [subKey: string]: string | string[] } = {};
+
+      Object.entries(subGroups).forEach(([subGroup, cols]) => {
+        const colsArray = Array.isArray(cols) ? cols : [cols];
+        // Label column is always visible, filter other columns
+        const filteredCols = colsArray.filter(col =>
+          col === 'Label' || visibleColumns.includes(col)
+        );
+
+        if (filteredCols.length > 0) {
+          filteredSubGroups[subGroup] = filteredCols.length === 1 ? filteredCols[0] : filteredCols;
+        }
+      });
+
+      if (Object.keys(filteredSubGroups).length > 0) {
+        result[group] = filteredSubGroups;
+      }
+    });
+
+    return result;
+  }, [visibleStypes, visibleColumns, visibleModes]);
+
   // Memoized column groups for better performance
   const columnGroups = useMemo(() => {
-    return Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
+    return Object.entries(filteredStypes).flatMap(([group, subGroups]) =>
       Object.entries(subGroups).map(([subGroup, cols]) => {
         const colsArray = Array.isArray(cols) ? cols : [cols];
-        
+
         return {
           key: `colgroup-${group}-${subGroup}`,
           className: `colgroup ${subGroup.toLowerCase().replace(/\s+/g, '-')}`,
@@ -294,17 +414,17 @@ const QuotaManagementTable: React.FC<Props> = memo(({
         };
       })
     );
-  }, [visibleStypes]);
+  }, [filteredStypes]);
 
   // Memoized header rows
   const headerRows = useMemo(() => {
     // First header row - main groups
-    const firstRow = Object.entries(visibleStypes).map(([group, subGroups]) => {
+    const firstRow = Object.entries(filteredStypes).map(([group, subGroups]) => {
       const colspan = Object.values(subGroups).reduce((acc, cols) => {
         const colsArray = Array.isArray(cols) ? cols : [cols];
         return acc + colsArray.length;
       }, 0);
-      
+
       return {
         key: `r1-${group}`,
         colspan,
@@ -313,7 +433,7 @@ const QuotaManagementTable: React.FC<Props> = memo(({
     });
 
     // Second header row - sub groups
-    const secondRow = Object.entries(visibleStypes).flatMap(([group, subGroups]) =>
+    const secondRow = Object.entries(filteredStypes).flatMap(([group, subGroups]) =>
       Object.entries(subGroups).map(([subGroup, cols]) => {
         const colsArray = Array.isArray(cols) ? cols : [cols];
         return {
@@ -325,7 +445,7 @@ const QuotaManagementTable: React.FC<Props> = memo(({
     );
 
     // Third header row - individual columns
-    const thirdRow = Object.entries(visibleStypes).flatMap(([group, subGroups]) => {
+    const thirdRow = Object.entries(filteredStypes).flatMap(([group, subGroups]) => {
       // Flag to track the first column within each main group
       let isFirstInGroup = true;
       return Object.entries(subGroups).flatMap(([subGroup, cols]) => {
@@ -347,7 +467,7 @@ const QuotaManagementTable: React.FC<Props> = memo(({
     });
 
     return { firstRow, secondRow, thirdRow };
-  }, [visibleStypes]);
+  }, [filteredStypes]);
 
   // Memoized table rows
   const tableRows = useMemo(() => {
@@ -360,12 +480,13 @@ const QuotaManagementTable: React.FC<Props> = memo(({
         key={rowKey}
         rowKey={rowKey}
         rowData={rowData}
-        visibleStypes={visibleStypes}
+        visibleStypes={filteredStypes}
         activeTooltip={activeTooltip}
         onTooltipToggle={handleTooltipToggle}
+        showVisualIndicators={showVisualIndicators}
       />
     ));
-  }, [quotaData, visibleStypes, activeTooltip, handleTooltipToggle]);
+  }, [quotaData, filteredStypes, activeTooltip, handleTooltipToggle, showVisualIndicators]);
 
   // Don't render if no data
   if (!quotaData || Object.keys(quotaData).length === 0) {
