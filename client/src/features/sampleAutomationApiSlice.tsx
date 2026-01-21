@@ -408,6 +408,11 @@ export interface SampleTableFamily {
   derivatives: SampleTableDerivative[];
 }
 
+export interface SampleTableProject {
+  projectId: string;
+  tables: SampleTableFamily[];
+}
+
 interface GetSampleTablesParams {
   projectId?: string;
   limit?: number;
@@ -415,7 +420,7 @@ interface GetSampleTablesParams {
 
 interface GetSampleTablesResponse {
   success: boolean;
-  data: SampleTableFamily[];
+  data: SampleTableProject[];
   count: number;
 }
 

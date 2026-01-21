@@ -16,11 +16,13 @@ import {
   useLazyGetSampleTableDetailsQuery,
   useDeleteSampleTableMutation,
   SampleTableFamily,
+  SampleTableProject,
 } from '../../features/sampleAutomationApiSlice';
 import './SampleTracking.css';
 
 const SampleTracking: React.FC = () => {
   const [searchFilter, setSearchFilter] = useState('');
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set());
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -40,15 +42,37 @@ const SampleTracking: React.FC = () => {
 
   const [deleteSampleTable, { isLoading: isDeleting }] = useDeleteSampleTableMutation();
 
-  // Filter tables based on search
-  const filteredTables = tablesData?.data?.filter((family: SampleTableFamily) => {
+  // Filter projects based on search
+  const filteredProjects = tablesData?.data?.map((project: SampleTableProject) => {
     const searchLower = searchFilter.toLowerCase();
-    return (
+    // Filter tables within each project
+    const filteredTables = project.tables.filter((family: SampleTableFamily) =>
       family.parentTable.tableName.toLowerCase().includes(searchLower) ||
       family.parentTable.projectId?.toLowerCase().includes(searchLower) ||
       family.derivatives.some((d) => d.tableName.toLowerCase().includes(searchLower))
     );
-  }) || [];
+    return {
+      ...project,
+      tables: filteredTables,
+    };
+  }).filter((project: SampleTableProject) => project.tables.length > 0) || [];
+
+  // Count total table families
+  const totalFamilies = filteredProjects.reduce(
+    (acc: number, p: SampleTableProject) => acc + p.tables.length,
+    0
+  );
+
+  // Toggle project expansion
+  const toggleProject = (projectId: string) => {
+    const newExpanded = new Set(expandedProjects);
+    if (newExpanded.has(projectId)) {
+      newExpanded.delete(projectId);
+    } else {
+      newExpanded.add(projectId);
+    }
+    setExpandedProjects(newExpanded);
+  };
 
   // Toggle family expansion
   const toggleFamily = (tableName: string) => {
@@ -102,6 +126,7 @@ const SampleTracking: React.FC = () => {
       duplicate3: '#f59e0b',
       duplicate4: '#f59e0b',
       WDNC: '#ef4444',
+      BACKUP: '#8b5cf6',
     };
     return colors[type] || '#6b7280';
   };
@@ -137,8 +162,12 @@ const SampleTracking: React.FC = () => {
         </div>
         <div className="stats-badges">
           <span className="stat-badge">
+            <Icon path={mdiFileTree} size={0.75} />
+            {filteredProjects.length} projects
+          </span>
+          <span className="stat-badge">
             <Icon path={mdiTableLarge} size={0.75} />
-            {tablesData?.count || 0} families
+            {totalFamilies} tables
           </span>
         </div>
       </div>
@@ -158,117 +187,145 @@ const SampleTracking: React.FC = () => {
               <p>Failed to load tables</p>
               <button onClick={() => refetchTables()}>Retry</button>
             </div>
-          ) : filteredTables.length === 0 ? (
+          ) : filteredProjects.length === 0 ? (
             <div className="empty-state">
               <Icon path={mdiTableLarge} size={2} />
               <p>No sample tables found</p>
               {searchFilter && <span>Try adjusting your search filter</span>}
             </div>
           ) : (
-            <div className="table-families">
-              {filteredTables.map((family: SampleTableFamily) => (
-                <div
-                  key={family.parentTable.tableName}
-                  className={`table-family ${
-                    selectedTable === family.parentTable.tableName ? 'selected' : ''
-                  }`}
-                >
-                  {/* Parent Table Row */}
-                  <div className="family-header">
-                    <button
-                      className="expand-btn"
-                      onClick={() => toggleFamily(family.parentTable.tableName)}
-                      disabled={family.derivatives.length === 0}
-                    >
-                      <Icon
-                        path={
-                          expandedFamilies.has(family.parentTable.tableName)
-                            ? mdiChevronDown
-                            : mdiChevronRight
-                        }
-                        size={0.875}
-                      />
-                    </button>
-                    <div
-                      className="table-info"
-                      onClick={() => viewTableDetails(family.parentTable.tableName)}
-                    >
-                      <div className="table-name">
-                        <Icon path={mdiTable} size={0.75} />
-                        <span>{family.parentTable.tableName}</span>
-                      </div>
-                      <div className="table-meta">
-                        <span className="project-id">
-                          Project: {family.parentTable.projectId || 'Unknown'}
-                        </span>
-                        <span className="row-count">
-                          {family.parentTable.rowCount?.toLocaleString()} rows
-                        </span>
-                        <span className="created-date">
-                          {formatDate(family.parentTable.createdDate)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="family-actions">
-                      {family.derivatives.length > 0 && (
-                        <span className="derivative-count">
-                          +{family.derivatives.length}
-                        </span>
-                      )}
-                      {deleteConfirm === family.parentTable.tableName ? (
-                        <div className="delete-confirm">
-                          <button
-                            className="btn-confirm-delete"
-                            onClick={() => handleDelete(family.parentTable.tableName)}
-                            disabled={isDeleting}
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            className="btn-cancel-delete"
-                            onClick={() => setDeleteConfirm(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          className="btn-delete"
-                          onClick={() => setDeleteConfirm(family.parentTable.tableName)}
-                          title="Delete table family"
-                        >
-                          <Icon path={mdiDelete} size={0.75} />
-                        </button>
-                      )}
-                    </div>
+            <div className="project-groups">
+              {filteredProjects.map((project: SampleTableProject) => (
+                <div key={project.projectId} className="project-group">
+                  {/* Project Header */}
+                  <div
+                    className="project-header"
+                    onClick={() => toggleProject(project.projectId)}
+                  >
+                    <Icon
+                      path={
+                        expandedProjects.has(project.projectId)
+                          ? mdiChevronDown
+                          : mdiChevronRight
+                      }
+                      size={0.875}
+                    />
+                    <span className="project-label">Project {project.projectId}</span>
+                    <span className="project-table-count">
+                      {project.tables.length} table{project.tables.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
 
-                  {/* Derivative Tables */}
-                  {expandedFamilies.has(family.parentTable.tableName) &&
-                    family.derivatives.length > 0 && (
-                      <div className="derivatives-list">
-                        {family.derivatives.map((derivative) => (
-                          <div
-                            key={derivative.tableName}
-                            className={`derivative-row ${
-                              selectedTable === derivative.tableName ? 'selected' : ''
-                            }`}
-                            onClick={() => viewTableDetails(derivative.tableName)}
-                          >
-                            <span
-                              className="derivative-badge"
-                              style={{ backgroundColor: getDerivativeColor(derivative.type) }}
+                  {/* Tables within project */}
+                  {expandedProjects.has(project.projectId) && (
+                    <div className="table-families">
+                      {project.tables.map((family: SampleTableFamily) => (
+                        <div
+                          key={family.parentTable.tableName}
+                          className={`table-family ${
+                            selectedTable === family.parentTable.tableName ? 'selected' : ''
+                          }`}
+                        >
+                          {/* Parent Table Row */}
+                          <div className="family-header">
+                            <button
+                              className="expand-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFamily(family.parentTable.tableName);
+                              }}
+                              disabled={family.derivatives.length === 0}
                             >
-                              {derivative.type}
-                            </span>
-                            <span className="derivative-name">{derivative.tableName}</span>
-                            <span className="derivative-rows">
-                              {derivative.rowCount?.toLocaleString()} rows
-                            </span>
+                              <Icon
+                                path={
+                                  expandedFamilies.has(family.parentTable.tableName)
+                                    ? mdiChevronDown
+                                    : mdiChevronRight
+                                }
+                                size={0.875}
+                              />
+                            </button>
+                            <div
+                              className="table-info"
+                              onClick={() => viewTableDetails(family.parentTable.tableName)}
+                            >
+                              <div className="table-name">
+                                <Icon path={mdiTable} size={0.75} />
+                                <span>{family.parentTable.timestamp || family.parentTable.tableName}</span>
+                              </div>
+                              <div className="table-meta">
+                                <span className="row-count">
+                                  {family.parentTable.rowCount?.toLocaleString()} rows
+                                </span>
+                                <span className="created-date">
+                                  {formatDate(family.parentTable.createdDate)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="family-actions">
+                              {family.derivatives.length > 0 && (
+                                <span className="derivative-count">
+                                  +{family.derivatives.length}
+                                </span>
+                              )}
+                              {deleteConfirm === family.parentTable.tableName ? (
+                                <div className="delete-confirm">
+                                  <button
+                                    className="btn-confirm-delete"
+                                    onClick={() => handleDelete(family.parentTable.tableName)}
+                                    disabled={isDeleting}
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    className="btn-cancel-delete"
+                                    onClick={() => setDeleteConfirm(null)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  className="btn-delete"
+                                  onClick={() => setDeleteConfirm(family.parentTable.tableName)}
+                                  title="Delete table family"
+                                >
+                                  <Icon path={mdiDelete} size={0.75} />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+
+                          {/* Derivative Tables */}
+                          {expandedFamilies.has(family.parentTable.tableName) &&
+                            family.derivatives.length > 0 && (
+                              <div className="derivatives-list">
+                                {family.derivatives.map((derivative) => (
+                                  <div
+                                    key={derivative.tableName}
+                                    className={`derivative-row ${
+                                      selectedTable === derivative.tableName ? 'selected' : ''
+                                    }`}
+                                    onClick={() => viewTableDetails(derivative.tableName)}
+                                  >
+                                    <span
+                                      className="derivative-badge"
+                                      style={{ backgroundColor: getDerivativeColor(derivative.type) }}
+                                    >
+                                      {derivative.type}
+                                    </span>
+                                    <span className="derivative-name">{derivative.tableName}</span>
+                                    <span className="derivative-rows">
+                                      {derivative.rowCount?.toLocaleString()} rows
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

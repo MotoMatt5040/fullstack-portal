@@ -3165,7 +3165,7 @@ const getSampleTables = async (options = {}) => {
 
         const tablesResult = await request.query(query);
 
-        // Group tables into families (parent + derivatives)
+        // Group tables into families (parent + derivatives), then group by project ID
         const tableFamilies = new Map();
         const derivativeSuffixes = ['_LANDLINE', '_CELL', '_LSAM', '_CSAM', '_DUPLICATES',
           'duplicate2', 'duplicate3', 'duplicate4', '_WDNC'];
@@ -3176,12 +3176,25 @@ const getSampleTables = async (options = {}) => {
           // Check if this is a derivative table
           let isDerivative = false;
           let parentName = null;
+          let derivativeType = null;
 
-          for (const suffix of derivativeSuffixes) {
-            if (tableName.endsWith(suffix)) {
-              isDerivative = true;
-              parentName = tableName.slice(0, -suffix.length);
-              break;
+          // Check for BACKUP pattern: SA_12345_0120_1530_BACKUP_20260120150215
+          const backupMatch = tableName.match(/^(SA_\d+_\d{4}_\d{4})_BACKUP_\d+$/);
+          if (backupMatch) {
+            isDerivative = true;
+            parentName = backupMatch[1];
+            derivativeType = 'BACKUP';
+          }
+
+          // Check for standard suffixes
+          if (!isDerivative) {
+            for (const suffix of derivativeSuffixes) {
+              if (tableName.endsWith(suffix)) {
+                isDerivative = true;
+                parentName = tableName.slice(0, -suffix.length);
+                derivativeType = suffix.replace(/^_/, '');
+                break;
+              }
             }
           }
 
@@ -3196,7 +3209,7 @@ const getSampleTables = async (options = {}) => {
             tableFamilies.get(parentName).derivatives.push({
               tableName: tableName,
               rowCount: row.ROW_COUNT || 0,
-              type: tableName.replace(parentName, '').replace(/^_/, '')
+              type: derivativeType
             });
           } else {
             // This is a parent table
@@ -3227,10 +3240,31 @@ const getSampleTables = async (options = {}) => {
           .sort((a, b) => {
             // Sort by table name descending (newest first)
             return b.parentTable.tableName.localeCompare(a.parentTable.tableName);
+          });
+
+        // Group families by project ID, sorted descending
+        const projectGroups = new Map();
+        for (const family of families) {
+          const projId = family.parentTable.projectId || 'Unknown';
+          if (!projectGroups.has(projId)) {
+            projectGroups.set(projId, {
+              projectId: projId,
+              tables: []
+            });
+          }
+          projectGroups.get(projId).tables.push(family);
+        }
+
+        // Convert to array and sort by project ID descending (numeric sort)
+        const projects = Array.from(projectGroups.values())
+          .sort((a, b) => {
+            const aNum = parseInt(a.projectId, 10) || 0;
+            const bNum = parseInt(b.projectId, 10) || 0;
+            return bNum - aNum;
           })
           .slice(0, limit);
 
-        return families;
+        return projects;
       } catch (error) {
         console.error('Error getting sample tables:', error);
         throw new Error(`Failed to get sample tables: ${error.message}`);

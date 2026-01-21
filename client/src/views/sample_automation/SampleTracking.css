@@ -559,3 +559,60 @@
   text-align: center;
   padding: 2rem;
 }
+
+/* ========================================
+   PROJECT GROUPS
+======================================== */
+.sample-tracking .project-groups {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.sample-tracking .project-group {
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color-soft);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--background-color);
+}
+
+.sample-tracking .project-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--background-color-elevated);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.sample-tracking .project-header:hover {
+  background: var(--background-color-hover);
+}
+
+.sample-tracking .project-group:has(.table-families) .project-header {
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.sample-tracking .project-label {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-color);
+}
+
+.sample-tracking .project-table-count {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  padding: 0.25rem 0.625rem;
+  background: var(--background-color);
+  border-radius: 1rem;
+}
+
+.sample-tracking .project-group .table-families {
+  padding: 0.5rem;
+  background: var(--background-color);
+}
