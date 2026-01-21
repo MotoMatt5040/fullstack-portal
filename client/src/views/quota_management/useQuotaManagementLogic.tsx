@@ -3,8 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
 // import { selectCurrentToken } from '../../features/auth/authSlice';
 import { selectUser } from '../../features/auth/authSlice';
-import { useLazyGetQuotasQuery } from '../../features/quotasApiSlice';
-import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
+import { useLazyGetQuotasQuery, useLazyGetQuotaProjectsQuery } from '../../features/quotasApiSlice';
 import { useSearchParams } from 'react-router-dom';
 import { mdiPhoneReturnOutline } from '@mdi/js';
 
@@ -69,22 +68,22 @@ const useQuotaManagementLogic = () => {
   ] = useLazyGetQuotasQuery();
 
   const [
-    getProjectList,
+    getQuotaProjects,
     {
       data: projectList,
       isFetching: projectListIsFetching,
       error: projectListError,
     },
-  ] = useLazyGetProjectListQuery();
+  ] = useLazyGetQuotaProjectsQuery();
 
   // Memoized list of project options for a dropdown/selector
   const projectListOptions = useMemo((): ProjectOption[] => {
     if (!projectList || projectListIsFetching) return [];
 
-    // Sorting is handled by SQL query (ORDER BY numeric prefix, then suffix)
+    // Sorting is handled by SQL query (ORDER BY projectid DESC)
     return projectList.map((item: any) => ({
-      value: item.projectId,
-      label: `${item.projectId} - ${item.projectName}`,
+      value: item.projectid,
+      label: `${item.projectid} - ${item.projectname}`,
     }));
   }, [projectList, projectListIsFetching]);
 
@@ -116,9 +115,9 @@ const useQuotaManagementLogic = () => {
       : { userId: userInfo.username };
 
     if (userInfo.username || userInfo.isInternalUser) {
-      getProjectList(fetchParams).catch(console.error);
+      getQuotaProjects(fetchParams).catch(console.error);
     }
-  }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
+  }, [userInfo.isInternalUser, userInfo.username, getQuotaProjects]);
 
   // useEffect(() => {
   //   if (!webDispositionData) return;

@@ -532,4 +532,19 @@ const handleGetQuotas = handleAsync(async (req, res) => {
   }
 });
 
-module.exports = { handleGetQuotas };
+const handleGetQuotaProjects = handleAsync(async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const projects = await QuotaServices.getQuotaProjects(userId);
+
+    return res.status(200).json(projects);
+  } catch (error) {
+    console.error('Error in handleGetQuotaProjects:', error);
+    return res.status(500).json({
+      message: 'Internal server error while fetching quota projects',
+    });
+  }
+});
+
+module.exports = { handleGetQuotas, handleGetQuotaProjects };
