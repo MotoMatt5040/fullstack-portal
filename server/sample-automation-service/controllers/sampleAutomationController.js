@@ -1403,6 +1403,69 @@ const deleteExtractionDefault = handleAsync(async (req, res) => {
   });
 });
 
+// ============================================
+// Sample Tracking Controllers
+// ============================================
+
+/**
+ * Get all sample tables with their relationships
+ */
+const getSampleTables = handleAsync(async (req, res) => {
+  const { projectId, limit } = req.query;
+
+  const options = {};
+  if (projectId) options.projectId = projectId;
+  if (limit) options.limit = parseInt(limit, 10);
+
+  const tables = await SampleAutomation.getSampleTables(options);
+
+  res.json({
+    success: true,
+    data: tables,
+    count: tables.length,
+  });
+});
+
+/**
+ * Get detailed information about a specific sample table
+ */
+const getSampleTableDetails = handleAsync(async (req, res) => {
+  const { tableName } = req.params;
+
+  if (!tableName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Table name is required',
+    });
+  }
+
+  const details = await SampleAutomation.getSampleTableDetails(tableName);
+
+  res.json({
+    success: true,
+    data: details,
+  });
+});
+
+/**
+ * Delete a sample table and optionally its derivatives
+ */
+const deleteSampleTable = handleAsync(async (req, res) => {
+  const { tableName } = req.params;
+  const { includeDerivatives = true } = req.body;
+
+  if (!tableName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Table name is required',
+    });
+  }
+
+  const result = await SampleAutomation.deleteSampleTable(tableName, includeDerivatives);
+
+  res.json(result);
+});
+
 module.exports = {
   processFile,
   getSupportedFileTypes,
@@ -1438,4 +1501,8 @@ module.exports = {
   saveVendorClientExtractionDefaults,
   saveProjectExtractionOverrides,
   deleteExtractionDefault,
+  // Sample Tracking
+  getSampleTables,
+  getSampleTableDetails,
+  deleteSampleTable,
 };

@@ -373,6 +373,31 @@ BEGIN
 
         SET @TotalProcessed = @Duplicate2Count + @Duplicate3Count + @Duplicate4Count + @MainTableFinal
 
+        -- Drop empty duplicate tables (no rows were inserted)
+        IF @Duplicate2Count = 0
+        BEGIN
+            SET @SQL = 'DROP TABLE FAJITA.dbo.[' + @Duplicate2Table + ']'
+            EXEC sp_executesql @SQL
+            SET @Duplicate2Table = NULL
+            PRINT 'Dropped empty duplicate2 table (0 records)'
+        END
+
+        IF @Duplicate3Count = 0
+        BEGIN
+            SET @SQL = 'DROP TABLE FAJITA.dbo.[' + @Duplicate3Table + ']'
+            EXEC sp_executesql @SQL
+            SET @Duplicate3Table = NULL
+            PRINT 'Dropped empty duplicate3 table (0 records)'
+        END
+
+        IF @Duplicate4Count = 0
+        BEGIN
+            SET @SQL = 'DROP TABLE FAJITA.dbo.[' + @Duplicate4Table + ']'
+            EXEC sp_executesql @SQL
+            SET @Duplicate4Table = NULL
+            PRINT 'Dropped empty duplicate4 table (0 records)'
+        END
+
         COMMIT TRANSACTION
 
         -- Return results

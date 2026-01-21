@@ -34,27 +34,42 @@ interface Quotas {
 
 type QuotasResponse = Quotas[];
 
+interface QuotaProject {
+  projectid: string;
+  projectname: string;
+  fieldstart: string;
+}
+
+interface QuotaProjectsArgs {
+  userId?: string;
+}
+
 export const QuotasApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getQuotas: builder.query<QuotasResponse, QuotaArgs>({
       query: ({ projectId, isInternalUser }) => {
         const url = `/quota-management/data?projectId=${projectId}&isInternalUser=${isInternalUser}`;
-        // if (url.endsWith('&')) {
-        //   url = url.slice(0, -1);
-        // }
-
         return { url, method: 'GET' };
       },
     }),
-    // getProjectList: builder.query({
-    //   query: ({ userId }) => ({
-    //     url: `/quota-management/projects?userId=${userId}`,
-    //     method: 'GET',
-    //   }),
-    // })
+    getQuotaProjects: builder.query<QuotaProject[], QuotaProjectsArgs>({
+      query: ({ userId }) => {
+        const params = new URLSearchParams();
+        if (userId) params.append('userId', userId);
+        const queryString = params.toString();
+        return {
+          url: `/quota-management/projects${queryString ? `?${queryString}` : ''}`,
+          method: 'GET',
+        };
+      },
+    }),
   }),
 });
 
-export const { useLazyGetQuotasQuery } = QuotasApiSlice;
+export const {
+  useLazyGetQuotasQuery,
+  useGetQuotaProjectsQuery,
+  useLazyGetQuotaProjectsQuery,
+} = QuotasApiSlice;
 
 

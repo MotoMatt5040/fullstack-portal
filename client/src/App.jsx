@@ -35,6 +35,7 @@ import AIPrompting from './views/ai_prompting/AIPrompting';
 import ContactSupport from './views/support/ContactSupport';
 import SampleAutomation from './views/sample_automation/SampleAutomation';
 import ExtractionDefaults from './views/sample_automation/ExtractionDefaults';
+import SampleTracking from './views/sample_automation/SampleTracking';
 import CallID from './views/call_id/CallIDManagement';
 import ProjectNumbering from './views/project_numbering/ProjectNumbering';
 import QuotaSetupGuidePage from './views/docs/QuotaSetupGuidePage';
@@ -129,6 +130,7 @@ function App() {
         >
           <Route path='sample-automation' element={<SampleAutomation />} />
           <Route path='extraction-defaults' element={<ExtractionDefaults />} />
+          <Route path='sample-tracking' element={<SampleTracking />} />
           <Route path='call-id' element={<CallID />} />
         </Route>
         <Route element={<RequireAuth allowedRoles={[roles.Admin, roles.Executive, roles.Programmer]} />}>

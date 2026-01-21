@@ -72,6 +72,15 @@ BEGIN
         SET @SQL = 'SELECT @Count = COUNT(*) FROM FAJITA.dbo.' + QUOTENAME(@LandlineTableName)
         EXEC sp_executesql @SQL, N'@Count INT OUTPUT', @Count = @LandlineCount OUTPUT
 
+        -- Drop landline table if empty (no rows matched the criteria)
+        IF @LandlineCount = 0
+        BEGIN
+            SET @SQL = 'DROP TABLE FAJITA.dbo.' + QUOTENAME(@LandlineTableName)
+            EXEC sp_executesql @SQL
+            SET @LandlineTableName = NULL
+            PRINT 'Dropped empty landline table (0 records matched criteria)'
+        END
+
         -- Create cell table: SOURCE = 2 OR (SOURCE = 3 AND AGERANGE < threshold)
         -- These are records that HAVE a cell number
         SET @SQL = '
@@ -94,6 +103,15 @@ BEGIN
         -- Get cell count
         SET @SQL = 'SELECT @Count = COUNT(*) FROM FAJITA.dbo.' + QUOTENAME(@CellTableName)
         EXEC sp_executesql @SQL, N'@Count INT OUTPUT', @Count = @CellCount OUTPUT
+
+        -- Drop cell table if empty (no rows matched the criteria)
+        IF @CellCount = 0
+        BEGIN
+            SET @SQL = 'DROP TABLE FAJITA.dbo.' + QUOTENAME(@CellTableName)
+            EXEC sp_executesql @SQL
+            SET @CellTableName = NULL
+            PRINT 'Dropped empty cell table (0 records matched criteria)'
+        END
 
         -- Return results
         SELECT

@@ -55,4 +55,9 @@ router.get('/extraction-overrides/project/:projectId', controller.getProjectExtr
 router.put('/extraction-overrides/project/:projectId', controller.saveProjectExtractionOverrides);
 router.delete('/extraction-defaults/:type/:id', controller.deleteExtractionDefault);
 
+// Sample tracking routes
+router.get('/sample-tables', controller.getSampleTables);
+router.get('/sample-tables/:tableName', controller.getSampleTableDetails);
+router.delete('/sample-tables/:tableName', controller.deleteSampleTable);
+
 module.exports = router;
