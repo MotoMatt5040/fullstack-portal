@@ -37,7 +37,7 @@ async function cleanupFiles(files) {
 
 const generateSessionId = () => {
   return (
-    'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11)
   );
 };
 
