@@ -487,6 +487,7 @@ const handleGetQuotas = handleAsync(async (req, res) => {
       ProjectInfo.getWebProjects(projectId),
     ]);
 
+
     const data = {
       totalRow: {
         Total: {
