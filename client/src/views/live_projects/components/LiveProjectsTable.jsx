@@ -1,7 +1,7 @@
 import React from 'react';
 import '../liveProjectsTable.css';
 
-const LiveProjectsDataTable = ({ data }) => {
+const LiveProjectsDataTable = React.memo(({ data }) => {
 	return (
 		<section>
 			<table>
@@ -18,8 +18,8 @@ const LiveProjectsDataTable = ({ data }) => {
 					</tr>
 				</thead>
 				<tbody>
-					{data.map((project, index) => (
-							<tr key={index}>
+					{data.map((project) => (
+							<tr key={`${project.projectid}-${project.recloc}`}>
 								<td>{project.recloc === 99 ? "All" : project.recloc}</td>
 								<td>{project.projectid}</td>
 								<td>{project.projname}</td>
@@ -35,6 +35,6 @@ const LiveProjectsDataTable = ({ data }) => {
 			</table>
 		</section>
 	);
-};
+});
 
 export default LiveProjectsDataTable;
