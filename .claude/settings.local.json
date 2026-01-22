@@ -20,7 +20,8 @@
       "Bash(docker-compose restart:*)",
       "Bash(docker-compose ps:*)",
       "Bash(docker-compose logs:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(npm run test:run:*)"
     ],
     "deny": [],
     "ask": []
