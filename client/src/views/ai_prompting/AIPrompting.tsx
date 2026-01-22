@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import Select from 'react-select';
 import { useAIPromptingLogic } from './useAIPromptingLogic';
 import { FaPlus, FaTrashAlt, FaRedo, FaPlay, FaSave } from 'react-icons/fa';
@@ -56,25 +56,28 @@ const AIPrompting = () => {
     defaultPromptLoading,
   } = useAIPromptingLogic();
 
-  const autoResizeTextarea = (e) => {
+  const autoResizeTextarea = useCallback((e) => {
     e.target.style.height = 'auto';
     e.target.style.height = `${e.target.scrollHeight}px`;
-  };
+  }, []);
 
-  const promptOptions =
+  // Memoize prompt options to avoid recreation on every render
+  const promptOptions = useMemo(() =>
     prompts?.map((p) => ({
       value: p.prompt,
       label:
         p.prompt.length > 60 ? `${p.prompt.substring(0, 60)}...` : p.prompt,
-    })) || [];
+    })) || [],
+    [prompts]
+  );
 
-  const handlePromptSelectChange = (selectedOption) => {
+  const handlePromptSelectChange = useCallback((selectedOption) => {
     if (selectedOption) {
       handleSelectPrompt(selectedOption.value);
     }
-  };
+  }, [handleSelectPrompt]);
 
-  const handleSystemPromptEdit = (e) => {
+  const handleSystemPromptEdit = useCallback((e) => {
     const newValue = e.target.value;
     let originalValue = newValue;
 
@@ -89,7 +92,7 @@ const AIPrompting = () => {
     }
 
     handleSystemPromptChange({ target: { value: originalValue } });
-  };
+  }, [tone, questionSummary, handleSystemPromptChange]);
 
   if (modelsLoading) {
     return (
