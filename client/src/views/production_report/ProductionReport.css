@@ -1,73 +1,350 @@
-.table-data-header.production-report {
-  display: flex;
-  flex-direction: column;
+/* =================================================================
+   Production Report - Modern Flat Design
+   ================================================================= */
+
+.production-report {
+  padding: 1.5rem;
+  max-width: 100%;
 }
 
-.production-report-title {
+/* =================================================================
+   Header & Title Section
+   ================================================================= */
+.production-report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 1.5rem;
-  font-weight: bold;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.production-report-title {
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text-color);
-  padding: 0.5rem 1rem;
-}
-
-.production-report .table-area {
+  margin: 0;
   display: flex;
-  flex-direction: row;
-  width: 100%;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
+.production-report-title p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* =================================================================
+   Report Data Card (Target Table Container)
+   ================================================================= */
+.production-report-data-card {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.production-report-data-card-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--label-text-color);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+/* =================================================================
+   Target Table - Modern Styling
+   ================================================================= */
 .production-report-target-table {
-  .highlight-green {
-    background-color: rgb(198,224,180);
-    color: black;
-  }
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+}
 
-  .highlight-rich-green {
-    background-color: rgb(146,208,80);
-    color: black;
-  }
-
-  .highlight-yellow {
-    background-color: rgb(255, 235, 132);
-    color: black;
-  }
-
-  .highlight-red {
-    background-color: rgb(248, 105, 107);
-    color: black;
-  }
-
-  .justify-right {
-    text-align: right;
-  }
+.production-report-target-table thead td {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.75rem;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color-soft);
+  background: var(--background-color-muted);
+  text-align: center;
 }
 
 .production-report-target-table th {
-  background-color: var(--table-header-background);
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--label-text-color);
+  text-align: left;
+  background: transparent;
 }
 
+.production-report-target-table td {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-color);
+}
+
+.production-report-target-table b {
+  font-weight: 600;
+}
+
+/* =================================================================
+   Status Highlight Colors - Using CSS Variables
+   ================================================================= */
+.production-report-target-table .highlight-green {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: var(--text-color);
+  border-radius: 4px;
+}
+
+.production-report-target-table .highlight-rich-green {
+  background-color: rgba(16, 185, 129, 0.35);
+  color: var(--text-color);
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.production-report-target-table .highlight-yellow {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: var(--text-color);
+  border-radius: 4px;
+}
+
+.production-report-target-table .highlight-red {
+  background-color: rgba(220, 38, 38, 0.25);
+  color: var(--text-color);
+  border-radius: 4px;
+}
+
+.production-report-target-table .justify-right {
+  text-align: right;
+}
+
+/* =================================================================
+   Target MPH Input
+   ================================================================= */
 .target-mph-input {
   all: unset;
   width: 100%;
   text-align: center;
-  padding: 0;
+  padding: 0.375rem 0.5rem;
   margin: 0;
   border: none;
   background: transparent;
   font: inherit;
   cursor: text;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
 }
 
+.target-mph-input:hover {
+  background: rgba(var(--accent-color-rgb, 59, 130, 246), 0.08);
+}
+
+.target-mph-input:focus {
+  background: rgba(var(--accent-color-rgb, 59, 130, 246), 0.12);
+  outline: none;
+}
+
+.target-mph-td {
+  min-width: 60px;
+}
+
+/* Updated status indicator */
+.target-mph-td.updated {
+  position: relative;
+}
+
+.target-mph-td.updated::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+}
+
+/* Not updated - pulse animation */
 @keyframes flashYellow {
-  0% { background-color: #ffcc00; }
-  50% { background-color: #ffcc00a8; }
-  100% { background-color: #ffcc00; }
+  0%, 100% {
+    background-color: rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    background-color: rgba(245, 158, 11, 0.15);
+  }
 }
 
 .not-updated {
-  animation: flashYellow 1s infinite;
-  color: black;
+  animation: flashYellow 1.5s infinite;
+}
+
+/* =================================================================
+   Table Area Layout
+   ================================================================= */
+.production-report .table-area {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* =================================================================
+   Data Table Section
+   ================================================================= */
+.production-report-table-section {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.production-report-table-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--label-text-color);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+/* =================================================================
+   Production Report Table (Interviewer Data)
+   ================================================================= */
+.production-report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+.production-report-table thead th {
+  padding: 0.625rem 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  border-bottom: 1px solid var(--border-color-soft);
+  background: var(--background-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: center;
+}
+
+.production-report-table tbody td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.production-report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.production-report-table tbody tr:nth-child(even) td {
+  background-color: var(--background-color-muted);
+}
+
+.production-report-table tbody tr:hover td,
+.production-report-table tbody tr:nth-child(even):hover td {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.06);
+}
+
+.production-report-table tbody td:hover {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.08) !important;
+}
+
+.production-report-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+/* =================================================================
+   Legacy Class Support (table-data-header)
+   ================================================================= */
+.table-data-header.production-report {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* =================================================================
+   Responsive
+   ================================================================= */
+@media (max-width: 768px) {
+  .production-report {
+    padding: 1rem;
+  }
+
+  .production-report-title {
+    font-size: 1rem;
+  }
+
+  .production-report-target-table {
+    font-size: 0.75rem;
+  }
+
+  .production-report-target-table th,
+  .production-report-target-table td {
+    padding: 0.375rem 0.5rem;
+  }
+
+  .production-report .table-area {
+    flex-direction: column;
+  }
+
+  .production-report-table {
+    font-size: 0.75rem;
+  }
+
+  .production-report-table thead th,
+  .production-report-table tbody td {
+    padding: 0.375rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .production-report {
+    padding: 0.75rem;
+  }
+
+  .production-report-title {
+    font-size: 0.875rem;
+  }
+
+  .production-report-data-card,
+  .production-report-table-section {
+    padding: 0.875rem;
+  }
+
+  .production-report-target-table,
+  .production-report-table {
+    font-size: 0.7rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .production-report {
+    padding: 2rem;
+  }
+
+  .production-report-target-table,
+  .production-report-table {
+    font-size: 0.875rem;
+  }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Select, { MultiValue } from 'react-select';
 
 import './css/MyMultiSelect.css';
@@ -23,10 +23,13 @@ const MyMultiSelect: React.FC<Props> = ({
   isDisabled = false,
   onChange,
 }) => {
-  const selectedValues = items.map((id) => ({
-    value: id,
-    label: typeof id === 'string' ? id : id.toString(),
-  }));
+  const selectedValues = useMemo(
+    () => items.map((id) => ({
+      value: id,
+      label: typeof id === 'string' ? id : id.toString(),
+    })),
+    [items]
+  );
 
   return (
     <div className='multi-select-container'>
@@ -43,4 +46,4 @@ const MyMultiSelect: React.FC<Props> = ({
   );
 };
 
-export default MyMultiSelect;
+export default React.memo(MyMultiSelect);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import Select from 'react-select';
 import Icon from '@mdi/react';
 import { mdiChartBox, mdiHelpCircleOutline, mdiChevronDown, mdiChartDonut, mdiTune } from '@mdi/js';
@@ -40,7 +40,7 @@ interface QuotaSummaryProps {
   quotas: Record<string, any>;
 }
 
-const QuotaSummary: React.FC<QuotaSummaryProps> = ({ quotas }) => {
+const QuotaSummary: React.FC<QuotaSummaryProps> = React.memo(({ quotas }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const summaryData = useMemo(() => {
@@ -88,13 +88,18 @@ const QuotaSummary: React.FC<QuotaSummaryProps> = ({ quotas }) => {
     };
   }, [quotas]);
 
+  // Memoize toggle handler
+  const handleToggleCollapse = useCallback(() => {
+    setIsCollapsed(prev => !prev);
+  }, []);
+
   if (!summaryData) return null;
 
   return (
     <div className="quota-summary">
       <div
         className="quota-summary-header"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleToggleCollapse}
       >
         <div className="quota-summary-header-left">
           <Icon path={mdiChartDonut} size={0.875} />
@@ -149,7 +154,7 @@ const QuotaSummary: React.FC<QuotaSummaryProps> = ({ quotas }) => {
       </div>
     </div>
   );
-};
+});
 
 const QuotaManagement = () => {
   const {
@@ -183,8 +188,8 @@ const QuotaManagement = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFilterPanel]);
 
-  // Toggle column visibility
-  const toggleColumn = (columnValue: string) => {
+  // Toggle column visibility (memoized)
+  const toggleColumn = useCallback((columnValue: string) => {
     setVisibleColumns(prev => {
       if (prev.includes(columnValue)) {
         // Don't allow removing all columns
@@ -193,10 +198,10 @@ const QuotaManagement = () => {
       }
       return [...prev, columnValue];
     });
-  };
+  }, []);
 
-  // Toggle mode visibility
-  const toggleMode = (modeValue: string) => {
+  // Toggle mode visibility (memoized)
+  const toggleMode = useCallback((modeValue: string) => {
     setVisibleModes(prev => {
       if (prev.includes(modeValue)) {
         // Allow removing all modes (will just show totals)
@@ -204,11 +209,14 @@ const QuotaManagement = () => {
       }
       return [...prev, modeValue];
     });
-  };
+  }, []);
 
-  // Check if any filters are active (not showing all)
-  const hasActiveFilters = visibleColumns.length < DEFAULT_VISIBLE_COLUMNS.length ||
-                           visibleModes.length < DEFAULT_VISIBLE_MODES.length;
+  // Check if any filters are active (memoized)
+  const hasActiveFilters = useMemo(() =>
+    visibleColumns.length < DEFAULT_VISIBLE_COLUMNS.length ||
+    visibleModes.length < DEFAULT_VISIBLE_MODES.length,
+    [visibleColumns.length, visibleModes.length]
+  );
 
   if (isLoading) {
     return (

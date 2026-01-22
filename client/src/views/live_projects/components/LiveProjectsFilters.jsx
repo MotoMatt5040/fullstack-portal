@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 const LiveProjectsFilters = ({
 	projectid,
@@ -10,23 +10,27 @@ const LiveProjectsFilters = ({
 	allLiveProjects,
 	filteredLiveProjects,
 }) => {
+	// Pre-compute Sets of valid project IDs (O(n) once instead of O(n) per button)
+	const { validAllProjectIds, validFilteredProjectIds } = useMemo(() => {
+		const allIds = new Set(allLiveProjects.data?.map((p) => p.projectid) || []);
+		const filteredIds = new Set(filteredLiveProjects.data?.map((p) => p.projectid) || []);
+		return { validAllProjectIds: allIds, validFilteredProjectIds: filteredIds };
+	}, [allLiveProjects.data, filteredLiveProjects.data]);
+
+	// Pre-compute Sets of valid locations (O(n) once instead of O(n) per button)
+	const { validAllLocations, validFilteredLocations } = useMemo(() => {
+		const allLocs = new Set(allLiveProjects.data?.map((p) => parseInt(p.recloc, 10)) || []);
+		const filteredLocs = new Set(filteredLiveProjects.data?.map((p) => parseInt(p.recloc, 10)) || []);
+		return { validAllLocations: allLocs, validFilteredLocations: filteredLocs };
+	}, [allLiveProjects.data, filteredLiveProjects.data]);
+
 	const isProjectIdDisabled = (id) => {
-		return (
-			!allLiveProjects.data.some((project) => project.projectid === id) ||
-			!filteredLiveProjects.data.some((project) => project.projectid === id)
-		);
+		return !validAllProjectIds.has(id) || !validFilteredProjectIds.has(id);
 	};
 
 	const isLocationDisabled = (recloc) => {
 		const reclocInt = parseInt(recloc, 10);
-		return (
-			!allLiveProjects.data.some(
-				(project) => parseInt(project.recloc, 10) === reclocInt
-			) ||
-			!filteredLiveProjects.data.some(
-				(project) => parseInt(project.recloc, 10) === reclocInt
-			)
-		);
+		return !validAllLocations.has(reclocInt) || !validFilteredLocations.has(reclocInt);
 	};
 
 	const handleProjectIdClick = (id) => {

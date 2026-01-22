@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import LiveProjectsTable from './components/LiveProjectsTable';
 import {
 	useGetLiveProjectDataQuery,
@@ -11,13 +11,6 @@ import LiveProjectsSummaryTable from './components/LiveProjectsSummaryTable';
 import MyPieChart from '../../components/MyPieChart';
 
 const LiveProjects = () => {
-	// This helper is used to mitigate having to repeat the same logic for each query
-	// Update the helper if you need to add more queries
-	const queryHelper = (queryHook, params) => {
-		const { data, refetch } = queryHook(params);
-		return { data, refetch };
-	};
-
 	const [searchParams] = useSearchParams();
 
 	const projectidFromUrl = searchParams.get('projectid');
@@ -26,60 +19,39 @@ const LiveProjects = () => {
 	const [projectid, setProjectid] = useState(projectidFromUrl || '');
 	const [location, setLocation] = useState(locationFromUrl || '');
 
-	const [locations, setLocations] = useState([]);
-	const [projectids, setProjectids] = useState([]);
+	// RTK Query hooks - auto-refetch when params change (no manual refetch needed)
+	const liveProjectData = useGetLiveProjectDataQuery({ projectid, location });
+	const filteredLiveProjects = useGetFilteredLiveProjectsQuery({ projectid, location });
+	// allLiveProjects only needs to be fetched once (no filter params)
+	const allLiveProjects = useGetAllLiveProjectsQuery();
 
-	const [summaryData, setSummaryData] = useState([]);
-	const [detailData, setDetailData] = useState([]);
-
-	// These queries use the helper function to reduce the amount of code needed
-	// to be written for each query
-	const liveProjectData = queryHelper(useGetLiveProjectDataQuery, {
-		projectid,
-		location,
-	});
-
-	const filteredLiveProjects = queryHelper(useGetFilteredLiveProjectsQuery, {
-		projectid,
-		location,
-	});
-
-	const allLiveProjects = queryHelper(useGetAllLiveProjectsQuery);
-
-	useEffect(() => {
-		if (filteredLiveProjects.data && allLiveProjects.data) {
-			const locationMap = allLiveProjects.data.reduce((acc, project) => {
-				acc[project.recloc] = project.locationname;
-				return acc;
-			}, {});
-
-			setLocations(locationMap);
-			const distinctProjectIds = allLiveProjects.data.reduce((acc, project) => {
-				if (!acc.includes(project.projectid)) {
-					acc.push(project.projectid);
-				}
-				return acc;
-			}, []);
-			setProjectids(distinctProjectIds);
+	// Derive locations and projectids from allLiveProjects data (O(n) once, not on every render)
+	const { locations, projectids } = useMemo(() => {
+		if (!allLiveProjects.data) {
+			return { locations: {}, projectids: [] };
 		}
-	}, [filteredLiveProjects.data]);
-
-	useEffect(() => {
-		allLiveProjects.refetch();
-		filteredLiveProjects.refetch();
-		liveProjectData.refetch();
-		if (liveProjectData.data) {
-			const filteredSummaryData = liveProjectData.data.filter(
-				(project) => project.recloc === 99
-			);
-			setSummaryData(filteredSummaryData);
-
-			const filteredDetailData = liveProjectData.data.filter(
-				(project) => project.recloc !== 99
-			);
-			setDetailData(filteredDetailData);
+		const locationMap = {};
+		const projectIdSet = new Set();
+		for (const project of allLiveProjects.data) {
+			locationMap[project.recloc] = project.locationname;
+			projectIdSet.add(project.projectid);
 		}
-	}, [projectid, location]);
+		return {
+			locations: locationMap,
+			projectids: Array.from(projectIdSet),
+		};
+	}, [allLiveProjects.data]);
+
+	// Derive summary and detail data from liveProjectData (avoids useEffect + setState)
+	const { summaryData, detailData } = useMemo(() => {
+		if (!liveProjectData.data) {
+			return { summaryData: [], detailData: [] };
+		}
+		return {
+			summaryData: liveProjectData.data.filter((p) => p.recloc === 99),
+			detailData: liveProjectData.data.filter((p) => p.recloc !== 99),
+		};
+	}, [liveProjectData.data]);
 
 
 	let content = (

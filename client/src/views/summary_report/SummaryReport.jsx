@@ -1,7 +1,8 @@
 import React from 'react';
-import useProjectReportLogic from './useSummaryReportLogic';
+import useSummaryReportLogic from './useSummaryReportLogic';
 import Icon from '@mdi/react';
 import { mdiViewList, mdiViewGrid, mdiChartLine, mdiEye } from '@mdi/js';
+import { useNavigate } from 'react-router-dom';
 
 import MyPieChart from '../../components/MyPieChart';
 import MyDateRangePicker from '../../components/DateRangePicker';
@@ -11,9 +12,9 @@ import MyToggle from '../../components/MyToggle';
 import './SummaryReport.css';
 import './SummaryReportTable.css';
 import { useSelector } from 'react-redux';
-import MyDataCard from '../../components/MyDataCard';
 
-const ProjectReport = () => {
+const SummaryReport = () => {
+  const navigate = useNavigate();
   const showGraphs = useSelector((state) => state.settings.showGraphs);
   const useGpcph = useSelector((state) => state.settings.useGpcph);
   const {
@@ -28,7 +29,41 @@ const ProjectReport = () => {
     isRefreshing,
     isListView,
     handleViewChange,
-  } = useProjectReportLogic();
+  } = useSummaryReportLogic();
+
+  // Navigate to project report
+  const handleCardClick = (item) => {
+    const params = new URLSearchParams({
+      projectId: item.projectId,
+      recDate: item.recDate || '',
+      projName: item.projName || '',
+      cms: item.cms || '',
+      cph: item.cph || '',
+      hrs: item.hrs || '',
+      al: item.al || '',
+      mph: item.mph || '',
+    });
+    navigate(`/project-report?${params.toString()}`);
+  };
+
+  // Determine card status based on CPH
+  const getCardStatus = (item) => {
+    if (!item.onCph && !item.offCph) return '';
+    const onCph = parseFloat(item.onCph) || 0;
+    const offCph = parseFloat(item.offCph) || 0;
+    if (onCph > offCph * 2) return 'status-exceeding';
+    if (onCph > offCph) return 'status-on-target';
+    return 'status-off-target';
+  };
+
+  // Get status badge text
+  const getStatusBadge = (item) => {
+    const status = getCardStatus(item);
+    if (status === 'status-exceeding') return { text: 'Exceeding', class: 'badge-exceeding' };
+    if (status === 'status-on-target') return { text: 'On Target', class: 'badge-on-target' };
+    if (status === 'status-off-target') return { text: 'Off Target', class: 'badge-off-target' };
+    return null;
+  };
 
   let columnKeyMap = {
     'Proj ID': 'projectId',
@@ -218,14 +253,77 @@ const ProjectReport = () => {
           </div>
         ) : (
           <div className='summary-card-container'>
-            {data.map((item, index) => (
-              <MyDataCard
-                key={index}
-                title={item.projectId}
-                data={item}
-                columnKeyMap={cardColumnKeyMap}
-              />
-            ))}
+            {data.map((item, index) => {
+              const status = getCardStatus(item);
+              const badge = getStatusBadge(item);
+              return (
+                <div
+                  key={index}
+                  className={`summary-card ${status}`}
+                  onClick={() => handleCardClick(item)}
+                >
+                  <div className='summary-card-header'>
+                    <div>
+                      <h3 className='summary-card-title'>{item.projectId}</h3>
+                      <p className='summary-card-subtitle'>{item.projName}</p>
+                    </div>
+                    {badge && (
+                      <span className={`summary-card-status ${badge.class}`}>
+                        {badge.text}
+                      </span>
+                    )}
+                  </div>
+                  <div className='summary-card-body'>
+                    {!liveToggle && item.abbreviatedDate && (
+                      <div className='summary-card-item'>
+                        <span className='summary-card-label'>Date</span>
+                        <span className='summary-card-value'>{item.abbreviatedDate}</span>
+                      </div>
+                    )}
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>CMS</span>
+                      <span className='summary-card-value'>{item.cms}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>HRS</span>
+                      <span className='summary-card-value'>{item.hrs}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>CPH</span>
+                      <span className='summary-card-value'>{item.cph}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>GPCPH</span>
+                      <span className='summary-card-value'>{item.gpcph}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>MPH</span>
+                      <span className='summary-card-value'>{item.mph}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>Avg. Len</span>
+                      <span className='summary-card-value'>{item.al}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>On CPH</span>
+                      <span className='summary-card-value value-on-cph'>{item.onCph}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>On Var</span>
+                      <span className='summary-card-value value-on-var'>{item.onVar}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>Off CPH</span>
+                      <span className='summary-card-value value-off-cph'>{item.offCph}</span>
+                    </div>
+                    <div className='summary-card-item'>
+                      <span className='summary-card-label'>Zero CMS</span>
+                      <span className='summary-card-value value-zero-cms'>{item.zcms}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -239,4 +337,4 @@ const ProjectReport = () => {
   );
 };
 
-export default ProjectReport;
+export default SummaryReport;

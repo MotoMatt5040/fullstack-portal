@@ -6,6 +6,11 @@ if (process.env.ENVIRONMENT === 'production') {
   VOXCO_PASSWORD = process.env.VOXCO_DB_PROD_PASSWORD;
 }
 
+// Pool size: 10-15 is typically sufficient for most workloads
+// Set via environment variable for flexibility
+const DB_POOL_MAX = parseInt(process.env.DB_POOL_MAX, 10) || 15;
+const DB_POOL_MIN = parseInt(process.env.DB_POOL_MIN, 10) || 2;
+
 const dbConfigs = {
 	promark: {
 		user: process.env.PROMARK_DB_USER,
@@ -17,7 +22,8 @@ const dbConfigs = {
 			trustServerCertificate: true,
 		},
 		pool: {
-			max: 50,
+			max: DB_POOL_MAX,
+			min: DB_POOL_MIN,
 			idleTimeoutMillis: 30000,
 			acquireTimeoutMillis: 60000,
 		},
@@ -33,7 +39,8 @@ const dbConfigs = {
 			trustServerCertificate: true,
 		},
 		pool: {
-			max: 50,
+			max: DB_POOL_MAX,
+			min: DB_POOL_MIN,
 			idleTimeoutMillis: 30000,
 			acquireTimeoutMillis: 60000,
 		},
@@ -49,7 +56,8 @@ const dbConfigs = {
 			trustServerCertificate: true,
 		},
 		pool: {
-			max: 50,
+			max: DB_POOL_MAX,
+			min: DB_POOL_MIN,
 			idleTimeoutMillis: 30000,
 			acquireTimeoutMillis: 60000,
 		},

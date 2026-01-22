@@ -1,12 +1,566 @@
-.project-report-title {
-  font-size: 1rem;
-  font-weight: bold;
+/* =================================================================
+   Project Report - Modern Flat Design
+   ================================================================= */
+
+.project-report {
+  padding: 1.5rem;
+  max-width: 100%;
+}
+
+/* =================================================================
+   Header
+   ================================================================= */
+.project-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.project-report-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.project-report-header-left h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
   color: var(--text-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.project-report-subtitle {
+  color: var(--label-text-color);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.project-report-cph-note {
+  font-size: 0.75rem;
+  color: var(--label-text-color);
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.project-report-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* =================================================================
+   Back Button
+   ================================================================= */
+.project-report-back {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--background-color-elevated);
+  border: 1px solid var(--border-color-soft);
+  border-radius: 6px;
+  color: var(--text-color);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.project-report-back:hover {
+  background: var(--background-color-muted);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* =================================================================
+   Controls
+   ================================================================= */
+.project-report-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.project-report-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.project-report-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.project-report-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.project-report-live-indicator .live-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+
+/* =================================================================
+   Overview Section
+   ================================================================= */
+.project-report-overview {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.project-report-overview-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.project-report-overview-content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.project-report-chart-container {
+  flex: 0 0 auto;
+  min-width: 200px;
+}
+
+.project-report-stats-container {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* =================================================================
+   Stats Table (Overview Table)
+   ================================================================= */
+.project-overview-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  background: var(--background-color-elevated);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.project-overview-table thead th {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  border-bottom: 1px solid var(--border-color-soft);
+  text-align: center;
+  background: var(--background-color-muted);
+}
+
+.project-overview-table tbody td {
+  padding: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.125rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.project-overview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Overview table stat colors */
+.project-overview-table td.stat-on-cph {
+  color: #10b981;
+}
+
+.project-overview-table td.stat-on-var {
+  color: #3b82f6;
+}
+
+.project-overview-table td.stat-off-cph {
+  color: #f59e0b;
+}
+
+.project-overview-table td.stat-zero-cms {
+  color: #dc2626;
+}
+
+.project-overview-table td.stat-total {
+  color: var(--accent-color);
+  font-size: 1.25rem;
+}
+
+/* =================================================================
+   Data Section
+   ================================================================= */
+.project-report-data-section {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.project-report-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color-soft);
+}
+
+.project-report-data-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.project-report-data-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* =================================================================
+   View Toggle
+   ================================================================= */
+.project-report-view-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--background-color-muted);
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+.project-report-view-toggle button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.625rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-color);
+  opacity: 0.5;
+  transition: all 0.15s ease;
+}
+
+.project-report-view-toggle button:hover {
+  opacity: 0.8;
+}
+
+.project-report-view-toggle button.active {
+  background: var(--background-color);
+  opacity: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* =================================================================
+   Table Scroller
+   ================================================================= */
+.project-report-table-scroller {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* =================================================================
+   Data Table
+   ================================================================= */
+.project-report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.project-report-table thead th {
+  padding: 0.625rem 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  border-bottom: 1px solid var(--border-color-soft);
+  background: var(--background-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
   text-align: center;
 }
 
-@media (min-width: 768px) {
-  .project-report-title {
-    font-size: 2rem;
+.project-report-table tbody td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border-color-soft);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.project-report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.project-report-table tbody tr:nth-child(even) td {
+  background-color: var(--background-color-muted);
+}
+
+.project-report-table tbody tr:hover td,
+.project-report-table tbody tr:nth-child(even):hover td {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.06);
+}
+
+.project-report-table tbody td:hover {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.08) !important;
+}
+
+.project-report-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+/* Row status indicators */
+.project-report-table tbody tr.status-on-target td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+.project-report-table tbody tr.status-off-target td:first-child {
+  box-shadow: inset 3px 0 0 #dc2626;
+}
+
+.project-report-table tbody tr.status-exceeding td:first-child {
+  box-shadow: inset 3px 0 0 #8b5cf6;
+}
+
+/* CPH Cell Styling */
+.project-report-table td.cell-cph.cph-on-target {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.project-report-table td.cell-cph.cph-off-target {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.project-report-table td.cell-cph.cph-exceeding {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+/* =================================================================
+   Card View
+   ================================================================= */
+.project-report-card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.project-report-card {
+  background: var(--background-color-muted);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--border-color-soft);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.project-report-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.project-report-card.status-on-target {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.project-report-card.status-off-target {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+/* =================================================================
+   Graph Cards Container
+   ================================================================= */
+.project-report-graphs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* =================================================================
+   States
+   ================================================================= */
+.project-report-loading,
+.project-report-error,
+.project-report-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--label-text-color);
+  font-size: 0.9rem;
+}
+
+.project-report-error {
+  color: #dc2626;
+}
+
+/* =================================================================
+   Responsive
+   ================================================================= */
+@media (max-width: 768px) {
+  .project-report {
+    padding: 1rem;
+  }
+
+  .project-report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .project-report-header-left h1 {
+    font-size: 1.25rem;
+  }
+
+  .project-report-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .project-report-controls-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .project-report-controls-right {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .project-report-overview-content {
+    flex-direction: column;
+  }
+
+  .project-report-chart-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .project-report-stats-container {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .project-report-data-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .project-report-data-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .project-report-card-container {
+    grid-template-columns: 1fr;
+  }
+
+  .project-report-table {
+    font-size: 0.75rem;
+  }
+
+  .project-report-table thead th,
+  .project-report-table tbody td {
+    padding: 0.5rem 0.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-report {
+    padding: 0.75rem;
+  }
+
+  .project-report-header-left h1 {
+    font-size: 1.125rem;
+  }
+
+  .project-report-overview,
+  .project-report-data-section {
+    padding: 1rem;
+  }
+
+  .project-report-table {
+    font-size: 0.7rem;
+  }
+
+  .project-overview-table tbody td {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.375rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .project-report {
+    padding: 2rem;
+  }
+
+  .project-report-header-left h1 {
+    font-size: 1.625rem;
   }
 }

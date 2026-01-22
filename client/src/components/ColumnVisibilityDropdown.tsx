@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Icon from '@mdi/react';
 import { mdiViewColumn, mdiCheck, mdiEye, mdiEyeOff } from '@mdi/js';
 import './css/ColumnVisibilityDropdown.css';
@@ -50,7 +50,10 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityDropdownProps> =
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  const visibleCount = columns.filter((col) => visibility[col.key] !== false).length;
+  const visibleCount = useMemo(
+    () => columns.filter((col) => visibility[col.key] !== false).length,
+    [columns, visibility]
+  );
 
   return (
     <div className="column-visibility-dropdown" ref={dropdownRef}>
@@ -116,4 +119,4 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityDropdownProps> =
   );
 };
 
-export default ColumnVisibilityDropdown;
+export default React.memo(ColumnVisibilityDropdown);

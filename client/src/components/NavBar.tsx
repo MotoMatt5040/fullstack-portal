@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../features/auth/authSlice';
@@ -63,18 +63,21 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
     { to: '/github', icon: mdiGithub, label: 'Feedback', visible: true },
   ], [roles, userRoles]);
 
-  const visibleItems = navItems.filter(item => item.visible);
+  // Memoize visible items filter
+  const visibleItems = useMemo(() => navItems.filter(item => item.visible), [navItems]);
 
-  const toggleNav = () => {
-    const newVisibility = !isNavVisible;
-    setIsNavVisible(newVisibility);
-    onToggleNav(newVisibility);
-  };
+  const toggleNav = useCallback(() => {
+    setIsNavVisible(prev => {
+      const newVisibility = !prev;
+      onToggleNav(newVisibility);
+      return newVisibility;
+    });
+  }, [onToggleNav]);
 
-  const closeNav = () => {
+  const closeNav = useCallback(() => {
     setIsNavVisible(false);
     onToggleNav(false);
-  };
+  }, [onToggleNav]);
 
   // Handle click outside
   useEffect(() => {
@@ -98,20 +101,20 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
     };
   }, [isNavVisible, onToggleNav]);
 
-  // Hover handlers for desktop
-  const handleMouseEnter = () => {
+  // Hover handlers for desktop (memoized)
+  const handleMouseEnter = useCallback(() => {
     if (window.innerWidth >= 769) {
       setIsNavVisible(true);
       onToggleNav(true);
     }
-  };
+  }, [onToggleNav]);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     if (window.innerWidth >= 769) {
       setIsNavVisible(false);
       onToggleNav(false);
     }
-  };
+  }, [onToggleNav]);
 
   return (
     <>

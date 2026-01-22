@@ -1,0 +1,68 @@
+name: CI - Run Tests
+
+on:
+  push:
+    branches:
+      - main
+      - testing
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-server:
+    name: Server Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm install
+
+      - name: Run server tests
+        working-directory: server
+        run: npm test -- --passWithNoTests
+
+  test-client:
+    name: Client Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm install
+
+      - name: Run client tests
+        working-directory: client
+        run: npm run test:run
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-server, test-client]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-server.result }}" == "failure" ] || [ "${{ needs.test-client.result }}" == "failure" ]; then
+            echo "::error::One or more test suites failed"
+            exit 1
+          fi
+          echo "All tests passed successfully"

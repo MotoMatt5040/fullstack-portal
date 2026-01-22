@@ -813,3 +813,74 @@
 .quota-management-table tbody tr.row-status-over td:first-child {
   box-shadow: inset 3px 0 0 #8b5cf6;
 }
+
+/* =================================================================
+   Enhanced Data Presentation
+   ================================================================= */
+
+/* To Do column conditional formatting */
+.quota-management-table td.cell-to-do {
+  font-weight: 500;
+}
+
+.quota-management-table td.cell-to-do.todo-positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.quota-management-table td.cell-to-do.todo-negative {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.quota-management-table td.cell-to-do.todo-zero {
+  color: var(--label-text-color);
+  opacity: 0.6;
+}
+
+/* =================================================================
+   Total Section Visual Hierarchy
+   ================================================================= */
+
+/* Make Total columns stand out more - but NOT status cells */
+.quota-management-table td.total-column:not(.cell-status) {
+  font-weight: 600;
+}
+
+/* Right border on Total section to separate from mode columns */
+.quota-management-table colgroup[data-sub-group="Total"] + colgroup[data-main-group="Phone"] col:first-child,
+.quota-management-table colgroup[data-sub-group="Total"] + colgroup[data-main-group="Web"] col:first-child {
+  border-left: 2px solid var(--border-color);
+}
+
+/* =================================================================
+   Enhanced Hover States
+   ================================================================= */
+
+/* Row hover with subtle highlight - override zebra striping */
+.quota-management-table tbody tr:hover td,
+.quota-management-table tbody tr:nth-child(even):hover td {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.06);
+}
+
+/* Cell hover for interactive feel */
+.quota-management-table tbody td:hover {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.08) !important;
+}
+
+/* Don't override status cell colors on hover */
+.quota-management-table tbody td.cell-status:hover {
+  filter: brightness(1.05);
+}
+
+.quota-management-table tbody td.cell-status.open:hover {
+  background-color: rgba(16, 185, 129, 0.9) !important;
+}
+
+.quota-management-table tbody td.cell-status.closed:hover {
+  background-color: rgba(220, 38, 38, 0.9) !important;
+}
+
+.quota-management-table tbody td.cell-status.half-open:hover {
+  background-color: rgba(245, 158, 11, 0.9) !important;
+}
