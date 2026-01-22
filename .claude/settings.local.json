@@ -19,7 +19,8 @@
       "Bash(docker restart:*)",
       "Bash(docker-compose restart:*)",
       "Bash(docker-compose ps:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
