@@ -27,4 +27,4 @@ const MyDataCard = <T extends Record<string, any>>({
 	);
 };
 
-export default MyDataCard;
+export default React.memo(MyDataCard) as typeof MyDataCard;
