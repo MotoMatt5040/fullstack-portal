@@ -101,6 +101,25 @@ const formatCellValue = (value: string): string => {
   return EMPTY_VALUE_INDICATORS.includes(value as any) ? '' : value;
 };
 
+// Get percentage status class (matches visual indicator colors)
+// Green = behind (<100%), Red = complete (100-109%), Purple = over (110%+)
+const getPercentageStatusClass = (value: string): string => {
+  const numValue = parseFloat(value);
+  if (isNaN(numValue) || numValue === 0) return '';
+  if (numValue >= 110) return 'pct-over';
+  if (numValue >= 100) return 'pct-complete';
+  return 'pct-behind';
+};
+
+// Get To Do class based on value
+const getToDoClass = (value: string): string => {
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) return '';
+  if (numValue > 0) return 'todo-positive';
+  if (numValue < 0) return 'todo-negative';
+  return 'todo-zero';
+};
+
 const getCellClassName = (header: string, value: string, subGroup: string): string => {
   let className = `cell-${header.toLowerCase().replace(/\s+/g, '-')}`;
 
@@ -118,6 +137,18 @@ const getCellClassName = (header: string, value: string, subGroup: string): stri
     } else if (value === 'H') {
       className += ' half-open';
     }
+  }
+
+  // Add percentage indicator classes for Freq% columns (matching visual indicator colors)
+  if (header === 'Freq%') {
+    const pctClass = getPercentageStatusClass(value);
+    if (pctClass) className += ` ${pctClass}`;
+  }
+
+  // Add conditional formatting for To Do column
+  if (header === 'To Do') {
+    const todoClass = getToDoClass(value);
+    if (todoClass) className += ` ${todoClass}`;
   }
 
   if (value.includes('*')) {
