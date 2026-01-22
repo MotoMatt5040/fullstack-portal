@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './css/MyTable.css';
 
@@ -102,22 +102,39 @@ const MyTable: React.FC<MyTableProps> = ({
 		});
 	};
 
-	const sortedData = [...data].sort((a, b) => {
-		for (let { key, direction } of sortConfig) {
-			const valA = a[key];
-			const valB = b[key];
-			if (valA !== valB) {
-				if (typeof valA === 'number' && typeof valB === 'number') {
-					return direction === 'asc' ? valA - valB : valB - valA;
-				} else {
-					return direction === 'asc'
-						? String(valA).localeCompare(String(valB))
-						: String(valB).localeCompare(String(valA));
+	// Memoize sorted data to prevent recalculation on every render
+	const sortedData = useMemo(() => {
+		return [...data].sort((a, b) => {
+			for (let { key, direction } of sortConfig) {
+				const valA = a[key];
+				const valB = b[key];
+				if (valA !== valB) {
+					if (typeof valA === 'number' && typeof valB === 'number') {
+						return direction === 'asc' ? valA - valB : valB - valA;
+					} else {
+						return direction === 'asc'
+							? String(valA).localeCompare(String(valB))
+							: String(valB).localeCompare(String(valA));
+					}
 				}
 			}
-		}
-		return 0;
-	});
+			return 0;
+		});
+	}, [data, sortConfig]);
+
+	// Pre-calculate min/max for gradient columns to avoid recalculating for every cell
+	const gradientStats = useMemo(() => {
+		const stats: Record<string, { min: number; max: number }> = {};
+		Object.keys(_gc).forEach((key) => {
+			const columnData = data.map((r) => r[key]).filter((val) => typeof val === 'number');
+			const positiveData = columnData.filter((val) => val >= 0);
+			stats[key] = {
+				min: positiveData.length > 0 ? Math.min(...positiveData) : 0,
+				max: columnData.length > 0 ? Math.max(...columnData) : 0,
+			};
+		});
+		return stats;
+	}, [data, _gc]);
 
 	const getGradientStyle = (value: number, min: number, max: number, ignoreZero: boolean) => {
 		if (value === 0 && ignoreZero) return;
@@ -278,11 +295,8 @@ const MyTable: React.FC<MyTableProps> = ({
 
 								let style: React.CSSProperties = {};
 
-								if (key in _gc) {
-									const columnData = data.map((r) => r[key]);
-									
-									const min = Math.min(...columnData.filter((val) => val >= 0));
-									const max = Math.max(...columnData);
+								if (key in _gc && gradientStats[key]) {
+									const { min, max } = gradientStats[key];
 									const ignoreZero = _gc[key]?.ignoreZero ?? false;
 									style = {
 										...style,
@@ -324,4 +338,4 @@ const MyTable: React.FC<MyTableProps> = ({
 	);
 };
 
-export default MyTable;
+export default React.memo(MyTable);
