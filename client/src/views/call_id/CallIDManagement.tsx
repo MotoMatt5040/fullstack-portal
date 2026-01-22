@@ -1,5 +1,5 @@
 // client/src/views/callid_management/CallIDManagement.tsx
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiPhone,
@@ -40,6 +40,41 @@ import {
   ProjectSlotsModal,
 } from './AssignmentModals';
 import './CallIDManagement.css';
+
+// ==================== UTILITY FUNCTIONS (outside component to avoid recreation) ====================
+
+const formatPhoneNumber = (phone: string) => {
+  return phone || '';
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const datePart = dateString.split('T')[0];
+  const [year, month, day] = datePart.split('-');
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
+};
+
+const getDaysBadgeClass = (days: number) => {
+  if (days < 7) return 'new';
+  if (days < 30) return 'active';
+  if (days < 90) return 'long';
+  return 'very-long';
+};
+
+const getStatusClass = (status: string) => {
+  if (!status) return '';
+  const lower = status.toLowerCase();
+  if (lower.includes('removed')) return 'removed';
+  if (lower.includes('flagged') || lower.includes('spam')) return 'flagged';
+  if (lower.includes('in use')) return 'in-use';
+  if (lower.includes('available')) return 'available';
+  if (lower.includes('active')) return 'active';
+  if (lower.includes('inactive')) return 'inactive';
+  if (lower.includes('testing')) return 'testing';
+  if (lower.includes('unknown')) return 'unknown';
+  return '';
+};
 
 const CallIDManagement: React.FC = () => {
   const {
@@ -141,6 +176,43 @@ const CallIDManagement: React.FC = () => {
     handleRemoveSlot,
     handleUpdateSlotDates,
   } = useCallIDManagementLogic();
+
+  // ==================== MEMOIZED CALCULATIONS ====================
+
+  // Memoize project grouping for assignments tab
+  const groupedProjects = useMemo(() => {
+    const projectsMap = new Map();
+
+    filteredActiveAssignments.forEach((assignment: any) => {
+      if (!projectsMap.has(assignment.ProjectID)) {
+        projectsMap.set(assignment.ProjectID, {
+          ProjectID: assignment.ProjectID,
+          StartDate: assignment.StartDate,
+          EndDate: assignment.EndDate,
+          DaysActive: assignment.DaysActive,
+          slots: {},
+          assignments: [],
+        });
+      }
+
+      const project = projectsMap.get(assignment.ProjectID);
+      project.slots[assignment.SlotName] = {
+        PhoneNumberID: assignment.PhoneNumberID,
+        PhoneNumber: assignment.PhoneNumber,
+        CallerName: assignment.CallerName,
+        StateAbbr: assignment.StateAbbr,
+        Status: assignment.Status,
+      };
+      project.assignments.push(assignment);
+    });
+
+    return Array.from(projectsMap.values());
+  }, [filteredActiveAssignments]);
+
+  // Memoize filter check
+  const hasActiveFilters = useMemo(() => {
+    return Object.values(filters).some((value) => value !== '');
+  }, [filters]);
 
   // ==================== RENDER FUNCTIONS ====================
 
@@ -442,7 +514,7 @@ const CallIDManagement: React.FC = () => {
           <button
             onClick={handleClearFilters}
             className='clear-filters-btn'
-            disabled={!hasActiveFilters()}
+            disabled={!hasActiveFilters}
           >
             Clear Filters
           </button>
@@ -669,33 +741,8 @@ const CallIDManagement: React.FC = () => {
   );
 
   const renderAssignmentsTab = () => {
-    // Group active assignments by project - but we need the full project row
-    const projectsMap = new Map();
-
-    filteredActiveAssignments.forEach((assignment: any) => {
-      if (!projectsMap.has(assignment.ProjectID)) {
-        projectsMap.set(assignment.ProjectID, {
-          ProjectID: assignment.ProjectID,
-          StartDate: assignment.StartDate,
-          EndDate: assignment.EndDate,
-          DaysActive: assignment.DaysActive,
-          slots: {},
-          assignments: [],
-        });
-      }
-
-      const project = projectsMap.get(assignment.ProjectID);
-      project.slots[assignment.SlotName] = {
-        PhoneNumberID: assignment.PhoneNumberID,
-        PhoneNumber: assignment.PhoneNumber,
-        CallerName: assignment.CallerName,
-        StateAbbr: assignment.StateAbbr,
-        Status: assignment.Status,
-      };
-      project.assignments.push(assignment);
-    });
-
-    const projects = Array.from(projectsMap.values());
+    // Use memoized grouped projects
+    const projects = groupedProjects;
 
     return (
       <div className='assignments-content'>
@@ -1231,46 +1278,6 @@ const CallIDManagement: React.FC = () => {
       </div>
     </div>
   );
-
-  // ==================== UTILITY FUNCTIONS ====================
-
-  const formatPhoneNumber = (phone: string) => {
-    return phone || '';
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
-    const datePart = dateString.split('T')[0];
-    const [year, month, day] = datePart.split('-');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
-  };
-
-  const getDaysBadgeClass = (days: number) => {
-    if (days < 7) return 'new';
-    if (days < 30) return 'active';
-    if (days < 90) return 'long';
-    return 'very-long';
-  };
-
-  const getStatusClass = (status: string) => {
-    if (!status) return '';
-    const lower = status.toLowerCase();
-    if (lower.includes('removed')) return 'removed';
-    if (lower.includes('flagged') || lower.includes('spam')) return 'flagged';
-    if (lower.includes('in use')) return 'in-use';
-    if (lower.includes('available')) return 'available';
-    if (lower.includes('active')) return 'active';
-    if (lower.includes('inactive')) return 'inactive';
-    if (lower.includes('testing')) return 'testing';
-    if (lower.includes('unknown')) return 'unknown';
-    return '';
-  };
-
-  const hasActiveFilters = () => {
-    return Object.values(filters).some((value) => value !== '');
-  };
 
   // ==================== MAIN RENDER ====================
 
