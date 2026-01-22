@@ -16,12 +16,14 @@ const getStepIndices = (isTarrance: boolean) => {
     DROP_ZONE_STEP: 4 + vendorOffset + 4,      // 8 for Tarrance, 9 otherwise
     STEP_2_HEADER: 4 + vendorOffset + 5,       // 9 for Tarrance, 10 otherwise
     HEADERS_SECTION: 4 + vendorOffset + 6,     // 10 for Tarrance, 11 otherwise
-    PROCESS_ACTIONS: 4 + vendorOffset + 11,    // 15 for Tarrance, 16 otherwise
-    STEP_3_HEADER: 4 + vendorOffset + 12,      // 16 for Tarrance, 17 otherwise
-    SAMPLE_CONFIG_HEADER: 4 + vendorOffset + 16, // 20 for Tarrance, 21 otherwise
-    FILE_TYPE_STEP: 4 + vendorOffset + 18,     // 22 for Tarrance, 23 otherwise
-    SPLIT_LOGIC_STEP: 4 + vendorOffset + 21,   // 25 for Tarrance, 26 otherwise
-    EXTRACT_BUTTON_STEP: 4 + vendorOffset + 24, // 28 for Tarrance, 29 otherwise
+    EXCLUDED_HEADERS_SECTION: 4 + vendorOffset + 11, // 15 for Tarrance, 16 otherwise
+    EXCLUDED_HEADERS_LIST: 4 + vendorOffset + 12,    // 16 for Tarrance, 17 otherwise
+    PROCESS_ACTIONS: 4 + vendorOffset + 13,    // 17 for Tarrance, 18 otherwise
+    STEP_3_HEADER: 4 + vendorOffset + 14,      // 18 for Tarrance, 19 otherwise
+    SAMPLE_CONFIG_HEADER: 4 + vendorOffset + 18, // 22 for Tarrance, 23 otherwise
+    FILE_TYPE_STEP: 4 + vendorOffset + 20,     // 24 for Tarrance, 25 otherwise
+    SPLIT_LOGIC_STEP: 4 + vendorOffset + 23,   // 27 for Tarrance, 28 otherwise
+    EXTRACT_BUTTON_STEP: 4 + vendorOffset + 26, // 30 for Tarrance, 31 otherwise
   };
 };
 
@@ -209,6 +211,26 @@ const getTourSteps = (isTarrance: boolean) => [
     },
   },
   {
+    element: '[data-tour="excluded-headers-section"]',
+    popover: {
+      title: 'Excluded Variables',
+      description:
+        'Some variables are excluded by default to keep your sample clean. Click this section to expand and see which variables were filtered out.',
+      side: 'top' as const,
+      align: 'center' as const,
+    },
+  },
+  {
+    element: '[data-tour="excluded-headers-list"]',
+    popover: {
+      title: 'Include Excluded Variables',
+      description:
+        'Click on any excluded variable to include it in your sample. Variables you include will appear in a green "Included from exclusions" section above.',
+      side: 'top' as const,
+      align: 'center' as const,
+    },
+  },
+  {
     element: '[data-tour="process-actions"]',
     popover: {
       title: 'Process Your Files',
@@ -385,6 +407,8 @@ export const useSampleAutomationTour = ({
     DROP_ZONE_STEP,
     STEP_2_HEADER,
     HEADERS_SECTION,
+    EXCLUDED_HEADERS_SECTION,
+    EXCLUDED_HEADERS_LIST,
     PROCESS_ACTIONS,
     STEP_3_HEADER,
     SAMPLE_CONFIG_HEADER,
@@ -496,6 +520,13 @@ export const useSampleAutomationTour = ({
             shakeNextButton('Click a file to expand and view its headers');
             return;
           }
+        } else if (stepIndex === EXCLUDED_HEADERS_SECTION) {
+          // Check if the excluded headers section is expanded (excluded-headers-list visible)
+          const excludedHeadersList = document.querySelector('[data-tour="excluded-headers-list"]');
+          if (!excludedHeadersList) {
+            shakeNextButton('Click to expand the excluded variables section');
+            return;
+          }
         } else if (stepIndex === STEP_3_HEADER) {
           // Check if Step 3 content is expanded
           const step3Content = document.querySelector('[data-tour="step-3-header"]')?.closest('.workflow-step')?.querySelector('.step-content');
@@ -592,6 +623,20 @@ export const useSampleAutomationTour = ({
             return;
           }
 
+          // Skip excluded headers steps if no excluded headers exist
+          const hasExcludedHeaders = document.querySelector('[data-tour="excluded-headers-section"]');
+          if (stepIndex === EXCLUDED_HEADERS_SECTION && !hasExcludedHeaders) {
+            driverRef.current?.moveNext();
+            return;
+          }
+
+          // Skip excluded headers list step if section not expanded or doesn't exist
+          const excludedHeadersList = document.querySelector('[data-tour="excluded-headers-list"]');
+          if (stepIndex === EXCLUDED_HEADERS_LIST && !excludedHeadersList) {
+            driverRef.current?.moveNext();
+            return;
+          }
+
           // Conditional step skipping based on output mode (only when going forward)
           const isSplitMode = document.querySelector('[data-tour="output-mode-section"] .toggle-btn.active')?.textContent?.includes('Split');
 
@@ -666,6 +711,12 @@ export const useSampleAutomationTour = ({
         if (expandedFileContent) {
           driverRef.current?.moveNext();
         }
+      } else if (stepIndex === EXCLUDED_HEADERS_SECTION) {
+        // Auto-advance when excluded headers section is expanded
+        const excludedHeadersList = document.querySelector('[data-tour="excluded-headers-list"]');
+        if (excludedHeadersList) {
+          driverRef.current?.moveNext();
+        }
       } else if (stepIndex === STEP_3_HEADER) {
         const step3Content = document.querySelector('[data-tour="step-3-header"]')?.closest('.workflow-step')?.querySelector('.step-content');
         if (step3Content) {
@@ -711,7 +762,7 @@ export const useSampleAutomationTour = ({
     });
 
     return () => observer.disconnect();
-  }, [isTourActive, STEP_1_HEADER, STEP_2_HEADER, HEADERS_SECTION, STEP_3_HEADER, SAMPLE_CONFIG_HEADER, PROCESS_ACTIONS, DROP_ZONE_STEP, EXTRACT_BUTTON_STEP]);
+  }, [isTourActive, STEP_1_HEADER, STEP_2_HEADER, HEADERS_SECTION, EXCLUDED_HEADERS_SECTION, STEP_3_HEADER, SAMPLE_CONFIG_HEADER, PROCESS_ACTIONS, DROP_ZONE_STEP, EXTRACT_BUTTON_STEP]);
 
   // Get current step index
   const getCurrentStep = useCallback(() => {

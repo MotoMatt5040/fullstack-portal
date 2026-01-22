@@ -23,7 +23,9 @@ router.get('/clients-and-vendors', controller.handleGetClientsAndVendors);
 
 // Header mapping routes
 router.get('/header-mappings', controller.getHeaderMappings);
+router.get('/header-mappings/all', controller.getAllHeaderMappings);
 router.post('/header-mappings', controller.saveHeaderMappings);
+router.delete('/header-mappings', controller.deleteHeaderMapping);
 
 // Table operations routes
 router.get('/table-preview/:tableName', controller.getTablePreview);
@@ -59,5 +61,17 @@ router.delete('/extraction-defaults/:type/:id', controller.deleteExtractionDefau
 router.get('/sample-tables', controller.getSampleTables);
 router.get('/sample-tables/:tableName', controller.getSampleTableDetails);
 router.delete('/sample-tables/:tableName', controller.deleteSampleTable);
+
+// Variable exclusions routes
+router.get('/variable-exclusions', controller.getVariableExclusions);
+router.post('/variable-exclusions', controller.addVariableExclusion);
+router.put('/variable-exclusions/:exclusionId', controller.updateVariableExclusion);
+router.delete('/variable-exclusions/:exclusionId', controller.deleteVariableExclusion);
+
+// Project variable inclusions routes
+router.get('/project-inclusions/:projectId', controller.getProjectVariableInclusions);
+router.post('/project-inclusions/:projectId', controller.addProjectVariableInclusion);
+router.put('/project-inclusions/:inclusionId', controller.updateProjectVariableInclusion);
+router.delete('/project-inclusions/:inclusionId', controller.deleteProjectVariableInclusion);
 
 module.exports = router;

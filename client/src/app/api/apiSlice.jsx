@@ -124,6 +124,8 @@ export const apiSlice = createApi({
     'SampleAutomationVendors',
     'HeaderMappings',
     'SampleTables',
+    'VariableExclusions',
+    'ProjectVariableInclusions',
   ],
   endpoints: (builder) => ({}),
 });

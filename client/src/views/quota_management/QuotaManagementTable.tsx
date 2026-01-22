@@ -151,25 +151,29 @@ const TableCell = memo<TableCellProps>(({ rowKey, group, subGroup, col, cellData
     const isLabelCol = col === 'Label';
     const truncated = isLabelCol && formattedValue.length > LABEL_MAX_LENGTH;
 
+    // For Status column in Total subGroup, show only colors (no letter)
+    const isStatusInTotal = col === 'Status' && subGroup === 'Total';
+
     return {
-      displayValue: isLabelCol ? truncateText(formattedValue, LABEL_MAX_LENGTH) : formattedValue,
+      displayValue: isStatusInTotal ? '' : (isLabelCol ? truncateText(formattedValue, LABEL_MAX_LENGTH) : formattedValue),
       fullValue: formattedValue,
       isLabel: isLabelCol,
       isTruncated: truncated,
     };
-  }, [cellData, col]);
+  }, [cellData, col, subGroup]);
 
   const cellId = `${rowKey}-${group}-${subGroup}-${col}`;
   const isTooltipVisible = activeTooltip === cellId;
 
   const className = useMemo(() => {
     const headerName = getDisplayName(col);
-    let cls = `${getCellClassName(headerName, displayValue, subGroup)} ${extraClassName || ''}`;
+    // Use fullValue for class calculation so Status colors work even when displayValue is empty
+    let cls = `${getCellClassName(headerName, fullValue, subGroup)} ${extraClassName || ''}`;
     if (isTruncated) {
       cls += ' truncated';
     }
     return cls;
-  }, [col, displayValue, subGroup, extraClassName, isTruncated]);
+  }, [col, fullValue, subGroup, extraClassName, isTruncated]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     if (isTruncated) {

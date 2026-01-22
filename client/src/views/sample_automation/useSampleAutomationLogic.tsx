@@ -56,6 +56,8 @@ interface FileHeaderData {
   originalHeaders: string[];
   mappedHeaders: string[];
   mappings: Record<string, HeaderMapping>;
+  excludedHeaders?: string[];
+  includedFromExclusions?: string[]; // Headers that were excluded but user chose to include
 }
 
 export const useSampleAutomationLogic = () => {
@@ -308,7 +310,7 @@ export const useSampleAutomationLogic = () => {
 
   // NEW: Function to fetch and apply header mappings using refs for current vendor/client
   const fetchAndApplyHeaderMappings = useCallback(
-    async (fileId: string, originalHeaders: string[]) => {
+    async (fileId: string, originalHeaders: string[], excludedHeaders: string[] = []) => {
       if (!originalHeaders.length) return;
 
       try {
@@ -330,13 +332,14 @@ export const useSampleAutomationLogic = () => {
           return mapping ? mapping.mapped : originalHeader;
         });
 
-        // Update file headers with both original and mapped
+        // Update file headers with both original, mapped, and excluded
         setFileHeaders((prev) => ({
           ...prev,
           [fileId]: {
             originalHeaders,
             mappedHeaders,
             mappings: mappingsResult.data,
+            excludedHeaders,
           },
         }));
 
@@ -348,6 +351,7 @@ export const useSampleAutomationLogic = () => {
             originalHeaders,
             mappedHeaders: originalHeaders,
             mappings: {},
+            excludedHeaders,
           },
         }));
       }
@@ -357,11 +361,14 @@ export const useSampleAutomationLogic = () => {
 
   // NEW: Function to detect headers from file using RTK Query
   const detectHeadersFromFile = useCallback(
-    async (file: File): Promise<string[]> => {
+    async (file: File): Promise<{ headers: string[]; excludedHeaders: string[] }> => {
       try {
         const result = await detectHeaders(file).unwrap();
-        return result.headers || [];
-      } catch (error) {
+        return {
+          headers: result.headers || [],
+          excludedHeaders: result.excludedHeaders || [],
+        };
+      } catch (error: any) {
         throw new Error(
           `Failed to read headers from ${file.name}: ${error.message}`
         );
@@ -380,11 +387,11 @@ export const useSampleAutomationLogic = () => {
       }
 
       try {
-        // Step 1: Detect headers from the file using backend
-        const detectedHeaders = await detectHeadersFromFile(fileWrapper.file);
+        // Step 1: Detect headers from the file using backend (now returns both headers and excludedHeaders)
+        const { headers: detectedHeaders, excludedHeaders } = await detectHeadersFromFile(fileWrapper.file);
 
-        // Step 2: Fetch database mappings and apply them
-        await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders);
+        // Step 2: Fetch database mappings and apply them (pass excluded headers too)
+        await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders, excludedHeaders);
 
         // Step 3: Mark file as processed
         setCheckedFiles((prev) => new Set([...prev, fileWrapper.id]));
@@ -396,6 +403,7 @@ export const useSampleAutomationLogic = () => {
             originalHeaders: [],
             mappedHeaders: [],
             mappings: {},
+            excludedHeaders: [],
           },
         }));
       }
@@ -1130,7 +1138,69 @@ const generateSplitFiles = useCallback(async () => {
   }
 }, [splitConfiguration, processResult]);
 
+// Function to include an excluded header (move from excluded to included)
+const handleIncludeExcludedHeader = useCallback((fileId: string, headerName: string) => {
+  setFileHeaders((prev) => {
+    const fileData = prev[fileId];
+    if (!fileData) return prev;
 
+    const excludedHeaders = fileData.excludedHeaders || [];
+    const includedFromExclusions = fileData.includedFromExclusions || [];
+
+    // Remove from excluded, add to included
+    const newExcluded = excludedHeaders.filter(h => h !== headerName);
+    const newIncluded = [...includedFromExclusions, headerName];
+
+    // Add to original and mapped headers
+    const newOriginalHeaders = [...fileData.originalHeaders, headerName];
+    const newMappedHeaders = [...fileData.mappedHeaders, headerName];
+
+    return {
+      ...prev,
+      [fileId]: {
+        ...fileData,
+        originalHeaders: newOriginalHeaders,
+        mappedHeaders: newMappedHeaders,
+        excludedHeaders: newExcluded,
+        includedFromExclusions: newIncluded,
+      },
+    };
+  });
+}, []);
+
+// Function to exclude an included header (move from included back to excluded)
+const handleExcludeIncludedHeader = useCallback((fileId: string, headerName: string) => {
+  setFileHeaders((prev) => {
+    const fileData = prev[fileId];
+    if (!fileData) return prev;
+
+    const excludedHeaders = fileData.excludedHeaders || [];
+    const includedFromExclusions = fileData.includedFromExclusions || [];
+
+    // Only allow excluding headers that were previously included from exclusions
+    if (!includedFromExclusions.includes(headerName)) return prev;
+
+    // Remove from included, add back to excluded
+    const newIncluded = includedFromExclusions.filter(h => h !== headerName);
+    const newExcluded = [...excludedHeaders, headerName];
+
+    // Remove from original and mapped headers
+    const headerIndex = fileData.originalHeaders.indexOf(headerName);
+    const newOriginalHeaders = fileData.originalHeaders.filter((_, i) => i !== headerIndex);
+    const newMappedHeaders = fileData.mappedHeaders.filter((_, i) => i !== headerIndex);
+
+    return {
+      ...prev,
+      [fileId]: {
+        ...fileData,
+        originalHeaders: newOriginalHeaders,
+        mappedHeaders: newMappedHeaders,
+        excludedHeaders: newExcluded,
+        includedFromExclusions: newIncluded,
+      },
+    };
+  });
+}, []);
 
   return {
     // State
@@ -1241,5 +1311,9 @@ const generateSplitFiles = useCallback(async () => {
 
   fileType,
   setFileType,
+
+  // Include/Exclude header toggling
+  handleIncludeExcludedHeader,
+  handleExcludeIncludedHeader,
   };
 };

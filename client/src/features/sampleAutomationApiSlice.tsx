@@ -81,6 +81,128 @@ interface SaveHeaderMappingsResponse {
   message: string;
 }
 
+// Header Mappings Management interfaces
+interface AllHeaderMapping {
+  originalHeader: string;
+  mappedHeader: string;
+  vendorId: number | null;
+  clientId: number | null;
+  vendorName: string;
+  clientName: string;
+  createdDate: string;
+  modifiedDate: string | null;
+}
+
+interface GetAllHeaderMappingsParams {
+  vendorId?: number;
+  clientId?: number;
+  search?: string;
+}
+
+interface GetAllHeaderMappingsResponse {
+  success: boolean;
+  data: AllHeaderMapping[];
+  count: number;
+  message: string;
+}
+
+interface DeleteHeaderMappingParams {
+  originalHeader: string;
+  vendorId: number | null;
+  clientId: number | null;
+}
+
+interface DeleteHeaderMappingResponse {
+  success: boolean;
+  message: string;
+}
+
+// Variable Exclusions interfaces
+interface VariableExclusion {
+  exclusionId: number;
+  variableName: string;
+  description: string | null;
+  createdDate: string;
+  createdBy: string | null;
+}
+
+interface GetVariableExclusionsParams {
+  search?: string;
+}
+
+interface GetVariableExclusionsResponse {
+  success: boolean;
+  data: VariableExclusion[];
+}
+
+interface AddVariableExclusionParams {
+  variableName: string;
+  description?: string;
+}
+
+interface AddVariableExclusionResponse {
+  success: boolean;
+  data: VariableExclusion;
+}
+
+interface UpdateVariableExclusionParams {
+  exclusionId: number;
+  description?: string;
+}
+
+interface UpdateVariableExclusionResponse {
+  success: boolean;
+  data: VariableExclusion;
+}
+
+interface DeleteVariableExclusionResponse {
+  success: boolean;
+  deleted: boolean;
+  rowsAffected: number;
+}
+
+// Project Variable Inclusions interfaces
+interface ProjectVariableInclusion {
+  inclusionId: number;
+  projectId: number;
+  originalVariableName: string;
+  mappedVariableName: string;
+  createdDate: string;
+  createdBy: string | null;
+}
+
+interface GetProjectVariableInclusionsResponse {
+  success: boolean;
+  data: ProjectVariableInclusion[];
+}
+
+interface AddProjectVariableInclusionParams {
+  projectId: number;
+  originalVariableName: string;
+  mappedVariableName: string;
+}
+
+interface AddProjectVariableInclusionResponse {
+  success: boolean;
+  data: ProjectVariableInclusion;
+}
+
+interface UpdateProjectVariableInclusionParams {
+  inclusionId: number;
+  mappedVariableName: string;
+}
+
+interface UpdateProjectVariableInclusionResponse {
+  success: boolean;
+  data: ProjectVariableInclusion;
+}
+
+interface DeleteProjectVariableInclusionResponse {
+  success: boolean;
+  deleted: boolean;
+  rowsAffected: number;
+}
+
 interface TableColumn {
   name: string;
   type: string;
@@ -580,11 +702,44 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
       }),
       invalidatesTags: (result, error, { vendorId, clientId }) => [
         'HeaderMappings',
+        'AllHeaderMappings',
         {
           type: 'HeaderMappings',
           id: `${vendorId || 'null'}-${clientId || 'null'}`,
         },
       ],
+    }),
+
+    // Get all header mappings for management page
+    getAllHeaderMappings: builder.query<
+      GetAllHeaderMappingsResponse,
+      GetAllHeaderMappingsParams
+    >({
+      query: ({ vendorId, clientId, search } = {}) => {
+        const params = new URLSearchParams();
+        if (vendorId !== undefined) params.append('vendorId', vendorId.toString());
+        if (clientId !== undefined) params.append('clientId', clientId.toString());
+        if (search) params.append('search', search);
+        const queryString = params.toString();
+        return {
+          url: `/sample-automation/header-mappings/all${queryString ? `?${queryString}` : ''}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['AllHeaderMappings'],
+    }),
+
+    // Delete a header mapping
+    deleteHeaderMapping: builder.mutation<
+      DeleteHeaderMappingResponse,
+      DeleteHeaderMappingParams
+    >({
+      query: (params) => ({
+        url: '/sample-automation/header-mappings',
+        method: 'DELETE',
+        body: params,
+      }),
+      invalidatesTags: ['HeaderMappings', 'AllHeaderMappings'],
     }),
     // Get table preview (top N rows)
     getTablePreview: builder.query<TablePreviewResponse, TablePreviewParams>({
@@ -825,6 +980,81 @@ extractFiles: builder.mutation<ExtractFilesResponse, ExtractFilesParams>({
       }),
       invalidatesTags: ['SampleTables'],
     }),
+
+    // Variable Exclusions endpoints
+    getVariableExclusions: builder.query<GetVariableExclusionsResponse, GetVariableExclusionsParams>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.search) searchParams.append('search', params.search);
+        const queryString = searchParams.toString();
+        return {
+          url: `/sample-automation/variable-exclusions${queryString ? `?${queryString}` : ''}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['VariableExclusions'],
+    }),
+
+    addVariableExclusion: builder.mutation<AddVariableExclusionResponse, AddVariableExclusionParams>({
+      query: (params) => ({
+        url: '/sample-automation/variable-exclusions',
+        method: 'POST',
+        body: params,
+      }),
+      invalidatesTags: ['VariableExclusions'],
+    }),
+
+    updateVariableExclusion: builder.mutation<UpdateVariableExclusionResponse, UpdateVariableExclusionParams>({
+      query: ({ exclusionId, ...body }) => ({
+        url: `/sample-automation/variable-exclusions/${exclusionId}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['VariableExclusions'],
+    }),
+
+    deleteVariableExclusion: builder.mutation<DeleteVariableExclusionResponse, number>({
+      query: (exclusionId) => ({
+        url: `/sample-automation/variable-exclusions/${exclusionId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['VariableExclusions'],
+    }),
+
+    // Project Variable Inclusions endpoints
+    getProjectVariableInclusions: builder.query<GetProjectVariableInclusionsResponse, number>({
+      query: (projectId) => ({
+        url: `/sample-automation/project-inclusions/${projectId}`,
+        method: 'GET',
+      }),
+      providesTags: (_result, _error, projectId) => [{ type: 'ProjectVariableInclusions', id: projectId }],
+    }),
+
+    addProjectVariableInclusion: builder.mutation<AddProjectVariableInclusionResponse, AddProjectVariableInclusionParams>({
+      query: ({ projectId, ...body }) => ({
+        url: `/sample-automation/project-inclusions/${projectId}`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'ProjectVariableInclusions', id: projectId }],
+    }),
+
+    updateProjectVariableInclusion: builder.mutation<UpdateProjectVariableInclusionResponse, UpdateProjectVariableInclusionParams>({
+      query: ({ inclusionId, ...body }) => ({
+        url: `/sample-automation/project-inclusions/${inclusionId}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['ProjectVariableInclusions'],
+    }),
+
+    deleteProjectVariableInclusion: builder.mutation<DeleteProjectVariableInclusionResponse, number>({
+      query: (inclusionId) => ({
+        url: `/sample-automation/project-inclusions/${inclusionId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['ProjectVariableInclusions'],
+    }),
   }),
 });
 
@@ -841,6 +1071,10 @@ export const {
   useGetHeaderMappingsQuery,
   useLazyGetHeaderMappingsQuery,
   useSaveHeaderMappingsMutation,
+  // Header mappings management hooks
+  useGetAllHeaderMappingsQuery,
+  useLazyGetAllHeaderMappingsQuery,
+  useDeleteHeaderMappingMutation,
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
   useCreateDNCScrubbedMutation,
@@ -874,4 +1108,16 @@ export const {
   useGetSampleTableDetailsQuery,
   useLazyGetSampleTableDetailsQuery,
   useDeleteSampleTableMutation,
+  // Variable Exclusions hooks
+  useGetVariableExclusionsQuery,
+  useLazyGetVariableExclusionsQuery,
+  useAddVariableExclusionMutation,
+  useUpdateVariableExclusionMutation,
+  useDeleteVariableExclusionMutation,
+  // Project Variable Inclusions hooks
+  useGetProjectVariableInclusionsQuery,
+  useLazyGetProjectVariableInclusionsQuery,
+  useAddProjectVariableInclusionMutation,
+  useUpdateProjectVariableInclusionMutation,
+  useDeleteProjectVariableInclusionMutation,
 } = sampleAutomationApiSlice;

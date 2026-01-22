@@ -397,6 +397,526 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
 };
 
 /**
+ * Get all header mappings for management page
+ * @param {Object} filters - Optional filters: vendorId, clientId, search
+ * @returns {Array} - Array of header mapping objects
+ */
+const getAllHeaderMappings = async (filters = {}) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const { vendorId, clientId, search } = filters;
+
+        let query = `
+          SELECT
+            hm.OriginalHeader,
+            hm.MappedHeader,
+            hm.VendorID,
+            hm.ClientID,
+            hm.CreatedDate,
+            hm.ModifiedDate,
+            v.VendorName,
+            c.ClientName
+          FROM FAJITA.dbo.HeaderMappings hm
+          LEFT JOIN FAJITA.dbo.Vendors v ON v.VendorID = hm.VendorID
+          LEFT JOIN CaligulaD.dbo.tblClients c ON c.ClientID = hm.ClientID
+          WHERE 1=1
+        `;
+
+        const request = pool.request();
+
+        if (vendorId) {
+          query += ' AND hm.VendorID = @vendorId';
+          request.input('vendorId', vendorId);
+        }
+
+        if (clientId) {
+          query += ' AND hm.ClientID = @clientId';
+          request.input('clientId', clientId);
+        }
+
+        if (search) {
+          query += ' AND (hm.OriginalHeader LIKE @search OR hm.MappedHeader LIKE @search)';
+          request.input('search', `%${search}%`);
+        }
+
+        query += ' ORDER BY hm.VendorID, hm.ClientID, hm.OriginalHeader';
+
+        const result = await request.query(query);
+
+        return result.recordset.map(row => ({
+          originalHeader: row.OriginalHeader,
+          mappedHeader: row.MappedHeader,
+          vendorId: row.VendorID,
+          clientId: row.ClientID,
+          vendorName: row.VendorName || 'Global',
+          clientName: row.ClientName || 'All Clients',
+          createdDate: row.CreatedDate,
+          modifiedDate: row.ModifiedDate,
+        }));
+      } catch (error) {
+        console.error('Error in getAllHeaderMappings service:', error);
+        throw new Error(`Failed to fetch header mappings: ${error.message}`);
+      }
+    },
+    fnName: 'getAllHeaderMappings',
+  });
+};
+
+/**
+ * Delete a header mapping
+ * @param {string} originalHeader - Original header name
+ * @param {number|null} vendorId - Vendor ID
+ * @param {number|null} clientId - Client ID
+ * @returns {Object} - Result object with deleted flag
+ */
+const deleteHeaderMapping = async (originalHeader, vendorId, clientId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          DELETE FROM FAJITA.dbo.HeaderMappings
+          WHERE UPPER(OriginalHeader) = UPPER(@originalHeader)
+          AND VendorID ${vendorId ? '= @vendorId' : 'IS NULL'}
+          AND ClientID ${clientId ? '= @clientId' : 'IS NULL'}
+        `;
+
+        const request = pool.request();
+        request.input('originalHeader', originalHeader);
+        if (vendorId) request.input('vendorId', vendorId);
+        if (clientId) request.input('clientId', clientId);
+
+        const result = await request.query(query);
+
+        return {
+          deleted: result.rowsAffected[0] > 0,
+          rowsAffected: result.rowsAffected[0],
+        };
+      } catch (error) {
+        console.error('Error in deleteHeaderMapping service:', error);
+        throw new Error(`Failed to delete header mapping: ${error.message}`);
+      }
+    },
+    fnName: 'deleteHeaderMapping',
+  });
+};
+
+// ============================================================================
+// Variable Exclusions Functions
+// ============================================================================
+
+/**
+ * Get all variable exclusions
+ * @param {Object} filters - Optional filters { search }
+ * @returns {Array} - Array of variable exclusion objects
+ */
+const getVariableExclusions = async (filters = {}) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const { search } = filters;
+
+        let query = `
+          SELECT
+            ExclusionID,
+            VariableName,
+            Description,
+            CreatedDate,
+            CreatedBy
+          FROM FAJITA.dbo.VariableExclusions
+          WHERE 1=1
+        `;
+
+        const request = pool.request();
+
+        if (search) {
+          query += ' AND (VariableName LIKE @search OR Description LIKE @search)';
+          request.input('search', `%${search}%`);
+        }
+
+        query += ' ORDER BY VariableName';
+
+        const result = await request.query(query);
+
+        return result.recordset.map(row => ({
+          exclusionId: row.ExclusionID,
+          variableName: row.VariableName,
+          description: row.Description,
+          createdDate: row.CreatedDate,
+          createdBy: row.CreatedBy,
+        }));
+      } catch (error) {
+        console.error('Error in getVariableExclusions service:', error);
+        throw new Error(`Failed to get variable exclusions: ${error.message}`);
+      }
+    },
+    fnName: 'getVariableExclusions',
+  });
+};
+
+/**
+ * Add a new variable exclusion
+ * @param {string} variableName - Variable name to exclude
+ * @param {string} description - Optional description
+ * @param {string} createdBy - User who created the exclusion
+ * @returns {Object} - Created exclusion object
+ */
+const addVariableExclusion = async (variableName, description, createdBy) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          INSERT INTO FAJITA.dbo.VariableExclusions (VariableName, Description, CreatedBy)
+          OUTPUT INSERTED.ExclusionID, INSERTED.VariableName, INSERTED.Description, INSERTED.CreatedDate, INSERTED.CreatedBy
+          VALUES (UPPER(@variableName), @description, @createdBy)
+        `;
+
+        const request = pool.request();
+        request.input('variableName', variableName);
+        request.input('description', description || null);
+        request.input('createdBy', createdBy || null);
+
+        const result = await request.query(query);
+
+        if (result.recordset.length === 0) {
+          throw new Error('Failed to create variable exclusion');
+        }
+
+        const row = result.recordset[0];
+        return {
+          exclusionId: row.ExclusionID,
+          variableName: row.VariableName,
+          description: row.Description,
+          createdDate: row.CreatedDate,
+          createdBy: row.CreatedBy,
+        };
+      } catch (error) {
+        console.error('Error in addVariableExclusion service:', error);
+        if (error.message.includes('UNIQUE') || error.message.includes('duplicate')) {
+          throw new Error('This variable is already excluded');
+        }
+        throw new Error(`Failed to add variable exclusion: ${error.message}`);
+      }
+    },
+    fnName: 'addVariableExclusion',
+  });
+};
+
+/**
+ * Update a variable exclusion
+ * @param {number} exclusionId - ID of exclusion to update
+ * @param {string} description - New description
+ * @returns {Object} - Updated exclusion object
+ */
+const updateVariableExclusion = async (exclusionId, description) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          UPDATE FAJITA.dbo.VariableExclusions
+          SET Description = @description
+          OUTPUT INSERTED.ExclusionID, INSERTED.VariableName, INSERTED.Description, INSERTED.CreatedDate, INSERTED.CreatedBy
+          WHERE ExclusionID = @exclusionId
+        `;
+
+        const request = pool.request();
+        request.input('exclusionId', exclusionId);
+        request.input('description', description || null);
+
+        const result = await request.query(query);
+
+        if (result.recordset.length === 0) {
+          throw new Error('Variable exclusion not found');
+        }
+
+        const row = result.recordset[0];
+        return {
+          exclusionId: row.ExclusionID,
+          variableName: row.VariableName,
+          description: row.Description,
+          createdDate: row.CreatedDate,
+          createdBy: row.CreatedBy,
+        };
+      } catch (error) {
+        console.error('Error in updateVariableExclusion service:', error);
+        throw new Error(`Failed to update variable exclusion: ${error.message}`);
+      }
+    },
+    fnName: 'updateVariableExclusion',
+  });
+};
+
+/**
+ * Delete a variable exclusion
+ * @param {number} exclusionId - ID of exclusion to delete
+ * @returns {Object} - Deletion result
+ */
+const deleteVariableExclusion = async (exclusionId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          DELETE FROM FAJITA.dbo.VariableExclusions
+          WHERE ExclusionID = @exclusionId
+        `;
+
+        const request = pool.request();
+        request.input('exclusionId', exclusionId);
+
+        const result = await request.query(query);
+
+        return {
+          deleted: result.rowsAffected[0] > 0,
+          rowsAffected: result.rowsAffected[0],
+        };
+      } catch (error) {
+        console.error('Error in deleteVariableExclusion service:', error);
+        throw new Error(`Failed to delete variable exclusion: ${error.message}`);
+      }
+    },
+    fnName: 'deleteVariableExclusion',
+  });
+};
+
+/**
+ * Get project variable inclusions (excluded variables that are included for a specific project)
+ * @param {number} projectId - Project ID
+ * @returns {Array} - Array of inclusion objects
+ */
+const getProjectVariableInclusions = async (projectId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          SELECT
+            pvi.InclusionID,
+            pvi.ProjectID,
+            pvi.OriginalVariableName,
+            pvi.MappedVariableName,
+            pvi.CreatedDate,
+            pvi.CreatedBy
+          FROM FAJITA.dbo.ProjectVariableInclusions pvi
+          WHERE pvi.ProjectID = @projectId
+          ORDER BY pvi.OriginalVariableName
+        `;
+
+        const request = pool.request();
+        request.input('projectId', projectId);
+
+        const result = await request.query(query);
+
+        return result.recordset.map(row => ({
+          inclusionId: row.InclusionID,
+          projectId: row.ProjectID,
+          originalVariableName: row.OriginalVariableName,
+          mappedVariableName: row.MappedVariableName,
+          createdDate: row.CreatedDate,
+          createdBy: row.CreatedBy,
+        }));
+      } catch (error) {
+        console.error('Error in getProjectVariableInclusions service:', error);
+        throw new Error(`Failed to get project variable inclusions: ${error.message}`);
+      }
+    },
+    fnName: 'getProjectVariableInclusions',
+  });
+};
+
+/**
+ * Add a project variable inclusion (include an excluded variable for a specific project)
+ * @param {number} projectId - Project ID
+ * @param {string} originalVariableName - Original variable name
+ * @param {string} mappedVariableName - What to rename the variable to
+ * @param {string} createdBy - User who created the inclusion
+ * @returns {Object} - Created inclusion object
+ */
+const addProjectVariableInclusion = async (projectId, originalVariableName, mappedVariableName, createdBy) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          INSERT INTO FAJITA.dbo.ProjectVariableInclusions (ProjectID, OriginalVariableName, MappedVariableName, CreatedBy)
+          OUTPUT INSERTED.InclusionID, INSERTED.ProjectID, INSERTED.OriginalVariableName, INSERTED.MappedVariableName, INSERTED.CreatedDate, INSERTED.CreatedBy
+          VALUES (@projectId, UPPER(@originalVariableName), UPPER(@mappedVariableName), @createdBy)
+        `;
+
+        const request = pool.request();
+        request.input('projectId', projectId);
+        request.input('originalVariableName', originalVariableName);
+        request.input('mappedVariableName', mappedVariableName);
+        request.input('createdBy', createdBy || null);
+
+        const result = await request.query(query);
+
+        if (result.recordset.length === 0) {
+          throw new Error('Failed to create project variable inclusion');
+        }
+
+        const row = result.recordset[0];
+        return {
+          inclusionId: row.InclusionID,
+          projectId: row.ProjectID,
+          originalVariableName: row.OriginalVariableName,
+          mappedVariableName: row.MappedVariableName,
+          createdDate: row.CreatedDate,
+          createdBy: row.CreatedBy,
+        };
+      } catch (error) {
+        console.error('Error in addProjectVariableInclusion service:', error);
+        if (error.message.includes('UNIQUE') || error.message.includes('duplicate')) {
+          throw new Error('This variable is already included for this project');
+        }
+        throw new Error(`Failed to add project variable inclusion: ${error.message}`);
+      }
+    },
+    fnName: 'addProjectVariableInclusion',
+  });
+};
+
+/**
+ * Update a project variable inclusion
+ * @param {number} inclusionId - ID of inclusion to update
+ * @param {string} mappedVariableName - New mapped variable name
+ * @returns {Object} - Updated inclusion object
+ */
+const updateProjectVariableInclusion = async (inclusionId, mappedVariableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          UPDATE FAJITA.dbo.ProjectVariableInclusions
+          SET MappedVariableName = UPPER(@mappedVariableName)
+          OUTPUT INSERTED.InclusionID, INSERTED.ProjectID, INSERTED.OriginalVariableName, INSERTED.MappedVariableName, INSERTED.CreatedDate, INSERTED.CreatedBy
+          WHERE InclusionID = @inclusionId
+        `;
+
+        const request = pool.request();
+        request.input('inclusionId', inclusionId);
+        request.input('mappedVariableName', mappedVariableName);
+
+        const result = await request.query(query);
+
+        if (result.recordset.length === 0) {
+          throw new Error('Project variable inclusion not found');
+        }
+
+        const row = result.recordset[0];
+        return {
+          inclusionId: row.InclusionID,
+          projectId: row.ProjectID,
+          originalVariableName: row.OriginalVariableName,
+          mappedVariableName: row.MappedVariableName,
+          createdDate: row.CreatedDate,
+          createdBy: row.CreatedBy,
+        };
+      } catch (error) {
+        console.error('Error in updateProjectVariableInclusion service:', error);
+        throw new Error(`Failed to update project variable inclusion: ${error.message}`);
+      }
+    },
+    fnName: 'updateProjectVariableInclusion',
+  });
+};
+
+/**
+ * Delete a project variable inclusion
+ * @param {number} inclusionId - ID of inclusion to delete
+ * @returns {Object} - Deletion result
+ */
+const deleteProjectVariableInclusion = async (inclusionId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          DELETE FROM FAJITA.dbo.ProjectVariableInclusions
+          WHERE InclusionID = @inclusionId
+        `;
+
+        const request = pool.request();
+        request.input('inclusionId', inclusionId);
+
+        const result = await request.query(query);
+
+        return {
+          deleted: result.rowsAffected[0] > 0,
+          rowsAffected: result.rowsAffected[0],
+        };
+      } catch (error) {
+        console.error('Error in deleteProjectVariableInclusion service:', error);
+        throw new Error(`Failed to delete project variable inclusion: ${error.message}`);
+      }
+    },
+    fnName: 'deleteProjectVariableInclusion',
+  });
+};
+
+/**
+ * Get all exclusion variable names as a Set for efficient lookup during file processing
+ * @returns {Set<string>} - Set of excluded variable names (uppercase)
+ */
+const getExcludedVariableSet = async () => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `SELECT VariableName FROM FAJITA.dbo.VariableExclusions`;
+        const result = await pool.request().query(query);
+        return new Set(result.recordset.map(row => row.VariableName.toUpperCase()));
+      } catch (error) {
+        console.error('Error in getExcludedVariableSet service:', error);
+        // Return empty set on error to not block processing
+        return new Set();
+      }
+    },
+    fnName: 'getExcludedVariableSet',
+  });
+};
+
+/**
+ * Get project inclusions as a Map for efficient lookup during file processing
+ * @param {number} projectId - Project ID
+ * @returns {Map<string, string>} - Map of original variable name (uppercase) to mapped variable name
+ */
+const getProjectInclusionsMap = async (projectId) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        const query = `
+          SELECT OriginalVariableName, MappedVariableName
+          FROM FAJITA.dbo.ProjectVariableInclusions
+          WHERE ProjectID = @projectId
+        `;
+        const request = pool.request();
+        request.input('projectId', projectId);
+        const result = await request.query(query);
+
+        const map = new Map();
+        result.recordset.forEach(row => {
+          map.set(row.OriginalVariableName.toUpperCase(), row.MappedVariableName);
+        });
+        return map;
+      } catch (error) {
+        console.error('Error in getProjectInclusionsMap service:', error);
+        // Return empty map on error to not block processing
+        return new Map();
+      }
+    },
+    fnName: 'getProjectInclusionsMap',
+  });
+};
+
+/**
  * Sanitize table name for SQL Server compatibility
  * @param {string} tableName - Raw table name
  * @returns {string} - Sanitized table name
@@ -3456,7 +3976,9 @@ module.exports = {
   getVendors,
   getClientsAndVendors,
   getHeaderMappings,
+  getAllHeaderMappings,
   saveHeaderMappings,
+  deleteHeaderMapping,
   getTablePreview,
   createDNCScrubbed,
   formatPhoneNumbersInTable,
@@ -3505,4 +4027,15 @@ module.exports = {
   getSampleTables,
   getSampleTableDetails,
   deleteSampleTable,
+  // Variable Exclusions
+  getVariableExclusions,
+  addVariableExclusion,
+  updateVariableExclusion,
+  deleteVariableExclusion,
+  getProjectVariableInclusions,
+  addProjectVariableInclusion,
+  updateProjectVariableInclusion,
+  deleteProjectVariableInclusion,
+  getExcludedVariableSet,
+  getProjectInclusionsMap,
 };

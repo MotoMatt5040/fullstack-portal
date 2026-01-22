@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiChevronDown, mdiPencil, mdiContentSave, mdiClose, mdiLock, mdiLockOpen } from '@mdi/js';
+import { mdiChevronDown, mdiPencil, mdiContentSave, mdiClose, mdiLock, mdiLockOpen, mdiEyeOff, mdiPlus, mdiMinus } from '@mdi/js';
 
 interface FileWrapper {
   file: File;
@@ -19,6 +19,8 @@ interface FileHeaderData {
   originalHeaders: string[];
   mappedHeaders: string[];
   mappings: Record<string, HeaderMapping>;
+  excludedHeaders?: string[];
+  includedFromExclusions?: string[];
 }
 
 interface ValidationSummary {
@@ -54,6 +56,8 @@ interface FileHeadersProps {
   validationSummary: ValidationSummary;
   allowExtraHeaders: boolean;
   onValidationModeChange: (allow: boolean) => void;
+  onIncludeExcludedHeader?: (fileId: string, headerName: string) => void;
+  onExcludeIncludedHeader?: (fileId: string, headerName: string) => void;
 }
 
 type FilterMode = 'all' | 'mapped' | 'unmapped' | 'custom';
@@ -68,6 +72,8 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   validationSummary,
   allowExtraHeaders,
   onValidationModeChange,
+  onIncludeExcludedHeader,
+  onExcludeIncludedHeader,
 }) => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [editingHeaders, setEditingHeaders] = useState<
@@ -78,6 +84,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
   const [editedHeaders, setEditedHeaders] = useState<
     Record<string, Set<number>>
   >({});
+  const [expandedExcluded, setExpandedExcluded] = useState<Set<string>>(new Set());
 
   // Calculate progress stats
   const progressStats = useMemo(() => {
@@ -85,6 +92,7 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
     let mappedHeaders = 0;
     let unmappedHeaders = 0;
     let customHeaders = 0;
+    let excludedHeaders = 0;
 
     Object.values(fileHeaders).forEach((headerData) => {
       headerData.originalHeaders.forEach((original, index) => {
@@ -101,10 +109,27 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
           customHeaders++;
         }
       });
+
+      // Count excluded headers
+      if (headerData.excludedHeaders) {
+        excludedHeaders += headerData.excludedHeaders.length;
+      }
     });
 
-    return { totalHeaders, mappedHeaders, unmappedHeaders, customHeaders };
+    return { totalHeaders, mappedHeaders, unmappedHeaders, customHeaders, excludedHeaders };
   }, [fileHeaders]);
+
+  const toggleExcludedExpansion = useCallback((fileId: string) => {
+    setExpandedExcluded((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(fileId)) {
+        updated.delete(fileId);
+      } else {
+        updated.add(fileId);
+      }
+      return updated;
+    });
+  }, []);
 
   const toggleFileExpansion = useCallback((fileId: string) => {
     setExpandedFiles((prev) => {
@@ -273,6 +298,9 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
           <span className='mapped'>{progressStats.mappedHeaders} mapped</span>
           <span className='unmapped'>{progressStats.unmappedHeaders} unmapped</span>
           <span className='custom'>{progressStats.customHeaders} custom</span>
+          {progressStats.excludedHeaders > 0 && (
+            <span className='excluded'>{progressStats.excludedHeaders} excluded</span>
+          )}
         </div>
         <div className='headers-controls' data-tour='headers-controls'>
           <select
@@ -476,6 +504,66 @@ const FileHeaders: React.FC<FileHeadersProps> = ({
                       Unmapped
                     </span>
                   </div>
+
+                  {/* Included from Exclusions Section - show headers user chose to include */}
+                  {headerData.includedFromExclusions && headerData.includedFromExclusions.length > 0 && (
+                    <div className='included-from-exclusions-section'>
+                      <div className='included-section-header'>
+                        <span className='included-section-label'>Included from exclusions (click to remove):</span>
+                      </div>
+                      <div className='included-from-exclusions-list'>
+                        {headerData.includedFromExclusions.map((includedHeader, idx) => (
+                          <button
+                            key={idx}
+                            className='included-header-item'
+                            onClick={() => onExcludeIncludedHeader?.(id, includedHeader)}
+                            title={`Click to exclude "${includedHeader}"`}
+                          >
+                            <Icon path={mdiMinus} size={0.5} className='include-action-icon' />
+                            <span className='included-header-name'>{includedHeader}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Excluded Headers Section */}
+                  {headerData.excludedHeaders && headerData.excludedHeaders.length > 0 && (
+                    <div className='excluded-headers-section' data-tour='excluded-headers-section'>
+                      <button
+                        className='excluded-headers-toggle'
+                        onClick={() => toggleExcludedExpansion(id)}
+                        data-tour='excluded-headers-toggle'
+                      >
+                        <Icon path={mdiEyeOff} size={0.65} />
+                        <span>
+                          {headerData.excludedHeaders.length} Excluded Variable{headerData.excludedHeaders.length !== 1 ? 's' : ''}
+                        </span>
+                        <Icon
+                          path={mdiChevronDown}
+                          size={0.7}
+                          className={`excluded-toggle-icon ${expandedExcluded.has(id) ? 'expanded' : ''}`}
+                        />
+                      </button>
+
+                      {expandedExcluded.has(id) && (
+                        <div className='excluded-headers-list' data-tour='excluded-headers-list'>
+                          <div className='excluded-hint'>Click to include a variable</div>
+                          {headerData.excludedHeaders.map((excludedHeader, idx) => (
+                            <button
+                              key={idx}
+                              className='excluded-header-item clickable'
+                              onClick={() => onIncludeExcludedHeader?.(id, excludedHeader)}
+                              title={`Click to include "${excludedHeader}"`}
+                            >
+                              <Icon path={mdiPlus} size={0.5} className='include-action-icon' />
+                              <span className='excluded-header-name'>{excludedHeader}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
