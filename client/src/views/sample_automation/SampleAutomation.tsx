@@ -359,8 +359,8 @@ const SampleAutomation: React.FC = () => {
                   </div>
                 </div>
 
-                {/* File ID */}
-                <div className='config-item' data-tour='file-id'>
+                {/* File ID - hidden for now */}
+                {/* <div className='config-item' data-tour='file-id'>
                   <label>File ID (optional)</label>
                   <input
                     type='number'
@@ -371,7 +371,7 @@ const SampleAutomation: React.FC = () => {
                     className='config-input'
                     disabled={isAnyProcessing}
                   />
-                </div>
+                </div> */}
               </div>
 
               {/* File Drop Zone */}

@@ -9,21 +9,22 @@ const TOUR_STORAGE_KEY = 'sample-automation-tour-completed';
 // (Tarrance skips the vendor step, shifting all subsequent indices by -1)
 const getStepIndices = (isTarrance: boolean) => {
   const vendorOffset = isTarrance ? 0 : 1; // No vendor step for Tarrance
+  // Note: File ID step is hidden, so indices shifted down by 1 from DROP_ZONE_STEP onwards
   return {
     STEP_1_HEADER: 3,
     PROJECT_SELECT_STEP: 4,
     VENDOR_SELECT_STEP: isTarrance ? -1 : 5, // -1 means step doesn't exist
-    DROP_ZONE_STEP: 4 + vendorOffset + 4,      // 8 for Tarrance, 9 otherwise
-    STEP_2_HEADER: 4 + vendorOffset + 5,       // 9 for Tarrance, 10 otherwise
-    HEADERS_SECTION: 4 + vendorOffset + 6,     // 10 for Tarrance, 11 otherwise
-    EXCLUDED_HEADERS_SECTION: 4 + vendorOffset + 11, // 15 for Tarrance, 16 otherwise
-    EXCLUDED_HEADERS_LIST: 4 + vendorOffset + 12,    // 16 for Tarrance, 17 otherwise
-    PROCESS_ACTIONS: 4 + vendorOffset + 13,    // 17 for Tarrance, 18 otherwise
-    STEP_3_HEADER: 4 + vendorOffset + 14,      // 18 for Tarrance, 19 otherwise
-    SAMPLE_CONFIG_HEADER: 4 + vendorOffset + 18, // 22 for Tarrance, 23 otherwise
-    FILE_TYPE_STEP: 4 + vendorOffset + 20,     // 24 for Tarrance, 25 otherwise
-    SPLIT_LOGIC_STEP: 4 + vendorOffset + 23,   // 27 for Tarrance, 28 otherwise
-    EXTRACT_BUTTON_STEP: 4 + vendorOffset + 26, // 30 for Tarrance, 31 otherwise
+    DROP_ZONE_STEP: 4 + vendorOffset + 3,      // 7 for Tarrance, 8 otherwise
+    STEP_2_HEADER: 4 + vendorOffset + 4,       // 8 for Tarrance, 9 otherwise
+    HEADERS_SECTION: 4 + vendorOffset + 5,     // 9 for Tarrance, 10 otherwise
+    EXCLUDED_HEADERS_SECTION: 4 + vendorOffset + 10, // 14 for Tarrance, 15 otherwise
+    EXCLUDED_HEADERS_LIST: 4 + vendorOffset + 11,    // 15 for Tarrance, 16 otherwise
+    PROCESS_ACTIONS: 4 + vendorOffset + 12,    // 16 for Tarrance, 17 otherwise
+    STEP_3_HEADER: 4 + vendorOffset + 13,      // 17 for Tarrance, 18 otherwise
+    SAMPLE_CONFIG_HEADER: 4 + vendorOffset + 17, // 21 for Tarrance, 22 otherwise
+    FILE_TYPE_STEP: 4 + vendorOffset + 19,     // 23 for Tarrance, 24 otherwise
+    SPLIT_LOGIC_STEP: 4 + vendorOffset + 22,   // 26 for Tarrance, 27 otherwise
+    EXTRACT_BUTTON_STEP: 4 + vendorOffset + 25, // 29 for Tarrance, 30 otherwise
   };
 };
 
@@ -128,16 +129,17 @@ const getTourSteps = (isTarrance: boolean) => [
       align: 'start' as const,
     },
   },
-  {
-    element: '[data-tour="file-id"]',
-    popover: {
-      title: 'File ID (Optional)',
-      description:
-        'Optionally specify a File ID. If left blank, one will be automatically assigned.',
-      side: 'bottom' as const,
-      align: 'start' as const,
-    },
-  },
+  // File ID step - hidden for now
+  // {
+  //   element: '[data-tour="file-id"]',
+  //   popover: {
+  //     title: 'File ID (Optional)',
+  //     description:
+  //       'Optionally specify a File ID. If left blank, one will be automatically assigned.',
+  //     side: 'bottom' as const,
+  //     align: 'start' as const,
+  //   },
+  // },
   {
     element: '[data-tour="drop-zone"]',
     popover: {
