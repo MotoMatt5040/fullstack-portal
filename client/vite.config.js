@@ -9,6 +9,19 @@ const isDocker = process.env.DOCKER_ENV === 'true';
 export default defineConfig({
   build: {
     outDir: 'build',
+    minify: 'terser',
+    sourcemap: false,
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
+          'ui-vendor': ['react-select', '@mdi/react'],
+          'd3-vendor': ['d3'],
+        },
+      },
+    },
   },
   plugins: [react(), eslint()],
   server: {
