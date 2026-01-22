@@ -151,10 +151,13 @@
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.875rem;
+  background: var(--background-color-elevated);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .summary-overview-table thead th {
-  padding: 0.625rem 0.75rem;
+  padding: 0.75rem 1rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -163,18 +166,41 @@
   opacity: 0.6;
   border-bottom: 1px solid var(--border-color-soft);
   text-align: center;
+  background: var(--background-color-muted);
 }
 
 .summary-overview-table tbody td {
-  padding: 0.75rem;
+  padding: 1rem;
   text-align: center;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.125rem;
   border-bottom: 1px solid var(--border-color-soft);
 }
 
 .summary-overview-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Overview table stat colors */
+.summary-overview-table td.stat-on-cph {
+  color: #10b981;
+}
+
+.summary-overview-table td.stat-on-var {
+  color: #3b82f6;
+}
+
+.summary-overview-table td.stat-off-cph {
+  color: #f59e0b;
+}
+
+.summary-overview-table td.stat-zero-cms {
+  color: #dc2626;
+}
+
+.summary-overview-table td.stat-total {
+  color: var(--accent-color);
+  font-size: 1.25rem;
 }
 
 /* =================================================================
@@ -297,8 +323,13 @@
   background-color: var(--background-color-muted);
 }
 
-.summary-data-table tbody tr:hover td {
-  background-color: var(--background-color-elevated);
+.summary-data-table tbody tr:hover td,
+.summary-data-table tbody tr:nth-child(even):hover td {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.06);
+}
+
+.summary-data-table tbody td:hover {
+  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.08) !important;
 }
 
 .summary-data-table tbody tr {
@@ -307,12 +338,64 @@
 }
 
 /* =================================================================
+   Status Colors & Row Indicators
+   ================================================================= */
+/* On-CPH status - Green (meeting goals) */
+.summary-data-table tbody tr.status-on-target td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+/* Off-CPH status - Red (below goals) */
+.summary-data-table tbody tr.status-off-target td:first-child {
+  box-shadow: inset 3px 0 0 #dc2626;
+}
+
+/* Exceeding status - Purple (above goals) */
+.summary-data-table tbody tr.status-exceeding td:first-child {
+  box-shadow: inset 3px 0 0 #8b5cf6;
+}
+
+/* CPH Cell Styling */
+.summary-data-table td.cell-cph {
+  font-weight: 500;
+}
+
+.summary-data-table td.cell-cph.cph-on-target {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.summary-data-table td.cell-cph.cph-off-target {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.summary-data-table td.cell-cph.cph-exceeding {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+/* Zero CMS highlighting */
+.summary-data-table td.cell-zcms.zcms-high {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Off CPH highlighting */
+.summary-data-table td.cell-offcph.offcph-high {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* =================================================================
    Card View
    ================================================================= */
 .summary-card-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1rem;
+  overflow-x: auto;
 }
 
 .summary-card {
@@ -322,6 +405,9 @@
   border: 1px solid var(--border-color-soft);
   transition: box-shadow 0.15s ease, transform 0.15s ease;
   cursor: pointer;
+  flex: 0 0 auto;
+  min-width: 280px;
+  max-width: 320px;
 }
 
 .summary-card:hover {
@@ -345,6 +431,16 @@
   margin: 0;
 }
 
+.summary-card-subtitle {
+  font-size: 0.75rem;
+  color: var(--label-text-color);
+  margin: 0.25rem 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
 .summary-card-body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -364,6 +460,79 @@
 .summary-card-value {
   font-weight: 500;
   color: var(--text-color);
+}
+
+/* Card status indicators */
+.summary-card.status-on-target {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.summary-card.status-on-target:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.summary-card.status-off-target {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.summary-card.status-off-target:hover {
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+.summary-card.status-exceeding {
+  border-color: rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.summary-card.status-exceeding:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Card value status colors */
+.summary-card-value.value-on-cph {
+  color: #10b981;
+}
+
+.summary-card-value.value-on-var {
+  color: #3b82f6;
+}
+
+.summary-card-value.value-off-cph {
+  color: #f59e0b;
+}
+
+.summary-card-value.value-zero-cms {
+  color: #dc2626;
+}
+
+/* Card status badge */
+.summary-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.summary-card-status.badge-on-target {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.summary-card-status.badge-off-target {
+  background: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+.summary-card-status.badge-exceeding {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
 }
 
 /* =================================================================
@@ -443,7 +612,13 @@
   }
 
   .summary-card-container {
-    grid-template-columns: 1fr;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .summary-card {
+    min-width: 260px;
   }
 
   .summary-data-table {

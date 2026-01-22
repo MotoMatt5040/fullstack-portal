@@ -1,45 +1,48 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import { useGetRolesQuery } from './features/config/configApiSlice';
 import { selectRoles, selectIsRolesLoading } from './features/roles/rolesSlice';
 
-// Compnents
+// Core components (loaded immediately)
 import Layout from './components/Layout';
-
-// Features
 import Login from './views/login/Login';
 import RequireAuth from './features/auth/RequireAuth';
 import RedirectIfAuthenticated from './features/auth/RedirectIfAuthenticated';
-
-// Views
-import Welcome from './views/Welcome';
-import UsersList from './views/users/UsersList';
 import Missing from './views/Missing';
-import IssueForm from './views/github/Github';
-import UpdateUserRoles from './views/users/UpdateUserRoles';
-import SummaryReport from './views/summary_report/SummaryReport';
-import ProjectReport from './views/project_report/ProjectReport';
-import AddUser from './views/secure/AddUser';
-import QuotaManagement from './views/quota_management/QuotaManagement';
-import ResetPassword from './views/secure/ResetPassword';
-import UserManagement from './views/user_management/UserManagement';
-import ProductionReport from './views/production_report/ProductionReport';
 import Unauthorized from './views/secure/Unauthorized';
-import Reports from './views/Reports';
-import Toplines from './views/toplines/Toplines';
-import ProjectPublishing from './views/project_publishing/ProjectPublishing';
-import DispositionReport from './views/disposition_report/DispositionReport';
-import AIPrompting from './views/ai_prompting/AIPrompting';
-import ContactSupport from './views/support/ContactSupport';
-import SampleAutomation from './views/sample_automation/SampleAutomation';
-import ExtractionDefaults from './views/sample_automation/ExtractionDefaults';
-import SampleTracking from './views/sample_automation/SampleTracking';
-import CallID from './views/call_id/CallIDManagement';
-import ProjectNumbering from './views/project_numbering/ProjectNumbering';
-import QuotaSetupGuidePage from './views/docs/QuotaSetupGuidePage';
-import HeaderMappings from './views/header_mappings/HeaderMappings';
+
+// Lazy-loaded views (code-split for smaller initial bundle)
+const Welcome = lazy(() => import('./views/Welcome'));
+const UsersList = lazy(() => import('./views/users/UsersList'));
+const IssueForm = lazy(() => import('./views/github/Github'));
+const UpdateUserRoles = lazy(() => import('./views/users/UpdateUserRoles'));
+const SummaryReport = lazy(() => import('./views/summary_report/SummaryReport'));
+const ProjectReport = lazy(() => import('./views/project_report/ProjectReport'));
+const AddUser = lazy(() => import('./views/secure/AddUser'));
+const QuotaManagement = lazy(() => import('./views/quota_management/QuotaManagement'));
+const ResetPassword = lazy(() => import('./views/secure/ResetPassword'));
+const UserManagement = lazy(() => import('./views/user_management/UserManagement'));
+const ProductionReport = lazy(() => import('./views/production_report/ProductionReport'));
+const Reports = lazy(() => import('./views/Reports'));
+const Toplines = lazy(() => import('./views/toplines/Toplines'));
+const ProjectPublishing = lazy(() => import('./views/project_publishing/ProjectPublishing'));
+const DispositionReport = lazy(() => import('./views/disposition_report/DispositionReport'));
+const AIPrompting = lazy(() => import('./views/ai_prompting/AIPrompting'));
+const ContactSupport = lazy(() => import('./views/support/ContactSupport'));
+const SampleAutomation = lazy(() => import('./views/sample_automation/SampleAutomation'));
+const ExtractionDefaults = lazy(() => import('./views/sample_automation/ExtractionDefaults'));
+const SampleTracking = lazy(() => import('./views/sample_automation/SampleTracking'));
+const CallID = lazy(() => import('./views/call_id/CallIDManagement'));
+const ProjectNumbering = lazy(() => import('./views/project_numbering/ProjectNumbering'));
+const QuotaSetupGuidePage = lazy(() => import('./views/docs/QuotaSetupGuidePage'));
+const HeaderMappings = lazy(() => import('./views/header_mappings/HeaderMappings'));
+
+// Loading fallback for lazy-loaded components
+const PageLoader = () => (
+  <div className="page-loader">Loading...</div>
+);
 
 function App() {
   useGetRolesQuery();
@@ -52,8 +55,9 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path='/' element={<Layout />}>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path='/' element={<Layout />}>
         {/* public routes */}
         <Route
           index
@@ -163,6 +167,7 @@ function App() {
         <Route path='*' element={<Missing />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
 

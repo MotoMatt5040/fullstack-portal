@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 // import { useGetSummaryReportQuery } from '../../features/summaryReportApiSlice';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
@@ -38,21 +38,7 @@ const useProjectReportLogic = () => {
   const isValidatingRef = useRef(false);
   // Store pending validation data to compare against
   const pendingValidationRef = useRef(null);
-  const [chartData, setChartData] = useState([
-    { field: 'ON-CPH', value: 0 },
-    { field: 'ON-VAR', value: 0 },
-    { field: 'OFF-CPH', value: 0 },
-    { field: 'ZERO-CMS', value: 0 },
-  ]);
-  const [totalData, setTotalData] = useState([
-    {
-      Total: 0,
-      'ON-CPH': 0,
-      'ON-VAR': 0,
-      'OFF-CPH': 0,
-      'ZERO-CMS': 0,
-    },
-  ]);
+  // chartData and totalData computed via useMemo below (after data is populated)
   const [date, setDate] = useState({
     start: getDateFromParams(
       'startDate',
@@ -73,22 +59,8 @@ const useProjectReportLogic = () => {
 
   const resetVariables = () => {
     setData([]);
-    // setIsSuccess(false);
-    setChartData([
-      { field: 'ON-CPH', value: 0 },
-      { field: 'ON-VAR', value: 0 },
-      { field: 'OFF-CPH', value: 0 },
-      { field: 'ZERO-CMS', value: 0 },
-    ]);
-    setTotalData([
-      {
-        Total: 0,
-        'ON-CPH': 0,
-        'ON-VAR': 0,
-        'OFF-CPH': 0,
-        'ZERO-CMS': 0,
-      },
-    ]);
+    // chartData and totalData are now computed via useMemo from data
+    // clearing data will cause useMemo to return default values
   };
 
   useEffect(() => {
@@ -114,7 +86,7 @@ const useProjectReportLogic = () => {
         setDate({ start: fallback, end: fallback });
       }
     }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     let intervalId;
@@ -136,6 +108,7 @@ const useProjectReportLogic = () => {
     return () => {
       clearInterval(intervalId);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveToggle, date]);
 
   // Process incoming data - backend handles stale request filtering via 204 responses
@@ -226,9 +199,27 @@ const useProjectReportLogic = () => {
     setData(processedData);
   }, [summaryReport.data, liveToggle]);
 
-  // Calculate totals when data changes
-  useEffect(() => {
-    if (!data || data.length === 0) return;
+  // Memoize totals calculation to avoid re-computing on every render
+  const { chartData, totalData } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return {
+        chartData: [
+          { field: 'ON-CPH', value: '0.00' },
+          { field: 'ON-VAR', value: '0.00' },
+          { field: 'OFF-CPH', value: '0.00' },
+          { field: 'ZERO-CMS', value: '0.00' },
+        ],
+        totalData: [
+          {
+            Total: '0.00',
+            'ON-CPH': '0.00',
+            'ON-VAR': '0.00',
+            'OFF-CPH': '0.00',
+            'ZERO-CMS': '0.00',
+          },
+        ],
+      };
+    }
 
     const totals = data.reduce(
       (acc, project) => {
@@ -241,22 +232,23 @@ const useProjectReportLogic = () => {
       { onCph: 0, onVar: 0, offCph: 0, zcms: 0 }
     );
 
-    setChartData([
-      { field: 'ON-CPH', value: totals.onCph.toFixed(2) },
-      { field: 'ON-VAR', value: totals.onVar.toFixed(2) },
-      { field: 'OFF-CPH', value: totals.offCph.toFixed(2) },
-      { field: 'ZERO-CMS', value: totals.zcms.toFixed(2) },
-    ]);
-
-    setTotalData([
-      {
-        Total: (totals.onCph + totals.onVar + totals.offCph + totals.zcms).toFixed(2),
-        'ON-CPH': totals.onCph.toFixed(2),
-        'ON-VAR': totals.onVar.toFixed(2),
-        'OFF-CPH': totals.offCph.toFixed(2),
-        'ZERO-CMS': totals.zcms.toFixed(2),
-      },
-    ]);
+    return {
+      chartData: [
+        { field: 'ON-CPH', value: totals.onCph.toFixed(2) },
+        { field: 'ON-VAR', value: totals.onVar.toFixed(2) },
+        { field: 'OFF-CPH', value: totals.offCph.toFixed(2) },
+        { field: 'ZERO-CMS', value: totals.zcms.toFixed(2) },
+      ],
+      totalData: [
+        {
+          Total: (totals.onCph + totals.onVar + totals.offCph + totals.zcms).toFixed(2),
+          'ON-CPH': totals.onCph.toFixed(2),
+          'ON-VAR': totals.onVar.toFixed(2),
+          'OFF-CPH': totals.offCph.toFixed(2),
+          'ZERO-CMS': totals.zcms.toFixed(2),
+        },
+      ],
+    };
   }, [data]);
 
   const handleLiveToggle = () => {

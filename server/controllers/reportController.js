@@ -5,6 +5,22 @@ const {
   OTHER_ABBREVIATIONS,
 } = require('../config/abbreviations');
 const path = require('path');
+const { getCachedOrFetch } = require('../utils/memoryCache');
+
+// Cache TTL constants
+const LIVE_CACHE_TTL = 10000; // 10 seconds for live data
+const HISTORIC_CACHE_TTL = 300000; // 5 minutes for historic data (immutable)
+
+// Pre-compile regex patterns for abbreviations (avoids creating new RegExp in loops)
+const STATE_REGEX_MAP = Object.entries(STATE_ABBREVIATIONS).map(([state, abbrev]) => ({
+  regex: new RegExp(`\\b${state}\\b`, 'gi'),
+  abbrev,
+}));
+
+const OTHER_REGEX_MAP = Object.entries(OTHER_ABBREVIATIONS).map(([term, abbrev]) => ({
+  regex: new RegExp(`\\b${term}\\b`, 'gi'),
+  abbrev,
+}));
 
 const cleanQueryParam = (value) => {
   if (value === 'undefined' || value === 'null' || value === '')
@@ -14,25 +30,18 @@ const cleanQueryParam = (value) => {
 
 const calculateInterviewerStats = (interviewerData, project, cph) => {
   // NOTE: cph is the gpcph for live projects and the actual cph for historic projects
+  // NOTE: interviewerData is now pre-filtered by projectId for O(1) lookups
   const threshold = cph * 0.8;
 
   // This is an accumulator object to holds the stats for each interviewer
   const data = interviewerData.reduce(
     (acc, interviewer) => {
       acc.realHours += interviewer.hrs;
-      // Skip interviewer if cms is 0 and their hours are less than half of cph
-      // if (interviewer.cms === 0 && interviewer.hrs < project.cph * 0.5) {
-      // 	return acc; // Skip this interviewer
-      // }
 
-      // NOTE: This is a really big if statement, watch your brackets
-      // Functionality: If the interviewer is not part of the project, skip them
-      // If the interviewer projectId is not the same as the projectId, skip them
-      // If the interviewer is part of the project, check if the recDate is the same as the project recDate
+      // Skip if recDate doesn't match (projectId already filtered via pre-indexing)
       if (
-        interviewer.projectId !== project.projectId ||
-        (interviewer.recDate &&
-          interviewer.recDate.getTime() !== project.recDate.getTime())
+        interviewer.recDate &&
+        interviewer.recDate.getTime() !== project.recDate.getTime()
       ) {
         return acc;
       }
@@ -149,13 +158,23 @@ const handleGetReportData = handleAsync(async (req, res) => {
     return res.status(400).json({ msg: 'Missing required fields' });
   }
 
-  const data = isLive
-    ? await Reports.getLiveReportData(projectId)
-    : await Reports.getHistoricProjectReportData(projectId, startDate, endDate);
+  // Build cache key from request parameters
+  const cacheKey = `report:${isLive ? 'live' : 'historic'}:${projectId || 'all'}:${startDate || ''}:${endDate || ''}:${useGpcph}`;
+  const cacheTTL = isLive ? LIVE_CACHE_TTL : HISTORIC_CACHE_TTL;
 
-  const interviewerData = isLive
-    ? await Reports.getLiveInterviewerData(projectId)
-    : await Reports.getHistoricInterviewerData(projectId, startDate, endDate);
+  // Run both queries in parallel with caching
+  const [data, interviewerData] = await getCachedOrFetch(
+    cacheKey,
+    () => Promise.all([
+      isLive
+        ? Reports.getLiveReportData(projectId)
+        : Reports.getHistoricProjectReportData(projectId, startDate, endDate),
+      isLive
+        ? Reports.getLiveInterviewerData(projectId)
+        : Reports.getHistoricInterviewerData(projectId, startDate, endDate),
+    ]),
+    cacheTTL
+  );
 
   // Check if the data is 499, which means the server canceled the request in the withDbConnection function (most likely)
   // NOTE: This does need to be changed, returning a 499 is not generally a good idea as that signifies an error, and in this case
@@ -168,38 +187,38 @@ const handleGetReportData = handleAsync(async (req, res) => {
     return res.status(204).json({ msg: 'No data found' });
   }
 
+  // Pre-index interviewerData by projectId for O(1) lookups instead of O(n) per project
+  const interviewersByProject = new Map();
+  for (const interviewer of interviewerData) {
+    const key = interviewer.projectId;
+    if (!interviewersByProject.has(key)) {
+      interviewersByProject.set(key, []);
+    }
+    interviewersByProject.get(key).push(interviewer);
+  }
+
   // This called the function above that creates and accumulator to iterate through the data
   const result = data.map((project) => {
     let cph;
     if (isLive || useGpcph) cph = project.gpcph ?? 0;
     else cph = project.cph ?? 0;
+    // Use indexed data for O(1) lookup instead of full array scan
+    const projectInterviewers = interviewersByProject.get(project.projectId) || [];
     const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(
-      interviewerData,
+      projectInterviewers,
       project,
       cph
     );
     let abbreviatedProjName = project.projName ?? '';
 
-    // First replace the state names with their abbreviations
-    Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
-      const regex = new RegExp(`\\b${state}\\b`, 'gi');
-      if (regex.test(abbreviatedProjName)) {
-        abbreviatedProjName = abbreviatedProjName.replace(
-          regex,
-          STATE_ABBREVIATIONS[state]
-        );
-      }
+    // Replace state names with abbreviations (using pre-compiled regex)
+    STATE_REGEX_MAP.forEach(({ regex, abbrev }) => {
+      abbreviatedProjName = abbreviatedProjName.replace(regex, abbrev);
     });
 
-    // Then replace the other abbreviations with their abbreviations
-    Object.keys(OTHER_ABBREVIATIONS).forEach((other) => {
-      const regex = new RegExp(`\\b${other}\\b`, 'gi');
-      if (regex.test(abbreviatedProjName)) {
-        abbreviatedProjName = abbreviatedProjName.replace(
-          regex,
-          OTHER_ABBREVIATIONS[other]
-        );
-      }
+    // Replace other terms with abbreviations (using pre-compiled regex)
+    OTHER_REGEX_MAP.forEach(({ regex, abbrev }) => {
+      abbreviatedProjName = abbreviatedProjName.replace(regex, abbrev);
     });
 
     // Finally, if the project name is still too long, extract the state name from it
