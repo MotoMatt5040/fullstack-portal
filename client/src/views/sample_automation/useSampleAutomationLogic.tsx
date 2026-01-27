@@ -732,14 +732,19 @@ export const useSampleAutomationLogic = () => {
 
     // Use mapped headers instead of original headers
     const headersMapping: Record<number, string[]> = {};
+    const excludedHeadersMapping: Record<number, string[]> = {};
     selectedFiles.forEach((item, index) => {
       const headerData = fileHeaders[item.id];
       if (headerData && headerData.mappedHeaders) {
         headersMapping[index] = headerData.mappedHeaders;
       }
+      if (headerData && headerData.excludedHeaders) {
+        excludedHeadersMapping[index] = headerData.excludedHeaders;
+      }
     });
 
     formData.append('customHeaders', JSON.stringify(headersMapping));
+    formData.append('excludedColumns', JSON.stringify(excludedHeadersMapping));
 
     try {
       // Clear previous results to reset step 3
