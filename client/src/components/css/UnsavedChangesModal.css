@@ -1,0 +1,104 @@
+/* UnsavedChangesModal.css - Modern styling */
+
+.unsaved-changes-modal {
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+.unsaved-changes-modal__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+
+.unsaved-changes-modal__icon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.unsaved-changes-modal__title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color, #1a1a1a);
+}
+
+.unsaved-changes-modal__message {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.unsaved-changes-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.unsaved-changes-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  min-width: 120px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.unsaved-changes-modal__btn:focus-visible {
+  outline: 2px solid var(--accent-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+.unsaved-changes-modal__btn--stay {
+  background: var(--background-color-muted, #f3f4f6);
+  color: var(--text-color, #1a1a1a);
+  border: 1px solid var(--border-color-soft, rgba(0, 0, 0, 0.1));
+}
+
+.unsaved-changes-modal__btn--stay:hover {
+  background: var(--background-color-hover, #e5e7eb);
+}
+
+.unsaved-changes-modal__btn--leave {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.unsaved-changes-modal__btn--leave:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.unsaved-changes-modal__btn--leave:active {
+  transform: translateY(0);
+}
+
+/* Dark Theme */
+[data-theme="dark"] .unsaved-changes-modal__icon,
+[data-theme="superdark"] .unsaved-changes-modal__icon {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+[data-theme="dark"] .unsaved-changes-modal__btn--stay,
+[data-theme="superdark"] .unsaved-changes-modal__btn--stay {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .unsaved-changes-modal__btn--stay:hover,
+[data-theme="superdark"] .unsaved-changes-modal__btn--stay:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
