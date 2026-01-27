@@ -3,5 +3,9 @@
     "allow": [
       "Bash(npm test:*)"
     ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }

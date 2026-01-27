@@ -3044,6 +3044,7 @@ const extractFilesFromTable = async (config) => {
                 'IAGE2', 'IAGE3', 'IAGE4',
                 'GEND2', 'GEND3', 'GEND4',
                 'PARTY2', 'PARTY3', 'PARTY4',
+                'CALCPARTY2', 'CALCPARTY3', 'CALCPARTY4',
                 'VFREQGEN2', 'VFREQGEN3', 'VFREQGEN4',
                 'VFREQPR2', 'VFREQPR3', 'VFREQPR4'
               )
