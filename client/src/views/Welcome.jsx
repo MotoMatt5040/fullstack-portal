@@ -81,9 +81,9 @@ const Welcome = () => {
       visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
     },
     {
-      to: '/project-numbering',
+      to: '/project-database',
       icon: mdiNumeric,
-      label: 'Project Numbering',
+      label: 'Project Database',
       color: '#ec4899',
       visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]),
     },

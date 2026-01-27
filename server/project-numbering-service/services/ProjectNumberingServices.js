@@ -41,6 +41,9 @@ const createProject = async (projectData, username) => {
 
         const request = transaction.request();
 
+        // Derive IVR from modes array (mode 7 = IVR)
+        const hasIvr = modes && Array.isArray(modes) && modes.includes(7) ? 1 : 0;
+
         request.input('projectID', sql.Int, projectID);
         request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
         request.input('projectName', sql.NVarChar, projectData.projectName);
@@ -55,6 +58,7 @@ const createProject = async (projectData, username) => {
         request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
         request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
         request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
+        request.input('ivr', sql.Bit, hasIvr);
         request.input('createdBy', sql.NVarChar, username);
 
         const result = await request.query(`
@@ -63,7 +67,7 @@ const createProject = async (projectData, username) => {
             projectID,
             clientProjectID, projectName, NSize, clientTime, promarkTime, openends,
             startDate, endDate, client, contactName, contactNumber, dataProcessing,
-            multiCallID,
+            multiCallID, ivr,
             createdBy, updatedBy
           )
           VALUES
@@ -71,7 +75,7 @@ const createProject = async (projectData, username) => {
             @projectID,
             @clientProjectID, @projectName, @NSize, @clientTime, @promarkTime, @openends,
             @startDate, @endDate, @client, @contactName, @contactNumber, @dataProcessing,
-            @multiCallID,
+            @multiCallID, @ivr,
             @createdBy, @createdBy
           );
 
@@ -142,7 +146,7 @@ const getAllProjects = async (options = {}) => {
       const allowedSortColumns = [
         'projectID', 'clientProjectID', 'projectName', 'NSize', 'clientTime',
         'promarkTime', 'startDate', 'endDate', 'client',
-        'contactName', 'contactNumber', 'dataProcessing', 'multiCallID'
+        'contactName', 'contactNumber', 'dataProcessing', 'multiCallID', 'ivr'
       ];
       const validSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'projectID';
       const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
@@ -151,7 +155,7 @@ const getAllProjects = async (options = {}) => {
         SELECT
           p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime,
           p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber,
-          p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
+          p.dataProcessing, p.multiCallID, p.ivr, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
           (
             SELECT modeID
             FROM dbo.ProjectModes pm
@@ -212,7 +216,7 @@ const getProjectByNumber = async (projectID) => {
           SELECT
             p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime,
             p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber,
-            p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy
+            p.dataProcessing, p.multiCallID, p.ivr, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy
           FROM dbo.Projects p
           WHERE p.projectID = @projectID;
 
@@ -251,6 +255,9 @@ const updateProject = async (projectID, projectData, username) => {
 
         const request = transaction.request();
 
+        // Derive IVR from modes array (mode 7 = IVR)
+        const hasIvr = projectData.modes && Array.isArray(projectData.modes) && projectData.modes.includes(7) ? 1 : 0;
+
         request.input('projectID', sql.Int, projectID);
         request.input('clientProjectID', sql.NVarChar, projectData.clientProjectID || null);
         request.input('projectName', sql.NVarChar, projectData.projectName);
@@ -265,6 +272,7 @@ const updateProject = async (projectID, projectData, username) => {
         request.input('contactNumber', sql.NVarChar, projectData.contactNumber || null);
         request.input('dataProcessing', sql.Bit, projectData.dataProcessing || 0);
         request.input('multiCallID', sql.Bit, projectData.multiCallID || 0);
+        request.input('ivr', sql.Bit, hasIvr);
         request.input('updatedBy', sql.NVarChar, username);
 
         await request.query(`
@@ -283,6 +291,7 @@ const updateProject = async (projectID, projectData, username) => {
             contactNumber = @contactNumber,
             dataProcessing = @dataProcessing,
             multiCallID = @multiCallID,
+            ivr = @ivr,
             updatedBy = @updatedBy
           WHERE projectID = @projectID
         `);
@@ -387,7 +396,7 @@ const searchProjects = async (criteria) => {
         SELECT
           p.projectID, p.clientProjectID, p.projectName, p.NSize, p.clientTime, p.promarkTime,
           p.openends, p.startDate, p.endDate, p.client, p.contactName, p.contactNumber,
-          p.dataProcessing, p.multiCallID, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
+          p.dataProcessing, p.multiCallID, p.ivr, p.dateCreated, p.dateUpdated, p.createdBy, p.updatedBy,
           (
             SELECT modeID
             FROM dbo.ProjectModes pm
@@ -437,7 +446,8 @@ const getProjectStats = async () => {
           COUNT(CASE WHEN openends = 'y' THEN 1 END) as projectsWithOpenEnds,
           COUNT(CASE WHEN dataProcessing = 1 THEN 1 END) as projectsWithDP,
           COUNT(CASE WHEN startDate >= DATEADD(month, -1, GETDATE()) THEN 1 END) as recentProjects,
-          COUNT(CASE WHEN multiCallID = 1 THEN 1 END) as projectsWithMultiCallID
+          COUNT(CASE WHEN multiCallID = 1 THEN 1 END) as projectsWithMultiCallID,
+          COUNT(CASE WHEN ivr = 1 THEN 1 END) as projectsWithIVR
         FROM dbo.Projects
       `);
 

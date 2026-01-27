@@ -5,7 +5,7 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
     // Get all projects with pagination and search
     getProjectsNumbering: builder.query({
       query: ({ page = 1, limit = 75, sortBy = 'projectID', sortOrder = 'DESC', search = '' }) => ({
-        url: `/project-numbering?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`,
+        url: `/project-database?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`,
         method: 'GET',
       }),
       providesTags: (result) =>
@@ -19,19 +19,19 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
 
     // Get next project number
     getNextProjectNumber: builder.query({
-      query: () => '/project-numbering/next-number',
+      query: () => '/project-database/next-number',
     }),
 
     // Get a single project by ID
     getProjectByNumber: builder.query({
-      query: (projectID) => `/project-numbering/${projectID}`,
+      query: (projectID) => `/project-database/${projectID}`,
       providesTags: (result, error, projectID) => [{ type: 'Project', id: projectID }],
     }),
 
     // Create a new project
     createProject: builder.mutation({
       query: (projectData) => ({
-        url: '/project-numbering',
+        url: '/project-database',
         method: 'POST',
         body: projectData,
       }),
@@ -41,7 +41,7 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
     // Update a project
     updateProject: builder.mutation({
       query: ({ projectID, ...projectData }) => ({
-        url: `/project-numbering/${projectID}`,
+        url: `/project-database/${projectID}`,
         method: 'PUT',
         body: projectData,
       }),
@@ -54,7 +54,7 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
     // Delete a project
     deleteProject: builder.mutation({
       query: (projectID) => ({
-        url: `/project-numbering/${projectID}`,
+        url: `/project-database/${projectID}`,
         method: 'DELETE',
       }),
       invalidatesTags: [{ type: 'Project', id: 'LIST' }],
@@ -63,7 +63,7 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
     // Search projects
     searchProjects: builder.mutation({
       query: (searchCriteria) => ({
-        url: '/project-numbering/search',
+        url: '/project-database/search',
         method: 'POST',
         body: searchCriteria,
       }),
@@ -71,7 +71,7 @@ export const projectNumberingApiSlice = apiSlice.injectEndpoints({
 
     // Get project statistics
     getProjectStats: builder.query({
-      query: () => '/project-numbering/stats',
+      query: () => '/project-database/stats',
       providesTags: ['ProjectStats'],
     }),
   }),

@@ -11,7 +11,8 @@ import {
   mdiWeb,
   mdiMessageTextOutline,
   mdiEmailOutline,
-  mdiMailboxOutline
+  mdiMailboxOutline,
+  mdiPhoneVoip
 } from '@mdi/js';
 import { useGetNextProjectNumberQuery } from '../../features/projectNumberingApiSlice';
 import { useModalUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -54,6 +55,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
       text: false,
       email: false,
       postalMail: false,
+      ivr: false,
     },
   });
 
@@ -78,6 +80,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
         text: initialData.modes?.includes(4) || false,
         email: initialData.modes?.includes(5) || false,
         postalMail: initialData.modes?.includes(6) || false,
+        ivr: initialData.modes?.includes(7) || false,
       };
 
       setFormData({
@@ -133,6 +136,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
     if (modes.text) result.push(4);
     if (modes.email) result.push(5);
     if (modes.postalMail) result.push(6);
+    if (modes.ivr) result.push(7);
 
     return result;
   };
@@ -221,6 +225,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
             text: false,
             email: false,
             postalMail: false,
+            ivr: false,
           },
         });
       }
@@ -392,6 +397,7 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                           ...prev,
                           openends: e.target.checked ? 'y' : 'n'
                         }));
+                        markDirty();
                       }}
                     />
                     Open-Ends
@@ -481,6 +487,19 @@ const ProjectModal = ({ isOpen, onClose, onSubmit, isLoading, mode, initialData 
                       />
                       <Icon path={mdiMailboxOutline} size={0.6} style={{ marginRight: '4px' }} />
                       Postal Mail
+                    </label>
+                  </div>
+                  <div className="checkbox-field">
+                    <label htmlFor="ivr">
+                      <input
+                        type="checkbox"
+                        id="ivr"
+                        name="ivr"
+                        checked={formData.modes.ivr}
+                        onChange={handleModeChange}
+                      />
+                      <Icon path={mdiPhoneVoip} size={0.6} style={{ marginRight: '4px' }} />
+                      IVR
                     </label>
                   </div>
                 </div>

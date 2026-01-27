@@ -40,14 +40,14 @@ localhost {
         reverse_proxy notifications:5002
     }
 
-    handle /api/project-numbering/* {
+    handle /api/project-database/* {
         forward_auth auth-gateway:5005 {
             uri /verify
             copy_headers X-User-Authenticated X-User-Name X-User-Roles
         }
         reverse_proxy projects:5003
     }
-    handle /api/project-numbering {
+    handle /api/project-database {
         forward_auth auth-gateway:5005 {
             uri /verify
             copy_headers X-User-Authenticated X-User-Name X-User-Roles

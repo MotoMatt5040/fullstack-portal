@@ -99,7 +99,7 @@ const ProjectsTable = ({
   };
 
   if (isLoading) {
-    return <SkeletonTable rows={10} columns={13} showHeader />;
+    return <SkeletonTable rows={10} columns={12} showHeader />;
   }
 
   if (!projects || projects.length === 0) {
@@ -130,9 +130,6 @@ const ProjectsTable = ({
             <th>Mode</th>
             <th className="col-sortable" onClick={() => onSort('dataProcessing')}>
               DP {getSortIcon('dataProcessing')}
-            </th>
-            <th className="col-sortable" onClick={() => onSort('multiCallID')}>
-              Multi Call {getSortIcon('multiCallID')}
             </th>
             <th className="col-sortable" onClick={() => onSort('startDate')}>
               Start Date {getSortIcon('startDate')}
@@ -180,11 +177,6 @@ const ProjectsTable = ({
               <td>
                 <span className={`badge ${project.dataProcessing ? 'badge-yes' : 'badge-no'}`}>
                   {project.dataProcessing ? 'Yes' : 'No'}
-                </span>
-              </td>
-              <td>
-                <span className={`badge ${project.multiCallID ? 'badge-yes' : 'badge-no'}`}>
-                  {project.multiCallID ? 'Yes' : 'No'}
                 </span>
               </td>
               <td>{formatDate(project.startDate)}</td>
