@@ -10,9 +10,52 @@ on:
       - main
 
 jobs:
+  check-already-tested:
+    name: Check If Already Tested
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.check.outputs.should_skip }}
+    steps:
+      - name: Check for previous successful run
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Only check for PRs to main
+            if (context.eventName !== 'pull_request') {
+              core.setOutput('should_skip', 'false');
+              return;
+            }
+
+            const sha = context.payload.pull_request.head.sha;
+            console.log(`Checking for previous runs on commit: ${sha}`);
+
+            // Look for successful workflow runs on this commit
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci.yml',
+              head_sha: sha,
+              status: 'success'
+            });
+
+            const hasSuccessfulRun = runs.data.workflow_runs.some(run =>
+              run.event === 'push' && run.conclusion === 'success'
+            );
+
+            if (hasSuccessfulRun) {
+              console.log('Found successful push workflow run for this commit - skipping tests');
+              core.setOutput('should_skip', 'true');
+            } else {
+              console.log('No previous successful run found - running tests');
+              core.setOutput('should_skip', 'false');
+            }
+
   test-server:
     name: Server Tests
     runs-on: ubuntu-latest
+    needs: check-already-tested
+    if: needs.check-already-tested.outputs.should_skip != 'true'
 
     steps:
       - name: Checkout code
@@ -34,6 +77,8 @@ jobs:
   test-client:
     name: Client Tests
     runs-on: ubuntu-latest
+    needs: check-already-tested
+    if: needs.check-already-tested.outputs.should_skip != 'true'
 
     steps:
       - name: Checkout code
@@ -55,12 +100,16 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test-server, test-client]
+    needs: [check-already-tested, test-server, test-client]
     if: always()
 
     steps:
       - name: Check test results
         run: |
+          if [ "${{ needs.check-already-tested.outputs.should_skip }}" == "true" ]; then
+            echo "Tests skipped - commit already tested successfully on testing branch"
+            exit 0
+          fi
           if [ "${{ needs.test-server.result }}" == "failure" ] || [ "${{ needs.test-client.result }}" == "failure" ]; then
             echo "::error::One or more test suites failed"
             exit 1
