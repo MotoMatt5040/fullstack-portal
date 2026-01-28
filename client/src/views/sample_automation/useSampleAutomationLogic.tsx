@@ -333,6 +333,8 @@ export const useSampleAutomationLogic = () => {
         });
 
         // Update file headers with both original, mapped, and excluded
+        console.log(`=== CLIENT: Setting fileHeaders for ${fileId} ===`);
+        console.log('excludedHeaders being stored:', excludedHeaders);
         setFileHeaders((prev) => ({
           ...prev,
           [fileId]: {
@@ -389,6 +391,9 @@ export const useSampleAutomationLogic = () => {
       try {
         // Step 1: Detect headers from the file using backend (now returns both headers and excludedHeaders)
         const { headers: detectedHeaders, excludedHeaders } = await detectHeadersFromFile(fileWrapper.file);
+        console.log(`=== CLIENT: File ${fileWrapper.id} header detection ===`);
+        console.log('detectedHeaders:', detectedHeaders);
+        console.log('excludedHeaders from detection:', excludedHeaders);
 
         // Step 2: Fetch database mappings and apply them (pass excluded headers too)
         await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders, excludedHeaders);
@@ -733,8 +738,17 @@ export const useSampleAutomationLogic = () => {
     // Use mapped headers instead of original headers
     const headersMapping: Record<number, string[]> = {};
     const excludedHeadersMapping: Record<number, string[]> = {};
+    console.log('=== CLIENT: Building headers mapping ===');
+    console.log('selectedFiles count:', selectedFiles.length);
+    console.log('fileHeaders keys:', Object.keys(fileHeaders));
     selectedFiles.forEach((item, index) => {
       const headerData = fileHeaders[item.id];
+      console.log(`File ${index} (id: ${item.id}):`, {
+        hasHeaderData: !!headerData,
+        mappedHeadersCount: headerData?.mappedHeaders?.length,
+        excludedHeadersCount: headerData?.excludedHeaders?.length,
+        excludedHeaders: headerData?.excludedHeaders,
+      });
       if (headerData && headerData.mappedHeaders) {
         headersMapping[index] = headerData.mappedHeaders;
       }
@@ -742,6 +756,11 @@ export const useSampleAutomationLogic = () => {
         excludedHeadersMapping[index] = headerData.excludedHeaders;
       }
     });
+
+    console.log('=== CLIENT: Final mappings ===');
+    console.log('headersMapping:', headersMapping);
+    console.log('excludedHeadersMapping:', excludedHeadersMapping);
+    console.log('excludedHeadersMapping JSON:', JSON.stringify(excludedHeadersMapping));
 
     formData.append('customHeaders', JSON.stringify(headersMapping));
     formData.append('excludedColumns', JSON.stringify(excludedHeadersMapping));

@@ -579,6 +579,14 @@ const processFile = async (req, res) => {
     console.log('Excluded columns provided:', Object.keys(excludedColumns).length > 0);
     console.log('Excluded columns raw:', JSON.stringify(excludedColumns));
     console.log('req.body.excludedColumns raw:', req.body.excludedColumns);
+    console.log('=== SERVER: Full req.body keys ===');
+    console.log('req.body keys:', Object.keys(req.body));
+    console.log('=== SERVER: excludedColumns details ===');
+    console.log('excludedColumns type:', typeof excludedColumns);
+    console.log('excludedColumns keys:', Object.keys(excludedColumns));
+    for (const [key, value] of Object.entries(excludedColumns)) {
+      console.log(`excludedColumns[${key}]:`, value);
+    }
 
     let filesToProcess = [];
     if (req.files && req.files.length > 0) {
@@ -1070,16 +1078,22 @@ const detectHeaders = handleAsync(async (req, res) => {
   let excludedHeaders = [];
   try {
     const excludedVariables = await SampleAutomation.getExcludedVariableSet();
+    console.log('=== SERVER detectHeaders: excludedVariables check ===');
+    console.log('excludedVariables size:', excludedVariables.size);
     if (excludedVariables.size > 0) {
       filteredHeaders = headerNames.filter(h => !excludedVariables.has(h.toUpperCase()));
       excludedHeaders = headerNames.filter(h => excludedVariables.has(h.toUpperCase()));
-      if (excludedHeaders.length > 0) {
-        console.log(`Header detection: filtered out ${excludedHeaders.length} excluded variable(s)`);
-      }
+      console.log(`Header detection: filtered out ${excludedHeaders.length} excluded variable(s)`);
+      console.log('excludedHeaders being returned:', excludedHeaders);
     }
   } catch (error) {
     console.warn('Could not apply variable exclusions to header detection:', error.message);
   }
+
+  console.log('=== SERVER detectHeaders: Response ===');
+  console.log('filteredHeaders count:', filteredHeaders.length);
+  console.log('excludedHeaders count:', excludedHeaders.length);
+  console.log('excludedHeaders:', excludedHeaders);
 
   res.json({
     success: true,
