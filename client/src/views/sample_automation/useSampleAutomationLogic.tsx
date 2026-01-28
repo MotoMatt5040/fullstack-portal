@@ -547,7 +547,7 @@ export const useSampleAutomationLogic = () => {
         // Re-fetch mappings for all files when vendor changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || []);
           }
         });
       }
@@ -567,7 +567,7 @@ export const useSampleAutomationLogic = () => {
         // Re-fetch mappings for all files when client changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || []);
           }
         });
       }
@@ -901,7 +901,8 @@ export const useSampleAutomationLogic = () => {
               if (headerData.originalHeaders.length > 0) {
                 return fetchAndApplyHeaderMappings(
                   fId,
-                  headerData.originalHeaders
+                  headerData.originalHeaders,
+                  headerData.excludedHeaders || []
                 );
               }
               return Promise.resolve();
