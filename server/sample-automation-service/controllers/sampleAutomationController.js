@@ -135,7 +135,10 @@ const processSingleFile = async (file, fileIndex, customHeaders, excludedColumns
   console.log(`File ${fileIndex + 1} raw headers:`, processResult.headers.map(h => h.name));
 
   // Apply column exclusions BEFORE header mapping
+  console.log(`File ${fileIndex + 1} excludedColumns object:`, JSON.stringify(excludedColumns));
+  console.log(`File ${fileIndex + 1} excludedColumns[${fileIndex}]:`, excludedColumns[fileIndex]);
   const excludedForFile = excludedColumns[fileIndex] || [];
+  console.log(`File ${fileIndex + 1} excludedForFile:`, excludedForFile);
   if (excludedForFile.length > 0) {
     const excludedSet = new Set(excludedForFile.map(h => h.toUpperCase()));
     console.log(`File ${fileIndex + 1} excluding columns:`, excludedForFile);
@@ -574,6 +577,8 @@ const processFile = async (req, res) => {
     console.log('Vendor/Client context:', { vendorId, clientId });
     console.log('Custom headers provided:', Object.keys(customHeaders).length > 0);
     console.log('Excluded columns provided:', Object.keys(excludedColumns).length > 0);
+    console.log('Excluded columns raw:', JSON.stringify(excludedColumns));
+    console.log('req.body.excludedColumns raw:', req.body.excludedColumns);
 
     let filesToProcess = [];
     if (req.files && req.files.length > 0) {
