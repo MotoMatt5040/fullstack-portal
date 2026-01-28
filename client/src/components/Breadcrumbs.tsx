@@ -8,7 +8,7 @@ import './css/Breadcrumbs.css';
 const routeLabels: Record<string, string> = {
   welcome: 'Home',
   'quota-management': 'Quota Management',
-  'project-numbering': 'Project Database',
+  'project-database': 'Project Database',
   'call-id': 'Call ID Management',
   'sample-automation': 'Sample Automation',
   'summary-report': 'Summary Report',

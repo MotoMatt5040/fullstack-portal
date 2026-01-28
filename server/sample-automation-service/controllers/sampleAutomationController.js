@@ -115,7 +115,7 @@ const registerFileIds = async (filesToProcess, projectId, requestedFileId, usern
 /**
  * Process a single file and extract data with headers
  */
-const processSingleFile = async (file, fileIndex, customHeaders, fileId) => {
+const processSingleFile = async (file, fileIndex, customHeaders, excludedColumns, fileId) => {
   const originalFilename = file.originalname;
   const fileExtension = validateFileExtension(originalFilename);
   const fileName = path.basename(originalFilename, fileExtension);
@@ -133,6 +133,39 @@ const processSingleFile = async (file, fileIndex, customHeaders, fileId) => {
   }));
 
   console.log(`File ${fileIndex + 1} raw headers:`, processResult.headers.map(h => h.name));
+
+  // Apply column exclusions BEFORE header mapping
+  console.log(`File ${fileIndex + 1} excludedColumns object:`, JSON.stringify(excludedColumns));
+  console.log(`File ${fileIndex + 1} excludedColumns[${fileIndex}]:`, excludedColumns[fileIndex]);
+  const excludedForFile = excludedColumns[fileIndex] || [];
+  console.log(`File ${fileIndex + 1} excludedForFile:`, excludedForFile);
+  if (excludedForFile.length > 0) {
+    const excludedSet = new Set(excludedForFile.map(h => h.toUpperCase()));
+    console.log(`File ${fileIndex + 1} excluding columns:`, excludedForFile);
+
+    // Filter out excluded headers
+    const includedIndices = [];
+    processResult.headers = processResult.headers.filter((header, idx) => {
+      const isExcluded = excludedSet.has(header.name.toUpperCase());
+      if (!isExcluded) {
+        includedIndices.push(idx);
+      }
+      return !isExcluded;
+    });
+
+    // Filter out excluded columns from data
+    processResult.data = processResult.data.map(row => {
+      const newRow = {};
+      for (const [key, value] of Object.entries(row)) {
+        if (!excludedSet.has(key.toUpperCase())) {
+          newRow[key] = value;
+        }
+      }
+      return newRow;
+    });
+
+    console.log(`File ${fileIndex + 1} headers after exclusion:`, processResult.headers.map(h => h.name));
+  }
 
   let finalHeaders = processResult.headers;
 
@@ -236,7 +269,7 @@ const addFileTrackingColumns = (data, filename, fileIndex, isMultiFile) => {
 /**
  * Process all uploaded files
  */
-const processAllFiles = async (filesToProcess, customHeaders, fileIds) => {
+const processAllFiles = async (filesToProcess, customHeaders, excludedColumns, fileIds) => {
   let allProcessedData = [];
   const allHeaders = new Map();
   let totalOriginalRows = 0;
@@ -247,7 +280,7 @@ const processAllFiles = async (filesToProcess, customHeaders, fileIds) => {
     const fileId = fileIds[i];
 
     try {
-      const result = await processSingleFile(file, i, customHeaders, fileId);
+      const result = await processSingleFile(file, i, customHeaders, excludedColumns, fileId);
 
       const trackedData = addFileTrackingColumns(
         result.data,
@@ -536,12 +569,24 @@ const processFile = async (req, res) => {
     console.log('Files received:', req.files ? req.files.length : 0);
 
     const customHeaders = req.body.customHeaders ? JSON.parse(req.body.customHeaders) : {};
+    const excludedColumns = req.body.excludedColumns ? JSON.parse(req.body.excludedColumns) : {};
     const vendorId = req.body.vendorId ? parseInt(req.body.vendorId) : null;
     const clientId = req.body.clientId ? parseInt(req.body.clientId) : null;
     const { projectId, requestedFileId, ageCalculationMode, fileType } = req.body;
 
     console.log('Vendor/Client context:', { vendorId, clientId });
     console.log('Custom headers provided:', Object.keys(customHeaders).length > 0);
+    console.log('Excluded columns provided:', Object.keys(excludedColumns).length > 0);
+    console.log('Excluded columns raw:', JSON.stringify(excludedColumns));
+    console.log('req.body.excludedColumns raw:', req.body.excludedColumns);
+    console.log('=== SERVER: Full req.body keys ===');
+    console.log('req.body keys:', Object.keys(req.body));
+    console.log('=== SERVER: excludedColumns details ===');
+    console.log('excludedColumns type:', typeof excludedColumns);
+    console.log('excludedColumns keys:', Object.keys(excludedColumns));
+    for (const [key, value] of Object.entries(excludedColumns)) {
+      console.log(`excludedColumns[${key}]:`, value);
+    }
 
     let filesToProcess = [];
     if (req.files && req.files.length > 0) {
@@ -583,7 +628,7 @@ const processFile = async (req, res) => {
 
     let processedFiles;
     try {
-      processedFiles = await processAllFiles(filesToProcess, customHeaders, fileIds);
+      processedFiles = await processAllFiles(filesToProcess, customHeaders, excludedColumns, fileIds);
     } catch (processingError) {
       await cleanupFiles(filesToProcess);
       return res.status(400).json({
@@ -1033,16 +1078,22 @@ const detectHeaders = handleAsync(async (req, res) => {
   let excludedHeaders = [];
   try {
     const excludedVariables = await SampleAutomation.getExcludedVariableSet();
+    console.log('=== SERVER detectHeaders: excludedVariables check ===');
+    console.log('excludedVariables size:', excludedVariables.size);
     if (excludedVariables.size > 0) {
       filteredHeaders = headerNames.filter(h => !excludedVariables.has(h.toUpperCase()));
       excludedHeaders = headerNames.filter(h => excludedVariables.has(h.toUpperCase()));
-      if (excludedHeaders.length > 0) {
-        console.log(`Header detection: filtered out ${excludedHeaders.length} excluded variable(s)`);
-      }
+      console.log(`Header detection: filtered out ${excludedHeaders.length} excluded variable(s)`);
+      console.log('excludedHeaders being returned:', excludedHeaders);
     }
   } catch (error) {
     console.warn('Could not apply variable exclusions to header detection:', error.message);
   }
+
+  console.log('=== SERVER detectHeaders: Response ===');
+  console.log('filteredHeaders count:', filteredHeaders.length);
+  console.log('excludedHeaders count:', excludedHeaders.length);
+  console.log('excludedHeaders:', excludedHeaders);
 
   res.json({
     success: true,

@@ -333,6 +333,8 @@ export const useSampleAutomationLogic = () => {
         });
 
         // Update file headers with both original, mapped, and excluded
+        console.log(`=== CLIENT: Setting fileHeaders for ${fileId} ===`);
+        console.log('excludedHeaders being stored:', excludedHeaders);
         setFileHeaders((prev) => ({
           ...prev,
           [fileId]: {
@@ -389,6 +391,9 @@ export const useSampleAutomationLogic = () => {
       try {
         // Step 1: Detect headers from the file using backend (now returns both headers and excludedHeaders)
         const { headers: detectedHeaders, excludedHeaders } = await detectHeadersFromFile(fileWrapper.file);
+        console.log(`=== CLIENT: File ${fileWrapper.id} header detection ===`);
+        console.log('detectedHeaders:', detectedHeaders);
+        console.log('excludedHeaders from detection:', excludedHeaders);
 
         // Step 2: Fetch database mappings and apply them (pass excluded headers too)
         await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders, excludedHeaders);
@@ -547,7 +552,7 @@ export const useSampleAutomationLogic = () => {
         // Re-fetch mappings for all files when vendor changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || []);
           }
         });
       }
@@ -567,7 +572,7 @@ export const useSampleAutomationLogic = () => {
         // Re-fetch mappings for all files when client changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders);
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || []);
           }
         });
       }
@@ -732,14 +737,33 @@ export const useSampleAutomationLogic = () => {
 
     // Use mapped headers instead of original headers
     const headersMapping: Record<number, string[]> = {};
+    const excludedHeadersMapping: Record<number, string[]> = {};
+    console.log('=== CLIENT: Building headers mapping ===');
+    console.log('selectedFiles count:', selectedFiles.length);
+    console.log('fileHeaders keys:', Object.keys(fileHeaders));
     selectedFiles.forEach((item, index) => {
       const headerData = fileHeaders[item.id];
+      console.log(`File ${index} (id: ${item.id}):`, {
+        hasHeaderData: !!headerData,
+        mappedHeadersCount: headerData?.mappedHeaders?.length,
+        excludedHeadersCount: headerData?.excludedHeaders?.length,
+        excludedHeaders: headerData?.excludedHeaders,
+      });
       if (headerData && headerData.mappedHeaders) {
         headersMapping[index] = headerData.mappedHeaders;
       }
+      if (headerData && headerData.excludedHeaders) {
+        excludedHeadersMapping[index] = headerData.excludedHeaders;
+      }
     });
 
+    console.log('=== CLIENT: Final mappings ===');
+    console.log('headersMapping:', headersMapping);
+    console.log('excludedHeadersMapping:', excludedHeadersMapping);
+    console.log('excludedHeadersMapping JSON:', JSON.stringify(excludedHeadersMapping));
+
     formData.append('customHeaders', JSON.stringify(headersMapping));
+    formData.append('excludedColumns', JSON.stringify(excludedHeadersMapping));
 
     try {
       // Clear previous results to reset step 3
@@ -896,7 +920,8 @@ export const useSampleAutomationLogic = () => {
               if (headerData.originalHeaders.length > 0) {
                 return fetchAndApplyHeaderMappings(
                   fId,
-                  headerData.originalHeaders
+                  headerData.originalHeaders,
+                  headerData.excludedHeaders || []
                 );
               }
               return Promise.resolve();

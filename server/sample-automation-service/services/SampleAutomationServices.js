@@ -3044,6 +3044,7 @@ const extractFilesFromTable = async (config) => {
                 'IAGE2', 'IAGE3', 'IAGE4',
                 'GEND2', 'GEND3', 'GEND4',
                 'PARTY2', 'PARTY3', 'PARTY4',
+                'CALCPARTY2', 'CALCPARTY3', 'CALCPARTY4',
                 'VFREQGEN2', 'VFREQGEN3', 'VFREQGEN4',
                 'VFREQPR2', 'VFREQPR3', 'VFREQPR4'
               )
@@ -3079,7 +3080,10 @@ const extractFilesFromTable = async (config) => {
             landlineTableName = splitResult.landlineTableName;
             cellTableName = splitResult.cellTableName;
 
-            await createStratifiedBatches(cellTableName, 'IAGE,GEND,PARTY,ETHNICITY,IZIP', 20);
+            // Only create stratified batches for cell table if it exists
+            if (cellTableName) {
+              await createStratifiedBatches(cellTableName, 'IAGE,GEND,PARTY,ETHNICITY,IZIP', 20);
+            }
           }
         } else {
           await createStratifiedBatches(tableName, 'IAGE,GEND,PARTY,ETHNICITY,IZIP', 20);
@@ -3089,49 +3093,53 @@ const extractFilesFromTable = async (config) => {
           const landlineHeaders = finalHeaders.filter(h => h !== 'BATCH');
           const cellHeaders = finalHeaders;
 
-          const landlineSelectClause = landlineHeaders.map((header) => `[${header}]`).join(', ');
-          const cellSelectClause = cellHeaders.map((header) => `[${header}]`).join(', ');
-
-          const landlineQuery = `SELECT ${landlineSelectClause} FROM FAJITA.dbo.[${landlineTableName}]`;
-          const cellQuery = `SELECT ${cellSelectClause} FROM FAJITA.dbo.[${cellTableName}]`;
-
-          const landlineResult = await pool.request().query(landlineQuery);
-          const cellResult = await pool.request().query(cellQuery);
-
-          const landlineCSV = convertToCSV(landlineResult.recordset, landlineHeaders);
-          const cellCSV = convertToCSV(cellResult.recordset, cellHeaders);
-
           const tempDir = userId ? await ensureUserTempDir(userId) : path.join(__dirname, '../temp');
           if (!userId) {
             await fs.mkdir(tempDir, { recursive: true });
           }
 
           const BOM = '\uFEFF';
-          const landlineFilePath = path.join(tempDir, `${fileNames.landline}.csv`);
-          const cellFilePath = path.join(tempDir, `${fileNames.cell}.csv`);
-
-          await fs.writeFile(landlineFilePath, BOM + landlineCSV, 'utf8');
-          await fs.writeFile(cellFilePath, BOM + cellCSV, 'utf8');
-
           const mergedFiles = {
-            landline: {
+            ...(householdingDuplicateFiles?.files || {})
+          };
+
+          // Process landline table if it exists
+          if (landlineTableName) {
+            const landlineSelectClause = landlineHeaders.map((header) => `[${header}]`).join(', ');
+            const landlineQuery = `SELECT ${landlineSelectClause} FROM FAJITA.dbo.[${landlineTableName}]`;
+            const landlineResult = await pool.request().query(landlineQuery);
+            const landlineCSV = convertToCSV(landlineResult.recordset, landlineHeaders);
+            const landlineFilePath = path.join(tempDir, `${fileNames.landline}.csv`);
+            await fs.writeFile(landlineFilePath, BOM + landlineCSV, 'utf8');
+
+            mergedFiles.landline = {
               filename: `${fileNames.landline}.csv`,
               path: landlineFilePath,
               url: getTempFileUrl(`${fileNames.landline}.csv`, userId),
               records: landlineResult.recordset.length,
               headers: landlineHeaders,
               conditions: [`Extracted from table: ${landlineTableName}`],
-            },
-            cell: {
+            };
+          }
+
+          // Process cell table if it exists
+          if (cellTableName) {
+            const cellSelectClause = cellHeaders.map((header) => `[${header}]`).join(', ');
+            const cellQuery = `SELECT ${cellSelectClause} FROM FAJITA.dbo.[${cellTableName}]`;
+            const cellResult = await pool.request().query(cellQuery);
+            const cellCSV = convertToCSV(cellResult.recordset, cellHeaders);
+            const cellFilePath = path.join(tempDir, `${fileNames.cell}.csv`);
+            await fs.writeFile(cellFilePath, BOM + cellCSV, 'utf8');
+
+            mergedFiles.cell = {
               filename: `${fileNames.cell}.csv`,
               path: cellFilePath,
               url: getTempFileUrl(`${fileNames.cell}.csv`, userId),
               records: cellResult.recordset.length,
               headers: cellHeaders,
               conditions: [`Extracted from table: ${cellTableName}`],
-            },
-            ...(householdingDuplicateFiles?.files || {})
-          };
+            };
+          }
 
           return {
             success: true,

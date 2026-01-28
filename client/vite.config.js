@@ -9,7 +9,7 @@ const isDocker = process.env.DOCKER_ENV === 'true';
 export default defineConfig({
   build: {
     outDir: 'build',
-    minify: 'terser',
+    minify: 'esbuild',
     sourcemap: false,
     cssCodeSplit: true,
     rollupOptions: {

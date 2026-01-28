@@ -25,8 +25,8 @@ const deleteRoles = [
   ROLES_LIST.Executive,
 ];
 
-// Health check (accessible via /api/project-numbering/health through Caddy)
-router.get('/project-numbering/health', (req, res) => {
+// Health check (accessible via /api/project-database/health through Caddy)
+router.get('/project-database/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     service: 'project-numbering-service',
@@ -41,9 +41,9 @@ router.use(gatewayAuth);
 
 /**
  * Get project statistics
- * GET /api/project-numbering/stats
+ * GET /api/project-database/stats
  */
-router.route('/project-numbering/stats')
+router.route('/project-database/stats')
   .get(
     verifyRoles(...viewRoles),
     projectNumberingController.handleGetProjectStats
@@ -51,9 +51,9 @@ router.route('/project-numbering/stats')
 
 /**
  * Get next available project number
- * GET /api/project-numbering/next-number
+ * GET /api/project-database/next-number
  */
-router.route('/project-numbering/next-number')
+router.route('/project-database/next-number')
   .get(
     verifyRoles(...modifyRoles),
     projectNumberingController.handleGetNextProjectNumber
@@ -61,9 +61,9 @@ router.route('/project-numbering/next-number')
 
 /**
  * Search projects
- * POST /api/project-numbering/search
+ * POST /api/project-database/search
  */
-router.route('/project-numbering/search')
+router.route('/project-database/search')
   .post(
     verifyRoles(...viewRoles),
     projectNumberingController.handleSearchProjects
@@ -71,10 +71,10 @@ router.route('/project-numbering/search')
 
 /**
  * Get all projects (with pagination) or create a new project
- * GET /api/project-numbering
- * POST /api/project-numbering
+ * GET /api/project-database
+ * POST /api/project-database
  */
-router.route('/project-numbering')
+router.route('/project-database')
   .get(
     verifyRoles(...viewRoles),
     projectNumberingController.handleGetAllProjects
@@ -86,11 +86,11 @@ router.route('/project-numbering')
 
 /**
  * Get, update, or delete a specific project
- * GET /api/project-numbering/:number
- * PUT /api/project-numbering/:number
- * DELETE /api/project-numbering/:number
+ * GET /api/project-database/:number
+ * PUT /api/project-database/:number
+ * DELETE /api/project-database/:number
  */
-router.route('/project-numbering/:number')
+router.route('/project-database/:number')
   .get(
     verifyRoles(...viewRoles),
     projectNumberingController.handleGetProjectByNumber

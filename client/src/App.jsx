@@ -118,7 +118,7 @@ function App() {
           <Route path='summary-report' element={<SummaryReport />} />
           <Route path='project-report' element={<ProjectReport />} />
           <Route path='production-report' element={<ProductionReport />} />
-          <Route path='project-numbering' element={<ProjectNumbering />} />
+          <Route path='project-database' element={<ProjectNumbering />} />
           {/* <Route path='publishquotas' element={<QuotaPublishing />} /> */}
         </Route>
 

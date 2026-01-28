@@ -55,15 +55,15 @@
             reverse_proxy notifications:5002
         }
 
-        # Project numbering service routes - use forward_auth for JWT validation
-        handle /api/project-numbering/* {
+        # Project database service routes - use forward_auth for JWT validation
+        handle /api/project-database/* {
             forward_auth auth-gateway:5005 {
                 uri /verify
                 copy_headers X-User-Authenticated X-User-Name X-User-Roles
             }
             reverse_proxy projects:5003
         }
-        handle /api/project-numbering {
+        handle /api/project-database {
             forward_auth auth-gateway:5005 {
                 uri /verify
                 copy_headers X-User-Authenticated X-User-Name X-User-Roles

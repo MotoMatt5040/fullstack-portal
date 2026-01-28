@@ -2,6 +2,7 @@ import React from 'react';
 import Icon from '@mdi/react';
 import { mdiAlertOutline } from '@mdi/js';
 import { Modal } from './Modal';
+import './css/UnsavedChangesModal.css';
 
 interface UnsavedChangesModalProps {
   isOpen: boolean;
@@ -15,46 +16,29 @@ const UnsavedChangesModal: React.FC<UnsavedChangesModalProps> = ({
   onCancel,
 }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel}>
-      <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-        <Icon
-          path={mdiAlertOutline}
-          size={2.5}
-          style={{ color: 'var(--toast-warning, #f59e0b)', marginBottom: '1rem' }}
-        />
-        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.25rem' }}>
-          Unsaved Changes
-        </h2>
-        <p style={{ marginBottom: '1.5rem', color: 'var(--label-text-color)' }}>
+    <Modal isOpen={isOpen} onClose={onCancel} ariaLabel="Unsaved changes warning">
+      <div className="unsaved-changes-modal">
+        <div className="unsaved-changes-modal__icon">
+          <Icon path={mdiAlertOutline} size={1.5} />
+        </div>
+
+        <h2 className="unsaved-changes-modal__title">Unsaved Changes</h2>
+
+        <p className="unsaved-changes-modal__message">
           You have unsaved changes that will be lost if you leave this page.
           Are you sure you want to continue?
         </p>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+
+        <div className="unsaved-changes-modal__actions">
           <button
             onClick={onCancel}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '6px',
-              border: '1px solid var(--border-color-soft)',
-              background: 'transparent',
-              color: 'var(--text-color)',
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-            }}
+            className="unsaved-changes-modal__btn unsaved-changes-modal__btn--stay"
           >
             Stay on Page
           </button>
           <button
             onClick={onConfirm}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '6px',
-              border: 'none',
-              background: 'var(--toast-error, #ef4444)',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-            }}
+            className="unsaved-changes-modal__btn unsaved-changes-modal__btn--leave"
           >
             Leave Page
           </button>

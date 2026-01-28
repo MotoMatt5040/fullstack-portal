@@ -81,11 +81,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
         keywords: ['quota', 'quotas', 'management', 'targets'],
       },
       {
-        id: 'project-numbering',
+        id: 'project-database',
         title: 'Project Database',
         subtitle: 'Manage project numbers and details',
         icon: mdiDatabaseOutline,
-        path: '/project-numbering',
+        path: '/project-database',
         category: 'pages',
         keywords: ['project', 'database', 'numbering', 'projects'],
         roles: [roles.Admin, roles.Executive, roles.Manager, roles.Programmer],
