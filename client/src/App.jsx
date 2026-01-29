@@ -79,6 +79,7 @@ function App() {
 
         <Route path='unauthorized' element={<Unauthorized />} />
         <Route path='reset-password' element={<ResetPassword />} />
+        <Route path='reset-password/:token' element={<ResetPassword />} />
         <Route path='docs/quota-setup' element={<QuotaSetupGuidePage />} />
 
         <Route
