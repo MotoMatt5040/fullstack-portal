@@ -58,6 +58,36 @@ const handlePasswordResetRequest = async (req, res) => {
     }
 };
 
+const handleVerifyResetToken = async (req, res) => {
+    const { token, email } = req.query;
+    if (!token || !email) {
+        return res.status(400).json({ valid: false, message: 'Token and email are required' });
+    }
+
+    try {
+        const existingUser = await getUserByResetToken(token);
+        if (!existingUser) {
+            return res.status(200).json({ valid: false, message: 'Invalid reset token' });
+        }
+
+        // Check if token matches the email
+        if (existingUser.Email.toLowerCase() !== email.toLowerCase()) {
+            return res.status(200).json({ valid: false, message: 'Invalid reset token' });
+        }
+
+        // Check if token has expired
+        const expiresDate = new Date(existingUser.ResetPasswordExpires);
+        if (expiresDate < new Date()) {
+            return res.status(200).json({ valid: false, message: 'Reset token has expired' });
+        }
+
+        res.status(200).json({ valid: true, email: existingUser.Email });
+    } catch (err) {
+        console.error('Verify reset token error:', err);
+        res.status(500).json({ valid: false, message: err.message });
+    }
+};
+
 const handleResetPassword = async (req, res) => {
     const { token, newPwd } = req.body;
     if (!token || !newPwd) {
@@ -66,7 +96,7 @@ const handleResetPassword = async (req, res) => {
 
     try {
         const existingUser = await getUserByResetToken(token);
-        if (!existingUser || existingUser.resetPasswordExpires < new Date()) {
+        if (!existingUser || new Date(existingUser.ResetPasswordExpires) < new Date()) {
             return res.status(400).json({ 'message': 'Token is invalid or has expired' });
         }
 
@@ -82,4 +112,4 @@ const handleResetPassword = async (req, res) => {
     }
 };
 
-module.exports = { handlePasswordResetRequest, handleResetPassword };
+module.exports = { handlePasswordResetRequest, handleVerifyResetToken, handleResetPassword };
