@@ -98,3 +98,4 @@ jobs:
             echo -n "  Auth Service: " && curl -sf "https://${{ secrets.VITE_DOMAIN_NAME }}/api/auth/health" > /dev/null && echo "✅ OK" || echo "❌ Not ready"
 
             echo "✅ Auth service deployment to PRODUCTION completed at $(date)"
+# trigger
