@@ -7,6 +7,12 @@ on:
       - testing
     paths:
       - 'server/auth-service/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'server/auth-service/**'
   workflow_dispatch:
 
 jobs:
@@ -67,7 +73,7 @@ jobs:
 
   deploy-production:
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     environment: production
 
