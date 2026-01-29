@@ -87,7 +87,9 @@
   background: transparent;
   border: none;
   border-radius: 0.5rem;
-  font-size: 0.8125rem;
+  font-family: inherit;
+  font-size: 13px; /* Explicit px for consistency */
+  line-height: 1.4;
   font-weight: 500;
   color: var(--text-color);
   opacity: 0.6;
@@ -105,6 +107,13 @@
   color: var(--accent-color);
   opacity: 1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure tab icons have consistent sizing */
+.callid-tab svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .callid-tab.active,

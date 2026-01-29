@@ -468,12 +468,21 @@
   border: none;
   background: transparent;
   color: var(--label-text-color);
-  font-size: 0.875rem;
+  font-family: inherit;
+  font-size: 14px; /* Explicit px for consistency */
+  line-height: 1.4;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+}
+
+/* Ensure tab icons have consistent sizing */
+.hm-tab svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .hm-tab:hover {

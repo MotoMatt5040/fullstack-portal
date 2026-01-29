@@ -1816,6 +1816,61 @@ const padColumns = async (tableName) => {
 };
 
 /**
+ * Pad IZIP column to 5 characters with leading zeros
+ * Some zip codes start with 0 (e.g., 01234) and may have been stored as numbers
+ */
+const padIZIP = async (tableName) => {
+  return withDbConnection({
+    database: promark,
+    queryFn: async (pool) => {
+      try {
+        console.log(`Padding IZIP to 5 characters in table: ${tableName}`);
+
+        // First check if IZIP column exists
+        const columnCheck = await pool.request().query(`
+          SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = '${tableName}'
+          AND COLUMN_NAME = 'IZIP'
+        `);
+
+        if (columnCheck.recordset.length === 0) {
+          console.log(`⚠️ IZIP column does not exist in table ${tableName}`);
+          return {
+            success: true,
+            recordsUpdated: 0,
+            message: 'IZIP column does not exist in table',
+          };
+        }
+
+        // Pad IZIP to 5 characters with leading zeros
+        // Handle both numeric values and strings that are too short
+        const result = await pool.request().query(`
+          UPDATE FAJITA.dbo.[${tableName}]
+          SET IZIP = RIGHT('00000' + LTRIM(RTRIM(CAST(IZIP AS VARCHAR(10)))), 5)
+          WHERE IZIP IS NOT NULL
+            AND IZIP <> ''
+            AND LEN(LTRIM(RTRIM(CAST(IZIP AS VARCHAR(10))))) < 5
+        `);
+
+        const recordsUpdated = result.rowsAffected[0];
+        console.log(`✅ IZIP padding complete: ${recordsUpdated} records updated`);
+
+        return {
+          success: true,
+          recordsUpdated,
+          message: `IZIP padding completed: ${recordsUpdated} records updated`,
+        };
+      } catch (error) {
+        console.error('Error padding IZIP:', error);
+        throw new Error(`Failed to pad IZIP: ${error.message}`);
+      }
+    },
+    fnName: 'padIZIP',
+  });
+};
+
+/**
  * Update VTYPE column based on extraction split logic
  */
 const updateVTYPEBySplit = async (tableName, ageThreshold, clientId = null) => {

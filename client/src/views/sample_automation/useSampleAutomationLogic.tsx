@@ -2,13 +2,16 @@ import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   useProcessFileMutation,
   useGetClientsAndVendorsQuery,
-  useLazyGetHeaderMappingsQuery,
+  useLazyGetAllHeaderMappingsQuery,
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
   useLazyGetDistinctAgeRangesQuery,
   useExtractFilesMutation,
-  useCleanupTempFileMutation
+  useCleanupTempFileMutation,
+  useLazyGetProjectVariableInclusionsQuery,
+  useAddProjectVariableInclusionMutation,
+  useDeleteProjectVariableInclusionMutation,
 } from '../../features/sampleAutomationApiSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
@@ -58,6 +61,8 @@ interface FileHeaderData {
   mappings: Record<string, HeaderMapping>;
   excludedHeaders?: string[];
   includedFromExclusions?: string[]; // Headers that were excluded but user chose to include
+  // Store ALL headers in original file order (including excluded) for correct positioning
+  allHeadersInOrder?: string[];
 }
 
 export const useSampleAutomationLogic = () => {
@@ -86,6 +91,11 @@ export const useSampleAutomationLogic = () => {
   const selectedClientIdRef = useRef(selectedClientId);
 
   const [cleanupTempFile] = useCleanupTempFileMutation();
+
+  // Project variable inclusions (for persisting included-from-excluded headers)
+  const [getProjectVariableInclusions] = useLazyGetProjectVariableInclusionsQuery();
+  const [addProjectVariableInclusion] = useAddProjectVariableInclusionMutation();
+  const [deleteProjectVariableInclusion] = useDeleteProjectVariableInclusionMutation();
 
   // Processing state
   const [processResult, setProcessResult] = useState<any>(null);
@@ -163,15 +173,15 @@ export const useSampleAutomationLogic = () => {
     error: clientsAndVendorsError,
   } = useGetClientsAndVendorsQuery();
 
-  // Add the new header mappings query
+  // Get all header mappings for vendor/client (small payload, no URL length issues)
   const [
-    getHeaderMappings,
+    getAllHeaderMappings,
     {
       data: headerMappingsData,
       isLoading: isLoadingHeaderMappings,
       error: headerMappingsError,
     },
-  ] = useLazyGetHeaderMappingsQuery();
+  ] = useLazyGetAllHeaderMappingsQuery();
 
   // Add save header mappings mutation
   const [
@@ -308,45 +318,128 @@ export const useSampleAutomationLogic = () => {
     }
   }, [userInfo.isInternalUser, userInfo.username, getProjectList]);
 
+  // Ref for selectedProjectId to avoid unnecessary re-renders
+  const selectedProjectIdRef = useRef(selectedProjectId);
+  useEffect(() => {
+    selectedProjectIdRef.current = selectedProjectId;
+  }, [selectedProjectId]);
+
   // NEW: Function to fetch and apply header mappings using refs for current vendor/client
+  // Also loads project variable inclusions to auto-include previously saved headers
   const fetchAndApplyHeaderMappings = useCallback(
-    async (fileId: string, originalHeaders: string[], excludedHeaders: string[] = []) => {
+    async (fileId: string, originalHeaders: string[], excludedHeaders: string[] = [], allHeadersInOrderParam?: string[]) => {
       if (!originalHeaders.length) return;
 
       try {
         // Use refs to get current values without adding to dependencies
         const currentVendorId = selectedVendorIdRef.current;
         const currentClientId = selectedClientIdRef.current;
+        const currentProjectId = selectedProjectIdRef.current;
 
-        // Get header mappings from database
-        const mappingsResult = await getHeaderMappings({
-          vendorId: currentVendorId,
-          clientId: currentClientId,
-          originalHeaders,
+        // IMPORTANT: Use allHeadersInOrder from detection if available, otherwise fallback
+        // This preserves the exact original file order for correct column positioning
+        const allHeadersInOrder = allHeadersInOrderParam || [...originalHeaders, ...excludedHeaders];
+
+        // Fetch ALL mappings for this vendor/client combo (small payload, no URL length issues)
+        // Then apply them client-side to the detected headers
+        const mappingsResult = await getAllHeaderMappings({
+          vendorId: currentVendorId ?? undefined,
+          clientId: currentClientId ?? undefined,
         }).unwrap();
 
-        // Apply mappings to create mapped headers array
-        const mappedHeaders = originalHeaders.map((originalHeader) => {
+        // Build a lookup map from original header (uppercase) -> mapping info
+        // Apply priority: most specific mapping wins (vendor+client > client only > vendor only > global)
+        const mappingsLookup: Record<string, HeaderMapping> = {};
+
+        if (mappingsResult.success && mappingsResult.data) {
+          // Sort by specificity: vendor+client (3), client only (2), vendor only (1), global (0)
+          const sortedMappings = [...mappingsResult.data].sort((a, b) => {
+            const getSpecificity = (m: typeof a) => {
+              if (m.vendorId && m.clientId) return 3;
+              if (m.clientId) return 2;
+              if (m.vendorId) return 1;
+              return 0;
+            };
+            return getSpecificity(b) - getSpecificity(a);
+          });
+
+          // Apply mappings - more specific ones added first, less specific only if not already present
+          for (const mapping of sortedMappings) {
+            const upperOriginal = mapping.originalHeader.toUpperCase();
+            if (!mappingsLookup[upperOriginal]) {
+              mappingsLookup[upperOriginal] = {
+                original: mapping.originalHeader,
+                mapped: mapping.mappedHeader,
+                vendorName: mapping.vendorName,
+                clientName: mapping.clientName,
+                vendorId: mapping.vendorId ?? undefined,
+                clientId: mapping.clientId ?? undefined,
+              };
+            }
+          }
+        }
+
+        // Load project variable inclusions if a project is selected
+        let projectInclusions: string[] = [];
+        if (currentProjectId) {
+          try {
+            const inclusionsResult = await getProjectVariableInclusions(parseInt(currentProjectId)).unwrap();
+            if (inclusionsResult.success && inclusionsResult.data) {
+              projectInclusions = inclusionsResult.data.map(inc => inc.originalVariableName.toUpperCase());
+            }
+          } catch (error) {
+            // Ignore errors loading inclusions
+          }
+        }
+
+        // Determine which excluded headers should now be included (from project settings)
+        const excludedSet = new Set(excludedHeaders.map(h => h.toUpperCase()));
+        const includedFromExclusions = excludedHeaders.filter(
+          h => projectInclusions.includes(h.toUpperCase())
+        );
+        const includedFromExclusionsSet = new Set(includedFromExclusions.map(h => h.toUpperCase()));
+
+        // Final excluded headers = excluded minus any project inclusions
+        const finalExcludedHeaders = excludedHeaders.filter(
+          h => !projectInclusions.includes(h.toUpperCase())
+        );
+
+        // Build final headers list maintaining order from allHeadersInOrder
+        // Include: originalHeaders + any excludedHeaders that are in project inclusions
+        const finalOriginalHeaders = allHeadersInOrder.filter(h => {
+          const upper = h.toUpperCase();
+          // Include if it was originally included OR if it's included from exclusions
+          return !excludedSet.has(upper) || includedFromExclusionsSet.has(upper);
+        });
+
+        // Apply mappings to create mapped headers array (in same order)
+        const mappedHeaders = finalOriginalHeaders.map((originalHeader) => {
           const upperOriginal = originalHeader.toUpperCase();
-          const mapping = mappingsResult.data[upperOriginal];
+          const mapping = mappingsLookup[upperOriginal];
           return mapping ? mapping.mapped : originalHeader;
         });
 
         // Update file headers with both original, mapped, and excluded
         console.log(`=== CLIENT: Setting fileHeaders for ${fileId} ===`);
-        console.log('excludedHeaders being stored:', excludedHeaders);
+        console.log('allHeadersInOrder count:', allHeadersInOrder.length);
+        console.log('excludedHeaders being stored:', finalExcludedHeaders);
+        console.log('includedFromExclusions:', includedFromExclusions);
+        console.log('finalOriginalHeaders count:', finalOriginalHeaders.length);
         setFileHeaders((prev) => ({
           ...prev,
           [fileId]: {
-            originalHeaders,
+            originalHeaders: finalOriginalHeaders,
             mappedHeaders,
-            mappings: mappingsResult.data,
-            excludedHeaders,
+            mappings: mappingsLookup,
+            excludedHeaders: finalExcludedHeaders,
+            includedFromExclusions,
+            allHeadersInOrder, // Store for later use when including/excluding
           },
         }));
 
       } catch (error) {
         // Fallback: use original headers as mapped headers
+        const allHeadersInOrder = [...originalHeaders, ...excludedHeaders];
         setFileHeaders((prev) => ({
           ...prev,
           [fileId]: {
@@ -354,21 +447,23 @@ export const useSampleAutomationLogic = () => {
             mappedHeaders: originalHeaders,
             mappings: {},
             excludedHeaders,
+            allHeadersInOrder,
           },
         }));
       }
     },
-    [getHeaderMappings]
+    [getAllHeaderMappings, getProjectVariableInclusions]
   );
 
   // NEW: Function to detect headers from file using RTK Query
   const detectHeadersFromFile = useCallback(
-    async (file: File): Promise<{ headers: string[]; excludedHeaders: string[] }> => {
+    async (file: File): Promise<{ headers: string[]; excludedHeaders: string[]; allHeadersInOrder: string[] }> => {
       try {
         const result = await detectHeaders(file).unwrap();
         return {
           headers: result.headers || [],
           excludedHeaders: result.excludedHeaders || [],
+          allHeadersInOrder: result.allHeadersInOrder || [...(result.headers || []), ...(result.excludedHeaders || [])],
         };
       } catch (error: any) {
         throw new Error(
@@ -389,14 +484,15 @@ export const useSampleAutomationLogic = () => {
       }
 
       try {
-        // Step 1: Detect headers from the file using backend (now returns both headers and excludedHeaders)
-        const { headers: detectedHeaders, excludedHeaders } = await detectHeadersFromFile(fileWrapper.file);
+        // Step 1: Detect headers from the file using backend (now returns both headers, excludedHeaders, and allHeadersInOrder)
+        const { headers: detectedHeaders, excludedHeaders, allHeadersInOrder } = await detectHeadersFromFile(fileWrapper.file);
         console.log(`=== CLIENT: File ${fileWrapper.id} header detection ===`);
         console.log('detectedHeaders:', detectedHeaders);
         console.log('excludedHeaders from detection:', excludedHeaders);
+        console.log('allHeadersInOrder from detection:', allHeadersInOrder?.length);
 
-        // Step 2: Fetch database mappings and apply them (pass excluded headers too)
-        await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders, excludedHeaders);
+        // Step 2: Fetch database mappings and apply them (pass all headers in original order)
+        await fetchAndApplyHeaderMappings(fileWrapper.id, detectedHeaders, excludedHeaders, allHeadersInOrder);
 
         // Step 3: Mark file as processed
         setCheckedFiles((prev) => new Set([...prev, fileWrapper.id]));
@@ -507,11 +603,13 @@ export const useSampleAutomationLogic = () => {
   }, []);
 
   // Project selection handler - auto-populates client from project data
+  // Also re-fetches header mappings to apply project-specific inclusions
   const handleProjectChange = useCallback(
     (selected: ProjectOption | null) => {
       const newValue = selected?.value || '';
       if (newValue !== selectedProjectId) {
         setSelectedProjectId(newValue);
+        selectedProjectIdRef.current = newValue; // SET REF IMMEDIATELY
         setProcessStatus('');
 
         // Auto-populate client from project data if available
@@ -535,9 +633,25 @@ export const useSampleAutomationLogic = () => {
           selectedClientIdRef.current = null;
           setSelectedClientName('');
         }
+
+        // Re-fetch mappings for all files when project changes (to apply project inclusions)
+        Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
+          if (headerData.originalHeaders.length > 0) {
+            // Get the raw excluded headers (before any inclusions were applied)
+            const rawExcluded = [
+              ...(headerData.excludedHeaders || []),
+              ...(headerData.includedFromExclusions || [])
+            ];
+            // Strip out includedFromExclusions from originalHeaders before re-fetching
+            const baseOriginalHeaders = headerData.originalHeaders.filter(
+              h => !(headerData.includedFromExclusions || []).includes(h)
+            );
+            fetchAndApplyHeaderMappings(fileId, baseOriginalHeaders, rawExcluded, headerData.allHeadersInOrder);
+          }
+        });
       }
     },
-    [selectedProjectId, projectList]
+    [selectedProjectId, projectList, fileHeaders, fetchAndApplyHeaderMappings]
   );
 
   // Updated vendor selection handler to refresh mappings
@@ -552,7 +666,7 @@ export const useSampleAutomationLogic = () => {
         // Re-fetch mappings for all files when vendor changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || []);
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || [], headerData.allHeadersInOrder);
           }
         });
       }
@@ -572,7 +686,7 @@ export const useSampleAutomationLogic = () => {
         // Re-fetch mappings for all files when client changes
         Object.entries(fileHeaders).forEach(([fileId, headerData]) => {
           if (headerData.originalHeaders.length > 0) {
-            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || []);
+            fetchAndApplyHeaderMappings(fileId, headerData.originalHeaders, headerData.excludedHeaders || [], headerData.allHeadersInOrder);
           }
         });
       }
@@ -921,7 +1035,8 @@ export const useSampleAutomationLogic = () => {
                 return fetchAndApplyHeaderMappings(
                   fId,
                   headerData.originalHeaders,
-                  headerData.excludedHeaders || []
+                  headerData.excludedHeaders || [],
+                  headerData.allHeadersInOrder
                 );
               }
               return Promise.resolve();
@@ -1164,21 +1279,49 @@ const generateSplitFiles = useCallback(async () => {
 }, [splitConfiguration, processResult]);
 
 // Function to include an excluded header (move from excluded to included)
-const handleIncludeExcludedHeader = useCallback((fileId: string, headerName: string) => {
+// Also persists to database if a project is selected
+const handleIncludeExcludedHeader = useCallback(async (fileId: string, headerName: string) => {
+  console.log(`=== handleIncludeExcludedHeader called ===`);
+  console.log(`fileId: ${fileId}, headerName: ${headerName}`);
+
+  // Update local state immediately
   setFileHeaders((prev) => {
     const fileData = prev[fileId];
-    if (!fileData) return prev;
+    if (!fileData) {
+      console.log('No fileData found for fileId:', fileId);
+      return prev;
+    }
 
     const excludedHeaders = fileData.excludedHeaders || [];
     const includedFromExclusions = fileData.includedFromExclusions || [];
+    const allHeadersInOrder = fileData.allHeadersInOrder || [...fileData.originalHeaders, ...excludedHeaders];
 
-    // Remove from excluded, add to included
+    console.log('Before update - excludedHeaders:', excludedHeaders);
+    console.log('Before update - includedFromExclusions:', includedFromExclusions);
+    console.log('allHeadersInOrder:', allHeadersInOrder);
+
+    // Remove from excluded, add to includedFromExclusions tracking
     const newExcluded = excludedHeaders.filter(h => h !== headerName);
     const newIncluded = [...includedFromExclusions, headerName];
 
-    // Add to original and mapped headers
-    const newOriginalHeaders = [...fileData.originalHeaders, headerName];
-    const newMappedHeaders = [...fileData.mappedHeaders, headerName];
+    // Build new headers list by filtering from allHeadersInOrder to maintain correct order
+    // Include headers that are either:
+    // 1. Already in originalHeaders (not in excluded set)
+    // 2. In the newIncluded list (being added now)
+    const excludedSet = new Set(newExcluded.map(h => h.toUpperCase()));
+    const newOriginalHeaders = allHeadersInOrder.filter(h => !excludedSet.has(h.toUpperCase()));
+
+    // Apply mappings to get mapped headers in the same order
+    const newMappedHeaders = newOriginalHeaders.map(h => {
+      const upper = h.toUpperCase();
+      const mapping = fileData.mappings[upper];
+      return mapping ? mapping.mapped : h;
+    });
+
+    console.log('After update - newExcluded:', newExcluded);
+    console.log('After update - newIncluded:', newIncluded);
+    console.log('After update - newOriginalHeaders:', newOriginalHeaders);
+    console.log('After update - newMappedHeaders:', newMappedHeaders);
 
     return {
       ...prev,
@@ -1188,19 +1331,40 @@ const handleIncludeExcludedHeader = useCallback((fileId: string, headerName: str
         mappedHeaders: newMappedHeaders,
         excludedHeaders: newExcluded,
         includedFromExclusions: newIncluded,
+        allHeadersInOrder, // Preserve
       },
     };
   });
-}, []);
+
+  // Persist to database if a project is selected
+  if (selectedProjectId) {
+    try {
+      await addProjectVariableInclusion({
+        projectId: parseInt(selectedProjectId),
+        originalVariableName: headerName,
+        mappedVariableName: headerName, // Keep same name
+      }).unwrap();
+      toast.success(`"${headerName}" will be included for this project`, 'Variable Saved');
+    } catch (error: any) {
+      // Don't show error if it's a duplicate (already saved)
+      if (!error?.data?.message?.includes('already included')) {
+        console.error('Failed to save project variable inclusion:', error);
+      }
+    }
+  }
+}, [selectedProjectId, addProjectVariableInclusion, toast]);
 
 // Function to exclude an included header (move from included back to excluded)
-const handleExcludeIncludedHeader = useCallback((fileId: string, headerName: string) => {
+// Also removes from database if a project is selected
+const handleExcludeIncludedHeader = useCallback(async (fileId: string, headerName: string, inclusionId?: number) => {
+  // Update local state immediately
   setFileHeaders((prev) => {
     const fileData = prev[fileId];
     if (!fileData) return prev;
 
     const excludedHeaders = fileData.excludedHeaders || [];
     const includedFromExclusions = fileData.includedFromExclusions || [];
+    const allHeadersInOrder = fileData.allHeadersInOrder || [...fileData.originalHeaders, ...excludedHeaders];
 
     // Only allow excluding headers that were previously included from exclusions
     if (!includedFromExclusions.includes(headerName)) return prev;
@@ -1209,10 +1373,16 @@ const handleExcludeIncludedHeader = useCallback((fileId: string, headerName: str
     const newIncluded = includedFromExclusions.filter(h => h !== headerName);
     const newExcluded = [...excludedHeaders, headerName];
 
-    // Remove from original and mapped headers
-    const headerIndex = fileData.originalHeaders.indexOf(headerName);
-    const newOriginalHeaders = fileData.originalHeaders.filter((_, i) => i !== headerIndex);
-    const newMappedHeaders = fileData.mappedHeaders.filter((_, i) => i !== headerIndex);
+    // Build new headers list by filtering from allHeadersInOrder to maintain correct order
+    const excludedSet = new Set(newExcluded.map(h => h.toUpperCase()));
+    const newOriginalHeaders = allHeadersInOrder.filter(h => !excludedSet.has(h.toUpperCase()));
+
+    // Apply mappings to get mapped headers in the same order
+    const newMappedHeaders = newOriginalHeaders.map(h => {
+      const upper = h.toUpperCase();
+      const mapping = fileData.mappings[upper];
+      return mapping ? mapping.mapped : h;
+    });
 
     return {
       ...prev,
@@ -1222,10 +1392,21 @@ const handleExcludeIncludedHeader = useCallback((fileId: string, headerName: str
         mappedHeaders: newMappedHeaders,
         excludedHeaders: newExcluded,
         includedFromExclusions: newIncluded,
+        allHeadersInOrder, // Preserve
       },
     };
   });
-}, []);
+
+  // Remove from database if inclusionId is provided
+  if (inclusionId) {
+    try {
+      await deleteProjectVariableInclusion(inclusionId).unwrap();
+      toast.info(`"${headerName}" removed from project inclusions`, 'Variable Removed');
+    } catch (error: any) {
+      console.error('Failed to delete project variable inclusion:', error);
+    }
+  }
+}, [deleteProjectVariableInclusion, toast]);
 
   return {
     // State

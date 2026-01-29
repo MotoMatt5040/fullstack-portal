@@ -15,9 +15,6 @@ import {
 } from '@mdi/js';
 import {
   useRemoveComputedVariableMutation,
-  useGetMasterExtractionDefaultsQuery,
-  useGetClientExtractionDefaultsQuery,
-  useGetVendorClientExtractionDefaultsQuery,
   type ComputedVariableDefinition,
 } from '../../features/sampleAutomationApiSlice';
 import { useToast } from '../../context/ToastContext';
@@ -83,18 +80,7 @@ const SampleSplitComponent = ({
   // API mutations
   const [removeComputedVariable] = useRemoveComputedVariableMutation();
 
-  // Fetch extraction defaults for pre-selecting headers (skip for Tarrance - they always need all variables)
-  // Master defaults are always fetched (they apply to all files)
-  const { data: masterDefaults } = useGetMasterExtractionDefaultsQuery(undefined, {
-    skip: isTarranceClient,
-  });
-  const { data: clientDefaults } = useGetClientExtractionDefaultsQuery(clientId!, {
-    skip: !clientId || isTarranceClient,
-  });
-  const { data: vendorClientDefaults } = useGetVendorClientExtractionDefaultsQuery(
-    { vendorId: vendorId!, clientId: clientId! },
-    { skip: !vendorId || !clientId || isTarranceClient }
-  );
+  // Extraction defaults queries removed - we now extract all columns by default
 
   // Initialize available age ranges
   useEffect(() => {
@@ -113,53 +99,15 @@ const SampleSplitComponent = ({
     }
   }, [isTarranceClient]);
 
-  // Initialize selected headers based on extraction defaults (if available)
+  // Auto-select ALL headers for extraction (no column selection needed)
   useEffect(() => {
     if (headers && headers.length > 0) {
       const headerNames = headers.map(h => h.name || h);
-
-      // Get default variable names from extraction defaults
-      // Priority: vendorClient defaults > client defaults > master defaults > all headers
-      // Master defaults are always included as the base, then layer on client/vendor-client
-      const defaultVars: string[] = [];
-
-      // Start with master defaults (always apply)
-      if (masterDefaults?.defaults?.length) {
-        masterDefaults.defaults.forEach(d => defaultVars.push(d.variableName));
-      }
-
-      // Add client or vendor+client specific defaults
-      if (vendorId && vendorClientDefaults?.defaults?.length) {
-        // Add vendor+client defaults (on top of master)
-        vendorClientDefaults.defaults.forEach(d => {
-          if (!defaultVars.some(v => v.toLowerCase() === d.variableName.toLowerCase())) {
-            defaultVars.push(d.variableName);
-          }
-        });
-      } else if (clientDefaults?.defaults?.length) {
-        // Add client defaults (on top of master)
-        clientDefaults.defaults.forEach(d => {
-          if (!defaultVars.some(v => v.toLowerCase() === d.variableName.toLowerCase())) {
-            defaultVars.push(d.variableName);
-          }
-        });
-      }
-
-      if (defaultVars.length > 0) {
-        // Filter to only headers that exist in the file (case-insensitive match)
-        const matchingHeaders = headerNames.filter(h =>
-          defaultVars.some(dv => dv.toLowerCase() === h.toLowerCase())
-        );
-        // Track which headers came from defaults (for green highlighting)
-        setDefaultHeaders(new Set(matchingHeaders.map(h => h.toLowerCase())));
-        setSelectedHeaders(matchingHeaders.length > 0 ? matchingHeaders : headerNames);
-      } else {
-        // No defaults configured - select all headers
-        setDefaultHeaders(new Set());
-        setSelectedHeaders(headerNames);
-      }
+      // Select all headers by default - entire table is extracted
+      setDefaultHeaders(new Set());
+      setSelectedHeaders(headerNames);
     }
-  }, [headers, masterDefaults, clientDefaults, vendorClientDefaults, vendorId]);
+  }, [headers]);
 
   // Update available variables for computed variables modal
   useEffect(() => {
@@ -254,24 +202,6 @@ const SampleSplitComponent = ({
     };
     onConfigChange(config);
   }, [selectedHeaders, splitMode, selectedAgeRange, householdingEnabled, onConfigChange]); // Add householdingEnabled to dependencies
-
-  const handleHeaderToggle = (headerName) => {
-    setSelectedHeaders(prev => {
-      if (prev.includes(headerName)) {
-        return prev.filter(h => h !== headerName);
-      } else {
-        return [...prev, headerName];
-      }
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (selectedHeaders.length === headers.length) {
-      setSelectedHeaders([]);
-    } else {
-      setSelectedHeaders(headers.map(h => h.name || h));
-    }
-  };
 
   const renderSplitLogic = () => {
     if (splitMode !== 'split') return null;
@@ -534,44 +464,15 @@ const SampleSplitComponent = ({
             </div>
           )}
 
-          {/* Variable Selection */}
+          {/* Variable Info - All columns extracted by default */}
           <div className="header-selection-section" data-tour="variable-selection-section">
             <div className="section-header">
-              <label className="section-label">Select Variables to Include:</label>
-              <button
-                className="select-all-btn"
-                onClick={handleSelectAll}
-              >
-                {selectedHeaders.length === headers.length ? 'Deselect All' : 'Select All'}
-              </button>
+              <label className="section-label">Variables to Extract:</label>
+              <span className="all-selected-badge">All {headers.length} columns</span>
             </div>
-            
-            <div className="headers-grid">
-              {headers.map((header, index) => {
-                const headerName = header.name || header;
-                const isSelected = selectedHeaders.includes(headerName);
-                const isDefault = defaultHeaders.has(headerName.toLowerCase());
-
-                return (
-                  <div
-                    key={index}
-                    className={`header-checkbox-item ${isSelected ? 'selected' : ''} ${isDefault ? 'is-default' : ''}`}
-                    onClick={() => handleHeaderToggle(headerName)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {}} // Handled by parent div onClick
-                      onClick={(e) => e.stopPropagation()} // Prevent double-toggle
-                      className="header-checkbox"
-                    />
-                    <span className="header-label">
-                      {headerName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <p className="extraction-info">
+              All columns from the table will be included in the extracted file(s).
+            </p>
           </div>
 
           {/* Split Logic Preview */}

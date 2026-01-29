@@ -1099,6 +1099,7 @@ const detectHeaders = handleAsync(async (req, res) => {
     success: true,
     headers: filteredHeaders,
     excludedHeaders,
+    allHeadersInOrder: headerNames, // All headers in original file order
     totalDetected: headerNames.length,
     excludedCount: excludedHeaders.length,
     message: `Detected ${filteredHeaders.length} headers${excludedHeaders.length > 0 ? ` (${excludedHeaders.length} excluded)` : ''}`,
