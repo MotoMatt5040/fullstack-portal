@@ -7,6 +7,7 @@ on:
       - testing
     paths:
       - 'client/**'
+      - '.github/workflows/deploy-client.yml'
   workflow_dispatch:
 
 jobs:
@@ -31,9 +32,8 @@ jobs:
             echo "📥 Pulling latest code..."
             git pull origin testing
 
-            echo "🔨 Rebuilding client (no cache)..."
-            docker compose --env-file .env.testing -f docker-compose.testing.yml build --no-cache client
-            docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --no-deps client
+            echo "🔨 Rebuilding client..."
+            docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --build --no-deps client
 
             echo "⏳ Waiting for client to start..."
             sleep 15
@@ -64,9 +64,8 @@ jobs:
             echo "📥 Pulling latest code..."
             git pull origin main
 
-            echo "🔨 Rebuilding client (no cache)..."
-            docker compose --env-file .env.production build --no-cache client
-            docker compose --env-file .env.production up -d --no-deps client
+            echo "🔨 Rebuilding client..."
+            docker compose --env-file .env.production up -d --build --no-deps client
 
             echo "⏳ Waiting for client to start..."
             sleep 15

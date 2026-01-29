@@ -6,7 +6,7 @@ const { sequelize, tblRoles } = require('../models');
 
 const { handleLogin, handleLogout } = require('../controllers/authController');
 const { handleRefreshToken } = require('../controllers/refreshTokenController');
-const { handlePasswordResetRequest, handleResetPassword } = require('../controllers/resetPasswordController');
+const { handlePasswordResetRequest, handleVerifyResetToken, handleResetPassword } = require('../controllers/resetPasswordController');
 
 // Health check (accessible via /api/auth/health through Caddy)
 router.get('/auth/health', async (req, res) => {
@@ -36,6 +36,7 @@ router.get('/refresh', handleRefreshToken);
 
 // Password reset routes
 router.post('/reset/forgot-password', handlePasswordResetRequest);
+router.get('/reset/verify-reset-token', handleVerifyResetToken);
 router.post('/reset/reset-password', handleResetPassword);
 
 // Roles endpoint - returns role mapping for other services
