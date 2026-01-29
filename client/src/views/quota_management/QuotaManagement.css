@@ -775,14 +775,14 @@
   background: #dc2626;
 }
 
-/* Over Quota - Purple (exceeded, 110%+) */
+/* Over Quota - Yellow (exceeded, 110%+) */
 .status-over {
-  color: #8b5cf6;
+  color: #eab308;
 }
 
 .status-over .quota-progress-bar-fill,
 .status-over .cell-progress-fill {
-  background: #8b5cf6;
+  background: #eab308;
 }
 
 /* Summary card status backgrounds */
@@ -797,8 +797,8 @@
 }
 
 .quota-summary-card.status-over {
-  border-color: rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(234, 179, 8, 0.3);
+  background: rgba(234, 179, 8, 0.05);
 }
 
 /* Row alert indicators */
@@ -811,7 +811,7 @@
 }
 
 .quota-management-table tbody tr.row-status-over td:first-child {
-  box-shadow: inset 3px 0 0 #8b5cf6;
+  box-shadow: inset 3px 0 0 #eab308;
 }
 
 /* =================================================================

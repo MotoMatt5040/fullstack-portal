@@ -140,6 +140,7 @@ services:
       - "5006"
     environment:
       - PORT=5006
+      - NODE_OPTIONS=--max-old-space-size=8192
     networks:
       - promark-portal
     command: sh -c "npm install --include=dev && npm run dev"
