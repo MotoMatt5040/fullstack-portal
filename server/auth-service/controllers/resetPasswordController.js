@@ -28,8 +28,8 @@ const handlePasswordResetRequest = async (req, res) => {
         }
 
         const token = crypto.randomBytes(20).toString('hex');
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
-        const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}?email=${encodeURIComponent(email)}`;
+        const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
         // Save the token and expiration time in the database
         await saveResetToken(email, token, expires);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import {
   useVerifyResetTokenQuery,
   useResetPasswordMutation,
@@ -8,10 +8,20 @@ import './ResetPassword.css';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
+  const { token: pathToken } = useParams();
   const navigate = useNavigate();
 
-  const token = searchParams.get('token');
+  // Support both path param (/reset-password/:token) and query param (?token=xxx)
+  const token = pathToken || searchParams.get('token');
   const emailParam = searchParams.get('email');
+
+  console.log('=== ResetPassword Component ===');
+  console.log('pathToken from useParams:', pathToken);
+  console.log('token from searchParams:', searchParams.get('token'));
+  console.log('Final token:', token);
+  console.log('emailParam:', emailParam);
+  console.log('Current URL:', window.location.href);
+  console.log('pathname:', window.location.pathname);
 
   const {
     data: verifyData,
@@ -21,6 +31,8 @@ const ResetPassword = () => {
     { token, email: emailParam },
     { skip: !token || !emailParam }
   );
+
+  console.log('Query state:', { verifyData, isVerifying, verifyError, skip: !token || !emailParam });
 
   const [resetPassword, { isLoading: isResetting }] = useResetPasswordMutation();
 
