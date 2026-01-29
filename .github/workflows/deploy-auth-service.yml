@@ -3,11 +3,16 @@ name: Deploy Auth Service
 on:
   push:
     branches:
-      - main
       - testing
     paths:
       - 'server/auth-service/**'
       - '.github/workflows/deploy-auth-service.yml'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'server/auth-service/**'
   workflow_dispatch:
 
 jobs:
@@ -68,7 +73,7 @@ jobs:
 
   deploy-production:
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: production
 

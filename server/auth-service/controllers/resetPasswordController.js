@@ -89,9 +89,13 @@ const handleVerifyResetToken = async (req, res) => {
 };
 
 const handleResetPassword = async (req, res) => {
-    const { token, newPwd } = req.body;
-    if (!token || !newPwd) {
-        return res.status(400).json({ 'message': 'Please include a token and new password' });
+    const { token, newPassword, newPwd } = req.body;
+    const password = newPassword || newPwd;
+    if (!token) {
+        return res.status(400).json({ 'message': 'Invalid reset link' });
+    }
+    if (!password) {
+        return res.status(400).json({ 'message': 'Please enter a new password' });
     }
 
     try {
@@ -100,7 +104,7 @@ const handleResetPassword = async (req, res) => {
             return res.status(400).json({ 'message': 'Token is invalid or has expired' });
         }
 
-        const hashedPwd = await bcrypt.hash(newPwd, 10);
+        const hashedPwd = await bcrypt.hash(password, 10);
 
         // Update user password and clear the reset token and expiration time
         await updateUserPassword(existingUser.Email, hashedPwd);
