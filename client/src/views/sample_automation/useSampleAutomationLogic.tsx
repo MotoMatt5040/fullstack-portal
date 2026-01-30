@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   useProcessFileMutation,
   useGetClientsAndVendorsQuery,
-  useLazyGetAllHeaderMappingsQuery,
+  useLazyGetHeaderMappingsQuery,
   useSaveHeaderMappingsMutation,
   useDetectHeadersMutation,
   useLazyGetTablePreviewQuery,
@@ -173,15 +173,15 @@ export const useSampleAutomationLogic = () => {
     error: clientsAndVendorsError,
   } = useGetClientsAndVendorsQuery();
 
-  // Get all header mappings for vendor/client (small payload, no URL length issues)
+  // Get header mappings for vendor/client with proper hierarchy
   const [
-    getAllHeaderMappings,
+    getHeaderMappings,
     {
       data: headerMappingsData,
       isLoading: isLoadingHeaderMappings,
       error: headerMappingsError,
     },
-  ] = useLazyGetAllHeaderMappingsQuery();
+  ] = useLazyGetHeaderMappingsQuery();
 
   // Add save header mappings mutation
   const [
@@ -340,44 +340,13 @@ export const useSampleAutomationLogic = () => {
         // This preserves the exact original file order for correct column positioning
         const allHeadersInOrder = allHeadersInOrderParam || [...originalHeaders, ...excludedHeaders];
 
-        // Fetch ALL mappings for this vendor/client combo (small payload, no URL length issues)
-        // Then apply them client-side to the detected headers
-        const mappingsResult = await getAllHeaderMappings({
-          vendorId: currentVendorId ?? undefined,
-          clientId: currentClientId ?? undefined,
+        // Get header mappings from database - server applies proper hierarchy
+        // (global -> vendor only -> client only -> vendor+client)
+        const mappingsResult = await getHeaderMappings({
+          vendorId: currentVendorId,
+          clientId: currentClientId,
+          originalHeaders,
         }).unwrap();
-
-        // Build a lookup map from original header (uppercase) -> mapping info
-        // Apply priority: most specific mapping wins (vendor+client > client only > vendor only > global)
-        const mappingsLookup: Record<string, HeaderMapping> = {};
-
-        if (mappingsResult.success && mappingsResult.data) {
-          // Sort by specificity: vendor+client (3), client only (2), vendor only (1), global (0)
-          const sortedMappings = [...mappingsResult.data].sort((a, b) => {
-            const getSpecificity = (m: typeof a) => {
-              if (m.vendorId && m.clientId) return 3;
-              if (m.clientId) return 2;
-              if (m.vendorId) return 1;
-              return 0;
-            };
-            return getSpecificity(b) - getSpecificity(a);
-          });
-
-          // Apply mappings - more specific ones added first, less specific only if not already present
-          for (const mapping of sortedMappings) {
-            const upperOriginal = mapping.originalHeader.toUpperCase();
-            if (!mappingsLookup[upperOriginal]) {
-              mappingsLookup[upperOriginal] = {
-                original: mapping.originalHeader,
-                mapped: mapping.mappedHeader,
-                vendorName: mapping.vendorName,
-                clientName: mapping.clientName,
-                vendorId: mapping.vendorId ?? undefined,
-                clientId: mapping.clientId ?? undefined,
-              };
-            }
-          }
-        }
 
         // Load project variable inclusions if a project is selected
         let projectInclusions: string[] = [];
@@ -415,7 +384,7 @@ export const useSampleAutomationLogic = () => {
         // Apply mappings to create mapped headers array (in same order)
         const mappedHeaders = finalOriginalHeaders.map((originalHeader) => {
           const upperOriginal = originalHeader.toUpperCase();
-          const mapping = mappingsLookup[upperOriginal];
+          const mapping = mappingsResult.data[upperOriginal];
           return mapping ? mapping.mapped : originalHeader;
         });
 
@@ -430,7 +399,7 @@ export const useSampleAutomationLogic = () => {
           [fileId]: {
             originalHeaders: finalOriginalHeaders,
             mappedHeaders,
-            mappings: mappingsLookup,
+            mappings: mappingsResult.data,
             excludedHeaders: finalExcludedHeaders,
             includedFromExclusions,
             allHeadersInOrder, // Store for later use when including/excluding
@@ -452,7 +421,7 @@ export const useSampleAutomationLogic = () => {
         }));
       }
     },
-    [getAllHeaderMappings, getProjectVariableInclusions]
+    [getHeaderMappings, getProjectVariableInclusions]
   );
 
   // NEW: Function to detect headers from file using RTK Query
