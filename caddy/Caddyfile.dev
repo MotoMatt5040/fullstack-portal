@@ -71,6 +71,9 @@ localhost {
     }
 
     handle /api/sample-automation/* {
+        request_body {
+            max_size 2GB
+        }
         forward_auth auth-gateway:5005 {
             uri /verify
             copy_headers X-User-Authenticated X-User-Name X-User-Roles
@@ -78,6 +81,9 @@ localhost {
         reverse_proxy sample-automation:5006
     }
     handle /api/sample-automation {
+        request_body {
+            max_size 2GB
+        }
         forward_auth auth-gateway:5005 {
             uri /verify
             copy_headers X-User-Authenticated X-User-Name X-User-Roles

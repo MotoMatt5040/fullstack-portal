@@ -229,7 +229,7 @@
 }
 
 .metric-value {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-color);
   margin: 0;
@@ -299,7 +299,7 @@
   padding: 0.375rem 0.625rem;
   background: var(--background-color-muted);
   border-radius: 0.25rem;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
 .status-label,
@@ -349,12 +349,12 @@
 .activity-project {
   font-weight: 600;
   color: var(--accent-color);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
 .activity-phone {
   font-family: 'SF Mono', 'Consolas', monospace;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--text-color);
 }
 
@@ -425,11 +425,11 @@
 }
 
 .callid-management .data-table th {
-  padding: 0.625rem 1rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
   font-weight: 500;
   color: var(--text-color);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   opacity: 0.5;
@@ -449,11 +449,12 @@
 }
 
 .callid-management .data-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   color: var(--text-color);
   border: none;
   border-bottom: 1px solid var(--border-color-soft);
   white-space: nowrap;
+  font-size: 0.8125rem;
 }
 
 .callid-management .data-table tbody tr:last-child td {

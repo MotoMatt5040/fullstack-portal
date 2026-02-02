@@ -103,6 +103,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: calc(100% - 8px);
+  color: var(--text-color);
+}
+
+.quota-select .my-select__placeholder {
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.quota-select .my-select__input-container {
+  color: var(--text-color);
+}
+
+.quota-select .my-select__indicators {
+  color: var(--text-color);
+}
+
+.quota-select .my-select__indicator {
+  color: var(--text-color);
+  opacity: 0.6;
+}
+
+.quota-select .my-select__indicator:hover {
+  color: var(--text-color);
+  opacity: 1;
 }
 
 /* Truncate options in dropdown with ellipsis */

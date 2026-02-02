@@ -1,4 +1,6 @@
 const fs = require('fs').promises;
+const fsSync = require('fs');
+const os = require('os');
 const path = require('path');
 const multer = require('multer');
 const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
@@ -6,10 +8,23 @@ const SampleAutomation = require('../services/SampleAutomationServices');
 const CallIDApiClient = require('../services/CallIDApiClient');
 const handleAsync = require('./asyncController');
 
+// Use disk storage for large files to avoid memory issues
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(os.tmpdir(), 'sample-automation-uploads');
+    fsSync.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  },
+});
+
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: diskStorage,
   limits: {
-    fileSize: 200 * 1024 * 1024, // 200MB limit per file
+    fileSize: 2 * 1024 * 1024 * 1024, // 2GB limit per file
     files: 10,
   },
 });
@@ -120,12 +135,23 @@ const processSingleFile = async (file, fileIndex, customHeaders, excludedColumns
   const fileExtension = validateFileExtension(originalFilename);
   const fileName = path.basename(originalFilename, fileExtension);
 
-  const processor = FileProcessorFactory.createFromBuffer(
-    file.buffer,
-    fileName,
-    fileExtension
-  );
+  // Use file path for disk storage, or buffer for memory storage
+  let processor;
+  if (file.path) {
+    processor = FileProcessorFactory.create(file.path, fileName, fileExtension);
+  } else {
+    processor = FileProcessorFactory.createFromBuffer(
+      file.buffer,
+      fileName,
+      fileExtension
+    );
+  }
   const processResult = await processor.process();
+
+  // Clean up uploaded file after processing
+  if (file.path) {
+    await fs.unlink(file.path).catch(() => {});
+  }
 
   processResult.headers = processResult.headers.map(header => ({
     ...header,
@@ -1058,18 +1084,33 @@ const detectHeaders = handleAsync(async (req, res) => {
   const fileName = path.basename(file.originalname, fileExtension);
 
   if (!FileProcessorFactory.isSupported(fileExtension)) {
+    // Clean up uploaded file
+    if (file.path) {
+      await fs.unlink(file.path).catch(() => {});
+    }
     return res.status(400).json({
       success: false,
       message: `Unsupported file type: ${fileExtension}`,
     });
   }
 
-  const processor = FileProcessorFactory.createFromBuffer(
-    file.buffer,
-    fileName,
-    fileExtension
-  );
+  // Use file path for disk storage, or buffer for memory storage
+  let processor;
+  if (file.path) {
+    processor = FileProcessorFactory.create(file.path, fileName, fileExtension);
+  } else {
+    processor = FileProcessorFactory.createFromBuffer(
+      file.buffer,
+      fileName,
+      fileExtension
+    );
+  }
   const result = await processor.process();
+
+  // Clean up uploaded file after processing
+  if (file.path) {
+    await fs.unlink(file.path).catch(() => {});
+  }
 
   const headerNames = result.headers.map((h) => sanitizeHeaderName(h.name));
 
