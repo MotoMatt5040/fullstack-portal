@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dsznajder.es7-react-js-snippets",
+    "burkeholland.simple-react-snippets",
+    "ms-mssql.mssql",
+    "docker.docker",
+    "ms-azuretools.vscode-containers",
+    "github.vscode-github-actions",
+    "github.vscode-pull-request-github",
+    "ms-vscode-remote.remote-containers",
+    "ms-vscode-remote.remote-ssh",
+    "matthewpi.caddyfile-support",
+    "zamerick.vscode-caddyfile-syntax",
+    "pkief.material-icon-theme"
+  ]
+}
