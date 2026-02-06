@@ -3,8 +3,7 @@ name: Deploy Auth Gateway
 on:
   push:
     branches:
-      - main
-      - testing
+      - '**'
     paths:
       - 'server/auth-gateway/**'
   workflow_dispatch:
@@ -34,7 +33,7 @@ jobs:
 
   deploy-testing:
     needs: test
-    if: github.ref == 'refs/heads/testing'
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: testing
 
@@ -52,7 +51,7 @@ jobs:
             cd $DEPLOY_PATH
 
             echo "📥 Pulling latest code..."
-            git pull origin testing
+            git pull origin ${{ github.ref_name }}
 
             echo "🔨 Rebuilding auth-gateway..."
             docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --build --no-deps auth-gateway

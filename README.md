@@ -46,21 +46,21 @@
                                                   │ adds user headers
                                                   ▼
           ┌──────────────────────────────────────────────────────────────┐
-          │                    Microservices                            │
-          │                                                            │
-          │  notifications (5002)    projects (5003)    callid (5004)  │
-          │  sample-automation (5006)  user-mgmt (5007)  quota (5008) │
-          │  reporting (5009)     project-info (5010)  publishing (5011)│
-          │  disposition (5012)   ai-prompting (5013)  github (5014)  │
-          │  promark-employees (5015)                                  │
-          │                                                            │
-          │  Legacy monolith API (5000) ← remaining non-migrated routes│
-          └──────────────┬──────────────────────┬──────────────────────┘
+          │                    Microservices                             │
+          │                                                              │
+          │  notifications (5002)    projects (5003)    callid (5004)    │
+          │  sample-automation (5006)  user-mgmt (5007)  quota (5008)    │
+          │  reporting (5009)     project-info (5010)  publishing (5011) │
+          │  disposition (5012)   ai-prompting (5013)  github (5014)     │
+          │  promark-employees (5015)                                    │
+          │                                                              │
+          │  Legacy monolith API (5000) ← remaining non-migrated routes  │
+          └──────────────┬──────────────────────┬────────────────────────┘
                          │                      │
-                  ┌──────▼──────┐       ┌───────▼───────┐
-                  │  MongoDB    │       │ MS SQL Server │
+                  ┌──────▼──────┐       ┌───────▼────────┐
+                  │  MongoDB    │       │ MS SQL Server  │
                   │ (auth/users)│       │ (Promark/Voxco)│
-                  └─────────────┘       └───────────────┘
+                  └─────────────┘       └────────────────┘
 ```
 
 The application is a **hybrid microservices architecture** — an Express.js monolith that is being incrementally decomposed into standalone microservices. All services run in Docker containers behind a Caddy reverse proxy that handles TLS termination, rate limiting, and JWT-based forward authentication.

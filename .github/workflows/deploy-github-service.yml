@@ -3,15 +3,14 @@ name: Deploy GitHub Service
 on:
   push:
     branches:
-      - main
-      - testing
+      - '**'
     paths:
       - 'server/github-service/**'
   workflow_dispatch:
 
 jobs:
   deploy-testing:
-    if: github.ref == 'refs/heads/testing'
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: testing
 
@@ -29,7 +28,7 @@ jobs:
             cd $DEPLOY_PATH
 
             echo "📥 Pulling latest code..."
-            git pull origin testing
+            git pull origin ${{ github.ref_name }}
 
             echo "🔨 Rebuilding github service..."
             docker compose --env-file .env.testing -f docker-compose.testing.yml up -d --build --no-deps github

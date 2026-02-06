@@ -97,7 +97,7 @@ jobs:
             mkdir -p $DEPLOY_PATH
             cd $DEPLOY_PATH
             git clone https://github.com/${{ vars.REPO_OWNER }}/${{ vars.REPO_NAME }}.git .
-            git checkout testing
+            git checkout ${{ github.ref_name }}
 
             echo "📋 Creating environment file..."
             # Create .env.testing file
