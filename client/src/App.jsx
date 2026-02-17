@@ -64,6 +64,13 @@ const QuotaSetupGuidePage = lazy(
 const HeaderMappings = lazy(
   () => import('./views/header_mappings/HeaderMappings'),
 );
+const DataProcessing = lazy(
+  () => import('./views/data_processing/DataProcessing'),
+);
+const ExtractionTaskAutomation = lazy(
+  () =>
+    import('./views/data_processing/views/extraction_task_automation/ExtractionTaskAutomation'),
+);
 
 // Loading fallback for lazy-loaded components
 const PageLoader = () => <div className='page-loader'>Loading...</div>;
@@ -182,6 +189,25 @@ function App() {
             }
           >
             <Route path='ai-prompting' element={<AIPrompting />} />
+          </Route>
+
+          <Route
+            element={
+              <RequireAuth
+                allowedRoles={[
+                  roles.Admin,
+                  roles.Executive,
+                  roles.Programmer,
+                  roles.DataProcessor,
+                ]}
+              />
+            }
+          >
+            <Route path='data-processing' element={<DataProcessing />} />
+            <Route
+              path='data-processing/create-extraction-task'
+              element={<ExtractionTaskAutomation />}
+            />
           </Route>
 
           <Route
