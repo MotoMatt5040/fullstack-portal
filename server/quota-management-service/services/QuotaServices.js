@@ -1,6 +1,6 @@
 const axios = require('../api/axios');
 const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
-const { VOXCO: voxco, PROMARK: promark } = DATABASE_TYPES;
+const { VOXCO: voxco, CALIGULAD: caligulad } = DATABASE_TYPES;
 
 /**
  * Get list of projects for quota management
@@ -11,7 +11,7 @@ const { VOXCO: voxco, PROMARK: promark } = DATABASE_TYPES;
  */
 const getQuotaProjects = async (userId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       let query = `
         SELECT DISTINCT

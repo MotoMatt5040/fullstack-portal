@@ -1,12 +1,12 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tblUserProfiles', {
+  return sequelize.define('UserProfiles', {
     UUID: {
       type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
       references: {
-        model: 'tblAuthentication',
+        model: 'Authentication',
         key: 'Uuid'
       }
     },
@@ -20,8 +20,8 @@ module.exports = function(sequelize, DataTypes) {
     }
   }, {
     sequelize,
-    tableName: 'tblUserProfiles',
-    schema: 'dbo',
+    tableName: 'UserProfiles',
+    schema: 'FAJITA.dbo',
     timestamps: false,
     indexes: [
       {

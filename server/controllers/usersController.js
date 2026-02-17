@@ -289,7 +289,7 @@ const handleCreateUser = handleAsync(async (req, res) => {
   // Set audit data
   req.auditData = {
     userid: userId,
-    tableModified: 'tblAuthentication',
+    tableModified: 'Authentication',
     columnModified: 'all',
     modifiedFrom: null,
     modifiedTo: 'creation',

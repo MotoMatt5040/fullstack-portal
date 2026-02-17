@@ -159,7 +159,7 @@ jobs:
             PROMARK_DB_USER=${{ secrets.PROMARK_DB_USER }}
             PROMARK_DB_PASSWORD=${{ secrets.PROMARK_DB_PASSWORD }}
             PROMARK_DB_SERVER=${{ secrets.PROMARK_DB_SERVER }}
-            PROMARK_DB_NAME=${{ secrets.PROMARK_DB_NAME }}
+
 
             # Voxco Database
             VOXCO_DB_USER=${{ secrets.VOXCO_DB_USER }}

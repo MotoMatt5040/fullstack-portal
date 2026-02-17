@@ -27,7 +27,7 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'tblAuthentication',
+          model: 'Authentication',
           key: 'Uuid',
         },
       },

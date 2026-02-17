@@ -1,11 +1,11 @@
 const axios = require('../api/axios');
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { promark } = require('../utils/databaseTypes');
+const { caligulad } = require('../utils/databaseTypes');
 const {
   tblUserProjects,
-  tblAuthentication,
-  tblUserProfiles,
+  Authentication,
+  UserProfiles,
   tblClients,
 } = require('../models');
 
@@ -46,13 +46,13 @@ const getPublishedProjects = async () => {
       // Nest the includes to create the chain of INNER JOINs
       include: [
         {
-          model: tblAuthentication,
+          model: Authentication,
           as: 'UU', // Alias from init-models.js
           required: true, // INNER JOIN
           attributes: [], 
           include: [
             {
-              model: tblUserProfiles,
+              model: UserProfiles,
               as: 'tblUserProfile', // Alias from init-models.js
               required: true, // INNER JOIN
               attributes: [],

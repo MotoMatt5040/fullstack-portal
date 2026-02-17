@@ -13,7 +13,7 @@ const initializeRoles = async () => {
         const rolesFromDb = await roleService.getAllRoles();
 
         if (!rolesFromDb || rolesFromDb.length === 0) {
-            throw new Error("No roles were found in the database. Check the tblRoles table.");
+            throw new Error("No roles were found in the database. Check the Roles table in FAJITA.");
         }
 
         // Transform the array from the DB into the required { RoleName: RoleID } object

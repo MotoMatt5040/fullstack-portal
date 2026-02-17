@@ -1,6 +1,6 @@
-// Auth Service - tblRoles model
+// Auth Service - Roles model (FAJITA database)
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tblRoles', {
+  return sequelize.define('Roles', {
     RoleID: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -11,7 +11,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false
     }
   }, {
-    tableName: 'tblRoles',
+    tableName: 'Roles',
     schema: 'dbo',
     timestamps: false
   });

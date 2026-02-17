@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { promark } = require('../utils/databaseTypes');
+const { caligulad } = require('../utils/databaseTypes');
 
 /**
  * CallID Service
@@ -57,7 +57,7 @@ const getDashboardMetrics = async () => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       
@@ -176,7 +176,7 @@ const getCurrentActiveAssignments = async () => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
@@ -227,7 +227,7 @@ const getRecentActivity = async () => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
@@ -324,7 +324,7 @@ const getAllCallIDs = async (filters = {}) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
 
@@ -394,7 +394,7 @@ const getCallIDById = async (phoneNumberId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -422,7 +422,7 @@ const createCallID = async (callIdData) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumber', sql.NVarChar(10), phoneNumber)
@@ -466,7 +466,7 @@ const updateCallID = async (phoneNumberId, updates) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId);
@@ -519,7 +519,7 @@ const deleteCallID = async (phoneNumberId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -566,7 +566,7 @@ const getCallIDUsageHistory = async (phoneNumberId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -624,7 +624,7 @@ const getProjectCallIDs = async (projectId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -657,7 +657,7 @@ const assignCallIDToProject = async (assignmentData) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -692,7 +692,7 @@ const assignCallIDToProject = async (assignmentData) => {
 //   `;
 
 //   return withDbConnection({
-//     database: promark,
+//     database: caligulad,
 //     queryFn: async (pool) => {
 //       const result = await pool.request()
 //         .input('projectId', sql.NVarChar(20), projectId)
@@ -744,7 +744,7 @@ const endAssignment = async (projectId, phoneNumberId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -804,7 +804,7 @@ const reassignCallID = async (data) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -861,7 +861,7 @@ const getUtilizationMetrics = async () => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       
@@ -927,7 +927,7 @@ const getMostUsedCallIDs = async (limit = 10) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('limit', sql.Int, limit)
@@ -986,7 +986,7 @@ const getIdleCallIDs = async (days = 30) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('days', sql.Int, days)
@@ -1045,7 +1045,7 @@ const getStateCoverage = async () => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
@@ -1103,7 +1103,7 @@ const getUsageTimeline = async (months = 6) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('months', sql.Int, months)
@@ -1125,7 +1125,7 @@ const getAllStatusCodes = async () => {
   const query = `SELECT StatusCode, StatusDescription FROM FAJITA.dbo.CallIDStatus ORDER BY StatusCode`;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
@@ -1143,7 +1143,7 @@ const getAllStates = async () => {
   const query = `SELECT StateFIPS, StateAbbr, StateName FROM FAJITA.dbo.States ORDER BY StateName`;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
@@ -1178,7 +1178,7 @@ const getAvailableCallIDsForState = async (stateFIPS, startDate, endDate) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('stateFIPS', sql.Char(2), stateFIPS)
@@ -1221,7 +1221,7 @@ const getAllProjectsWithAssignments = async () => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(query);
       return result.recordset;
@@ -1271,7 +1271,7 @@ const checkAssignmentConflict = async (phoneNumberId, projectId, excludeProjectI
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request()
         .input('phoneNumberId', sql.Int, phoneNumberId)
@@ -1315,7 +1315,7 @@ const updateAssignment = async (projectId, phoneNumberId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -1377,7 +1377,7 @@ const swapCallIDAssignment = async (fromProjectId, toProjectId, phoneNumberId, s
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       await pool.request()
         .input('fromProjectId', sql.Int, parseInt(fromProjectId, 10))
@@ -1497,7 +1497,7 @@ const updateProjectSlot = async (projectId, slotName, phoneNumberId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       console.log('[updateProjectSlot] Executing query for:', { projectId, slotName, phoneNumberId });
       const request = pool.request()
@@ -1559,7 +1559,7 @@ const removeProjectSlot = async (projectId, slotName) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, parseInt(projectId, 10))
@@ -1597,7 +1597,7 @@ const getTopAreaCodesFromSampleTable = async (tableName, limit = 10) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       // First check which columns exist
       const checkResult = await pool.request()
@@ -1701,7 +1701,7 @@ const findAvailableCallIDsByAreaCodes = async (areaCodes, count, projectId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, projectId)
@@ -1739,7 +1739,7 @@ const getProjectDetails = async (projectId) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request()
         .input('projectId', sql.Int, projectId)
@@ -1762,7 +1762,7 @@ const getProjectDetails = async (projectId) => {
  */
 const autoAssignCallIDsFromSample = async (tableName, projectId, clientId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       console.log(`[autoAssignCallIDs] Starting for project ${projectId}, table ${tableName}, client ${clientId}`);
 
@@ -1843,7 +1843,7 @@ const updateSampleTableCallIDs = async (tableName, callIdData) => {
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       console.log(`[updateSampleTableCallIDs] Executing: ${query}`);
       const result = await pool.request().query(query);

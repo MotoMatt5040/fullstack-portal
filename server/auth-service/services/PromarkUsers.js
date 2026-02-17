@@ -1,11 +1,11 @@
 // Auth Service - PromarkUsers.js
 
-const { tblAuthentication } = require('../models');
+const { Authentication } = require('../models');
 const { Sequelize } = require('sequelize');
 
 const getUserByEmail = async (email) => {
     try {
-        const user = await tblAuthentication.findOne({ where: { Email: email } });
+        const user = await Authentication.findOne({ where: { Email: email } });
         return user;
     } catch (error) {
         console.error("Error in getUserByEmail:", error);
@@ -15,7 +15,7 @@ const getUserByEmail = async (email) => {
 
 const updateUserPassword = async (email, hashedPwd) => {
     try {
-        const [affectedRows] = await tblAuthentication.update({
+        const [affectedRows] = await Authentication.update({
             Password: hashedPwd,
             ResetPasswordToken: null,
             ResetPasswordExpires: null,
@@ -32,7 +32,7 @@ const updateUserPassword = async (email, hashedPwd) => {
 
 const saveResetToken = async (email, token, expires) => {
     try {
-        const [affectedRows] = await tblAuthentication.update({
+        const [affectedRows] = await Authentication.update({
             ResetPasswordToken: token,
             ResetPasswordExpires: expires,
             DateUpdated: Sequelize.literal('GETDATE()')
@@ -48,7 +48,7 @@ const saveResetToken = async (email, token, expires) => {
 
 const getUserByResetToken = async (token) => {
     try {
-        const user = await tblAuthentication.findOne({ where: { ResetPasswordToken: token } });
+        const user = await Authentication.findOne({ where: { ResetPasswordToken: token } });
         return user;
     } catch (error) {
         console.error("Error in getUserByResetToken:", error);
@@ -58,7 +58,7 @@ const getUserByResetToken = async (token) => {
 
 const getUserByRefreshToken = async (refreshToken) => {
     try {
-        const user = await tblAuthentication.findOne({ where: { RefreshToken: refreshToken } });
+        const user = await Authentication.findOne({ where: { RefreshToken: refreshToken } });
         return user;
     } catch (error) {
         console.error("Error in getUserByRefreshToken:", error);
@@ -68,7 +68,7 @@ const getUserByRefreshToken = async (refreshToken) => {
 
 const clearRefreshToken = async (email) => {
     try {
-        const [affectedRows] = await tblAuthentication.update({
+        const [affectedRows] = await Authentication.update({
             RefreshToken: null,
             AccessToken: null,
             DateUpdated: Sequelize.literal('GETDATE()')
@@ -95,7 +95,7 @@ const updateUserRefreshToken = async (email, refreshToken, accessToken, deviceId
             updateData.DeviceId = deviceId;
         }
 
-        const [affectedRows] = await tblAuthentication.update(updateData, {
+        const [affectedRows] = await Authentication.update(updateData, {
             where: { Email: email }
         });
         return affectedRows;
@@ -107,7 +107,7 @@ const updateUserRefreshToken = async (email, refreshToken, accessToken, deviceId
 
 const validateDeviceId = async (email, deviceId) => {
     try {
-        const user = await tblAuthentication.findOne({
+        const user = await Authentication.findOne({
             where: { Email: email },
             attributes: ['DeviceId']
         });

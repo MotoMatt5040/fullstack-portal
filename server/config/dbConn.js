@@ -12,11 +12,11 @@ const DB_POOL_MAX = parseInt(process.env.DB_POOL_MAX, 10) || 15;
 const DB_POOL_MIN = parseInt(process.env.DB_POOL_MIN, 10) || 2;
 
 const dbConfigs = {
-	promark: {
+	caligulad: {
 		user: process.env.PROMARK_DB_USER,
 		password: process.env.PROMARK_DB_PASSWORD,
 		server: process.env.PROMARK_DB_SERVER,
-		database: process.env.PROMARK_DB_NAME,
+		database: 'CaligulaD',
 		options: {
 			encrypt: true,
 			trustServerCertificate: true,

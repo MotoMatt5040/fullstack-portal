@@ -54,7 +54,7 @@ describe('CallID Services', () => {
 
       expect(withDbConnection).toHaveBeenCalledWith(
         expect.objectContaining({
-          database: 'promark',
+          database: 'caligulad',
           fnName: 'getDashboardMetrics',
           attempts: 3,
         })

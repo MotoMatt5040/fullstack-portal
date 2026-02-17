@@ -1,4 +1,4 @@
-const { sequelize, tblUserProjects, tblAuthentication } = require('../models');
+const { sequelize, tblUserProjects, Authentication } = require('../models');
 const { Op } = require('sequelize');
 
 const getPublishedProjects = async () => {
@@ -12,8 +12,8 @@ const getPublishedProjects = async () => {
       projectname
     FROM
       dbo.tblClients AS c
-    INNER JOIN dbo.tblUserProfiles AS up ON c.ClientID = up.ClientID
-    INNER JOIN dbo.tblAuthentication AS a ON a.Uuid = up.UUID
+    INNER JOIN FAJITA.dbo.UserProfiles AS up ON c.ClientID = up.ClientID
+    INNER JOIN FAJITA.dbo.Authentication AS a ON a.Uuid = up.UUID
     INNER JOIN dbo.tblUserProjects AS uproj ON uproj.UUID = a.Uuid
     INNER JOIN dbo.tblCC3ProjectHeader AS cc3 ON cc3.ProjectID = uproj.projectId
     ORDER BY
@@ -26,7 +26,7 @@ const getPublishedProjects = async () => {
 const publishProject = async (emails, projectId) => {
   // 1. Publish for selected users
   for (const email of emails) {
-    const user = await tblAuthentication.findOne({ where: { Email: email } });
+    const user = await Authentication.findOne({ where: { Email: email } });
     if (user) {
       await tblUserProjects.findOrCreate({
         where: { UUID: user.Uuid, projectId: projectId },
@@ -43,7 +43,7 @@ const publishProject = async (emails, projectId) => {
   // 2. Master Checker for luke@pos.org
   const masterEmail = 'luke@pos.org';
   if (!emails.includes(masterEmail)) {
-    const masterUser = await tblAuthentication.findOne({ where: { Email: masterEmail } });
+    const masterUser = await Authentication.findOne({ where: { Email: masterEmail } });
     if (masterUser) {
       // Check if luke is already assigned to this project
       const existingAssignment = await tblUserProjects.findOne({
@@ -68,7 +68,7 @@ const publishProject = async (emails, projectId) => {
 
 const unpublishProject = async (emails, projectId) => {
   // Find UUIDs for the given emails
-  const users = await tblAuthentication.findAll({
+  const users = await Authentication.findAll({
     where: {
       Email: {
         [Op.in]: emails,

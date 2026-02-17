@@ -1,5 +1,5 @@
 const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
-const { PROMARK: promark, VOXCO: voxco } = DATABASE_TYPES;
+const { CALIGULAD: caligulad, VOXCO: voxco } = DATABASE_TYPES;
 
 const getPhoneProjects = async (projectId) => {
   return withDbConnection({
@@ -67,7 +67,7 @@ const getProjectsList = async (userId) => {
     // Join with user projects table to filter by user access
     joinClause = `
 INNER JOIN dbo.tblUserProjects up ON CAST(p.projectID AS VARCHAR(20)) = up.projectId
-INNER JOIN dbo.tblAuthentication a ON a.uuid = up.uuid`;
+INNER JOIN FAJITA.dbo.Authentication a ON a.uuid = up.uuid`;
     whereConditions.unshift(`a.email = @userId`);
   }
 
@@ -97,7 +97,7 @@ ORDER BY
 `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       if (userId) request.input('userId', sql.VarChar, userId);
@@ -142,7 +142,7 @@ ORDER BY
 `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       const result = await request.query(qry);

@@ -1,5 +1,5 @@
 const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
-const { PROMARK: promark } = DATABASE_TYPES;
+const { CALIGULAD: caligulad } = DATABASE_TYPES;
 
 const getLiveReportData = async (projectId) => {
   const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';
@@ -24,7 +24,7 @@ const getLiveReportData = async (projectId) => {
     hp.projectId ASC;`;
 
   const res = withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       if (projectId) request.input('projectId', sql.NVarChar, projectId);
@@ -95,7 +95,7 @@ ORDER BY
   hpd.projectId ASC;`;
 
   const res = withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       if (projectId) request.input('projectId', sql.NVarChar, projectId);
@@ -150,7 +150,7 @@ const getHistoricInterviewerData = async (projectId, startDate, endDate) => {
     mph DESC;`;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
 
@@ -198,7 +198,7 @@ const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
     bbpm.recDate ASC;`;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
 
@@ -270,7 +270,7 @@ GROUP BY
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       request.input('projectId', sql.NVarChar, projectId);
@@ -298,7 +298,7 @@ const updateTargetMphAndCph = async (projectId, recDate, targetMph, gpcph, user)
   `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       request.input('projectId', sql.NVarChar, projectId);

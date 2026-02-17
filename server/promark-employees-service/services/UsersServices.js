@@ -2,7 +2,7 @@ const { withDbConnection, sql } = require('@internal/db-connection');
 
 const getAllUsers = async () => {
   return withDbConnection({
-    database: 'promark',
+    database: 'caligulad',
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -11,9 +11,9 @@ const getAllUsers = async () => {
             a.uuid,
             a.email,
             STRING_AGG(r.roleName, ', ') AS roles
-          FROM tblAuthentication a
-          LEFT JOIN tblUserRoles ur ON a.uuid = ur.uuid
-          LEFT JOIN tblRoles r ON ur.role = r.roleid
+          FROM FAJITA.dbo.Authentication a
+          LEFT JOIN FAJITA.dbo.UserRoles ur ON a.uuid = ur.uuid
+          LEFT JOIN FAJITA.dbo.Roles r ON ur.role = r.roleid
           GROUP BY a.uuid, a.email
           ORDER BY
             CASE WHEN STRING_AGG(r.roleName, ', ') IS NULL THEN 1 ELSE 0 END,
@@ -27,7 +27,7 @@ const getAllUsers = async () => {
 
 const addUserRoles = async (uuid, roles) => {
   return withDbConnection({
-    database: 'promark',
+    database: 'caligulad',
     queryFn: async (pool) => {
       // Prepare the roles array to be passed as a comma-separated string to the query
       const rolesString = roles.join(',');
@@ -38,11 +38,11 @@ const addUserRoles = async (uuid, roles) => {
 
       // This query inserts roles only if the user does not already have them
       const query = `
-        INSERT INTO tblUserRoles (uuid, role)
+        INSERT INTO FAJITA.dbo.UserRoles (uuid, role)
         SELECT @uuid, value
         FROM STRING_SPLIT(@roles, ',')
         WHERE CAST(value AS INT) NOT IN (
-          SELECT role FROM tblUserRoles WHERE uuid = @uuid
+          SELECT role FROM FAJITA.dbo.UserRoles WHERE uuid = @uuid
         )
       `;
 
@@ -61,7 +61,7 @@ const addUserRoles = async (uuid, roles) => {
  */
 const removeUserRoles = async (uuid, roles) => {
   return withDbConnection({
-    database: 'promark',
+    database: 'caligulad',
     queryFn: async (pool) => {
       const rolesString = roles.join(',');
 
@@ -71,7 +71,7 @@ const removeUserRoles = async (uuid, roles) => {
 
       // This query deletes roles that are in the provided list
       const query = `
-        DELETE FROM tblUserRoles
+        DELETE FROM FAJITA.dbo.UserRoles
         WHERE uuid = @uuid AND role IN (
           SELECT CAST(value AS INT) FROM STRING_SPLIT(@roles, ',')
         )
@@ -86,13 +86,13 @@ const removeUserRoles = async (uuid, roles) => {
 
 const getUserByEmail = async (email) => {
   return withDbConnection({
-    database: 'promark',
+    database: 'caligulad',
     queryFn: async (pool) => {
       const result = await pool
         .request()
         .input('email', sql.NVarChar, email)
         .query(
-          'SELECT uuid, email FROM tblAuthentication WHERE email = @email'
+          'SELECT uuid, email FROM FAJITA.dbo.Authentication WHERE email = @email'
         );
       return result.recordset[0];
     },

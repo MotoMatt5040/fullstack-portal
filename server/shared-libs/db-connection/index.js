@@ -9,11 +9,11 @@ const buildDbConfigs = () => {
   }
 
   return {
-    promark: {
+    caligulad: {
       user: process.env.PROMARK_DB_USER,
       password: process.env.PROMARK_DB_PASSWORD,
       server: process.env.PROMARK_DB_SERVER,
-      database: process.env.PROMARK_DB_NAME,
+      database: 'CaligulaD',
       options: {
         encrypt: true,
         trustServerCertificate: true,
@@ -167,7 +167,7 @@ const withDbConnection = async ({
 
 // Database type constants
 const DATABASE_TYPES = {
-  PROMARK: 'promark',
+  CALIGULAD: 'caligulad',
   FAJITA: 'fajita',
   VOXCO: 'voxco',
 };

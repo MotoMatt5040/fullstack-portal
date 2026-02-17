@@ -1,15 +1,15 @@
-// Auth Service - tblUserRoles.js
+// Auth Service - UserRoles model (FAJITA database)
 
 const Sequelize = require('sequelize');
 
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tblUserRoles', {
+  return sequelize.define('UserRoles', {
     uuid: {
       type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
       references: {
-        model: 'tblAuthentication',
+        model: 'Authentication',
         key: 'Uuid'
       }
     },
@@ -20,7 +20,7 @@ module.exports = function(sequelize, DataTypes) {
     }
   }, {
     sequelize,
-    tableName: 'tblUserRoles',
+    tableName: 'UserRoles',
     schema: 'dbo',
     timestamps: false,
     indexes: [

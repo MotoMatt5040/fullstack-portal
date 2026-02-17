@@ -1,23 +1,23 @@
 // Auth Service - init-models.js
 
 var DataTypes = require("sequelize").DataTypes;
-var _tblAuthentication = require("./tblAuthentication");
-var _tblUserRoles = require("./tblUserRoles");
-var _tblRoles = require("./tblRoles");
+var _Authentication = require("./tblAuthentication");
+var _UserRoles = require("./tblUserRoles");
+var _Roles = require("./tblRoles");
 
 function initModels(sequelize) {
-  var tblAuthentication = _tblAuthentication(sequelize, DataTypes);
-  var tblUserRoles = _tblUserRoles(sequelize, DataTypes);
-  var tblRoles = _tblRoles(sequelize, DataTypes);
+  var Authentication = _Authentication(sequelize, DataTypes);
+  var UserRoles = _UserRoles(sequelize, DataTypes);
+  var Roles = _Roles(sequelize, DataTypes);
 
   // Associations
-  tblUserRoles.belongsTo(tblAuthentication, { as: "uu", foreignKey: "uuid" });
-  tblAuthentication.hasMany(tblUserRoles, { as: "tblUserRoles", foreignKey: "uuid" });
+  UserRoles.belongsTo(Authentication, { as: "uu", foreignKey: "uuid" });
+  Authentication.hasMany(UserRoles, { as: "UserRoles", foreignKey: "uuid" });
 
   return {
-    tblAuthentication,
-    tblUserRoles,
-    tblRoles,
+    Authentication,
+    UserRoles,
+    Roles,
   };
 }
 
