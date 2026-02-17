@@ -1,9 +1,9 @@
-// Auth Service - tblAuthentication.js
+// Auth Service - Authentication.js
 
 const Sequelize = require('sequelize');
 
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tblAuthentication', {
+  return sequelize.define('Authentication', {
     Uuid: {
       type: DataTypes.UUID,
       allowNull: false,
@@ -12,7 +12,7 @@ module.exports = function(sequelize, DataTypes) {
     Email: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: "UQ_tblAuthentication_email"
+      unique: "UQ_Authentication_email"
     },
     Password: {
       type: DataTypes.TEXT,
@@ -56,19 +56,19 @@ module.exports = function(sequelize, DataTypes) {
     }
   }, {
     sequelize,
-    tableName: 'tblAuthentication',
+    tableName: 'Authentication',
     schema: 'dbo',
     timestamps: false,
     indexes: [
       {
-        name: "PK_tblAuthentication",
+        name: "PK_Authentication",
         unique: true,
         fields: [
           { name: "Uuid" },
         ]
       },
       {
-        name: "UQ_tblAuthentication_email",
+        name: "UQ_Authentication_email",
         unique: true,
         fields: [
           { name: "Email" },

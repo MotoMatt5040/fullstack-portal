@@ -1,7 +1,7 @@
 const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
 const path = require('path');
 const fs = require('fs').promises;
-const { PROMARK: promark } = DATABASE_TYPES;
+const { CALIGULAD: caligulad } = DATABASE_TYPES;
 const {
   getPromarkConstantsAsHeaders,
   getPromarkConstantDefault,
@@ -66,7 +66,7 @@ const getTempFileUrl = (filename, userId) => {
  */
 const createTableFromFileData = async (processedData, tableName) => {
   return withDbConnection({
-    database: 'promark',
+    database: 'caligulad',
     queryFn: async (pool) => {
       try {
         console.log('Starting createTableFromFileData with:', {
@@ -163,7 +163,7 @@ const createTableFromFileData = async (processedData, tableName) => {
  */
 const getHeaderMappings = async (vendorId, clientId, originalHeaders) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         if (
@@ -300,7 +300,7 @@ const getHeaderMappings = async (vendorId, clientId, originalHeaders) => {
  */
 const saveHeaderMappings = async (vendorId, clientId, mappings) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         if (!mappings || !Array.isArray(mappings) || mappings.length === 0) {
@@ -403,7 +403,7 @@ const saveHeaderMappings = async (vendorId, clientId, mappings) => {
  */
 const getAllHeaderMappings = async (filters = {}) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const { vendorId, clientId, search } = filters;
@@ -473,7 +473,7 @@ const getAllHeaderMappings = async (filters = {}) => {
  */
 const deleteHeaderMapping = async (originalHeader, vendorId, clientId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -514,7 +514,7 @@ const deleteHeaderMapping = async (originalHeader, vendorId, clientId) => {
  */
 const getVariableExclusions = async (filters = {}) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const { search } = filters;
@@ -566,7 +566,7 @@ const getVariableExclusions = async (filters = {}) => {
  */
 const addVariableExclusion = async (variableName, description, createdBy) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -614,7 +614,7 @@ const addVariableExclusion = async (variableName, description, createdBy) => {
  */
 const updateVariableExclusion = async (exclusionId, description) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -658,7 +658,7 @@ const updateVariableExclusion = async (exclusionId, description) => {
  */
 const deleteVariableExclusion = async (exclusionId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -691,7 +691,7 @@ const deleteVariableExclusion = async (exclusionId) => {
  */
 const getProjectVariableInclusions = async (projectId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -739,7 +739,7 @@ const getProjectVariableInclusions = async (projectId) => {
  */
 const addProjectVariableInclusion = async (projectId, originalVariableName, mappedVariableName, createdBy) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -789,7 +789,7 @@ const addProjectVariableInclusion = async (projectId, originalVariableName, mapp
  */
 const updateProjectVariableInclusion = async (inclusionId, mappedVariableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -834,7 +834,7 @@ const updateProjectVariableInclusion = async (inclusionId, mappedVariableName) =
  */
 const deleteProjectVariableInclusion = async (inclusionId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -866,7 +866,7 @@ const deleteProjectVariableInclusion = async (inclusionId) => {
  */
 const getExcludedVariableSet = async () => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `SELECT VariableName FROM FAJITA.dbo.VariableExclusions`;
@@ -889,7 +889,7 @@ const getExcludedVariableSet = async () => {
  */
 const getProjectInclusionsMap = async (projectId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const query = `
@@ -1138,7 +1138,7 @@ const convertValue = (value, dataType) => {
  */
 const getClients = async () => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -1154,7 +1154,7 @@ const getClients = async () => {
  */
 const getVendors = async () => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -1170,7 +1170,7 @@ const getVendors = async () => {
  */
 const getClientsAndVendors = async () => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const [clientsResult, vendorsResult] = await Promise.all([
         pool.request().query('SELECT ClientID, ClientName FROM tblClients ORDER BY ClientName'),
@@ -1191,7 +1191,7 @@ const getClientsAndVendors = async () => {
  */
 const getTablePreview = async (tableName, limit = 10) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Fetching top ${limit} rows from ${tableName}`);
@@ -1240,7 +1240,7 @@ const getTablePreview = async (tableName, limit = 10) => {
  */
 const createDNCScrubbed = async (sourceTableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Creating DNC-scrubbed table from: ${sourceTableName}`);
@@ -1283,7 +1283,7 @@ const createDNCScrubbed = async (sourceTableName) => {
  */
 const formatPhoneNumbersInTable = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Formatting phone numbers in table: ${tableName}`);
@@ -1313,7 +1313,7 @@ const formatPhoneNumbersInTable = async (tableName) => {
  */
 const updateSourceColumn = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Updating SOURCE column in table: ${tableName}`);
@@ -1353,7 +1353,7 @@ const updateSourceColumn = async (tableName) => {
  */
 const routeTarrancePhones = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Routing Tarrance phones in table: ${tableName}`);
@@ -1387,7 +1387,7 @@ const routeTarrancePhones = async (tableName) => {
  */
 const padTarranceRegion = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Padding Tarrance REGN in table: ${tableName}`);
@@ -1419,7 +1419,7 @@ const padTarranceRegion = async (tableName) => {
  */
 const populateAgeRange = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Populating AGERANGE in table: ${tableName}`);
@@ -1457,7 +1457,7 @@ const createStratifiedBatches = async (
   batchCount = 20
 ) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Creating stratified batches for table: ${tableName}`);
@@ -1531,7 +1531,7 @@ const createStratifiedBatches = async (
  */
 const splitIntoLandlineAndCell = async (tableName, ageThreshold) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Splitting table ${tableName} with age threshold ${ageThreshold}`);
@@ -1581,7 +1581,7 @@ const splitIntoLandlineAndCell = async (tableName, ageThreshold) => {
  */
 const getDistinctAgeRanges = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Fetching distinct age ranges from table: ${tableName}`);
@@ -1679,7 +1679,7 @@ const convertToCSV = (records, headers) => {
  */
 const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Calculating age from birth year in table: ${tableName}`);
@@ -1741,7 +1741,7 @@ const calculateAgeFromBirthYear = async (tableName, useJanuaryFirst = true) => {
  */
 const convertAgeToIAge = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Converting AGE to IAGE in table: ${tableName}`);
@@ -1788,7 +1788,7 @@ const convertAgeToIAge = async (tableName) => {
  */
 const padColumns = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Padding columns in table: ${tableName}`);
@@ -1821,7 +1821,7 @@ const padColumns = async (tableName) => {
  */
 const padIZIP = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Padding IZIP to 5 characters in table: ${tableName}`);
@@ -1875,7 +1875,7 @@ const padIZIP = async (tableName) => {
  */
 const updateVTYPEBySplit = async (tableName, ageThreshold, clientId = null) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         // Special handling for Tarrance client (clientId === 102)
@@ -1990,7 +1990,7 @@ const updateVTYPEBySplit = async (tableName, ageThreshold, clientId = null) => {
  */
 const updateVTYPEForAllRecords = async (tableName, vtypeValue) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Updating VTYPE to ${vtypeValue} for all records in table: ${tableName}`);
@@ -2045,7 +2045,7 @@ const updateVTYPEForAllRecords = async (tableName, vtypeValue) => {
  */
 const applyWDNCScrubbing = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Applying WDNC scrubbing to table: ${tableName}`);
@@ -2081,7 +2081,7 @@ const applyWDNCScrubbing = async (tableName) => {
  */
 const createDollarNColumn = async (tableName, fileType = null, clientId = null) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Creating $N column in table: ${tableName}`);
@@ -2188,7 +2188,7 @@ const createDollarNColumn = async (tableName, fileType = null, clientId = null) 
  */
 const createVFREQColumns = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Creating VFREQGEN and VFREQPR columns in table: ${tableName}`);
@@ -2236,7 +2236,7 @@ const createVFREQColumns = async (tableName) => {
  */
 const fixIAGEValues = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Fixing IAGE values in table: ${tableName}`);
@@ -2270,7 +2270,7 @@ const fixIAGEValues = async (tableName) => {
  */
 const formatRDateColumn = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Formatting RDATE column in table: ${tableName}`);
@@ -2311,7 +2311,7 @@ const formatRDateColumn = async (tableName) => {
  */
 const processHouseholding = async (tableName, selectedAgeRange) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Starting householding process for table: ${tableName}`);
@@ -2359,7 +2359,7 @@ const processHouseholding = async (tableName, selectedAgeRange) => {
  */
 const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders, userId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Extracting householding duplicate files for table: ${tableName}`);
@@ -2503,7 +2503,7 @@ const extractHouseholdingDuplicateFiles = async (tableName, selectedHeaders, use
  */
 const calculatePartyFromRPartyRollup = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Calculating PARTY from RPARTYROLLUP in table: ${tableName}`);
@@ -2557,7 +2557,7 @@ const calculatePartyFromRPartyRollup = async (tableName) => {
  */
 const getNextFileID = async (projectId, requestedFileId = null) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -2584,7 +2584,7 @@ const registerProjectFile = async (
   createdBy
 ) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -2606,7 +2606,7 @@ const registerProjectFile = async (
  */
 const updateProjectFileTableName = async (projectId, fileId, tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -2629,7 +2629,7 @@ const updateProjectFileTableName = async (projectId, fileId, tableName) => {
  */
 const deleteProjectFile = async (projectId, fileId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -2648,7 +2648,7 @@ const deleteProjectFile = async (projectId, fileId) => {
  */
 const getTableHeaders = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const result = await pool
@@ -2677,7 +2677,7 @@ const getTableHeaders = async (tableName) => {
  */
 const checkColumnExists = async (tableName, columnName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const result = await pool
@@ -2812,7 +2812,7 @@ const buildSQLType = (definition) => {
  */
 const previewComputedVariable = async (tableName, variableDefinition) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const caseExpression = buildCaseExpression(variableDefinition);
@@ -2875,7 +2875,7 @@ const previewComputedVariable = async (tableName, variableDefinition) => {
  */
 const addComputedVariable = async (tableName, variableDefinition) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const startTime = Date.now();
@@ -2939,7 +2939,7 @@ const addComputedVariable = async (tableName, variableDefinition) => {
  */
 const removeComputedVariable = async (tableName, columnName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const sanitizedColumnName = sanitizeColumnName(columnName);
@@ -3000,7 +3000,7 @@ const extractFilesFromTable = async (config) => {
   }
 
   const result = await withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         console.log(`Starting file extraction from table: ${tableName}`);
@@ -3285,7 +3285,7 @@ const extractFilesFromTable = async (config) => {
  */
 const getExtractionVariables = async (projectId, clientId, vendorId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -3309,7 +3309,7 @@ const getExtractionVariables = async (projectId, clientId, vendorId) => {
  */
 const getMasterExtractionDefaults = async () => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().query(`
           SELECT ID, VariableName, CreatedDate, ModifiedDate
@@ -3335,7 +3335,7 @@ const getMasterExtractionDefaults = async () => {
  */
 const saveMasterExtractionDefaults = async (variables) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       // Get existing defaults
       const existing = await pool.request().query(`
@@ -3388,7 +3388,7 @@ const saveMasterExtractionDefaults = async (variables) => {
  */
 const getClientExtractionDefaults = async (clientId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().input('ClientID', sql.Int, clientId)
         .query(`
@@ -3417,7 +3417,7 @@ const getClientExtractionDefaults = async (clientId) => {
  */
 const getVendorClientExtractionDefaults = async (vendorId, clientId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool
         .request()
@@ -3447,7 +3447,7 @@ const getVendorClientExtractionDefaults = async (vendorId, clientId) => {
  */
 const getProjectExtractionOverrides = async (projectId) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const result = await pool.request().input('ProjectID', sql.Int, projectId)
         .query(`
@@ -3478,7 +3478,7 @@ const getProjectExtractionOverrides = async (projectId) => {
  */
 const saveClientExtractionDefaults = async (clientId, variables) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const transaction = new sql.Transaction(pool);
       await transaction.begin();
@@ -3552,7 +3552,7 @@ const saveVendorClientExtractionDefaults = async (
   variables
 ) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const transaction = new sql.Transaction(pool);
       await transaction.begin();
@@ -3630,7 +3630,7 @@ const saveProjectExtractionOverrides = async (
   variables
 ) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const transaction = new sql.Transaction(pool);
       await transaction.begin();
@@ -3704,7 +3704,7 @@ const getSampleTables = async (options = {}) => {
   const { projectId, limit = 50 } = options;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         // Get all SA_* tables from INFORMATION_SCHEMA with row counts from sys.partitions
@@ -3881,7 +3881,7 @@ const parseTableTimestamp = (datePart, timePart) => {
  */
 const getSampleTableDetails = async (tableName) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         // Get column information
@@ -3940,7 +3940,7 @@ const getSampleTableDetails = async (tableName) => {
  */
 const deleteSampleTable = async (tableName, includeDerivatives = true) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       try {
         const deletedTables = [];
@@ -4006,7 +4006,7 @@ const deleteSampleTable = async (tableName, includeDerivatives = true) => {
  */
 const deleteExtractionDefault = async (type, id) => {
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       let tableName;
       switch (type) {

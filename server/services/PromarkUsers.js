@@ -1,11 +1,11 @@
 // Monolith - PromarkUsers.js
 // This service provides user validation for JWT middleware
 
-const { tblAuthentication } = require('../models');
+const { Authentication } = require('../models');
 
 const validateDeviceId = async (email, deviceId) => {
     try {
-        const user = await tblAuthentication.findOne({
+        const user = await Authentication.findOne({
             where: { Email: email },
             attributes: ['DeviceId']
         });

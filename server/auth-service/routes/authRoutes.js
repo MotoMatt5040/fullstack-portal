@@ -2,7 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { sequelize, tblRoles } = require('../models');
+const { sequelize } = require('../models');
+const { getAllRoles } = require('@internal/roles-config');
 
 const { handleLogin, handleLogout } = require('../controllers/authController');
 const { handleRefreshToken } = require('../controllers/refreshTokenController');
@@ -22,7 +23,7 @@ router.get('/auth/health', async (req, res) => {
         status: 'healthy',
         service: 'auth-service',
         database: dbStatus,
-        dbName: process.env.PROMARK_DB_NAME || 'CaligulaD',
+        dbName: 'FAJITA',
         timestamp: new Date().toISOString()
     });
 });
@@ -42,9 +43,7 @@ router.post('/reset/reset-password', handleResetPassword);
 // Roles endpoint - returns role mapping for other services
 router.get('/auth/roles', async (req, res) => {
     try {
-        const roles = await tblRoles.findAll({
-            attributes: ['RoleID', 'RoleName']
-        });
+        const roles = await getAllRoles();
 
         // Convert to { RoleName: RoleID } object
         const rolesMap = {};

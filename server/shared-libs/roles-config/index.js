@@ -4,12 +4,12 @@ const sql = require('mssql');
 // This object will be populated at startup
 const ROLES_LIST = {};
 
-// Database config for PROMARK (where tblRoles lives)
-const getPromarkConfig = () => ({
+// Database config for FAJITA (where Roles table lives)
+const getFajitaConfig = () => ({
   user: process.env.PROMARK_DB_USER,
   password: process.env.PROMARK_DB_PASSWORD,
   server: process.env.PROMARK_DB_SERVER,
-  database: process.env.PROMARK_DB_NAME || 'CaligulaD',
+  database: 'FAJITA',
   options: {
     encrypt: true,
     trustServerCertificate: true,
@@ -22,25 +22,25 @@ const getPromarkConfig = () => ({
   requestTimeout: 30000,
 });
 
-let promarkPool = null;
+let fajitaPool = null;
 
 /**
- * Get or create the PROMARK database pool
+ * Get or create the FAJITA database pool
  */
-const getPromarkPool = async () => {
-  if (!promarkPool) {
-    promarkPool = await new sql.ConnectionPool(getPromarkConfig()).connect();
-    console.log('Connected to PROMARK database for roles');
+const getFajitaPool = async () => {
+  if (!fajitaPool) {
+    fajitaPool = await new sql.ConnectionPool(getFajitaConfig()).connect();
+    console.log('Connected to FAJITA database for roles');
   }
-  return promarkPool;
+  return fajitaPool;
 };
 
 /**
- * Fetch all roles from tblRoles using raw SQL (no Sequelize dependency)
+ * Fetch all roles from Roles table using raw SQL (no Sequelize dependency)
  */
 const getAllRoles = async () => {
-  const pool = await getPromarkPool();
-  const result = await pool.request().query('SELECT RoleID, RoleName FROM tblRoles');
+  const pool = await getFajitaPool();
+  const result = await pool.request().query('SELECT RoleID, RoleName FROM Roles');
   return result.recordset;
 };
 
@@ -54,7 +54,7 @@ const initializeRoles = async () => {
     const rolesFromDb = await getAllRoles();
 
     if (!rolesFromDb || rolesFromDb.length === 0) {
-      throw new Error('No roles found in database. Check tblRoles table.');
+      throw new Error('No roles found in database. Check Roles table in FAJITA.');
     }
 
     // Clear and repopulate ROLES_LIST
@@ -77,9 +77,9 @@ const initializeRoles = async () => {
  * Close the roles database pool (for graceful shutdown)
  */
 const closeRolesPool = async () => {
-  if (promarkPool) {
-    await promarkPool.close();
-    promarkPool = null;
+  if (fajitaPool) {
+    await fajitaPool.close();
+    fajitaPool = null;
     console.log('Closed roles database connection');
   }
 };

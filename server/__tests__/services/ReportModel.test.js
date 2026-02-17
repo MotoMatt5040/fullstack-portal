@@ -55,7 +55,7 @@ describe('ReportModel Services', () => {
 
       expect(withDbConnection).toHaveBeenCalledWith(
         expect.objectContaining({
-          database: 'promark',
+          database: 'caligulad',
           fnName: 'getLiveSummaryData',
           attempts: 5,
           allowAbort: true,

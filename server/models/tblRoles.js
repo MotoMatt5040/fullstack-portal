@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tblRoles', {
+  return sequelize.define('Roles', {
     RoleID: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -16,12 +16,12 @@ module.exports = function(sequelize, DataTypes) {
     }
   }, {
     sequelize,
-    tableName: 'tblRoles',
-    schema: 'dbo',
+    tableName: 'Roles',
+    schema: 'FAJITA.dbo',
     timestamps: false,
     indexes: [
       {
-        name: "PK_tblRoles",
+        name: "PK_Roles",
         unique: true,
         fields: [
           { name: "RoleID" },

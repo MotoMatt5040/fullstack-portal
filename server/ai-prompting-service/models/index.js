@@ -2,7 +2,7 @@ const { Sequelize } = require('sequelize');
 const initModels = require('./init-models');
 
 const sequelize = new Sequelize(
-  process.env.PROMARK_DB_NAME || 'CaligulaD',
+  'CaligulaD',
   process.env.PROMARK_DB_USER,
   process.env.PROMARK_DB_PASSWORD,
   {

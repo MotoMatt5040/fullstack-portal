@@ -11,12 +11,14 @@ jest.mock('../../auth-service/models', () => ({
   sequelize: {
     authenticate: jest.fn().mockResolvedValue(true),
   },
-  tblRoles: {
-    findAll: jest.fn().mockResolvedValue([
-      { RoleID: 1, RoleName: 'Admin' },
-      { RoleID: 2, RoleName: 'User' },
-    ]),
-  },
+}));
+
+// Mock roles-config (Roles table now in FAJITA)
+jest.mock('@internal/roles-config', () => ({
+  getAllRoles: jest.fn().mockResolvedValue([
+    { RoleID: 1, RoleName: 'Admin' },
+    { RoleID: 2, RoleName: 'User' },
+  ]),
 }));
 
 // Mock the services
@@ -51,7 +53,6 @@ describe('Auth Routes Integration Tests', () => {
   beforeAll(() => {
     process.env.ACCESS_TOKEN_SECRET = 'test-access-secret';
     process.env.REFRESH_TOKEN_SECRET = 'test-refresh-secret';
-    process.env.PROMARK_DB_NAME = 'TestDB';
   });
 
   beforeEach(() => {

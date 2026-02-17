@@ -1,18 +1,18 @@
 // Auth Service - UserRoles.js
 
-const { tblUserRoles, tblAuthentication } = require('../models');
+const { UserRoles, Authentication } = require('../models');
 
 const getUserRoles = async (email) => {
     try {
-        const userRoles = await tblUserRoles.findAll({
+        const userRoles = await UserRoles.findAll({
             // Select only the 'role' column
             attributes: ['role'],
-            // Define the INNER JOIN to tblAuthentication
+            // Define the INNER JOIN to Authentication
             include: [{
-                model: tblAuthentication,
+                model: Authentication,
                 as: 'uu',          // Use the alias defined in init-models.js
                 required: true,   // This makes it an INNER JOIN
-                attributes: [],   // We don't need any columns from tblAuthentication itself
+                attributes: [],   // We don't need any columns from Authentication itself
                 where: {
                     email: email  // Apply the WHERE clause on the joined table
                 }

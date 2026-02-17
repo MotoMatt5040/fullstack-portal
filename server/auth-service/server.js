@@ -32,7 +32,7 @@ app.get('/health', async (req, res) => {
     status: 'healthy',
     service: 'auth-service',
     database: dbStatus,
-    dbName: process.env.PROMARK_DB_NAME || 'CaligulaD',
+    dbName: 'FAJITA',
     timestamp: new Date().toISOString()
   });
 });
@@ -50,7 +50,7 @@ app.listen(PORT, async () => {
   // Test database connection
   try {
     await sequelize.authenticate();
-    console.log(`Auth Service: Database connection established (${process.env.PROMARK_DB_NAME || 'CaligulaD'})`);
+    console.log('Auth Service: Database connection established (FAJITA)');
   } catch (error) {
     console.error('Auth Service: Unable to connect to database:', error.message);
   }

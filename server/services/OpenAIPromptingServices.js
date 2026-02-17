@@ -1,4 +1,4 @@
-const OpenAI = require('openai');const { tblProjectPrompts, tblAuthentication, tblDefaultPrompt } = require('../models');
+const OpenAI = require('openai');const { tblProjectPrompts, Authentication, tblDefaultPrompt } = require('../models');
 
 const openAI = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -18,7 +18,7 @@ const getDefaultPrompt = async () => {
 
 const updateDefaultPrompt = async (tone, prompt, email) => {
   try {
-    const user = await tblAuthentication.findOne({
+    const user = await Authentication.findOne({
       where: { email: email },
     });
     if (!user) {
@@ -56,7 +56,7 @@ const getAiPrompts = async (projectId, questionNumber) => {
 
 const addAiPrompt = async (projectId, questionNumber, questionSummary, tone, prompt, email) => {
   try {
-    const user = await tblAuthentication.findOne({
+    const user = await Authentication.findOne({
       where: { email: email },
     });
 

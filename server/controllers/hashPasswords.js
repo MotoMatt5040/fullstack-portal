@@ -18,8 +18,8 @@ async function hashPasswordsForAllRows() {
         // Connect to MSSQL
         pool = await sql.connect(config);
 
-        // Retrieve all rows from tblAuthentication (email and password)
-        let result = await pool.request().query("SELECT Email, Password FROM tblAuthentication");
+        // Retrieve all rows from Authentication (email and password)
+        let result = await pool.request().query("SELECT Email, Password FROM FAJITA.dbo.Authentication");
 
         if (result.recordset.length > 0) {
             for (let row of result.recordset) {
@@ -34,7 +34,7 @@ async function hashPasswordsForAllRows() {
                     .input("email", sql.VarChar, row.Email)
                     .input("hashedPassword", sql.VarChar, hashedPassword)
                     .query(`
-                        UPDATE tblAuthentication
+                        UPDATE FAJITA.dbo.Authentication
                         SET Password = @hashedPassword
                         WHERE Email = @email
                     `);

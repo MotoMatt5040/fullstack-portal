@@ -1,6 +1,6 @@
 const sql = require('mssql');
 
-import { promark, voxco} from '../utils/databaseTypes';
+import { caligulad, voxco} from '../utils/databaseTypes';
 import withDbConnection from '../config/dbConn';
 
 const getVoxcoId = async (promarkId) => {

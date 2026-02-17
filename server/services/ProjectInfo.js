@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { promark, voxco } = require('../utils/databaseTypes');
+const { caligulad, voxco } = require('../utils/databaseTypes');
 
 const getPhoneProjects = async (projectId) => {
   return withDbConnection({
@@ -11,7 +11,7 @@ const getPhoneProjects = async (projectId) => {
         .input('projectId', sql.NVarChar, projectId)
         .query(
           // ParentId > 1000 is to filter out folders. To understand run SELECT k_Id, name, * FROM [VoxcoSystem].[dbo].[tblObjects] where tblobjects.Type = 1 and name LIKE '13100%'
-          "SELECT k_Id, name FROM [VoxcoSystem].[dbo].[tblObjects] WHERE tblobjects.Type = 1 AND name LIKE @projectId + '%' AND ParentId > 1000 AND name NOT LIKE '%WOE%' ORDER BY name DESC"
+          "SELECT k_Id, name FROM [VoxcoSystem].[dbo].[tblObjects] WHERE tblobjects.Type = 1 AND name LIKE @projectId + '%' AND ParentId > 1000 AND name NOT LIKE '%WOE%' ORDER BY name DESC",
         );
       return result.recordset;
     },
@@ -35,7 +35,7 @@ const getWebProjects = async (projectId) => {
         .input('projectId', sql.NVarChar, projectId)
         .query(
           //and fieldstart is < 30 days
-          qry
+          qry,
         );
       return result.recordset;
     },
@@ -53,10 +53,10 @@ const getProjectsList = async (userId) => {
   if (userId) {
     // Join with user projects table to filter by user access
     // Note: tblUserProjects uses string projectId, so we cast FAJITA projectID to varchar
-    // Tables are in the default database for the promark connection (no database prefix needed)
+    // Tables are in the default database for the caligulad connection (no database prefix needed)
     joinClause = `
 INNER JOIN dbo.tblUserProjects up ON CAST(p.projectID AS VARCHAR(20)) = up.projectId
-INNER JOIN dbo.tblAuthentication a ON a.uuid = up.uuid`;
+INNER JOIN FAJITA.dbo.Authentication a ON a.uuid = up.uuid`;
     whereConditions.unshift(`a.email = @userId`);
   }
 
@@ -86,7 +86,7 @@ ORDER BY
 `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       if (userId) request.input('userId', sql.VarChar, userId);
@@ -131,7 +131,7 @@ ORDER BY
 `;
 
   return withDbConnection({
-    database: promark,
+    database: caligulad,
     queryFn: async (pool) => {
       const request = pool.request();
       const result = await request.query(qry);

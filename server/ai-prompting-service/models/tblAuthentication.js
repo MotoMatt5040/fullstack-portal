@@ -2,7 +2,7 @@ const Sequelize = require('sequelize');
 
 module.exports = function (sequelize, DataTypes) {
   return sequelize.define(
-    'tblAuthentication',
+    'Authentication',
     {
       Uuid: {
         type: DataTypes.UUID,
@@ -34,8 +34,8 @@ module.exports = function (sequelize, DataTypes) {
     },
     {
       sequelize,
-      tableName: 'tblAuthentication',
-      schema: 'dbo',
+      tableName: 'Authentication',
+      schema: 'FAJITA.dbo',
       timestamps: false,
       indexes: [
         {

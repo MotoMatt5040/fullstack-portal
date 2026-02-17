@@ -1,5 +1,5 @@
 const DatabaseTypes = {
-  promark: 'promark',
+  caligulad: 'caligulad',
   fajita: 'fajita',
   voxco: 'voxco',
 };

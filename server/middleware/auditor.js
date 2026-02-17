@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { promark } = require('../utils/databaseTypes');
+const { caligulad } = require('../utils/databaseTypes');
 
 const auditLogger = async (req, res, next) => {
 	if (!['PUT', 'POST', 'DELETE'].includes(req.method)) return next();
@@ -24,7 +24,7 @@ const auditLogger = async (req, res, next) => {
 
 		try {
 			await withDbConnection({
-				database: promark,
+				database: caligulad,
 				queryFn: async (pool) => {
 					const request = pool.request();
 					request.input('userid', sql.VarChar(50), userid);

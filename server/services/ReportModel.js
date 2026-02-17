@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const withDbConnection = require('../config/dbConn');
-const { promark } = require('../utils/databaseTypes');
+const { caligulad } = require('../utils/databaseTypes');
 // const { get } = require('../routes/api/productionReports');
 
 const getLiveReportData = async (projectId) => {
@@ -27,7 +27,7 @@ const getLiveReportData = async (projectId) => {
 	// where gpcph.recDate = '2025-03-11' and recloc = 99`; // THIS LINE IS FOR TESTING ONLY
 
 	const res = withDbConnection({
-		database: promark,
+		database: caligulad,
 		queryFn: async (pool) => {
 			const request = pool.request();
 			if (projectId) request.input('projectId', sql.NVarChar, projectId);
@@ -98,7 +98,7 @@ ORDER BY
 	hpd.projectId ASC;`;
 
 	const res = withDbConnection({
-		database: promark,
+		database: caligulad,
 		queryFn: async (pool) => {
 			const request = pool.request();
 			if (projectId) request.input('projectId', sql.NVarChar, projectId);
@@ -153,7 +153,7 @@ const getHistoricInterviewerData = async (projectId, startDate, endDate) => {
 		mph DESC;`;
 
 	return withDbConnection({
-		database: promark,
+		database: caligulad,
 		queryFn: async (pool) => {
 			const request = pool.request();
 
@@ -201,7 +201,7 @@ const getHistoricProjectReportData = async (projectId, startDate, endDate) => {
 		bbpm.recDate ASC;`;
 
 	return withDbConnection({
-		database: promark,
+		database: caligulad,
 		queryFn: async (pool) => {
 			const request = pool.request();
 
@@ -273,7 +273,7 @@ GROUP BY
 	`;
 
 	return withDbConnection({
-		database: promark,
+		database: caligulad,
 		queryFn: async (pool) => {
 			const request = pool.request();
 			request.input('projectId', sql.NVarChar, projectId);
@@ -302,7 +302,7 @@ const updateTargetMphAndCph = async (projectId, recDate, targetMph, gpcph, user)
 	`;
 
 	return withDbConnection({
-		database: promark,
+		database: caligulad,
 		queryFn: async (pool) => {
 			const request = pool.request();
 			request.input('projectId', sql.NVarChar, projectId);
