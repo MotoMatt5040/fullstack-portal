@@ -6,8 +6,7 @@ import {
   mdiFileUploadOutline,
   mdiTableEdit,
   mdiFileExportOutline,
-  mdiCheckDecagram,
-  mdiCodeBraces,
+  mdiTableColumn,
 } from '@mdi/js';
 
 import './DataProcessing.css';
@@ -24,38 +23,31 @@ const DataProcessing = () => {
   const tools: Tool[] = useMemo(
     () => [
       {
-        to: '/data_processing/import',
+        to: '/data_processing/extraction-task-automation',
         icon: mdiFileUploadOutline,
-        label: 'Data Import',
-        description: 'Upload and ingest raw data files',
+        label: 'Create Extraction Task',
+        description: 'Upload files and set up extraction rules',
         color: '#3b82f6',
       },
       {
-        to: '/data_processing/validation',
-        icon: mdiCheckDecagram,
-        label: 'Validation',
-        description: 'QA and verify data integrity',
-        color: '#10b981',
-      },
-      {
-        to: '/data_processing/transform',
+        to: '/data_processing/table-generator',
         icon: mdiTableEdit,
-        label: 'Transform',
-        description: 'Clean and reshape datasets',
+        label: 'Table Generator',
+        description: 'Create structured tables from raw data',
         color: '#f59e0b',
       },
       {
-        to: '/data_processing/export',
+        to: '/data_processing/weighting-tool',
         icon: mdiFileExportOutline,
-        label: 'Data Export',
-        description: 'Output processed results',
+        label: 'Weighting Tool',
+        description: 'Add weights to your data for analysis',
         color: '#8b5cf6',
       },
       {
-        to: '/data_processing/scripts',
-        icon: mdiCodeBraces,
-        label: 'Scripts',
-        description: 'Run custom processing scripts',
+        to: '/data_processing/column-generator',
+        icon: mdiTableColumn,
+        label: 'Column Generator',
+        description: 'Generate new columns from existing data',
         color: '#ec4899',
       },
     ],

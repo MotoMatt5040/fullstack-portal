@@ -71,6 +71,15 @@ const ExtractionTaskAutomation = lazy(
   () =>
     import('./views/data_processing/views/extraction_task_automation/ExtractionTaskAutomation'),
 );
+const TableGenerator = lazy(
+  () => import('./views/data_processing/table_generator/TableGenerator'),
+);
+const ColumnGenerator = lazy(
+  () => import('./views/data_processing/column_generator/ColumnGenerator'),
+);
+const WeightingTool = lazy(
+  () => import('./views/data_processing/weighting_tool/WeightingTool'),
+);
 
 // Loading fallback for lazy-loaded components
 const PageLoader = () => <div className='page-loader'>Loading...</div>;
@@ -205,8 +214,20 @@ function App() {
           >
             <Route path='data-processing' element={<DataProcessing />} />
             <Route
-              path='data-processing/create-extraction-task'
+              path='data-processing/extraction-task-automation'
               element={<ExtractionTaskAutomation />}
+            />
+            <Route
+              path='data-processing/table-generator'
+              element={<TableGenerator />}
+            />
+            <Route
+              path='data-processing/column-generator'
+              element={<ColumnGenerator />}
+            />
+            <Route
+              path='data-processing/weighting-tool'
+              element={<WeightingTool />}
             />
           </Route>
 
