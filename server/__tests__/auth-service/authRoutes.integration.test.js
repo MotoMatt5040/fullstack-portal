@@ -11,14 +11,12 @@ jest.mock('../../auth-service/models', () => ({
   sequelize: {
     authenticate: jest.fn().mockResolvedValue(true),
   },
-}));
-
-// Mock roles-config (Roles table now in FAJITA)
-jest.mock('@internal/roles-config', () => ({
-  getAllRoles: jest.fn().mockResolvedValue([
-    { RoleID: 1, RoleName: 'Admin' },
-    { RoleID: 2, RoleName: 'User' },
-  ]),
+  Roles: {
+    findAll: jest.fn().mockResolvedValue([
+      { RoleID: 1, RoleName: 'Admin' },
+      { RoleID: 2, RoleName: 'User' },
+    ]),
+  },
 }));
 
 // Mock the services

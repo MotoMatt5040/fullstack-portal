@@ -2,8 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { sequelize } = require('../models');
-const { getAllRoles } = require('@internal/roles-config');
+const { sequelize, Roles } = require('../models');
 
 const { handleLogin, handleLogout } = require('../controllers/authController');
 const { handleRefreshToken } = require('../controllers/refreshTokenController');
@@ -43,7 +42,9 @@ router.post('/reset/reset-password', handleResetPassword);
 // Roles endpoint - returns role mapping for other services
 router.get('/auth/roles', async (req, res) => {
     try {
-        const roles = await getAllRoles();
+        const roles = await Roles.findAll({
+            attributes: ['RoleID', 'RoleName']
+        });
 
         // Convert to { RoleName: RoleID } object
         const rolesMap = {};
