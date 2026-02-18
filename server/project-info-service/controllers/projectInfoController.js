@@ -1,4 +1,4 @@
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const ProjectInfoServices = require('../services/ProjectInfoServices');
 
 const cleanQueryParam = (value) => {

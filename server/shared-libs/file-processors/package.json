@@ -1,0 +1,5 @@
+{
+  "name": "@internal/file-processors",
+  "version": "1.0.0",
+  "main": "FileProcessFactory.js"
+}

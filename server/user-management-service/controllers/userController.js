@@ -1,5 +1,5 @@
 const User = require('../services/UserServices');
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');

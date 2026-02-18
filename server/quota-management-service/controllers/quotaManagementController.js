@@ -1,4 +1,4 @@
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const ProjectInfo = require('../services/ProjectInfoServices');
 const QuotaServices = require('../services/QuotaServices');
 const VoxcoApi = require('../services/VoxcoApi');

@@ -1,45 +1,14 @@
 // @internal/roles-config - Dynamic roles loaded from database
-const sql = require('mssql');
+const { getPool } = require('../db-connection');
 
 // This object will be populated at startup
 const ROLES_LIST = {};
 
-// Database config for FAJITA (where Roles table lives)
-const getFajitaConfig = () => ({
-  user: process.env.PROMARK_DB_USER,
-  password: process.env.PROMARK_DB_PASSWORD,
-  server: process.env.PROMARK_DB_SERVER,
-  database: 'FAJITA',
-  options: {
-    encrypt: true,
-    trustServerCertificate: true,
-  },
-  pool: {
-    max: 10,
-    idleTimeoutMillis: 30000,
-    acquireTimeoutMillis: 60000,
-  },
-  requestTimeout: 30000,
-});
-
-let fajitaPool = null;
-
 /**
- * Get or create the FAJITA database pool
- */
-const getFajitaPool = async () => {
-  if (!fajitaPool) {
-    fajitaPool = await new sql.ConnectionPool(getFajitaConfig()).connect();
-    console.log('Connected to FAJITA database for roles');
-  }
-  return fajitaPool;
-};
-
-/**
- * Fetch all roles from Roles table using raw SQL (no Sequelize dependency)
+ * Fetch all roles from Roles table using the shared FAJITA pool
  */
 const getAllRoles = async () => {
-  const pool = await getFajitaPool();
+  const pool = await getPool('fajita');
   const result = await pool.request().query('SELECT RoleID, RoleName FROM Roles');
   return result.recordset;
 };
@@ -73,20 +42,8 @@ const initializeRoles = async () => {
   }
 };
 
-/**
- * Close the roles database pool (for graceful shutdown)
- */
-const closeRolesPool = async () => {
-  if (fajitaPool) {
-    await fajitaPool.close();
-    fajitaPool = null;
-    console.log('Closed roles database connection');
-  }
-};
-
 module.exports = {
   ROLES_LIST,
   initializeRoles,
-  closeRolesPool,
   getAllRoles,
 };

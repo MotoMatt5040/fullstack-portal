@@ -1,4 +1,4 @@
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const ProjectPublishingServices = require('../services/ProjectPublishingServices');
 
 const handleGetPublishedProjects = handleAsync(async (req, res) => {
