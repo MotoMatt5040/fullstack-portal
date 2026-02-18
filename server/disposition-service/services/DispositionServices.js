@@ -1,4 +1,4 @@
-const axios = require('../api/axios');
+const axios = require('@internal/voxco-api');
 const projectInfo = require('./ProjectInfo');
 const { withDbConnection } = require('@internal/db-connection');
 
