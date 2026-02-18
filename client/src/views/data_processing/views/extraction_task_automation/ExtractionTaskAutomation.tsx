@@ -1,18 +1,25 @@
 import React from 'react';
 import Icon from '@mdi/react';
-import { mdiFileUploadOutline, mdiCheckCircleOutline } from '@mdi/js';
+import { mdiFileUploadOutline } from '@mdi/js';
 
 import '../DataProcessingView.css';
+import { useExtractionTaskAutomationLogic } from './useExtractionTaskAutomationLogic';
 
-type Props = {};
+const ExtractionTaskAutomation = () => {
+  const {
+    selectedFile,
+    dragActive,
+    isLoading,
+    fileInputRef,
+    handleFileInputChange,
+    handleDrop,
+    handleDragOver,
+    handleDragLeave,
+    clearSelectedFile,
+    openFileDialog,
+    handleSubmit,
+  } = useExtractionTaskAutomationLogic();
 
-const FEATURES = [
-  'Upload templated Excel files for automated extraction task creation',
-  'Define rules for how data should be extracted and mapped to Voxco fields',
-  'Automatically create extraction tasks in Voxco using the API',
-];
-
-const ExtractionTaskAutomation = (props: Props) => {
   return (
     <div
       className='dpv-container'
@@ -25,36 +32,68 @@ const ExtractionTaskAutomation = (props: Props) => {
         <div className='dpv-header-text'>
           <h1 className='dpv-title'>Extraction Task Automation</h1>
           <p className='dpv-subtitle'>
-            Upload files and set up extraction rules
+            Upload a formatted .xlsx file to create extraction tasks
           </p>
         </div>
-        <span className='dpv-badge dpv-badge--confirmed'>Coming Soon</span>
       </header>
 
       <section className='dpv-panel'>
-        <p>
-          This tool will streamline the process of creating extraction tasks in
-          Voxco. Users will be able to upload a formatted *.xlxs file containing
-          the necessary information for the extraction task. The tool will parse
-          the file, extract the relevant data, and automatically create the
-          extraction task using the Voxco API.
-        </p>
-      </section>
+        <div
+          className={`dpv-drop-zone${dragActive ? ' dpv-drop-zone--active' : ''}${selectedFile ? ' dpv-drop-zone--has-file' : ''}`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={openFileDialog}
+        >
+          <input
+            ref={fileInputRef}
+            type='file'
+            accept='.xlsx'
+            onChange={handleFileInputChange}
+            style={{ display: 'none' }}
+          />
 
-      <section className='dpv-panel'>
-        <h2 className='dpv-features-heading'>Planned Features</h2>
-        <ul className='dpv-feature-list'>
-          {FEATURES.map((f) => (
-            <li key={f} className='dpv-feature-item'>
-              <Icon
-                path={mdiCheckCircleOutline}
-                size={0.85}
-                className='dpv-feature-icon'
-              />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
+          {selectedFile ?
+            <div className='dpv-drop-zone__file'>
+              <span className='dpv-drop-zone__icon'>📊</span>
+              <div className='dpv-drop-zone__file-info'>
+                <span className='dpv-drop-zone__filename'>
+                  {selectedFile.name}
+                </span>
+                <span className='dpv-drop-zone__filesize'>
+                  {(selectedFile.size / 1024).toFixed(1)} KB
+                </span>
+              </div>
+              <button
+                type='button'
+                className='dpv-drop-zone__clear'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearSelectedFile();
+                }}
+                disabled={isLoading}
+              >
+                ✕
+              </button>
+            </div>
+          : <div className='dpv-drop-zone__empty'>
+              <span className='dpv-drop-zone__icon'>📂</span>
+              <span className='dpv-drop-zone__label'>
+                <strong>Click to select</strong> or drag file here
+              </span>
+              <span className='dpv-drop-zone__hint'>Accepts .xlsx</span>
+            </div>
+          }
+        </div>
+
+        <button
+          type='button'
+          className='dpv-submit-btn'
+          onClick={handleSubmit}
+          disabled={!selectedFile || isLoading}
+        >
+          {isLoading ? 'Uploading…' : 'Submit'}
+        </button>
       </section>
     </div>
   );
