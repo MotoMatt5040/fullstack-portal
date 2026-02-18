@@ -7,11 +7,10 @@ import '../DataProcessingView.css';
 type Props = {};
 
 const FEATURES = [
-  'Parse raw or semi-structured data into clean table layouts',
-  'Customize column headers, types, and display order',
-  'Apply transformation rules and conditional formatting',
-  'Merge data from multiple sources into a single table',
-  'Export tables to CSV, Excel, or JSON',
+  'Upload templated Excel files for automated table generation',
+  'Define rules for table structure and styling',
+  'Generate formatted tables in docx format',
+  'Support for various table configurations and styles',
 ];
 
 const TableGenerator = (props: Props) => {

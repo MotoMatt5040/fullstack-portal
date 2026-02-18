@@ -7,11 +7,9 @@ import '../DataProcessingView.css';
 type Props = {};
 
 const FEATURES = [
-  'Upload raw data files for automated processing',
-  'Define extraction rules and field mappings',
-  'Preview extracted results before finalizing',
-  'Schedule and manage recurring extraction tasks',
-  'Export processed data in multiple formats',
+  'Upload templated Excel files for automated extraction task creation',
+  'Define rules for how data should be extracted and mapped to Voxco fields',
+  'Automatically create extraction tasks in Voxco using the API',
 ];
 
 const ExtractionTaskAutomation = (props: Props) => {
