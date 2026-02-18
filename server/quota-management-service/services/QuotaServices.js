@@ -1,4 +1,4 @@
-const axios = require('../api/axios');
+const axios = require('@internal/voxco-api');
 const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
 const { VOXCO: voxco, CALIGULAD: caligulad } = DATABASE_TYPES;
 
