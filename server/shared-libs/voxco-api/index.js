@@ -34,4 +34,24 @@ instance.interceptors.response.use(
   }
 );
 
+const refreshAccessToken = async () => {
+  try {
+    const res = await instance.get(
+      `/Voxco.API/authentication/user`,
+      {
+        params: {
+          'userInfo.username': process.env.VOXCO_API_USERNAME,
+          'userInfo.password': process.env.VOXCO_API_PASSWORD,
+          'userInfo.context': process.env.VOXCO_API_CONTEXT,
+        }
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error('Error refreshing Voxco access token:', error.message);
+  }
+};
+
+// Export instance as default (backward compatible) with refreshAccessToken attached
+instance.refreshAccessToken = refreshAccessToken;
 module.exports = instance;

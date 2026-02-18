@@ -1,4 +1,4 @@
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const CallIDService = require('../services/CallIDServices');
 
 // ==================== DASHBOARD CONTROLLERS ====================

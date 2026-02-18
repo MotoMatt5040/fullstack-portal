@@ -13,6 +13,8 @@
     "@internal/db-connection": "file:./shared-libs/db-connection",
     "@internal/error-handler": "file:./shared-libs/error-handler",
     "@internal/roles-config": "file:./shared-libs/roles-config",
+    "@internal/request-sequence": "file:./shared-libs/request-sequence",
+    "@internal/promark-utils": "file:./shared-libs/promark-utils",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",

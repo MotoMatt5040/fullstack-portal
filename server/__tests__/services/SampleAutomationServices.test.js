@@ -7,7 +7,7 @@ const {
   getPromarkConstantDefault,
   getPromarkConstantNames,
   PROMARK_INTERNAL_VARIABLES,
-} = require('../../sample-automation-service/config/promarkConstants');
+} = require('../../shared-libs/promark-constants');
 
 describe('SampleAutomation Services', () => {
   // ==================== PROMARK CONSTANTS ====================

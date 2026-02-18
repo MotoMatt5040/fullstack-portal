@@ -1,7 +1,7 @@
 // Project Numbering Service - projectNumberingController.js
 
 const ProjectNumberingServices = require('../services/ProjectNumberingServices');
-const handleAsync = require('../middleware/asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 
 /**
  * @desc Get all projects with pagination and sorting

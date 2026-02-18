@@ -13,6 +13,8 @@
     "@internal/db-connection": "file:./shared-libs/db-connection",
     "@internal/error-handler": "file:./shared-libs/error-handler",
     "@internal/roles-config": "file:./shared-libs/roles-config",
+    "@internal/promark-constants": "file:./shared-libs/promark-constants",
+    "@internal/file-processors": "file:./shared-libs/file-processors",
     "axios": "^1.6.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

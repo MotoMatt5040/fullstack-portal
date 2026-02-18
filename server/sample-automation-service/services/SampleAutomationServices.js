@@ -5,7 +5,7 @@ const { CALIGULAD: caligulad } = DATABASE_TYPES;
 const {
   getPromarkConstantsAsHeaders,
   getPromarkConstantDefault,
-} = require('../config/promarkConstants');
+} = require('@internal/promark-constants');
 
 /**
  * Get user-specific temp directory path

@@ -1,16 +1,11 @@
 const Reports = require('../services/ReportServices');
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const {
   STATE_ABBREVIATIONS,
   OTHER_ABBREVIATIONS,
-} = require('../config/abbreviations');
+  cleanQueryParam,
+} = require('@internal/promark-utils');
 const path = require('path');
-
-const cleanQueryParam = (value) => {
-  if (value === 'undefined' || value === 'null' || value === '')
-    return undefined;
-  return value;
-};
 
 const calculateInterviewerStats = (interviewerData, project, cph) => {
   // NOTE: cph is the gpcph for live projects and the actual cph for historic projects
