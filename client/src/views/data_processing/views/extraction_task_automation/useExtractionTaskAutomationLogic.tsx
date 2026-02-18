@@ -8,6 +8,7 @@ export const useExtractionTaskAutomationLogic = () => {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [suffix, setSuffix] = useState<string>('COM');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = useCallback(
@@ -69,6 +70,7 @@ export const useExtractionTaskAutomationLogic = () => {
     }
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('suffix', suffix);
     try {
       const result = await uploadExtractionFile(formData).unwrap();
       toast.success(result.message || 'File processed successfully.', 'Upload Complete');
@@ -77,7 +79,7 @@ export const useExtractionTaskAutomationLogic = () => {
       const message = err?.data?.message || 'An error occurred while uploading the file.';
       toast.error(message, 'Upload Failed');
     }
-  }, [selectedFile, uploadExtractionFile, toast, clearSelectedFile]);
+  }, [selectedFile, suffix, uploadExtractionFile, toast, clearSelectedFile]);
 
   return {
     selectedFile,
@@ -91,5 +93,7 @@ export const useExtractionTaskAutomationLogic = () => {
     clearSelectedFile,
     openFileDialog,
     handleSubmit,
+    suffix,
+    setSuffix,
   };
 };

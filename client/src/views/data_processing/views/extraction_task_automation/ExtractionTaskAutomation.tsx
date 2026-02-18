@@ -18,6 +18,8 @@ const ExtractionTaskAutomation = () => {
     clearSelectedFile,
     openFileDialog,
     handleSubmit,
+    suffix,
+    setSuffix,
   } = useExtractionTaskAutomationLogic();
 
   return (
@@ -36,6 +38,25 @@ const ExtractionTaskAutomation = () => {
           </p>
         </div>
       </header>
+
+      <section className='dpv-panel'>
+        <div className='dpv-field-row'>
+          <label className='dpv-label' htmlFor='suffix-select'>
+            Voxco Project Tag
+          </label>
+          <select
+            id='suffix-select'
+            className='dpv-select'
+            value={suffix}
+            onChange={(e) => setSuffix(e.target.value)}
+          >
+            <option value='COM'>COM</option>
+            <option value='W'>W</option>
+            <option value='C'>C</option>
+            <option value=''>None</option>
+          </select>
+        </div>
+      </section>
 
       <section className='dpv-panel'>
         <div

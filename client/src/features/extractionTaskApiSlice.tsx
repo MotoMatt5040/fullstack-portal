@@ -7,7 +7,10 @@ interface UploadExtractionFileResponse {
 
 export const extractionTaskApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    uploadExtractionFile: builder.mutation<UploadExtractionFileResponse, FormData>({
+    uploadExtractionFile: builder.mutation<
+      UploadExtractionFileResponse,
+      FormData
+    >({
       query: (formData) => ({
         url: '/extraction-task/upload',
         method: 'POST',
@@ -17,4 +20,6 @@ export const extractionTaskApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useUploadExtractionFileMutation } = extractionTaskApiSlice;
+export const {
+  useUploadExtractionFileMutation,
+} = extractionTaskApiSlice;

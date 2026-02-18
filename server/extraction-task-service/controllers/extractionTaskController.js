@@ -45,6 +45,7 @@ const parseFile = (file) => {
  */
 const handleCreateExtractionTask = handleAsync(async (req, res) => {
   const file = req.file;
+  const suffix = req.body.suffix ?? 'COM'; // Default to 'COM' if no suffix provided
 
   // Likely blocked already on frontend, but double check here
   if (!file) {
@@ -52,15 +53,19 @@ const handleCreateExtractionTask = handleAsync(async (req, res) => {
   }
 
   const parsedData = parseFile(file);
-  const voxcoID = await ExtractionTaskServices.getVoxcoID(parsedData.projectId);
+  const voxcoID = await ExtractionTaskServices.getVoxcoID(
+    parsedData.projectId,
+    suffix,
+  );
 
   if (!voxcoID) {
     return res.status(404).json({ error: 'Project not found in VOXCO' });
   }
 
-  const result = await ExtractionTaskServices.handleCreateExtractionTask(
+  const result = await ExtractionTaskServices.createExtractionTask(
     parsedData.data,
     voxcoID,
+    suffix,
   );
   res
     .status(200)
