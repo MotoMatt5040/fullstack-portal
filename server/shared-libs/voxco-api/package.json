@@ -1,0 +1,6 @@
+{
+  "name": "@internal/voxco-api",
+  "version": "1.0.0",
+  "description": "Shared Voxco API utilities for microservices",
+  "main": "index.js"
+}

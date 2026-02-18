@@ -1,4 +1,4 @@
-const axios = require('../api/axios');
+const axios = require('@internal/voxco-api');
 
 const VOXCO_API_USERNAME = process.env.VOXCO_API_USERNAME;
 const VOXCO_API_PASSWORD = process.env.VOXCO_API_PASSWORD;

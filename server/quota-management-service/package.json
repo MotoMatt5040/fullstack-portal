@@ -13,6 +13,7 @@
     "@internal/db-connection": "file:./shared-libs/db-connection",
     "@internal/error-handler": "file:./shared-libs/error-handler",
     "@internal/roles-config": "file:./shared-libs/roles-config",
+    "@internal/voxco-api": "file:./shared-libs/voxco-api",
     "axios": "^1.6.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
