@@ -62,12 +62,19 @@ const handleCreateExtractionTask = handleAsync(async (req, res) => {
     return res.status(404).json({ error: 'Project not found in VOXCO' });
   }
 
+  const name = parsedData.projectId + 'DAT';
+  const variables = parsedData.data.map((row) => row.alias);
+
   const result = await ExtractionTaskServices.createExtractionTask(
-    parsedData.data,
+    name,
     voxcoID,
-    suffix,
+    variables,
   );
   res
     .status(200)
     .json({ message: 'File processed successfully.', data: result });
 });
+
+module.exports = {
+  handleCreateExtractionTask,
+};

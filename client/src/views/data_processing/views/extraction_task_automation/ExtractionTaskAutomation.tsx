@@ -42,7 +42,7 @@ const ExtractionTaskAutomation = () => {
       <section className='dpv-panel'>
         <div className='dpv-field-row'>
           <label className='dpv-label' htmlFor='suffix-select'>
-            Voxco Project Tag
+            Voxco Project Suffix
           </label>
           <select
             id='suffix-select'
