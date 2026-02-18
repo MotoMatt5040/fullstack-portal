@@ -24,7 +24,7 @@ const startServer = async () => {
   await initializeRoles();
 
   const extractionTaskRoutes = require('./routes/extractionTaskRoutes');
-  app.use('/api/extraction-tasks', extractionTaskRoutes);
+  app.use('/api/extraction-task', extractionTaskRoutes);
 
   app.use(errorHandler);
 
