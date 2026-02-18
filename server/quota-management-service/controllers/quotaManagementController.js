@@ -464,16 +464,52 @@ const sortPhoneProjectsUltraRobust = (projects) => {
   });
 };
 
-const handleGetQuotas = handleAsync(async (req, res) => {
+const fetchQuotaData = async (projectId) => {
   const apiUser = await VoxcoApi.refreshAccessToken();
   const token = apiUser?.Token;
 
   if (!token) {
-    return res
-      .status(401)
-      .json({ message: 'Unauthorized credentials for Voxco' });
+    throw new Error('Unauthorized credentials for Voxco');
   }
 
+  const [phoneProjects, webProject] = await Promise.all([
+    ProjectInfo.getPhoneProjects(projectId),
+    ProjectInfo.getWebProjects(projectId),
+  ]);
+
+  const data = {
+    totalRow: {
+      Total: {
+        Label: 'Total',
+        TotalObjective: 0,
+        Frequency: 0,
+      },
+    },
+  };
+  const visibleStypes = {};
+
+  if (phoneProjects.length > 0) {
+    const sortedPhoneProjects = sortPhoneProjectsUltraRobust(phoneProjects);
+
+    data.totalRow.Phone = { Total: { Frequency: 0 } };
+    visibleStypes.Phone = [];
+
+    for (const project of sortedPhoneProjects) {
+      await buildPhoneStructure(project, token, data, visibleStypes);
+    }
+  }
+
+  if (webProject.length > 0) {
+    const sid = webProject[0].id;
+    await buildWebStructure(sid, data, visibleStypes);
+  }
+
+  calculateData(data);
+
+  return { visibleStypes, data };
+};
+
+const handleGetQuotas = handleAsync(async (req, res) => {
   const { projectId } = req.query;
   const isInternalUser = req?.query?.isInternalUser === 'true';
 
@@ -482,50 +518,17 @@ const handleGetQuotas = handleAsync(async (req, res) => {
   }
 
   try {
-    const [phoneProjects, webProject] = await Promise.all([
-      ProjectInfo.getPhoneProjects(projectId),
-      ProjectInfo.getWebProjects(projectId),
-    ]);
-
-
-    const data = {
-      totalRow: {
-        Total: {
-          Label: 'Total',
-          TotalObjective: 0,
-          Frequency: 0,
-        },
-      },
-    };
-    const visibleStypes = {};
-
-    if (phoneProjects.length > 0) {
-      const sortedPhoneProjects = sortPhoneProjectsUltraRobust(phoneProjects);
-
-      data.totalRow.Phone = { Total: { Frequency: 0 } };
-      visibleStypes.Phone = [];
-
-      for (const project of sortedPhoneProjects) {
-        await buildPhoneStructure(project, token, data, visibleStypes);
-      }
-    }
-
-    if (webProject.length > 0) {
-      const sid = webProject[0].id;
-      await buildWebStructure(sid, data, visibleStypes);
-    }
-
-    calculateData(data);
+    const result = await fetchQuotaData(projectId);
 
     if (!isInternalUser) {
-      filterForExternalUsers(data);
+      filterForExternalUsers(result.data);
     }
 
-    return res.status(200).json({
-      visibleStypes,
-      data,
-    });
+    return res.status(200).json(result);
   } catch (error) {
+    if (error.message === 'Unauthorized credentials for Voxco') {
+      return res.status(401).json({ message: error.message });
+    }
     console.error('Error in handleGetQuotas:', error);
     return res.status(500).json({
       message: 'Internal server error while processing quotas',
@@ -548,4 +551,4 @@ const handleGetQuotaProjects = handleAsync(async (req, res) => {
   }
 });
 
-module.exports = { handleGetQuotas, handleGetQuotaProjects };
+module.exports = { handleGetQuotas, handleGetQuotaProjects, fetchQuotaData, filterForExternalUsers };

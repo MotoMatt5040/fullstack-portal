@@ -1,20 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { jwtDecode } from 'jwt-decode';
 import { useSelector } from 'react-redux';
-// import { selectCurrentToken } from '../../features/auth/authSlice';
 import { selectUser } from '../../features/auth/authSlice';
 import { useLazyGetQuotasQuery, useLazyGetQuotaProjectsQuery } from '../../features/quotasApiSlice';
 import { useSearchParams } from 'react-router-dom';
-import { mdiPhoneReturnOutline } from '@mdi/js';
+import { useQuotaSSE } from '../../hooks/useQuotaSSE';
 
 // Types
-interface DecodedToken {
-  UserInfo: {
-    username: string;
-    roles: number[];
-  };
-}
-
 interface ProjectOption {
   value: string;
   label: string;
@@ -33,19 +24,62 @@ interface QuotaData {
 const EXTERNAL_ROLE_ID = 4;
 const PROJECT_ID_QUERY_PARAM = 'projectId';
 
+const processVisibleStypes = (rawVisibleStypes: Record<string, any>): { stypes: VisibleStypes; useBase: boolean } => {
+  const baseStypes: VisibleStypes = {
+    Project: {
+      blankSpace_1: 'Label',
+      Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
+    },
+  };
+
+  const processedStypes: VisibleStypes = {
+    blankSpace_6: {
+      blankSpace_1: 'Label',
+      Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
+    },
+  };
+
+  const subTypeOrder = [
+    'Landline',
+    'Cell',
+    'Panel',
+    'T2W',
+    'Email',
+    'Mailer',
+  ];
+
+  let count = 0;
+  Object.entries(rawVisibleStypes || {}).forEach(
+    ([type, entries]) => {
+      processedStypes[type] = { Total: ['Freq', 'Freq%'] };
+
+      if (Array.isArray(entries)) {
+        const sortedEntries = subTypeOrder.filter((orderKey) =>
+          (entries as string[]).includes(orderKey)
+        );
+
+        sortedEntries.forEach((entry: string) => {
+          count++;
+          processedStypes[type][entry] = ['Status', 'Freq', 'Freq%'];
+        });
+      }
+    }
+  );
+
+  return {
+    stypes: count === 1 ? baseStypes : processedStypes,
+    useBase: count === 1,
+  };
+};
+
 const useQuotaManagementLogic = () => {
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [quotas, setQuotas] = useState<QuotaData>({});
   const [visibleStypes, setVisibleStypes] = useState<VisibleStypes>({});
-  // const [webDispositionData, setWebDispositionData] = useState();
-  // const [chartData, setChartData] = useState<any>([{ field: '', value: 0 }]);
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchParamsRef = useRef<any>(null);
+  const [sseError, setSseError] = useState<any>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // const token = useSelector(selectCurrentToken);
   const currentUser = useSelector(selectUser);
 
   // Memoized user info extraction from the JWT token
@@ -61,7 +95,7 @@ const useQuotaManagementLogic = () => {
     };
   }, [currentUser]);
 
-  // RTK Query hooks for fetching quota data and project list lazily
+  // RTK Query hooks - lazy query kept for manual refresh
   const [
     getQuotas,
     { data: quotaData, isFetching: quotaDataIsFetching, error: quotaDataError },
@@ -75,6 +109,32 @@ const useQuotaManagementLogic = () => {
       error: projectListError,
     },
   ] = useLazyGetQuotaProjectsQuery();
+
+  // SSE callback: process incoming quota data
+  const handleSSEData = useCallback((data: { visibleStypes: Record<string, any>; data: Record<string, any> }) => {
+    try {
+      setQuotas(data.data || {});
+      const { stypes } = processVisibleStypes(data.visibleStypes);
+      setVisibleStypes(stypes);
+      setSseError(null);
+    } catch (error) {
+      console.error('Error processing SSE quota data:', error);
+      setQuotas({});
+      setVisibleStypes({});
+    }
+  }, []);
+
+  const handleSSEError = useCallback((error: any) => {
+    setSseError(error);
+  }, []);
+
+  // SSE connection - replaces setInterval polling
+  const { isConnected } = useQuotaSSE({
+    projectId: selectedProject || null,
+    isInternalUser: userInfo.isInternalUser,
+    onData: handleSSEData,
+    onError: handleSSEError,
+  });
 
   // Memoized list of project options for a dropdown/selector
   const projectListOptions = useMemo((): ProjectOption[] => {
@@ -119,75 +179,13 @@ const useQuotaManagementLogic = () => {
     }
   }, [userInfo.isInternalUser, userInfo.username, getQuotaProjects]);
 
-  // useEffect(() => {
-  //   if (!webDispositionData) return;
-  //   const excludeKeys = ['Sample', 'Objective', 'Responses', 'AvgCompletionSeconds', 'AvgCompletionTime','CompletionRate']
-  //   const transformedData = Object.entries(webDispositionData)
-  //   .filter(([key, value]) => !excludeKeys.includes(key))
-  //   .map(([key, value]) => ({
-  //     field: key,
-  //     value: value,
-  //   }));
-
-  //   setChartData(transformedData);
-  //   console.log(transformedData)
-  // }, [webDispositionData]);
-
+  // Process data from manual refresh (RTK Query)
   useEffect(() => {
     if (quotaData) {
       try {
-        setQuotas(() => quotaData.data || {});
-        // setWebDispositionData(quotaData.webDispositionData || {});
-        // console.log(quotaData.webDispositionData);
-        console.log(visibleStypes);
-
-        const baseStypes = {
-          Project: {
-            blankSpace_1: 'Label',
-            Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
-          },
-        };
-
-        const processedStypes: VisibleStypes = {
-          blankSpace_6: {
-            blankSpace_1: 'Label',
-            Total: ['Status', 'Obj', 'Obj%', 'Freq', 'Freq%', 'To Do'],
-          },
-        };
-
-        const subTypeOrder = [
-          'Landline',
-          'Cell',
-          'Panel',
-          'T2W',
-          'Email',
-          'Mailer',
-        ];
-
-        let count = 0;
-        Object.entries(quotaData.visibleStypes || {}).forEach(
-          ([type, entries]) => {
-            processedStypes[type] = { Total: ['Freq', 'Freq%'] };
-
-            if (Array.isArray(entries)) {
-              const sortedEntries = subTypeOrder.filter((orderKey) =>
-                (entries as string[]).includes(orderKey)
-              );
-
-              sortedEntries.forEach((entry: string) => {
-                count++;
-                processedStypes[type][entry] = ['Status', 'Freq', 'Freq%'];
-              });
-            }
-          }
-        );
-
-        console.log(processedStypes);
-        console.log(quotaData)
-
-        count === 1
-          ? setVisibleStypes(baseStypes)
-          : setVisibleStypes(processedStypes);
+        setQuotas(quotaData.data || {});
+        const { stypes } = processVisibleStypes(quotaData.visibleStypes);
+        setVisibleStypes(stypes);
       } catch (error) {
         console.error('Error processing quota data:', error);
         setQuotas({});
@@ -195,6 +193,14 @@ const useQuotaManagementLogic = () => {
       }
     }
   }, [quotaData]);
+
+  // Clear data when project is deselected
+  useEffect(() => {
+    if (!selectedProject) {
+      setQuotas({});
+      setVisibleStypes({});
+    }
+  }, [selectedProject]);
 
   // Separate effect for URL management
   useEffect(() => {
@@ -216,57 +222,6 @@ const useQuotaManagementLogic = () => {
     }
   }, [selectedProject, searchParams, setSearchParams]);
 
-  // Data fetching with proper cleanup
-  useEffect(() => {
-    // Clear any existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    if (!selectedProject) {
-      setQuotas({});
-      setVisibleStypes({});
-      // setChartData([]);
-      lastFetchParamsRef.current = null;
-      return;
-    }
-
-    const fetchParams = {
-      projectId: selectedProject,
-      isInternalUser: userInfo.isInternalUser,
-    };
-
-    // Store current fetch params
-    lastFetchParamsRef.current = fetchParams;
-
-    // Create fetch function that uses current params
-    const fetchQuotas = () => {
-      // Only fetch if params haven't changed
-      if (
-        lastFetchParamsRef.current &&
-        lastFetchParamsRef.current.projectId === fetchParams.projectId &&
-        lastFetchParamsRef.current.isInternalUser === fetchParams.isInternalUser
-      ) {
-        getQuotas(fetchParams).catch(console.error);
-      }
-    };
-
-    // Initial fetch
-    fetchQuotas();
-
-    // Set up polling
-    intervalRef.current = setInterval(fetchQuotas, 15000);
-
-    // Cleanup
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [selectedProject, userInfo.isInternalUser, getQuotas]);
-
   // Callback for handling project selection changes
   const handleProjectChange = useCallback(
     (selected: ProjectOption | null) => {
@@ -278,7 +233,7 @@ const useQuotaManagementLogic = () => {
     [selectedProject]
   );
 
-  // Callback to manually refresh quota data
+  // Manual refresh via REST endpoint
   const refreshData = useCallback(() => {
     if (selectedProject && !quotaDataIsFetching) {
       const fetchParams = {
@@ -294,32 +249,23 @@ const useQuotaManagementLogic = () => {
     quotaDataIsFetching,
   ]);
 
-  // Memoized boolean to indicate overall loading state (initial fetch)
+  // Loading state: project list loading or waiting for first SSE data
   const isLoading = useMemo(() => {
     return (
       projectListIsFetching ||
-      (quotaDataIsFetching && Object.keys(quotas).length === 0)
+      (selectedProject !== '' && Object.keys(quotas).length === 0 && !sseError)
     );
-  }, [quotaDataIsFetching, projectListIsFetching, quotas]);
+  }, [projectListIsFetching, selectedProject, quotas, sseError]);
 
-  // Memoized boolean to indicate if data is currently being refetched (after initial load)
+  // Refetching state: manual refresh in progress with existing data
   const isRefetching = useMemo(() => {
     return quotaDataIsFetching && Object.keys(quotas).length > 0;
   }, [quotaDataIsFetching, quotas]);
 
   // Memoized error state
   const error = useMemo(() => {
-    return quotaDataError || projectListError;
-  }, [quotaDataError, projectListError]);
-
-  // FIXED: Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
+    return quotaDataError || projectListError || sseError;
+  }, [quotaDataError, projectListError, sseError]);
 
   return {
     // Data
@@ -328,18 +274,17 @@ const useQuotaManagementLogic = () => {
     visibleStypes,
     projectListOptions,
     userInfo,
-    // webDispositionData,
-    // chartData,
 
     // Loading states
     isLoading,
     isRefetching,
+    isConnected,
 
     // Error states
     error,
 
     // Actions
-    handleProjectChange, // Use optimized callback
+    handleProjectChange,
     refreshData,
 
     // Legacy support (can be removed after refactoring consumers)
