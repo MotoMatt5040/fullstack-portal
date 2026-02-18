@@ -72,13 +72,14 @@ const ExtractionTaskAutomation = lazy(
     import('./views/data_processing/views/extraction_task_automation/ExtractionTaskAutomation'),
 );
 const TableGenerator = lazy(
-  () => import('./views/data_processing/table_generator/TableGenerator'),
+  () => import('./views/data_processing/views/table_generator/TableGenerator'),
 );
 const ColumnGenerator = lazy(
-  () => import('./views/data_processing/column_generator/ColumnGenerator'),
+  () =>
+    import('./views/data_processing/views/column_generator/ColumnGenerator'),
 );
 const WeightingTool = lazy(
-  () => import('./views/data_processing/weighting_tool/WeightingTool'),
+  () => import('./views/data_processing/views/weighting_tool/WeightingTool'),
 );
 
 // Loading fallback for lazy-loaded components

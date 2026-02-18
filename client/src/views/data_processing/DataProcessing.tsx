@@ -23,28 +23,28 @@ const DataProcessing = () => {
   const tools: Tool[] = useMemo(
     () => [
       {
-        to: '/data_processing/extraction-task-automation',
+        to: '/data-processing/extraction-task-automation',
         icon: mdiFileUploadOutline,
         label: 'Create Extraction Task',
         description: 'Upload files and set up extraction rules',
         color: '#3b82f6',
       },
       {
-        to: '/data_processing/table-generator',
+        to: '/data-processing/table-generator',
         icon: mdiTableEdit,
         label: 'Table Generator',
         description: 'Create structured tables from raw data',
         color: '#f59e0b',
       },
       {
-        to: '/data_processing/weighting-tool',
+        to: '/data-processing/weighting-tool',
         icon: mdiFileExportOutline,
         label: 'Weighting Tool',
         description: 'Add weights to your data for analysis',
         color: '#8b5cf6',
       },
       {
-        to: '/data_processing/column-generator',
+        to: '/data-processing/column-generator',
         icon: mdiTableColumn,
         label: 'Column Generator',
         description: 'Generate new columns from existing data',
