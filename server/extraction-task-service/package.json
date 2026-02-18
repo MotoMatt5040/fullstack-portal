@@ -11,12 +11,14 @@
     "@internal/auth-middleware": "file:./shared-libs/auth-middleware",
     "@internal/cors-config": "file:./shared-libs/cors-config",
     "@internal/error-handler": "file:./shared-libs/error-handler",
+    "@internal/db-connection": "file:./shared-libs/db-connection",
     "@internal/roles-config": "file:./shared-libs/roles-config",
     "@internal/voxco-api": "file:./shared-libs/voxco-api",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
