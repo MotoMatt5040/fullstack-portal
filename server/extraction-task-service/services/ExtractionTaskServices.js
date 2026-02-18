@@ -1,6 +1,8 @@
 const axios = require('@internal/voxco-api');
 const { withDbConnection, sql } = require('@internal/db-connection');
 
+('rPZG+g26bRSoXE5pqz1RV3SXK87SG2ya/UYgg3zB2WAbQWgX1bE7c8DqhUaD1JDjkz6De+cY6YYq8MZETjnoID4x5OOlccIYPa2ro7jZoHGKE9WqhEq3dtT8VnOXgMR4O9GgyMcCKYyHL7fyEkqWnz6Xj2iVeLGKXZEaaX8swvhBGiNoO6lp9H7ptXDkazA71cjlIUBbRBuKUaFC5aVn5j+yeGgNGBa+LCYNQHT+G9+1TNebA9eIhQ==');
+
 const getVoxcoID = async (projectID, suffix, isWeb = false) => {
   if (isWeb) {
     return withDbConnection({
@@ -54,50 +56,25 @@ const getVoxcoID = async (projectID, suffix, isWeb = false) => {
 };
 
 /**
- * Builds the extraction task payload with static defaults and dynamic fields.
- * @param {string} name - Task name and DestinationFileName (e.g. projectID + "DAT")
- * @param {number} surveyId - Voxco survey ID
- * @param {string[]} variables - Array of variable alias strings
- */
-const buildExtractionPayload = (name, surveyId, variables) => ({
-  Name: name,
-  SurveyId: surveyId,
-  Language: 'en',
-  DestinationFileName: name,
-  ExtractFormat: 'TXT',
-  Filter: {
-    CaseStatus: 'Completed',
-    CaseActiveStatus: 'Active',
-    Strata: 'All',
-  },
-  StripHtmlFromLabels: true,
-  IncludeOpenEnds: false,
-  Encoding: 'Windows1252',
-  Variables: variables,
-  RemoveBracesOfSystemVariables: false,
-});
-
-/**
  * Handles the creation of an extraction task in VOXCO.
  * @param {string} name - Task name / DestinationFileName (e.g. projectID + "DAT")
  * @param {number} surveyId - Voxco survey ID
  * @param {string[]} variables - Array of variable alias strings
  */
-const createExtractionTask = async (name, surveyId, variables) => {
-  const URL = `/api/results/extract`;
-  const payload = buildExtractionPayload(name, surveyId, variables);
+const createExtractionTask = async (payload, voxcoProjectId) => {
+  const URL = `Voxco.API/projects/${voxcoProjectId}/extraction/tasks`;
   try {
     const res = await axios.post(URL, payload);
     return {
       success: true,
-      message: `Extraction task created successfully for VOXCO project ${surveyId}`,
+      message: `Extraction task created successfully for VOXCO project ${voxcoProjectId}`,
       taskId: res.data.taskId,
     };
   } catch (error) {
     console.error('Error creating extraction task:', error);
     return {
       success: false,
-      message: `Failed to create extraction task for VOXCO project ${surveyId}`,
+      message: `Failed to create extraction task for VOXCO project ${voxcoProjectId}`,
       error: error.message,
     };
   }
@@ -105,27 +82,5 @@ const createExtractionTask = async (name, surveyId, variables) => {
 
 module.exports = {
   getVoxcoID,
-  buildExtractionPayload,
   createExtractionTask,
 };
-
-/**
- * {
-  "IncludeConnectionHistory": true,
-  "IncludeLabels": true,
-  "FieldDelimiter": "Comma",
-  "EncloseValuesInDoubleQuotes": true,
-  "IncludeHeader": true,
-  "IncludeQuestionText": true,
-  "UseChoiceLabels": true,
-  "MergeOpenEnds": true,
-  "DichotomizedMultiple": true,
-  "DichotomizedEmptyWhenNoAnswer": true,
-  "UseNegativeIntegersForEmptyAnswers": true,
-  "DapresyDataFormat": true,
-  "DefaultFieldSize": 255,
-  "LoopsInQuestionnaireOrder": true,
-  "IncludeRespondentFiles": true,
-  "RespondentFileExtractionStructure": "Variable",
-}
- */
