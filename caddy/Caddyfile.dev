@@ -107,6 +107,11 @@ localhost {
         reverse_proxy user-management:5007
     }
 
+    # SSE quota events endpoint - public (no auth required for SSE connection)
+    handle /api/quota-management/events {
+        reverse_proxy quota-management:5008
+    }
+
     # Quota Management service routes - use forward_auth for JWT validation
     handle /api/quota-management/* {
         forward_auth auth-gateway:5005 {
