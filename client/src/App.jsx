@@ -64,6 +64,23 @@ const QuotaSetupGuidePage = lazy(
 const HeaderMappings = lazy(
   () => import('./views/header_mappings/HeaderMappings'),
 );
+const DataProcessing = lazy(
+  () => import('./views/data_processing/DataProcessing'),
+);
+const ExtractionTaskAutomation = lazy(
+  () =>
+    import('./views/data_processing/views/extraction_task_automation/ExtractionTaskAutomation'),
+);
+const TableGenerator = lazy(
+  () => import('./views/data_processing/views/table_generator/TableGenerator'),
+);
+const ColumnGenerator = lazy(
+  () =>
+    import('./views/data_processing/views/column_generator/ColumnGenerator'),
+);
+const WeightingTool = lazy(
+  () => import('./views/data_processing/views/weighting_tool/WeightingTool'),
+);
 
 // Loading fallback for lazy-loaded components
 const PageLoader = () => <div className='page-loader'>Loading...</div>;
@@ -182,6 +199,37 @@ function App() {
             }
           >
             <Route path='ai-prompting' element={<AIPrompting />} />
+          </Route>
+
+          <Route
+            element={
+              <RequireAuth
+                allowedRoles={[
+                  roles.Admin,
+                  roles.Executive,
+                  roles.Programmer,
+                  roles.DataProcessor,
+                ]}
+              />
+            }
+          >
+            <Route path='data-processing' element={<DataProcessing />} />
+            <Route
+              path='data-processing/extraction-task-automation'
+              element={<ExtractionTaskAutomation />}
+            />
+            <Route
+              path='data-processing/table-generator'
+              element={<TableGenerator />}
+            />
+            <Route
+              path='data-processing/column-generator'
+              element={<ColumnGenerator />}
+            />
+            <Route
+              path='data-processing/weighting-tool'
+              element={<WeightingTool />}
+            />
           </Route>
 
           <Route

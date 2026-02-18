@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentToken } from '../features/auth/authSlice';
@@ -18,6 +24,7 @@ import {
   mdiCog,
   mdiGithub,
   mdiSwapHorizontal,
+  mdiDatabaseCogOutline,
 } from '@mdi/js';
 import './css/NavBar.css';
 
@@ -47,27 +54,109 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
     return allowedRoles.some((role) => userRoles.includes(role));
   };
 
-  const navItems = useMemo(() => [
-    { to: '/', icon: mdiHome, label: 'Home', visible: true },
-    { to: '/quota-management', icon: mdiChartLine, label: 'Quota Report', visible: true },
-    { to: '/summary-report', icon: mdiFileDocumentOutline, label: 'Summary Report', visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]) },
-    { to: '/disposition-report', icon: mdiFileDocumentOutline, label: 'Disposition Report', visible: true },
-    { to: '/sample-automation', icon: mdiCog, label: 'Sample Automation', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
-    { to: '/sample-tracking', icon: mdiCog, label: 'Sample Tracking', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
-    { to: '/extraction-defaults', icon: mdiCog, label: 'Extraction Defaults', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
-    { to: '/header-mappings', icon: mdiSwapHorizontal, label: 'Header Mappings', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
-    { to: '/call-id', icon: mdiPhone, label: 'Call ID Management', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
-    { to: '/project-database', icon: mdiNumeric, label: 'Project Database', visible: hasRole([roles.Admin, roles.Executive, roles.Manager, roles.Programmer]) },
-    { to: '/ai-prompting', icon: mdiRobot, label: 'AI Prompting', visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]) },
-    { to: '/user-management', icon: mdiAccountGroup, label: 'User Management', visible: hasRole([roles.Admin, roles.Executive]) },
-    { to: '/github', icon: mdiGithub, label: 'Feedback', visible: true },
-  ], [roles, userRoles]);
+  const navItems = useMemo(
+    () => [
+      { to: '/', icon: mdiHome, label: 'Home', visible: true },
+      {
+        to: '/quota-management',
+        icon: mdiChartLine,
+        label: 'Quota Report',
+        visible: true,
+      },
+      {
+        to: '/summary-report',
+        icon: mdiFileDocumentOutline,
+        label: 'Summary Report',
+        visible: hasRole([
+          roles.Admin,
+          roles.Executive,
+          roles.Manager,
+          roles.Programmer,
+        ]),
+      },
+      {
+        to: '/disposition-report',
+        icon: mdiFileDocumentOutline,
+        label: 'Disposition Report',
+        visible: true,
+      },
+      {
+        to: '/sample-automation',
+        icon: mdiCog,
+        label: 'Sample Automation',
+        visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
+      },
+      {
+        to: '/sample-tracking',
+        icon: mdiCog,
+        label: 'Sample Tracking',
+        visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
+      },
+      {
+        to: '/extraction-defaults',
+        icon: mdiCog,
+        label: 'Extraction Defaults',
+        visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
+      },
+      {
+        to: '/header-mappings',
+        icon: mdiSwapHorizontal,
+        label: 'Header Mappings',
+        visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
+      },
+      {
+        to: '/call-id',
+        icon: mdiPhone,
+        label: 'Call ID Management',
+        visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
+      },
+      {
+        to: '/project-database',
+        icon: mdiNumeric,
+        label: 'Project Database',
+        visible: hasRole([
+          roles.Admin,
+          roles.Executive,
+          roles.Manager,
+          roles.Programmer,
+        ]),
+      },
+      {
+        to: '/data-processing',
+        icon: mdiDatabaseCogOutline,
+        label: 'Data Processing',
+        visible: hasRole([
+          roles.Admin,
+          roles.Executive,
+          roles.Programmer,
+          roles.DataProcessor,
+        ]),
+      },
+      {
+        to: '/ai-prompting',
+        icon: mdiRobot,
+        label: 'AI Prompting',
+        visible: hasRole([roles.Admin, roles.Executive, roles.Programmer]),
+      },
+      {
+        to: '/user-management',
+        icon: mdiAccountGroup,
+        label: 'User Management',
+        visible: hasRole([roles.Admin, roles.Executive]),
+      },
+      { to: '/github', icon: mdiGithub, label: 'Feedback', visible: true },
+    ],
+    [roles, userRoles],
+  );
 
   // Memoize visible items filter
-  const visibleItems = useMemo(() => navItems.filter(item => item.visible), [navItems]);
+  const visibleItems = useMemo(
+    () => navItems.filter((item) => item.visible),
+    [navItems],
+  );
 
   const toggleNav = useCallback(() => {
-    setIsNavVisible(prev => {
+    setIsNavVisible((prev) => {
       const newVisibility = !prev;
       onToggleNav(newVisibility);
       return newVisibility;
@@ -127,8 +216,8 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
         <div
           className={`navbar-clickable-area ${isNavVisible ? 'open' : ''}`}
           onClick={toggleNav}
-          aria-label="Toggle navigation menu"
-          role="button"
+          aria-label='Toggle navigation menu'
+          role='button'
           tabIndex={0}
         >
           <Icon path={mdiMenu} size={1.5} className='hamburger-icon' />
@@ -148,19 +237,19 @@ const NavBar: React.FC<Props> = ({ onToggleNav }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <ul role="menubar" aria-label="Main navigation">
+        <ul role='menubar' aria-label='Main navigation'>
           {visibleItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
-              <li key={item.to} role="none">
+              <li key={item.to} role='none'>
                 <Link
                   to={item.to}
                   onClick={closeNav}
                   className={isActive ? 'active' : ''}
-                  role="menuitem"
+                  role='menuitem'
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon path={item.icon} size={0.9} aria-hidden="true" />
+                  <Icon path={item.icon} size={0.9} aria-hidden='true' />
                   <span>{item.label}</span>
                 </Link>
               </li>
