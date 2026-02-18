@@ -1,4 +1,4 @@
-const axios = require('../api/axios');
+const axios = require('@internal/voxco-api');
 
 /**
  * Handles the creation of an extraction task in VOXCO.
