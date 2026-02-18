@@ -33,9 +33,10 @@ const TableGenerator = (props: Props) => {
 
       <section className='dpv-panel'>
         <p>
-          This tool will let you transform raw or semi-structured data into clean, well-defined tables
-          ready for analysis and reporting. Configure column mappings, apply transformations, and
-          preview your output before committing changes.
+          This tool will transform templated excel files into clean formatted
+          tables inside of a docx file. It will allow users to define rules for
+          how the table should be structured and styled. Input: *.xlsx file with
+          necessary structure, Output: *.docx file with formatted table.
         </p>
       </section>
 
@@ -44,7 +45,11 @@ const TableGenerator = (props: Props) => {
         <ul className='dpv-feature-list'>
           {FEATURES.map((f) => (
             <li key={f} className='dpv-feature-item'>
-              <Icon path={mdiCheckCircleOutline} size={0.85} className='dpv-feature-icon' />
+              <Icon
+                path={mdiCheckCircleOutline}
+                size={0.85}
+                className='dpv-feature-icon'
+              />
               <span>{f}</span>
             </li>
           ))}

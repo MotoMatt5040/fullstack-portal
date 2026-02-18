@@ -26,16 +26,20 @@ const ExtractionTaskAutomation = (props: Props) => {
         </div>
         <div className='dpv-header-text'>
           <h1 className='dpv-title'>Extraction Task Automation</h1>
-          <p className='dpv-subtitle'>Upload files and set up extraction rules</p>
+          <p className='dpv-subtitle'>
+            Upload files and set up extraction rules
+          </p>
         </div>
         <span className='dpv-badge dpv-badge--confirmed'>Coming Soon</span>
       </header>
 
       <section className='dpv-panel'>
         <p>
-          This tool will streamline the process of extracting structured data from raw input files.
-          Define your extraction rules once and apply them automatically across batches of documents,
-          reducing manual effort and improving consistency across projects.
+          This tool will streamline the process of creating extraction tasks in
+          Voxco. Users will be able to upload a formatted *.xlxs file containing
+          the necessary information for the extraction task. The tool will parse
+          the file, extract the relevant data, and automatically create the
+          extraction task using the Voxco API.
         </p>
       </section>
 
@@ -44,7 +48,11 @@ const ExtractionTaskAutomation = (props: Props) => {
         <ul className='dpv-feature-list'>
           {FEATURES.map((f) => (
             <li key={f} className='dpv-feature-item'>
-              <Icon path={mdiCheckCircleOutline} size={0.85} className='dpv-feature-icon' />
+              <Icon
+                path={mdiCheckCircleOutline}
+                size={0.85}
+                className='dpv-feature-icon'
+              />
               <span>{f}</span>
             </li>
           ))}

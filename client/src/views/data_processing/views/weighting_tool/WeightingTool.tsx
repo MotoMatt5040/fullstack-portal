@@ -24,23 +24,31 @@ const WeightingTool = (props: Props) => {
       </header>
 
       <div className='dpv-notice'>
-        <Icon path={mdiAlertCircleOutline} size={1.1} className='dpv-notice-icon' />
+        <Icon
+          path={mdiAlertCircleOutline}
+          size={1.1}
+          className='dpv-notice-icon'
+        />
         <div className='dpv-notice-body'>
-          <h2 className='dpv-notice-title'>This feature has not been confirmed</h2>
+          <h2 className='dpv-notice-title'>
+            This feature has not been confirmed
+          </h2>
           <p className='dpv-notice-text'>
-            The Weighting Tool is a theoretically proposed feature and may or may not be implemented
-            in a future release. Its scope, design, and timeline are still under consideration and
-            should not be relied upon.
+            The Weighting Tool is a theoretically proposed feature and may or
+            may not be implemented in a future release. Its scope, design, and
+            timeline are still under consideration and should not be relied
+            upon.
           </p>
         </div>
       </div>
 
       <section className='dpv-panel'>
         <p>
-          If implemented, this tool would allow analysts to assign statistical weights to data records,
-          enabling more accurate representation of population-level insights from sampled datasets.
-          Weights could be applied across demographic variables and exported alongside the raw data
-          for use in downstream reporting and analysis.
+          TODO: Once the feature is confirmed and scoped, this section will
+          include details on how the Weighting Tool works, its capabilities, and
+          how to use it effectively. It will also outline any limitations or
+          considerations to keep in mind when adding weights to your data for
+          analysis.
         </p>
       </section>
     </div>

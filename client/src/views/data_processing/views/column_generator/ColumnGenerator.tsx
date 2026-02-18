@@ -18,29 +18,39 @@ const ColumnGenerator = (props: Props) => {
         </div>
         <div className='dpv-header-text'>
           <h1 className='dpv-title'>Column Generator</h1>
-          <p className='dpv-subtitle'>Generate new columns from existing data</p>
+          <p className='dpv-subtitle'>
+            Generate new columns from existing data
+          </p>
         </div>
         <span className='dpv-badge dpv-badge--proposed'>Proposed</span>
       </header>
 
       <div className='dpv-notice'>
-        <Icon path={mdiAlertCircleOutline} size={1.1} className='dpv-notice-icon' />
+        <Icon
+          path={mdiAlertCircleOutline}
+          size={1.1}
+          className='dpv-notice-icon'
+        />
         <div className='dpv-notice-body'>
-          <h2 className='dpv-notice-title'>This feature has not been confirmed</h2>
+          <h2 className='dpv-notice-title'>
+            This feature has not been confirmed
+          </h2>
           <p className='dpv-notice-text'>
-            The Column Generator is a theoretically proposed feature and may or may not be implemented
-            in a future release. Its scope, design, and timeline are still under consideration and
-            should not be relied upon.
+            The Column Generator is a theoretically proposed feature and may or
+            may not be implemented in a future release. Its scope, design, and
+            timeline are still under consideration and should not be relied
+            upon.
           </p>
         </div>
       </div>
 
       <section className='dpv-panel'>
         <p>
-          If implemented, this tool would provide a formula-based interface for deriving new data
-          columns from existing fields — similar to computed columns in a spreadsheet. Users could
-          define expressions, apply conditional logic, and preview results before committing changes
-          to the dataset.
+          TODO: Once the feature is confirmed and scoped, this section will
+          include details on how the Column Generator works, its capabilities,
+          and how to use it effectively. It will also outline any limitations or
+          considerations to keep in mind when generating new columns from
+          existing data.
         </p>
       </section>
     </div>
