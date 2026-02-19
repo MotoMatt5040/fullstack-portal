@@ -20,7 +20,7 @@ import {
   type Condition,
   type ConditionOperator,
   type OutputDataType,
-} from '../../features/sampleAutomationApiSlice';
+} from './sampleAutomationApiSlice';
 import { useToast } from '../../context/ToastContext';
 import './ComputedVariablesModal.css';
 

@@ -16,7 +16,7 @@ import {
 import {
   useRemoveComputedVariableMutation,
   type ComputedVariableDefinition,
-} from '../../features/sampleAutomationApiSlice';
+} from './sampleAutomationApiSlice';
 import { useToast } from '../../context/ToastContext';
 import './SampleSplitComponent.css';
 import ComputedVariablesModal from './ComputedVariablesModal';

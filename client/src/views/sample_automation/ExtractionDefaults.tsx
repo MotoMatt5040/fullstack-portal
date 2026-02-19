@@ -17,7 +17,7 @@ import {
   useSaveClientExtractionDefaultsMutation,
   useSaveVendorClientExtractionDefaultsMutation,
   useDeleteExtractionDefaultMutation,
-} from '../../features/sampleAutomationApiSlice';
+} from './sampleAutomationApiSlice';
 import './ExtractionDefaults.css';
 
 interface Variable {

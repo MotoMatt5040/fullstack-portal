@@ -2,14 +2,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
-import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
+import { useLazyGetProjectListQuery } from '../project_publishing/projectInfoApiSlice';
 import {
   useLazyGetWebDispositionQuery,
   useLazyGetWebDropoutCountsQuery,
   useLazyGetPhoneDispositionQuery,
-} from '../../features/dispositionApiSlice';
+} from './dispositionApiSlice';
 import { useSearchParams } from 'react-router-dom';
-import useDispositionSSE from '../../hooks/useDispositionSSE';
+import useDispositionSSE from './useDispositionSSE';
 
 // Types
 interface ProjectOption {

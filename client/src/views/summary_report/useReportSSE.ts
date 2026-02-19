@@ -1,17 +1,12 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCurrentToken, selectUser } from '../features/auth/authSlice';
+import { selectCurrentToken, selectUser } from '../../features/auth/authSlice';
 
-interface DispositionSSEData {
-  data: {
-    web: Record<string, any>;
-    webCounts: any[];
-  };
-}
-
-interface UseDispositionSSEOptions {
-  projectId: string;
-  onData?: (data: DispositionSSEData['data']) => void;
+interface UseReportSSEOptions {
+  projectId?: string;
+  useGpcph: boolean;
+  enabled: boolean;
+  onData?: (data: any[]) => void;
   onError?: (error: any) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -24,8 +19,8 @@ interface RootState {
   };
 }
 
-export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
-  const { projectId, onData, onError, onConnected, onDisconnected } = options;
+export const useReportSSE = (options: UseReportSSEOptions) => {
+  const { projectId, useGpcph, enabled, onData, onError, onConnected, onDisconnected } = options;
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -40,6 +35,8 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
   const onDisconnectedRef = useRef(onDisconnected);
   const tokenRef = useRef(token);
   const projectIdRef = useRef(projectId);
+  const useGpcphRef = useRef(useGpcph);
+  const enabledRef = useRef(enabled);
   const usernameRef = useRef(user?.username);
 
   useEffect(() => { onDataRef.current = onData; }, [onData]);
@@ -48,6 +45,8 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
   useEffect(() => { onDisconnectedRef.current = onDisconnected; }, [onDisconnected]);
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { projectIdRef.current = projectId; }, [projectId]);
+  useEffect(() => { useGpcphRef.current = useGpcph; }, [useGpcph]);
+  useEffect(() => { enabledRef.current = enabled; }, [enabled]);
   useEffect(() => { usernameRef.current = user?.username; }, [user?.username]);
 
   const disconnect = useCallback(() => {
@@ -63,14 +62,21 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
   }, []);
 
   const connect = useCallback(() => {
-    if (!tokenRef.current || !projectIdRef.current) return;
+    if (!tokenRef.current || !enabledRef.current) return;
 
     disconnect();
 
     try {
       const username = encodeURIComponent(usernameRef.current || 'Anonymous');
-      const url = `/api/disposition-report/events?projectId=${encodeURIComponent(projectIdRef.current)}&username=${username}`;
+      const params = new URLSearchParams({
+        username,
+        useGpcph: String(useGpcphRef.current),
+      });
+      if (projectIdRef.current) {
+        params.set('projectId', projectIdRef.current);
+      }
 
+      const url = `/api/reports/events?${params.toString()}`;
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
 
@@ -79,16 +85,16 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
         onConnectedRef.current?.();
       });
 
-      eventSource.addEventListener('disposition-data', (event: MessageEvent) => {
+      eventSource.addEventListener('report-data', (event: MessageEvent) => {
         try {
-          const parsed = JSON.parse(event.data) as DispositionSSEData;
+          const parsed = JSON.parse(event.data);
           onDataRef.current?.(parsed.data);
         } catch (err) {
-          console.error('Error parsing disposition SSE data:', err);
+          console.error('Error parsing report SSE data:', err);
         }
       });
 
-      eventSource.addEventListener('disposition-error', (event: MessageEvent) => {
+      eventSource.addEventListener('report-error', (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           onErrorRef.current?.(data);
@@ -108,25 +114,25 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
         eventSourceRef.current = null;
 
         reconnectTimeoutRef.current = setTimeout(() => {
-          if (tokenRef.current && projectIdRef.current) connect();
+          if (tokenRef.current && enabledRef.current) connect();
         }, 5000);
       };
     } catch (error) {
-      console.error('Error creating disposition EventSource:', error);
+      console.error('Error creating report EventSource:', error);
     }
   }, [disconnect]);
 
   // Only reconnect when the actual subscription parameters change
   useEffect(() => {
-    if (projectId && token) {
+    if (enabled && token) {
       connect();
     } else {
       disconnect();
     }
     return () => disconnect();
-  }, [projectId, token, connect, disconnect]);
+  }, [enabled, token, projectId, useGpcph, connect, disconnect]);
 
   return { isConnected, reconnect: connect, disconnect };
 };
 
-export default useDispositionSSE;
+export default useReportSSE;

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useGetReportQuery } from '../../features/reportsApiSlice';
+import { useGetReportQuery } from '../summary_report/reportsApiSlice';
 import { useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import useReportSSE from '../../hooks/useReportSSE';
+import useReportSSE from '../summary_report/useReportSSE';
 
 interface ProjectReportData {
   onCph: number;

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useGetUsersQuery, useDeleteUserMutation  } from '../../features/usersApiSlice';
-import { useGetClientsQuery } from '../../features/projectPublishingApiSlice';
+import { useGetUsersQuery, useDeleteUserMutation  } from './usersApiSlice';
+import { useGetClientsQuery } from '../project_publishing/projectPublishingApiSlice';
 
 // Define types for better type-safety
 type User = {

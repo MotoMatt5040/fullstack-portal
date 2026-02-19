@@ -1,4 +1,4 @@
-import { apiSlice } from '../app/api/apiSlice';
+import { apiSlice } from '../../app/api/apiSlice';
 
 /**
  * Call ID Management API Slice

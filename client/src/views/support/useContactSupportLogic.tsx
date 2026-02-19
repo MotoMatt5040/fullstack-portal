@@ -1,6 +1,6 @@
 // client/src/views/support/useContactSupportLogic.tsx
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
-import { useSendSupportEmailMutation } from '../../features/supportApiSlice';
+import { useSendSupportEmailMutation } from './supportApiSlice';
 
 export type Priority = 'low' | 'normal' | 'high' | 'critical';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLazyGetToplineReportQuery } from '../../features/reportsApiSlice';
+import { useLazyGetToplineReportQuery } from '../summary_report/reportsApiSlice';
 
 export const useToplinesLogic = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);

@@ -6,8 +6,8 @@ import {
   useLazyGetUsersByClientQuery, 
   usePublishProjectToUsersMutation,
   useUnpublishProjectFromUsersMutation 
-} from '../../features/projectPublishingApiSlice';
-import { useGetUsersQuery } from '../../features/usersApiSlice';
+} from './projectPublishingApiSlice';
+import { useGetUsersQuery } from '../user_management/usersApiSlice';
 
 // Types
 interface PublishedProject {

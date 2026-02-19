@@ -5,7 +5,7 @@ import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useSearchProjectsMutation,
-} from '../../features/projectNumberingApiSlice';
+} from './projectNumberingApiSlice';
 import { useToast } from '../../context/ToastContext';
 
 export const useProjectNumberingLogic = () => {

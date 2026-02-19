@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useGetReportQuery } from '../../features/reportsApiSlice';
+import { useGetReportQuery } from './reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
 import { useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -8,7 +8,7 @@ import {
   setSummaryEndDate,
   setSummaryIsLive,
 } from '../../features/summarySlice';
-import useReportSSE from '../../hooks/useReportSSE';
+import useReportSSE from './useReportSSE';
 
 const getDateFromParams = (key, fallback) => {
   const params = new URLSearchParams(window.location.search);
