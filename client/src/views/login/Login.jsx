@@ -17,6 +17,7 @@ import {
   mdiClose,
   mdiAlertCircleOutline,
   mdiCheckCircleOutline,
+  mdiArrowUpBold,
 } from '@mdi/js';
 import './Login.css';
 
@@ -29,6 +30,7 @@ const Login = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [persist, setPersist] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
 
   const [login, { isLoading }] = useLoginMutation();
   const [forgotPassword, { isLoading: forgotLoading }] =
@@ -98,6 +100,12 @@ const Login = () => {
   };
 
   const handlePwdInput = (e) => setPwd(e.target.value);
+
+  const handleKeyEvent = (e) => {
+    if (e.getModifierState) {
+      setCapsLockOn(e.getModifierState('CapsLock'));
+    }
+  };
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
@@ -192,28 +200,37 @@ const Login = () => {
                 <label htmlFor='password'>Password</label>
                 <div className='input-wrapper'>
                   <Icon path={mdiLockOutline} size={0.9} className='input-icon' />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id='password'
-                    onChange={handlePwdInput}
-                    value={pwd}
-                    placeholder='Enter your password'
-                    required
-                    autoComplete='current-password'
-                    className='has-toggle'
-                  />
-                  <button
-                    type='button'
-                    className='password-toggle'
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                  >
-                    <Icon
-                      path={showPassword ? mdiEyeOffOutline : mdiEyeOutline}
-                      size={0.9}
+                  <div className='password-input-container'>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id='password'
+                      onChange={handlePwdInput}
+                      onKeyDown={handleKeyEvent}
+                      onKeyUp={handleKeyEvent}
+                      value={pwd}
+                      placeholder='Enter your password'
+                      required
+                      autoComplete='current-password'
                     />
-                  </button>
+                    <button
+                      type='button'
+                      className='password-toggle'
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                    >
+                      <Icon
+                        path={showPassword ? mdiEyeOffOutline : mdiEyeOutline}
+                        size={0.9}
+                      />
+                    </button>
+                  </div>
                 </div>
+                {capsLockOn && (
+                  <div className='caps-lock-warning'>
+                    <Icon path={mdiArrowUpBold} size={0.65} />
+                    <span>Caps Lock is on</span>
+                  </div>
+                )}
               </div>
 
               <div className='form-options'>
