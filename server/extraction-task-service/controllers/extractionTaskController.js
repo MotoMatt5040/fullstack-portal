@@ -21,21 +21,29 @@ const parseFile = (file) => {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
   // header: 'A' gives you objects keyed by column letter
-  // { A: ..., B: ..., C: ..., E: ... }
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 'A' });
   // Project ID is in the 1st row, column A, first 5 chars
   const projectId = rows[0]['A'].toString().substring(0, 5);
-  const result = [];
 
-  // For each row, if column C is 'Y',
-  // extract alias from column B and position from column E
-  for (const row of rows) {
-    if (row['C'] === 'Y') {
+  // Row 3 (index 2) contains the column headers — find which column letter
+  // corresponds to each key (case-insensitive: alias, include, col, length)
+  const headerRow = rows[2];
+  const columnMap = {};
+  for (const [col, value] of Object.entries(headerRow)) {
+    const lower = value.toString().toLowerCase();
+    if (lower === 'alias') columnMap.alias = col;
+    else if (lower === 'include') columnMap.include = col;
+    else if (lower === 'col') columnMap.columnPos = col;
+    else if (lower === 'length') columnMap.fieldLength = col;
+  }
+
+  const result = [];
+  for (const row of rows.slice(3)) {
+    if (row[columnMap.include] === 'Y') {
       result.push({
-        alias: row['B'],
-        columnPos: row['E'],
-        // displayName: row['D'],
-        fieldLength: row['G'],
+        alias: row[columnMap.alias],
+        columnPos: row[columnMap.columnPos],
+        fieldLength: row[columnMap.fieldLength],
       });
     }
   }
