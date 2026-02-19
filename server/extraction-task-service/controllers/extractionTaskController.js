@@ -21,7 +21,10 @@ const parseFile = (file) => {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
   // header: 'A' gives you objects keyed by column letter
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 'A' });
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    header: 'A',
+    blankrows: true,
+  });
   // Project ID is in the 1st row, column A, first 5 chars
   const projectId = rows[0]['A'].toString().substring(0, 5);
 
