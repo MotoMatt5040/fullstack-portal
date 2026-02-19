@@ -22,7 +22,7 @@ const parseFile = (file) => {
   // header: 'A' gives you objects keyed by column letter
   // { A: ..., B: ..., C: ..., E: ... }
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 'A' });
-  // Project ID is in the 3rd row, column A
+  // Project ID is in the 1st row, column A, first 5 chars
   const projectId = rows[0]['A'].toString().substring(0, 5);
   const result = [];
 
@@ -33,6 +33,8 @@ const parseFile = (file) => {
       result.push({
         alias: row['B'],
         columnPos: row['E'],
+        // displayName: row['D'],
+        fieldLength: row['G'],
       });
     }
   }
@@ -45,7 +47,10 @@ const buildPhoneSelectedQuestions = (variables) => {
     Id: index + 1,
     Alias: variable.alias,
     Name: variable.alias,
+    DisplayName: variable.alias,
     ColumnPosition: variable.columnPos,
+    RecordPosition: 1,
+    FieldLength: variable.fieldLength,
   }));
   return selectedQuestions;
 };
@@ -60,10 +65,11 @@ const buildPhoneSelectedQuestions = (variables) => {
 const buildPhoneExtractionPayload = (name, voxcoId, variables) => {
   const questions = buildPhoneSelectedQuestions(variables);
   const date = new Date().toISOString();
+  name = name + 'Test';
   const payload = {
     Title: name,
     ProjectId: voxcoId, // voxcoID
-    ProjectName: name,
+    ProjectName: null,
     UserId: 76139,
     UserName: 'VoxcoAPIUser',
     TaskClassName: 'DTSRemoteExportTask',
@@ -77,10 +83,10 @@ const buildPhoneExtractionPayload = (name, voxcoId, variables) => {
     ScheduleNextRun: null,
     ScheduleTitle: null,
     ImportTaskConfiguration: null,
-    TaskConfiguration: {
+    ExtractTaskConfiguration: {
       TaskName: 'DTSRemoteExportTask',
       UserId: 76139,
-      ProjectId: 159620, // databaseID voxcoID+1
+      ProjectId: null, // databaseID voxcoID+1
       ProjectName: null,
       Adaptor: 5,
       Language: '01',
@@ -124,7 +130,7 @@ const buildPhoneExtractionPayload = (name, voxcoId, variables) => {
       SourceFilterDefinition: {
         FilterId: 0,
         FilterTitle: null,
-        ProjectId: 159620,
+        ProjectId: null,
         QuestionList: null,
         Location: '',
         DialingMode: -1,
@@ -227,11 +233,12 @@ const handleCreateExtractionTask = handleAsync(async (req, res) => {
   const variables = parsedData.data;
   const payload = buildPhoneExtractionPayload(name, voxcoID, variables);
 
-  console.log('Constructed Payload:', payload);
-  // const result = await ExtractionTaskServices.createExtractionTask(payload);
-  // res
-  //   .status(200)
-  //   .json({ message: 'File processed successfully.', data: payload });
+  const result = await ExtractionTaskServices.createExtractionTask(
+    JSON.stringify(payload, voxcoID),
+  );
+  res
+    .status(200)
+    .json({ message: 'File processed successfully.', data: payload });
 });
 
 module.exports = {
