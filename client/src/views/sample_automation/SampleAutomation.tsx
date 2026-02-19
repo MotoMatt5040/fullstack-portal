@@ -32,6 +32,7 @@ const SampleAutomation: React.FC = () => {
     // Processing state
     processStatus,
     processResult,
+    processingProgress,
 
     // Loading states
     isLoading,
@@ -218,17 +219,45 @@ const SampleAutomation: React.FC = () => {
         </button>
       </header>
 
-      {/* Processing Banner */}
+      {/* Processing Modal Overlay */}
       {isAnyProcessing && (
-        <div className='processing-banner'>
-          <div className='spinner' />
-          <span className='processing-text'>
-            {isProcessing
-              ? `Processing ${selectedFiles?.length || 0} files...`
-              : isLoadingHeaderMappings
-              ? 'Loading header mappings...'
-              : 'Saving header mappings...'}
-          </span>
+        <div className='processing-overlay'>
+          <div className='processing-modal'>
+            {isProcessing ? (
+              <>
+                <div className='processing-modal-header'>
+                  Processing Files
+                </div>
+                <div className='progress-bar-container'>
+                  <div
+                    className='progress-bar-fill'
+                    style={{
+                      width: processingProgress
+                        ? `${Math.round((processingProgress.step / processingProgress.totalSteps) * 100)}%`
+                        : '0%',
+                    }}
+                  />
+                </div>
+                <span className='progress-step-text'>
+                  {processingProgress ? processingProgress.message : 'Connecting...'}
+                </span>
+                <span className='progress-step-count'>
+                  {processingProgress
+                    ? `Step ${processingProgress.step} of ${processingProgress.totalSteps}`
+                    : `Processing ${selectedFiles?.length || 0} file${(selectedFiles?.length || 0) !== 1 ? 's' : ''}`}
+                </span>
+              </>
+            ) : (
+              <>
+                <div className='spinner' />
+                <span className='processing-text'>
+                  {isLoadingHeaderMappings
+                    ? 'Loading header mappings...'
+                    : 'Saving header mappings...'}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       )}
 

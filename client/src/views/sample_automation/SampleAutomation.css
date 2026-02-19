@@ -1165,20 +1165,44 @@ body:has(.drop-zone-tour-wrapper.driver-active-element) .driver-overlay * {
 }
 
 /* ========================================
-   PROCESSING INDICATOR
+   PROCESSING MODAL OVERLAY
 ======================================== */
-.processing-banner {
+.processing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: rgba(37, 99, 235, 0.1);
-  border: 1px solid rgba(37, 99, 235, 0.3);
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(2px);
 }
 
-.processing-banner .spinner {
+.processing-modal {
+  background: var(--background-color-elevated);
+  border-radius: 0.75rem;
+  padding: 2rem 2.5rem;
+  min-width: 380px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.processing-modal-header {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.processing-modal .spinner {
+  width: 32px;
+  height: 32px;
   margin-bottom: 0;
 }
 
@@ -1186,6 +1210,33 @@ body:has(.drop-zone-tour-wrapper.driver-active-element) .driver-overlay * {
   font-size: 0.875rem;
   color: var(--accent-color);
   font-weight: 500;
+}
+
+.processing-modal .progress-bar-container {
+  width: 100%;
+  height: 10px;
+  background: rgba(37, 99, 235, 0.15);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.processing-modal .progress-bar-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
+
+.processing-modal .progress-step-text {
+  font-size: 0.875rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.processing-modal .progress-step-count {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.6;
 }
 
 /* ========================================

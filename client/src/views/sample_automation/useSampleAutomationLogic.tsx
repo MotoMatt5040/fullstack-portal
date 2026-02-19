@@ -17,6 +17,7 @@ import { useLazyGetProjectListQuery } from '../project_publishing/projectInfoApi
 import { useSelector } from 'react-redux';
 import { selectUser, selectCurrentToken } from '../../features/auth/authSlice';
 import { useToast } from '../../context/ToastContext';
+import { useProcessingProgress } from './useProcessingProgress';
 
 const EXTERNAL_ROLE_ID = 4;
 
@@ -151,6 +152,9 @@ export const useSampleAutomationLogic = () => {
   useEffect(() => {
     selectedClientIdRef.current = selectedClientId;
   }, [selectedClientId]);
+
+  // Processing progress tracking
+  const { progress: processingProgress, reset: resetProgress, connect: connectProgress, disconnect: disconnectProgress } = useProcessingProgress();
 
   // API hooks
   const [
@@ -854,12 +858,19 @@ export const useSampleAutomationLogic = () => {
       setTablePreview(null);
       setDistinctAgeRanges([]);
 
+      // Generate session ID and establish SSE connection before processing
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      formData.append('sessionId', sessionId);
+
       setProcessStatus(
         `Processing ${selectedFiles.length} file${
           selectedFiles.length !== 1 ? 's' : ''
         }...`
       );
       toast.info(`Processing ${selectedFiles.length} file${selectedFiles.length !== 1 ? 's' : ''}...`, 'Processing');
+
+      // Wait for SSE connection before sending the process request
+      await connectProgress(sessionId);
 
       const result = await processFile(formData).unwrap();
 
@@ -904,10 +915,12 @@ export const useSampleAutomationLogic = () => {
             console.error('Failed to fetch table preview:', previewError);
           }
         }
+        disconnectProgress();
       } else {
         throw new Error(result.message || 'Processing failed');
       }
     } catch (error: any) {
+      disconnectProgress();
       console.error('Processing failed:', error);
       const errorMessage =
         error?.data?.message ||
@@ -929,6 +942,8 @@ export const useSampleAutomationLogic = () => {
     allowExtraHeaders,
     getTablePreview,
     toast,
+    connectProgress,
+    disconnectProgress,
   ]);
 
   // Utility functions
@@ -1395,6 +1410,7 @@ const handleExcludeIncludedHeader = useCallback(async (fileId: string, headerNam
     // Processing state
     processResult,
     processStatus,
+    processingProgress,
 
     // Loading states
     isLoading,

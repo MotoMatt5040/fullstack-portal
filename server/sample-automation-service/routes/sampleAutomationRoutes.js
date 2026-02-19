@@ -2,8 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { gatewayAuth } = require('@internal/auth-middleware');
 const controller = require('../controllers/sampleAutomationController');
+const progressManager = require('../services/processingProgressManager');
 
-// All routes require gateway authentication
+// SSE endpoint - before gatewayAuth (EventSource doesn't support custom headers)
+router.get('/events/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  progressManager.addClient(sessionId, res);
+
+  req.on('close', () => {
+    progressManager.removeClient(sessionId);
+  });
+});
+
+// All remaining routes require gateway authentication
 router.use(gatewayAuth);
 
 // File processing routes
