@@ -1,5 +1,6 @@
 const ExtractionTaskServices = require('../services/ExtractionTaskServices');
 const XLSX = require('xlsx');
+const VoxcoApi = require('../services/VoxcoApi');
 
 /**
  * Async handler wrapper
@@ -65,7 +66,6 @@ const buildPhoneSelectedQuestions = (variables) => {
 const buildPhoneExtractionPayload = (name, voxcoId, variables) => {
   const questions = buildPhoneSelectedQuestions(variables);
   const date = new Date().toISOString();
-  name = name + 'Test';
   const payload = {
     Title: name,
     ProjectId: voxcoId, // voxcoID
@@ -232,10 +232,26 @@ const handleCreateExtractionTask = handleAsync(async (req, res) => {
   const name = parsedData.projectId + 'DAT';
   const variables = parsedData.data;
   const payload = buildPhoneExtractionPayload(name, voxcoID, variables);
+  const apiUser = await VoxcoApi.refreshAccessToken();
+  const token = apiUser?.Token;
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ message: 'Unauthorized credentials for Voxco' });
+  }
 
   const result = await ExtractionTaskServices.createExtractionTask(
-    JSON.stringify(payload, voxcoID),
+    JSON.stringify(payload),
+    voxcoID,
+    token,
   );
+
+  if (!result.success) {
+    return res
+      .status(500)
+      .json({ error: result.message, details: result.error });
+  }
   res
     .status(200)
     .json({ message: 'File processed successfully.', data: payload });

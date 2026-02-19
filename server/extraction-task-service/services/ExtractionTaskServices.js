@@ -59,10 +59,14 @@ const getVoxcoID = async (projectID, suffix, isWeb = false) => {
  * @param {number} surveyId - Voxco survey ID
  * @param {string[]} variables - Array of variable alias strings
  */
-const createExtractionTask = async (payload, voxcoProjectId) => {
-  const URL = `Voxco.API/projects/${voxcoProjectId}/extraction/tasks`;
+const createExtractionTask = async (payload, voxcoProjectId, token) => {
+  const URL = `/voxco.api/projects/${voxcoProjectId}/extraction/tasks`;
   try {
-    const res = await axios.post(URL, payload);
+    const res = await axios.post(URL, payload, {
+      headers: {
+        Authorization: `Client ${token}`,
+      },
+    });
     return {
       success: true,
       message: `Extraction task created successfully for VOXCO project ${voxcoProjectId}`,
