@@ -8,7 +8,7 @@ import {
   useAddAiPromptMutation,
   useGetDefaultPromptQuery,
   useUpdateDefaultPromptMutation,
-} from '../../features/aiPromptingApiSlice';
+} from './aiPromptingApiSlice';
 
 const countWords = (str) => {
   if (!str.trim()) return 0;

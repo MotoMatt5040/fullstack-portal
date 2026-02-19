@@ -4,7 +4,7 @@ import {
   useAddVariableExclusionMutation,
   useUpdateVariableExclusionMutation,
   useDeleteVariableExclusionMutation,
-} from '../../features/sampleAutomationApiSlice';
+} from '../sample_automation/sampleAutomationApiSlice';
 
 export interface VariableExclusion {
   exclusionId: number;

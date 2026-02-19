@@ -17,7 +17,7 @@ import {
   useDeleteSampleTableMutation,
   SampleTableFamily,
   SampleTableProject,
-} from '../../features/sampleAutomationApiSlice';
+} from './sampleAutomationApiSlice';
 import './SampleTracking.css';
 
 const SampleTracking: React.FC = () => {

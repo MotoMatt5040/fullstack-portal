@@ -6,7 +6,7 @@ import {
   useGetClientsQuery,
   useUpdateUserRolesMutation,
   useUpdateUserProfileMutation,
-} from '../../features/usersApiSlice';
+} from '../user_management/usersApiSlice';
 import { selectRoles } from '../../features/roles/rolesSlice';
 import MyToggle from '../../components/MyToggle';
 import './UpdateUserRoles.css';

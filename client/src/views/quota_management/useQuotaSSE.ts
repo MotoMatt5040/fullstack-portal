@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCurrentToken, selectUser } from '../features/auth/authSlice';
+import { selectCurrentToken, selectUser } from '../../features/auth/authSlice';
 
 interface QuotaSSEData {
   visibleStypes: Record<string, any>;

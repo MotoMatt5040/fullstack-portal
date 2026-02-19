@@ -4,7 +4,7 @@ import {
   useGetClientsAndVendorsQuery,
   useSaveHeaderMappingsMutation,
   useDeleteHeaderMappingMutation,
-} from '../../features/sampleAutomationApiSlice';
+} from '../sample_automation/sampleAutomationApiSlice';
 
 interface HeaderMapping {
   originalHeader: string;

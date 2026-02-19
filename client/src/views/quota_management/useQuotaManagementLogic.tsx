@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
-import { useLazyGetQuotasQuery, useLazyGetQuotaProjectsQuery } from '../../features/quotasApiSlice';
+import { useLazyGetQuotasQuery, useLazyGetQuotaProjectsQuery } from './quotasApiSlice';
 import { useSearchParams } from 'react-router-dom';
-import { useQuotaSSE } from '../../hooks/useQuotaSSE';
+import { useQuotaSSE } from './useQuotaSSE';
 
 // Types
 interface ProjectOption {
