@@ -1,4 +1,4 @@
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 const ProjectInfo = require('../services/ProjectInfoServices');
 const QuotaServices = require('../services/QuotaServices');
 const VoxcoApi = require('../services/VoxcoApi');
@@ -23,7 +23,7 @@ const STYPE_MAP = {
 };
 
 const STYPE_REVERSE_MAP = Object.fromEntries(
-  Object.entries(STYPE_MAP).map(([key, value]) => [value, `STYPE=${key}`])
+  Object.entries(STYPE_MAP).map(([key, value]) => [value, `STYPE=${key}`]),
 );
 
 // Precompiled regex patterns
@@ -105,13 +105,13 @@ const createWebDataStructure = (label) => ({
   },
 });
 
-const buildPhoneStructure = async (project, token, data, visibleStypes) => {
-  const phone = await QuotaServices.getPhoneQuotas(project.k_Id, token);
+// Set of web-only types to skip in phone processing
+const WEB_ONLY_TYPES = new Set(['Panel', 'T2W', 'Email', 'Mailer']);
 
-  const projectTypeFallback = project.name.endsWith('C')
-    ? 'Cell'
-    : project.name.endsWith('COM')
-    ? 'com'
+const buildPhoneStructure = (project, phoneQuotas, data, visibleStypes) => {
+  const projectTypeFallback =
+    project.name.endsWith('C') ? 'Cell'
+    : project.name.endsWith('COM') ? 'com'
     : 'Landline';
 
   if (
@@ -123,7 +123,7 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
 
   const structure = new Map();
 
-  for (const item of phone) {
+  for (const item of phoneQuotas) {
     const {
       Position: StratumId,
       Criterion,
@@ -137,12 +137,15 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
     const stypeMatch = Criterion.match(REGEX_PATTERNS.STYPE_EXTRACT);
     const subType = stypeMatch ? STYPE_MAP[stypeMatch[1]] : projectTypeFallback;
 
-    const webTypes = ['Panel', 'T2W', 'Email', 'Mailer'];
-    if (webTypes.includes(subType)) {
+    if (WEB_ONLY_TYPES.has(subType)) {
       continue;
     }
 
-    if (subType && !visibleStypes.Phone.includes(subType) && subType !== 'com') {
+    if (
+      subType &&
+      !visibleStypes.Phone.includes(subType) &&
+      subType !== 'com'
+    ) {
       visibleStypes.Phone.push(subType);
     }
 
@@ -203,12 +206,11 @@ const buildPhoneStructure = async (project, token, data, visibleStypes) => {
   }
 };
 
-const buildWebStructure = async (sid, data, visibleStypes) => {
-  const web = await QuotaServices.getWebQuotas(sid);
+const buildWebStructure = (webQuotas, data, visibleStypes) => {
   data.totalRow.Web = { Total: { Frequency: 0 } };
   visibleStypes.Web = [];
 
-  for (const item of web) {
+  for (const item of webQuotas) {
     const {
       StratumId,
       Criterion,
@@ -283,12 +285,12 @@ const calculateTotalRowPercentages = (data) => {
       if (typeKey !== 'Total' && typeData.Frequency !== undefined) {
         typeData['Freq%'] = calculatePercentages(
           typeData.Frequency,
-          phoneTotalFreq
+          phoneTotalFreq,
         );
       } else if (typeKey === 'Total') {
         typeData['Freq%'] = calculatePercentages(
           phoneTotalFreq,
-          data.totalRow.Total.Frequency
+          data.totalRow.Total.Frequency,
         );
       }
     }
@@ -301,12 +303,12 @@ const calculateTotalRowPercentages = (data) => {
       if (typeKey !== 'Total' && typeData.Frequency !== undefined) {
         typeData['Freq%'] = calculatePercentages(
           typeData.Frequency,
-          webTotalFreq
+          webTotalFreq,
         );
       } else if (typeKey === 'Total') {
         typeData['Freq%'] = calculatePercentages(
           webTotalFreq,
-          data.totalRow.Total.Frequency
+          data.totalRow.Total.Frequency,
         );
       }
     }
@@ -314,7 +316,7 @@ const calculateTotalRowPercentages = (data) => {
 
   data.totalRow.Total['Freq%'] = calculatePercentages(
     data.totalRow.Total.Frequency,
-    data.totalRow.Total.TotalObjective
+    data.totalRow.Total.TotalObjective,
   );
 };
 
@@ -335,19 +337,19 @@ const calculateData = (data) => {
         }
 
         const freqPercent =
-          quotaData.Total.Frequency > 0
-            ? calculatePercentages(
-                quotaData.Total.Frequency,
-                data.totalRow.Total.Frequency
-              )
-            : '0.0';
+          quotaData.Total.Frequency > 0 ?
+            calculatePercentages(
+              quotaData.Total.Frequency,
+              data.totalRow.Total.Frequency,
+            )
+          : '0.0';
 
         groupData['Freq%'] = freqPercent;
         const toDo = groupData.TotalObjective - groupData.Frequency;
         groupData['To Do'] = toDo;
         groupData['Obj%'] = calculatePercentages(
           groupData.TotalObjective,
-          data.totalRow.Total.TotalObjective
+          data.totalRow.Total.TotalObjective,
         );
         if (groupData.Label.includes('*')) {
           groupData.Status = '';
@@ -375,7 +377,7 @@ const calculateData = (data) => {
         ) {
           objPercent = calculatePercentages(
             typeData.Frequency,
-            data.totalRow[group][type].TotalObjective
+            data.totalRow[group][type].TotalObjective,
           );
         }
 
@@ -383,14 +385,14 @@ const calculateData = (data) => {
         if (stype !== 'unknown' && data[stype]?.Total?.Frequency > 0) {
           freqPercent = calculatePercentages(
             typeData.Frequency,
-            data[stype].Total.Frequency
+            data[stype].Total.Frequency,
           );
         } else if (type === 'Total' && typeData.Frequency > 0) {
           const toDo = typeData.TotalObjective - typeData.Frequency;
           typeData.Status = toDo > 0 ? 'O' : 'C';
           freqPercent = calculatePercentages(
             typeData.Frequency,
-            data.totalRow[group].Total.Frequency
+            data.totalRow[group].Total.Frequency,
           );
         }
         typeData['Obj%'] = objPercent;
@@ -408,7 +410,7 @@ const filterForExternalUsers = (data) => {
 
   const quotaKeys = Object.keys(data).filter((key) => key !== 'totalRow');
 
-  const hasComData = quotaKeys.some(quotaKey => {
+  const hasComData = quotaKeys.some((quotaKey) => {
     const quotaData = data[quotaKey];
     return quotaData?.Phone?.com || quotaData?.Web?.com;
   });
@@ -417,7 +419,8 @@ const filterForExternalUsers = (data) => {
     let shouldRemoveRow = false;
 
     if (hasComData) {
-      const rowHasComData = data[quotaKey]?.Phone?.com || data[quotaKey]?.Web?.com;
+      const rowHasComData =
+        data[quotaKey]?.Phone?.com || data[quotaKey]?.Web?.com;
       if (!rowHasComData) {
         shouldRemoveRow = true;
       }
@@ -426,10 +429,14 @@ const filterForExternalUsers = (data) => {
     if (!shouldRemoveRow) {
       const rowData = data[quotaKey];
 
-      Object.values(rowData).forEach(groupData => {
+      Object.values(rowData).forEach((groupData) => {
         if (groupData && typeof groupData === 'object') {
-          Object.values(groupData).forEach(subGroupData => {
-            if (subGroupData && typeof subGroupData === 'object' && 'Label' in subGroupData) {
+          Object.values(groupData).forEach((subGroupData) => {
+            if (
+              subGroupData &&
+              typeof subGroupData === 'object' &&
+              'Label' in subGroupData
+            ) {
               const label = subGroupData.Label?.toString() || '';
               if (label.includes('!')) {
                 shouldRemoveRow = true;
@@ -464,16 +471,59 @@ const sortPhoneProjectsUltraRobust = (projects) => {
   });
 };
 
-const handleGetQuotas = handleAsync(async (req, res) => {
+const fetchQuotaData = async (projectId) => {
   const apiUser = await VoxcoApi.refreshAccessToken();
   const token = apiUser?.Token;
 
   if (!token) {
-    return res
-      .status(401)
-      .json({ message: 'Unauthorized credentials for Voxco' });
+    throw new Error('Unauthorized credentials for Voxco');
   }
 
+  const [phoneProjects, webProjects] = await Promise.all([
+    ProjectInfo.getPhoneProjects(projectId),
+    ProjectInfo.getWebProjects(projectId),
+  ]);
+
+  // Fetch all quota data in parallel (phone quotas for each project + web quotas)
+  const sortedPhoneProjects = phoneProjects.length > 0
+    ? sortPhoneProjectsUltraRobust(phoneProjects)
+    : [];
+
+  const [phoneQuotasResults, webQuotas] = await Promise.all([
+    Promise.all(sortedPhoneProjects.map(p => QuotaServices.getPhoneQuotas(p.k_Id, token))),
+    webProjects.length > 0 ? QuotaServices.getWebQuotas(webProjects[0].id) : Promise.resolve(null),
+  ]);
+
+  const data = {
+    totalRow: {
+      Total: {
+        Label: 'Total',
+        TotalObjective: 0,
+        Frequency: 0,
+      },
+    },
+  };
+  const visibleStypes = {};
+
+  if (sortedPhoneProjects.length > 0) {
+    data.totalRow.Phone = { Total: { Frequency: 0 } };
+    visibleStypes.Phone = [];
+
+    for (let i = 0; i < sortedPhoneProjects.length; i++) {
+      buildPhoneStructure(sortedPhoneProjects[i], phoneQuotasResults[i], data, visibleStypes);
+    }
+  }
+
+  if (webQuotas) {
+    buildWebStructure(webQuotas, data, visibleStypes);
+  }
+
+  calculateData(data);
+
+  return { visibleStypes, data };
+};
+
+const handleGetQuotas = handleAsync(async (req, res) => {
   const { projectId } = req.query;
   const isInternalUser = req?.query?.isInternalUser === 'true';
 
@@ -482,50 +532,17 @@ const handleGetQuotas = handleAsync(async (req, res) => {
   }
 
   try {
-    const [phoneProjects, webProject] = await Promise.all([
-      ProjectInfo.getPhoneProjects(projectId),
-      ProjectInfo.getWebProjects(projectId),
-    ]);
-
-
-    const data = {
-      totalRow: {
-        Total: {
-          Label: 'Total',
-          TotalObjective: 0,
-          Frequency: 0,
-        },
-      },
-    };
-    const visibleStypes = {};
-
-    if (phoneProjects.length > 0) {
-      const sortedPhoneProjects = sortPhoneProjectsUltraRobust(phoneProjects);
-
-      data.totalRow.Phone = { Total: { Frequency: 0 } };
-      visibleStypes.Phone = [];
-
-      for (const project of sortedPhoneProjects) {
-        await buildPhoneStructure(project, token, data, visibleStypes);
-      }
-    }
-
-    if (webProject.length > 0) {
-      const sid = webProject[0].id;
-      await buildWebStructure(sid, data, visibleStypes);
-    }
-
-    calculateData(data);
+    const result = await fetchQuotaData(projectId);
 
     if (!isInternalUser) {
-      filterForExternalUsers(data);
+      filterForExternalUsers(result.data);
     }
 
-    return res.status(200).json({
-      visibleStypes,
-      data,
-    });
+    return res.status(200).json(result);
   } catch (error) {
+    if (error.message === 'Unauthorized credentials for Voxco') {
+      return res.status(401).json({ message: error.message });
+    }
     console.error('Error in handleGetQuotas:', error);
     return res.status(500).json({
       message: 'Internal server error while processing quotas',
@@ -548,4 +565,9 @@ const handleGetQuotaProjects = handleAsync(async (req, res) => {
   }
 });
 
-module.exports = { handleGetQuotas, handleGetQuotaProjects };
+module.exports = {
+  handleGetQuotas,
+  handleGetQuotaProjects,
+  fetchQuotaData,
+  filterForExternalUsers,
+};

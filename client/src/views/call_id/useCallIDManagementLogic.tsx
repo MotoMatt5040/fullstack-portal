@@ -25,7 +25,7 @@ import {
   useGetUsageTimelineQuery,
   useReassignCallIDMutation,
   useUpdateProjectSlotMutation,
-} from '../../features/callIDApiSlice';
+} from './callIDApiSlice';
 
 type TabType = 'dashboard' | 'inventory' | 'assignments' | 'analytics';
 const VALID_TABS: TabType[] = ['dashboard', 'inventory', 'assignments', 'analytics'];

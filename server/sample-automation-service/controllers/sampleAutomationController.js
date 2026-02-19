@@ -3,10 +3,10 @@ const fsSync = require('fs');
 const os = require('os');
 const path = require('path');
 const multer = require('multer');
-const FileProcessorFactory = require('../utils/file_processors/FileProcessFactory');
+const FileProcessorFactory = require('@internal/file-processors');
 const SampleAutomation = require('../services/SampleAutomationServices');
 const CallIDApiClient = require('../services/CallIDApiClient');
-const handleAsync = require('./asyncController');
+const { handleAsync } = require('@internal/auth-middleware');
 
 // Use disk storage for large files to avoid memory issues
 const diskStorage = multer.diskStorage({

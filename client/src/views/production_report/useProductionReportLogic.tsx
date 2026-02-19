@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   useGetProductionReportQuery,
   useUpdateTargetMphAndCphMutation,
-} from '../../features/reportsApiSlice';
+} from '../summary_report/reportsApiSlice';
 import QueryHelper from '../../utils/QueryHelper';
 import { useSelector } from 'react-redux';
 

@@ -4,7 +4,7 @@ import MyToggle from '../../components/MyToggle';
 import {
   useAddUserMutation,
   useGetClientsQuery,
-} from '../../features/usersApiSlice';
+} from '../user_management/usersApiSlice';
 import { selectRoles } from '../../features/roles/rolesSlice';
 import { selectUser } from '../../features/auth/authSlice';
 import { useToast } from '../../context/ToastContext';

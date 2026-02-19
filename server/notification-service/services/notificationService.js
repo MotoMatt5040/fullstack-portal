@@ -11,7 +11,7 @@ const updateUserLastActive = async (username) => {
   if (!username || username === 'Anonymous') return;
 
   try {
-    const response = await fetch('http://user-management:3000/last-active', {
+    const response = await fetch('http://user-management:5007/api/users/last-active', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

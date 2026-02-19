@@ -14,7 +14,7 @@ import {
   mdiMailboxOutline,
   mdiPhoneVoip
 } from '@mdi/js';
-import { useGetNextProjectNumberQuery } from '../../features/projectNumberingApiSlice';
+import { useGetNextProjectNumberQuery } from './projectNumberingApiSlice';
 import { useModalUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import UnsavedChangesModal from '../../components/UnsavedChangesModal';
 

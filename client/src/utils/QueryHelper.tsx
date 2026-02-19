@@ -1,4 +1,4 @@
-import { useGetReportQuery } from '../features/reportsApiSlice';
+import { useGetReportQuery } from '../views/summary_report/reportsApiSlice';
 
 type ReportQueryArgs = {
   projectId: string | undefined;

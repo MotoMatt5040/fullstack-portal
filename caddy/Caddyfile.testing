@@ -119,6 +119,11 @@
             reverse_proxy user-management:5007
         }
 
+        # SSE quota events endpoint - public (no auth required for SSE connection)
+        handle /api/quota-management/events {
+            reverse_proxy quota-management:5008
+        }
+
         # Quota Management service routes - use forward_auth for JWT validation
         handle /api/quota-management/* {
             forward_auth auth-gateway:5005 {
@@ -135,7 +140,11 @@
             reverse_proxy quota-management:5008
         }
 
-        # Reporting service routes - use forward_auth for JWT validation
+        # Reporting service - SSE public, everything else authenticated
+        @reportSSE path /api/reports/events
+        handle @reportSSE {
+            reverse_proxy reporting:5009
+        }
         handle /api/reports/* {
             forward_auth auth-gateway:5005 {
                 uri /verify
@@ -183,7 +192,11 @@
             reverse_proxy project-publishing:5011
         }
 
-        # Disposition Report service routes - use forward_auth for JWT validation
+        # Disposition Report - SSE public, everything else authenticated
+        @dispositionSSE path /api/disposition-report/events
+        handle @dispositionSSE {
+            reverse_proxy disposition:5012
+        }
         handle /api/disposition-report/* {
             forward_auth auth-gateway:5005 {
                 uri /verify

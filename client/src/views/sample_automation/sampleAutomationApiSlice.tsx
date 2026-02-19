@@ -1,4 +1,4 @@
-import { apiSlice } from '../app/api/apiSlice';
+import { apiSlice } from '../../app/api/apiSlice';
 
 // TypeScript interfaces for type safety
 interface CallIdAssignment {

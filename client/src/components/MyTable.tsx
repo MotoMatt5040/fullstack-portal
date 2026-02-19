@@ -320,8 +320,7 @@ const MyTable: React.FC<MyTableProps> = ({
 								return (
 									<td
 										// this is for automatic styling based on the parameters sent
-										className={`${header} ${cellClass}  ${blinkingClass}} 
-										`}
+										className={`${header} ${cellClass} ${blinkingClass}`}
 										key={header}
 										style={style}
 									>

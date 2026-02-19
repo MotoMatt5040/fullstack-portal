@@ -12,8 +12,8 @@ import {
   useLazyGetProjectVariableInclusionsQuery,
   useAddProjectVariableInclusionMutation,
   useDeleteProjectVariableInclusionMutation,
-} from '../../features/sampleAutomationApiSlice';
-import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
+} from './sampleAutomationApiSlice';
+import { useLazyGetProjectListQuery } from '../project_publishing/projectInfoApiSlice';
 import { useSelector } from 'react-redux';
 import { selectUser, selectCurrentToken } from '../../features/auth/authSlice';
 import { useToast } from '../../context/ToastContext';

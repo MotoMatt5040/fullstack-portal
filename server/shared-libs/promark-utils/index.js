@@ -95,7 +95,14 @@ const OTHER_ABBREVIATIONS = {
   'Southwest': 'SW',
 };
 
+const cleanQueryParam = (value) => {
+  if (value === 'undefined' || value === 'null' || value === '')
+    return undefined;
+  return value;
+};
+
 module.exports = {
   STATE_ABBREVIATIONS,
-  OTHER_ABBREVIATIONS
+  OTHER_ABBREVIATIONS,
+  cleanQueryParam,
 };
