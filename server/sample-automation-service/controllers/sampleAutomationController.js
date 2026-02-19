@@ -6,6 +6,7 @@ const multer = require('multer');
 const FileProcessorFactory = require('@internal/file-processors');
 const SampleAutomation = require('../services/SampleAutomationServices');
 const CallIDApiClient = require('../services/CallIDApiClient');
+const progressManager = require('../services/processingProgressManager');
 const { handleAsync } = require('@internal/auth-middleware');
 
 // Use disk storage for large files to avoid memory issues
@@ -449,15 +450,18 @@ const applyVariableExclusions = (headers, data, excludedVariables, projectInclus
 /**
  * Run post-processing steps on the created table
  */
-const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMode, fileType, tableHeaders) => {
+const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMode, fileType, tableHeaders, emitProgress) => {
+  const emit = emitProgress || (() => {});
   try {
     console.log('Starting post-processing...');
 
+    emit('Formatting phone numbers');
     console.log('Formatting phone numbers...');
     await SampleAutomation.formatPhoneNumbersInTable(tableName);
     console.log('✅ Phone numbers formatted');
 
     if (clientId === 102) {
+      emit('Routing Tarrance phones');
       console.log('Tarrance client detected - routing phones...');
       const routingResult = await SampleAutomation.routeTarrancePhones(tableName);
       console.log(`✅ Tarrance routing: ${routingResult.totalRouted} phones routed`);
@@ -468,6 +472,7 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
 
     if (vendorId === 4) {
       try {
+        emit('Calculating PARTY (RNC)');
         console.log('RNC vendor detected - calculating PARTY...');
         const partyResult = await SampleAutomation.calculatePartyFromRPartyRollup(tableName);
 
@@ -481,6 +486,7 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
 
     if (vendorId === 1) {
       try {
+        emit('Formatting RDATE (L2)');
         console.log('L2 vendor detected - formatting RDATE...');
         const rdateResult = await SampleAutomation.formatRDateColumn(tableName);
 
@@ -496,6 +502,7 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
 
     if (vendorId === 4) {
       try {
+        emit('Creating VFREQ columns (RNC)');
         console.log('RNC vendor detected - creating VFREQ columns...');
         const vfreqResult = await SampleAutomation.createVFREQColumns(tableName);
         if (vfreqResult.skipped) {
@@ -508,14 +515,17 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
       }
     }
 
+    emit('Updating SOURCE column');
     console.log('Updating SOURCE column based on LAND/CELL values...');
     const sourceResult = await SampleAutomation.updateSourceColumn(tableName);
     console.log(`✅ SOURCE column updated`);
 
+    emit('Applying WDNC scrubbing');
     console.log('Applying WDNC scrubbing...');
     const wdncResult = await SampleAutomation.applyWDNCScrubbing(tableName);
     console.log(`✅ WDNC scrubbing: ${wdncResult.rowsRemoved} removed`);
 
+    emit('Processing age data');
     console.log('Converting AGE to IAGE...');
     const convertAgeResult = await SampleAutomation.convertAgeToIAge(tableName);
     let iageCalculated = false;
@@ -541,6 +551,7 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
       }
     }
 
+    emit('Populating age ranges');
     if (clientId === 102) {
       const ageRangeExists = await SampleAutomation.checkColumnExists(tableName, 'AGERANGE');
       if (ageRangeExists) {
@@ -556,6 +567,7 @@ const runPostProcessing = async (tableName, clientId, vendorId, ageCalculationMo
       console.log(`✅ AGERANGE: ${ageRangeResult.recordsWithAgeRange} records matched`);
     }
 
+    emit('Padding columns');
     console.log('Padding columns...');
     const paddingResult = await SampleAutomation.padColumns(tableName);
     console.log(`✅ Column padding: ${paddingResult.recordsProcessed} records processed`);
@@ -598,7 +610,21 @@ const processFile = async (req, res) => {
     const excludedColumns = req.body.excludedColumns ? JSON.parse(req.body.excludedColumns) : {};
     const vendorId = req.body.vendorId ? parseInt(req.body.vendorId) : null;
     const clientId = req.body.clientId ? parseInt(req.body.clientId) : null;
-    const { projectId, requestedFileId, ageCalculationMode, fileType } = req.body;
+    const { projectId, requestedFileId, ageCalculationMode, fileType, sessionId: clientSessionId } = req.body;
+
+    // Progress tracking via SSE
+    const TOTAL_STEPS = 14;
+    let currentStep = 0;
+    const emitProgress = (message) => {
+      if (clientSessionId) {
+        currentStep++;
+        progressManager.updateProgress(clientSessionId, {
+          step: currentStep,
+          totalSteps: TOTAL_STEPS,
+          message,
+        });
+      }
+    };
 
     console.log('Vendor/Client context:', { vendorId, clientId });
     console.log('Custom headers provided:', Object.keys(customHeaders).length > 0);
@@ -636,6 +662,7 @@ const processFile = async (req, res) => {
 
     console.log(`Processing ${filesToProcess.length} file(s) for project ${projectId}...`);
 
+    emitProgress('Registering files');
     let fileIds;
     try {
       fileIds = await registerFileIds(
@@ -652,6 +679,7 @@ const processFile = async (req, res) => {
       });
     }
 
+    emitProgress('Parsing files');
     let processedFiles;
     try {
       processedFiles = await processAllFiles(filesToProcess, customHeaders, excludedColumns, fileIds);
@@ -665,10 +693,12 @@ const processFile = async (req, res) => {
 
     const { allProcessedData, allHeaders, totalOriginalRows, processedFileNames } = processedFiles;
 
+    emitProgress('Applying header mappings');
     let finalHeaders = buildFinalHeaders(allHeaders, filesToProcess.length > 1);
 
     await cleanupFiles(filesToProcess);
 
+    emitProgress('Applying variable exclusions');
     // Apply variable exclusions (after header mapping)
     console.log('Checking for variable exclusions...');
     let filteredData = allProcessedData;
@@ -713,6 +743,7 @@ const processFile = async (req, res) => {
     };
 
     try {
+      emitProgress('Creating table');
       console.log('Creating SQL table...');
 
       const tableResult = await SampleAutomation.createTableFromFileData(
@@ -730,7 +761,8 @@ const processFile = async (req, res) => {
         vendorId,
         ageCalculationMode,
         fileType,
-        tableResult.headers
+        tableResult.headers,
+        emitProgress
       );
 
       const updatedHeaders = await SampleAutomation.getTableHeaders(tableResult.tableName);
@@ -745,6 +777,7 @@ const processFile = async (req, res) => {
       console.log(`req.headers['x-user-name']: ${req.headers['x-user-name']}`);
       console.log(`req.headers['x-user-roles']: ${req.headers['x-user-roles']}`);
 
+      emitProgress('Assigning CallIDs');
       let callIdAssignment = null;
       if (projectId) {
         // Build gateway headers for service-to-service communication
@@ -787,6 +820,10 @@ const processFile = async (req, res) => {
         ? `Successfully merged ${filesToProcess.length} files into table ${tableResult.tableName}`
         : `Successfully processed ${processedFileNames[0]} into table ${tableResult.tableName}`;
 
+      if (clientSessionId) {
+        progressManager.completeSession(clientSessionId);
+      }
+
       res.json({
         success: true,
         sessionId: sessionId,
@@ -811,6 +848,9 @@ const processFile = async (req, res) => {
 
     } catch (sqlError) {
       console.error('SQL table creation failed:', sqlError);
+      if (clientSessionId) {
+        progressManager.errorSession(clientSessionId, sqlError.message);
+      }
       return res.status(500).json({
         success: false,
         message: `Files processed but table creation failed: ${sqlError.message}`,
@@ -822,6 +862,9 @@ const processFile = async (req, res) => {
 
   } catch (error) {
     console.error('Error in file processing:', error);
+    if (clientSessionId) {
+      progressManager.errorSession(clientSessionId, error.message);
+    }
 
     if (req.files) {
       await cleanupFiles(req.files);
@@ -1105,7 +1148,7 @@ const detectHeaders = handleAsync(async (req, res) => {
       fileExtension
     );
   }
-  const result = await processor.process();
+  const result = await processor.processHeaders();
 
   // Clean up uploaded file after processing
   if (file.path) {

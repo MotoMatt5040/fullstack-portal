@@ -87,6 +87,12 @@
             reverse_proxy callid:5004
         }
 
+        # SSE sample-automation events endpoint - no auth (EventSource can't send headers)
+        @sampleSSE path /api/sample-automation/events/*
+        handle @sampleSSE {
+            reverse_proxy sample-automation:5006
+        }
+
         # Sample Automation service routes - use forward_auth for JWT validation
         handle /api/sample-automation/* {
             forward_auth auth-gateway:5005 {

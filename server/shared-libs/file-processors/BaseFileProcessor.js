@@ -11,6 +11,10 @@ class BaseFileProcessor {
     throw new Error('Process method must be implemented by subclass');
   }
 
+  async processHeaders() {
+    return this.process();
+  }
+
   detectDataType(value) {
     if (value === null || value === undefined || value === '') {
       return 'TEXT';

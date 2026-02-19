@@ -70,6 +70,12 @@ localhost {
         reverse_proxy callid:5004
     }
 
+    # SSE sample-automation events endpoint - no auth (EventSource can't send headers)
+    @sampleSSE path /api/sample-automation/events/*
+    handle @sampleSSE {
+        reverse_proxy sample-automation:5006
+    }
+
     handle /api/sample-automation/* {
         request_body {
             max_size 2GB
