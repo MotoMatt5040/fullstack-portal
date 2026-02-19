@@ -1,0 +1,6 @@
+{
+  "name": "@internal/email-templates",
+  "version": "1.0.0",
+  "description": "Shared email templates for Portal services",
+  "main": "index.js"
+}

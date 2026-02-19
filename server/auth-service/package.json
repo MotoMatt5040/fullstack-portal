@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@internal/cors-config": "file:./shared-libs/cors-config",
+    "@internal/email-templates": "file:./shared-libs/email-templates",
     "@internal/error-handler": "file:./shared-libs/error-handler",
     "@internal/roles-config": "file:./shared-libs/roles-config",
     "bcrypt": "^5.1.1",

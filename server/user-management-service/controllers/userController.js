@@ -3,6 +3,7 @@ const { handleAsync } = require('@internal/auth-middleware');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { welcomeEmail, forgotPasswordEmail } = require('@internal/email-templates');
 
 // Email configuration with fallbacks and validation
 const emailConfig = {
@@ -57,111 +58,6 @@ const generatePasswordResetToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
-// Email template function with password reset link
-const createWelcomeEmailTemplate = (
-  email,
-  password,
-  resetToken,
-  isExternal,
-  clientName
-) => {
-  const subject = 'Promark Client Portal - Your Account Has Been Created';
-  const resetLink = `${
-    process.env.FRONTEND_URL || 'http://localhost:5173'
-  }/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        .email-container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; }
-        .header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background-color: #f8f9fa; }
-        .credentials { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        .password { font-family: monospace; font-size: 16px; font-weight: bold; color: #dc3545; }
-        .reset-button {
-          display: inline-block;
-          background-color: #28a745;
-          color: white;
-          padding: 12px 24px;
-          text-decoration: none;
-          border-radius: 5px;
-          font-weight: bold;
-          margin: 15px 0;
-        }
-        .footer { background-color: #6c757d; color: white; padding: 15px; text-align: center; font-size: 12px; }
-        .warning { color: #dc3545; font-weight: bold; }
-      </style>
-    </head>
-    <body>
-      <div class="email-container">
-        <div class="header">
-          <h1>Welcome to Our Platform</h1>
-        </div>
-        <div class="content">
-          <h2>Welcome to the Promark Client Portal!</h2>
-          <p>Your account has been successfully created. Here are your temporary login credentials:</p>
-
-          <div class="credentials">
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Temporary Password:</strong> <span class="password">${password}</span></p>
-            ${isExternal ? `<p><strong>Client:</strong> ${clientName}</p>` : ''}
-          </div>
-
-          <p class="warning">REQUIRED: You must change your password on first login</p>
-
-          <p>Click the button below to log in and set your new password:</p>
-          <p style="text-align: center;">
-            <a href="${resetLink}" class="reset-button">Login & Change Password</a>
-          </p>
-
-          <p><small>Or copy this link: <br><a href="${resetLink}">${resetLink}</a></small></p>
-
-          <p class="warning">Important Security Notice:</p>
-          <ul>
-            <li><strong>You MUST change your password after clicking the link above</strong></li>
-            <li>This link will expire in 24 hours</li>
-            <li>Do not share these credentials with anyone</li>
-            <li>Delete this email after setting your new password</li>
-          </ul>
-
-          <p>If you have any questions, please contact your administrator.</p>
-        </div>
-        <div class="footer">
-          <p>This is an automated message. Please do not reply to this email.</p>
-          <p>Link expires: ${new Date(
-            Date.now() + 24 * 60 * 60 * 1000
-          ).toLocaleString()}</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const text = `
-    Welcome to the Promark Client Portal!
-
-    Your account has been successfully created.
-
-    Login Credentials:
-    Email: ${email}
-    Temporary Password: ${password}
-    ${isExternal ? `Client: ${clientName}` : ''}
-
-    REQUIRED: You must change your password on first login.
-
-    Click this link to log in and set your new password:
-    ${resetLink}
-
-    This link will expire in 24 hours.
-
-    If you have any questions, please contact your administrator.
-  `;
-
-  return { subject, html, text };
-};
-
 // Send email function with better error handling
 const sendWelcomeEmail = async (
   email,
@@ -180,7 +76,7 @@ const sendWelcomeEmail = async (
     await transporter.verify();
     console.log('SMTP connection verified successfully');
 
-    const { subject, html, text } = createWelcomeEmailTemplate(
+    const { subject, html, text } = welcomeEmail(
       email,
       password,
       resetToken,
@@ -207,7 +103,7 @@ const sendWelcomeEmail = async (
   }
 };
 
-// Email template for forgot password
+// Send forgot password email
 const sendForgotPasswordEmail = async (email, resetToken) => {
   try {
     if (!emailConfig.auth.user || !emailConfig.auth.pass) {
@@ -218,78 +114,7 @@ const sendForgotPasswordEmail = async (email, resetToken) => {
 
     await transporter.verify();
 
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-
-    const subject = 'Promark Client Portal - Password Reset Request';
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          .email-container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; }
-          .header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f8f9fa; }
-          .reset-button {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin: 15px 0;
-          }
-          .footer { background-color: #6c757d; color: white; padding: 15px; text-align: center; font-size: 12px; }
-          .warning { color: #dc3545; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <div class="email-container">
-          <div class="header">
-            <h1>Password Reset Request</h1>
-          </div>
-          <div class="content">
-            <h2>Hello!</h2>
-            <p>We received a request to reset your password. If you didn't make this request, you can safely ignore this email.</p>
-
-            <p>Click the button below to reset your password:</p>
-            <p style="text-align: center;">
-              <a href="${resetLink}" class="reset-button">Reset My Password</a>
-            </p>
-
-            <p><small>Or copy this link: <br><a href="${resetLink}">${resetLink}</a></small></p>
-
-            <p class="warning">Important:</p>
-            <ul>
-              <li>This link will expire in 24 hours</li>
-              <li>If you didn't request this reset, please contact support</li>
-              <li>Never share this link with anyone</li>
-            </ul>
-          </div>
-          <div class="footer">
-            <p>This is an automated message. Please do not reply to this email.</p>
-            <p>Link expires: ${new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleString()}</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const text = `
-      Password Reset Request
-
-      We received a request to reset your password for your account.
-
-      If you didn't make this request, you can safely ignore this email.
-
-      Click this link to reset your password:
-      ${resetLink}
-
-      This link will expire in 24 hours.
-
-      If you have any questions, please contact support.
-    `;
+    const { subject, html, text } = forgotPasswordEmail(email, resetToken);
 
     const mailOptions = {
       from: `"${process.env.FROM_NAME || 'System Administrator'}" <${
