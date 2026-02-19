@@ -23,7 +23,7 @@ const parseFile = (file) => {
   // { A: ..., B: ..., C: ..., E: ... }
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 'A' });
   // Project ID is in the 3rd row, column A
-  const projectId = rows[2]['A'];
+  const projectId = rows[0]['A'].toString().substring(0, 5);
   const result = [];
 
   // For each row, if column C is 'Y',
@@ -32,7 +32,7 @@ const parseFile = (file) => {
     if (row['C'] === 'Y') {
       result.push({
         alias: row['B'],
-        number: row['E'],
+        columnPos: row['E'],
       });
     }
   }
@@ -40,13 +40,25 @@ const parseFile = (file) => {
   return { projectId, data: result };
 };
 
+const buildPhoneSelectedQuestions = (variables) => {
+  const selectedQuestions = variables.map((variable, index) => ({
+    Id: index + 1,
+    Alias: variable.alias,
+    Name: variable.alias,
+    ColumnPosition: variable.columnPos,
+  }));
+  return selectedQuestions;
+};
+
 /**
  * Builds the extraction task payload with static defaults and dynamic fields.
  * @param {string} name - Task name and DestinationFileName (e.g. projectID + "DAT")
  * @param {number} voxcoId - Voxco survey ID
- * @param {string[]} variables - Array of variable alias strings
+ * @param {Array} questions - Array of question objects with necessary details for the extraction task
+ * @return {Object} - The complete payload object for creating an extraction task in VOXCO
  */
 const buildPhoneExtractionPayload = (name, voxcoId, variables) => {
+  const questions = buildPhoneSelectedQuestions(variables);
   const date = new Date().toISOString();
   const payload = {
     Title: name,
@@ -174,12 +186,13 @@ const buildPhoneExtractionPayload = (name, voxcoId, variables) => {
         CompletedDateTimeStartDate: null,
         CompletedDateTimeEndDate: null,
       },
-      SelectedQuestions: [],
-      DestinationFile: '13281DAT',
+      SelectedQuestions: questions,
+      DestinationFile: name,
       DestinationFileFormat: 'TXT',
       FileServerPath:
-        'C:\\Program Files (x86)\\Voxco\\A4S\\Temp\\ExportedFiles\\context_12\\project_159619',
-      ExportedFileNames: '13281DAT',
+        'C:\\Program Files (x86)\\Voxco\\A4S\\Temp\\ExportedFiles\\context_12\\project_' +
+        voxcoId,
+      ExportedFileNames: name,
     },
     TaskStatus: 0,
     ExecutionProgress: null,
@@ -211,12 +224,14 @@ const handleCreateExtractionTask = handleAsync(async (req, res) => {
   }
 
   const name = parsedData.projectId + 'DAT';
-  const variables = parsedData.data.map((row) => row.alias);
+  const variables = parsedData.data;
   const payload = buildPhoneExtractionPayload(name, voxcoID, variables);
-  const result = await ExtractionTaskServices.createExtractionTask(payload);
-  res
-    .status(200)
-    .json({ message: 'File processed successfully.', data: result });
+
+  console.log('Constructed Payload:', payload);
+  // const result = await ExtractionTaskServices.createExtractionTask(payload);
+  // res
+  //   .status(200)
+  //   .json({ message: 'File processed successfully.', data: payload });
 });
 
 module.exports = {

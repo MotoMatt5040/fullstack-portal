@@ -12,7 +12,7 @@ router.use(gatewayAuth);
 
 // POST /api/extraction-task/ - Create a new extraction in VOXCO
 router
-  .route('/')
+  .route('/upload')
   .post(
     verifyRoles(
       ROLES_LIST.Admin,

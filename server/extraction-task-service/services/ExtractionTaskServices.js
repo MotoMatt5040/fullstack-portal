@@ -1,8 +1,6 @@
 const axios = require('@internal/voxco-api');
 const { withDbConnection, sql } = require('@internal/db-connection');
 
-('rPZG+g26bRSoXE5pqz1RV3SXK87SG2ya/UYgg3zB2WAbQWgX1bE7c8DqhUaD1JDjkz6De+cY6YYq8MZETjnoID4x5OOlccIYPa2ro7jZoHGKE9WqhEq3dtT8VnOXgMR4O9GgyMcCKYyHL7fyEkqWnz6Xj2iVeLGKXZEaaX8swvhBGiNoO6lp9H7ptXDkazA71cjlIUBbRBuKUaFC5aVn5j+yeGgNGBa+LCYNQHT+G9+1TNebA9eIhQ==');
-
 const getVoxcoID = async (projectID, suffix, isWeb = false) => {
   if (isWeb) {
     return withDbConnection({
@@ -31,7 +29,7 @@ const getVoxcoID = async (projectID, suffix, isWeb = false) => {
           .input('projectIdW', sql.NVarChar, projectID + 'W')
           .input('projectIdCOM', sql.NVarChar, projectID + 'COM')
           .query(
-            `SELECT k_Id FROM [VoxcoSystem].[dbo].[tblObjects]
+            `SELECT k_Id, name FROM [VoxcoSystem].[dbo].[tblObjects]
              WHERE tblobjects.Type = 1
              AND name IN (@projectId, @projectIdC, @projectIdW, @projectIdCOM)
              AND ParentId > 1000
