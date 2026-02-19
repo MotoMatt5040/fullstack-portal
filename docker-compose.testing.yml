@@ -350,6 +350,7 @@ services:
       - ai-prompting
       - github
       - promark-employees
+      - extraction-task
       - api
       - client
 
