@@ -90,6 +90,8 @@ const buildKey = (projectId, useGpcph) => {
 };
 
 const addClient = (subscriptionKey, clientId, res, username, params) => {
+  let isNewSubscription = false;
+
   if (!subscriptions.has(subscriptionKey)) {
     subscriptions.set(subscriptionKey, {
       clients: new Map(),
@@ -98,11 +100,16 @@ const addClient = (subscriptionKey, clientId, res, username, params) => {
       lastDataHash: null,
       params,
     });
-    startPolling(subscriptionKey);
+    isNewSubscription = true;
   }
 
   const sub = subscriptions.get(subscriptionKey);
+  // Add client BEFORE starting polling so the first poll sees the subscriber
   sub.clients.set(clientId, { res, username });
+
+  if (isNewSubscription) {
+    startPolling(subscriptionKey);
+  }
 
   console.log(`Report SSE client ${clientId} (${username}) subscribed to ${subscriptionKey}. Subscribers: ${sub.clients.size}`);
 

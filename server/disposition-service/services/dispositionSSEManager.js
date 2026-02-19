@@ -84,6 +84,8 @@ const stopPolling = (projectId) => {
 };
 
 const addClient = (projectId, clientId, res, username) => {
+  let isNewSubscription = false;
+
   if (!projectSubscriptions.has(projectId)) {
     projectSubscriptions.set(projectId, {
       clients: new Map(),
@@ -91,11 +93,16 @@ const addClient = (projectId, clientId, res, username) => {
       lastData: null,
       lastDataHash: null,
     });
-    startPolling(projectId);
+    isNewSubscription = true;
   }
 
   const sub = projectSubscriptions.get(projectId);
+  // Add client BEFORE starting polling so the first poll sees the subscriber
   sub.clients.set(clientId, { res, username });
+
+  if (isNewSubscription) {
+    startPolling(projectId);
+  }
 
   console.log(`Disposition SSE client ${clientId} (${username}) subscribed to project ${projectId}. Subscribers: ${sub.clients.size}`);
 

@@ -117,6 +117,8 @@ const stopPolling = (projectId) => {
 };
 
 const addClient = (projectId, clientId, res, username, isInternalUser) => {
+  let isNewSubscription = false;
+
   if (!projectSubscriptions.has(projectId)) {
     projectSubscriptions.set(projectId, {
       clients: new Map(),
@@ -124,13 +126,18 @@ const addClient = (projectId, clientId, res, username, isInternalUser) => {
       lastData: { internal: null, external: null },
       lastDataHash: { internal: null, external: null },
     });
-    startPolling(projectId);
+    isNewSubscription = true;
   }
 
   const sub = projectSubscriptions.get(projectId);
+  // Add client BEFORE starting polling so the first poll sees the subscriber
   sub.clients.set(clientId, { res, username, isInternalUser });
 
   console.log(`SSE client ${clientId} (${username}) subscribed to project ${projectId}. Subscribers: ${sub.clients.size}`);
+
+  if (isNewSubscription) {
+    startPolling(projectId);
+  }
 
   // Send cached data immediately if available
   const dataKey = isInternalUser ? 'internal' : 'external';
