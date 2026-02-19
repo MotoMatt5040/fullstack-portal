@@ -259,6 +259,22 @@
             reverse_proxy promark-employees:5015
         }
 
+        # Extraction Task service routes - use forward_auth for JWT validation
+        handle /api/extraction-task/* {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy extraction-task:5016
+        }
+        handle /api/extraction-task {
+            forward_auth auth-gateway:5005 {
+                uri /verify
+                copy_headers X-User-Authenticated X-User-Name X-User-Roles
+            }
+            reverse_proxy extraction-task:5016
+        }
+
         # All other API routes go to the monolith
         handle /api/* {
             reverse_proxy api:5000
