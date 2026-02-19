@@ -33,15 +33,22 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
   const token = useSelector((state: RootState) => selectCurrentToken(state));
   const user = useSelector((state: RootState) => selectUser(state));
 
+  // Store all changing values in refs so connect/disconnect have stable identities
   const onDataRef = useRef(onData);
   const onErrorRef = useRef(onError);
   const onConnectedRef = useRef(onConnected);
   const onDisconnectedRef = useRef(onDisconnected);
+  const tokenRef = useRef(token);
+  const projectIdRef = useRef(projectId);
+  const usernameRef = useRef(user?.username);
 
   useEffect(() => { onDataRef.current = onData; }, [onData]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
   useEffect(() => { onConnectedRef.current = onConnected; }, [onConnected]);
   useEffect(() => { onDisconnectedRef.current = onDisconnected; }, [onDisconnected]);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+  useEffect(() => { projectIdRef.current = projectId; }, [projectId]);
+  useEffect(() => { usernameRef.current = user?.username; }, [user?.username]);
 
   const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
@@ -56,13 +63,13 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
   }, []);
 
   const connect = useCallback(() => {
-    if (!token || !projectId) return;
+    if (!tokenRef.current || !projectIdRef.current) return;
 
     disconnect();
 
     try {
-      const username = encodeURIComponent(user?.username || 'Anonymous');
-      const url = `/api/disposition-report/events?projectId=${encodeURIComponent(projectId)}&username=${username}`;
+      const username = encodeURIComponent(usernameRef.current || 'Anonymous');
+      const url = `/api/disposition-report/events?projectId=${encodeURIComponent(projectIdRef.current)}&username=${username}`;
 
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
@@ -101,14 +108,15 @@ export const useDispositionSSE = (options: UseDispositionSSEOptions) => {
         eventSourceRef.current = null;
 
         reconnectTimeoutRef.current = setTimeout(() => {
-          if (token && projectId) connect();
+          if (tokenRef.current && projectIdRef.current) connect();
         }, 5000);
       };
     } catch (error) {
       console.error('Error creating disposition EventSource:', error);
     }
-  }, [token, projectId, disconnect, user?.username]);
+  }, [disconnect]);
 
+  // Only reconnect when the actual subscription parameters change
   useEffect(() => {
     if (projectId && token) {
       connect();

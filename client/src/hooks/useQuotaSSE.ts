@@ -32,16 +32,24 @@ export const useQuotaSSE = (options: UseQuotaSSEOptions) => {
   const token = useSelector((state: RootState) => selectCurrentToken(state));
   const user = useSelector((state: RootState) => selectUser(state));
 
-  // Store callbacks in refs to avoid recreating the connect function
+  // Store all changing values in refs so connect/disconnect have stable identities
   const onDataRef = useRef(onData);
   const onErrorRef = useRef(onError);
   const onConnectedRef = useRef(onConnected);
   const onDisconnectedRef = useRef(onDisconnected);
+  const tokenRef = useRef(token);
+  const projectIdRef = useRef(projectId);
+  const isInternalUserRef = useRef(isInternalUser);
+  const usernameRef = useRef(user?.username);
 
   useEffect(() => { onDataRef.current = onData; }, [onData]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
   useEffect(() => { onConnectedRef.current = onConnected; }, [onConnected]);
   useEffect(() => { onDisconnectedRef.current = onDisconnected; }, [onDisconnected]);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+  useEffect(() => { projectIdRef.current = projectId; }, [projectId]);
+  useEffect(() => { isInternalUserRef.current = isInternalUser; }, [isInternalUser]);
+  useEffect(() => { usernameRef.current = user?.username; }, [user?.username]);
 
   const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
@@ -56,13 +64,13 @@ export const useQuotaSSE = (options: UseQuotaSSEOptions) => {
   }, []);
 
   const connect = useCallback(() => {
-    if (!token || !projectId) return;
+    if (!tokenRef.current || !projectIdRef.current) return;
 
     disconnect();
 
     try {
-      const username = encodeURIComponent(user?.username || 'Anonymous');
-      const url = `/api/quota-management/events?projectId=${encodeURIComponent(projectId)}&username=${username}&isInternalUser=${isInternalUser}`;
+      const username = encodeURIComponent(usernameRef.current || 'Anonymous');
+      const url = `/api/quota-management/events?projectId=${encodeURIComponent(projectIdRef.current)}&username=${username}&isInternalUser=${isInternalUserRef.current}`;
 
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
@@ -102,14 +110,15 @@ export const useQuotaSSE = (options: UseQuotaSSEOptions) => {
 
         // Auto-reconnect after 5 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
-          if (token && projectId) connect();
+          if (tokenRef.current && projectIdRef.current) connect();
         }, 5000);
       };
     } catch (error) {
       console.error('Error creating quota EventSource:', error);
     }
-  }, [token, projectId, isInternalUser, disconnect, user?.username]);
+  }, [disconnect]);
 
+  // Only reconnect when the actual subscription parameters change
   useEffect(() => {
     if (projectId && token) {
       connect();
