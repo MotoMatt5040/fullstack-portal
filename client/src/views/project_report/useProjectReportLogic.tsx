@@ -1,21 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { useSearchParams } from 'react-router-dom';
-import QueryHelper from '../../utils/QueryHelper';
 import { useSelector } from 'react-redux';
-
-interface ChartData {
-  field: string;
-  value: string;
-}
-
-interface TotalData {
-  Total: string;
-  'ON-CPH': string;
-  'ON-VAR': string;
-  'OFF-CPH': string;
-  'ZERO-CMS': string;
-}
+import useReportSSE from '../../hooks/useReportSSE';
 
 interface ProjectReportData {
   onCph: number;
@@ -30,86 +17,72 @@ const useProjectReportLogic = () => {
   const [searchParams] = useSearchParams();
   const [liveToggle, setLiveToggle] = useState<boolean>(false);
   const [data, setData] = useState<ProjectReportData[]>([]);
-  const [timestamp, setTimestamp] = useState<number>(Date.now());
-  const [projectCount, setProjectCount] = useState<number>(0);
-  const [isRefetching, setIsRefetching] = useState<boolean>(false);
-  const [projectId, setProjectId] = useState<string | undefined>(
+  const [projectId] = useState<string | undefined>(
     searchParams.get('projectId') || undefined
   );
   const [isListView, setIsListView] = useState<boolean>(true);
-  const [chartData, setChartData] = useState<ChartData[]>([
-    { field: 'ON-CPH', value: '0' },
-    { field: 'ON-VAR', value: '0' },
-    { field: 'OFF-CPH', value: '0' },
-    { field: 'ZERO-CMS', value: '0' },
-  ]);
-  const [totalData, setTotalData] = useState<TotalData[]>([
-    {
-      Total: '0',
-      'ON-CPH': '0',
-      'ON-VAR': '0',
-      'OFF-CPH': '0',
-      'ZERO-CMS': '0',
-    },
-  ]);
+  // Stable timestamp for RTK Query cache-busting (only changes on explicit refetch)
+  const [timestamp, setTimestamp] = useState(Date.now());
 
-  const projectReport = QueryHelper(useGetReportQuery, {
+  // RTK Query for historic/non-live mode only — skip in live mode (SSE handles it)
+  const { data: queryData, isLoading, isSuccess } = useGetReportQuery(
+    {
+      projectId,
+      live: false,
+      ts: timestamp.toString(),
+      useGpcph,
+    },
+    { skip: liveToggle }
+  );
+
+  // Process incoming SSE data for live mode
+  const handleSSEData = useCallback((rawData: ProjectReportData[]) => {
+    if (!rawData || !Array.isArray(rawData) || rawData.length === 0) return;
+    setData(rawData);
+  }, []);
+
+  // SSE connection for live mode
+  useReportSSE({
     projectId,
-    live: liveToggle,
-    ts: timestamp.toString(),
-    useGpcph: useGpcph,
+    useGpcph,
+    enabled: liveToggle,
+    onData: handleSSEData,
   });
 
-  const resetVariables = () => {
-    setData([]);
-    setChartData([
-      { field: 'ON-CPH', value: '0' },
-      { field: 'ON-VAR', value: '0' },
-      { field: 'OFF-CPH', value: '0' },
-      { field: 'ZERO-CMS', value: '0' },
-    ]);
-    setTotalData([
-      {
-        Total: '0',
-        'ON-CPH': '0',
-        'ON-VAR': '0',
-        'OFF-CPH': '0',
-        'ZERO-CMS': '0',
-      },
-    ]);
-  };
-
+  // Historic mode: refetch when toggle changes
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    const fetchParams = {
-      projectId: projectId,
-      live: liveToggle,
-      ts: timestamp,
-    };
-
-    if (liveToggle) {
-      fetchData();
-      intervalId = setInterval(() => {
-        setTimestamp(Date.now());
-      }, 15000);
-    } else fetchData();
-
-    return () => {
-      clearInterval(intervalId);
-    };
+    if (liveToggle) return;
+    setTimestamp(Date.now());
   }, [liveToggle]);
 
+  // Process RTK Query data for historic mode
   useEffect(() => {
-    if (!projectReport.data) return;
+    if (liveToggle) return;
+    if (!queryData) return;
+    setData(queryData);
+  }, [queryData, liveToggle]);
 
-    setData(projectReport.data);
-  }, [projectCount, isRefetching, projectReport.data]);
-
-  useEffect(() => {
-    if (!data || data.length === 0) return;
-
-    if (liveToggle) refetchCheck();
+  // Compute chart and total data from data
+  const { chartData, totalData } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return {
+        chartData: [
+          { field: 'ON-CPH', value: '0' },
+          { field: 'ON-VAR', value: '0' },
+          { field: 'OFF-CPH', value: '0' },
+          { field: 'ZERO-CMS', value: '0' },
+        ],
+        totalData: [
+          {
+            Total: '0',
+            'ON-CPH': '0',
+            'ON-VAR': '0',
+            'OFF-CPH': '0',
+            'ZERO-CMS': '0',
+          },
+        ],
+      };
+    }
 
     const totals = data.reduce(
       (acc, project) => {
@@ -122,65 +95,32 @@ const useProjectReportLogic = () => {
       { onCph: 0, onVar: 0, offCph: 0, zcms: 0 }
     );
 
-    const newChartData = [
-      { field: 'ON-CPH', value: totals.onCph.toFixed(2) },
-      { field: 'ON-VAR', value: totals.onVar.toFixed(2) },
-      { field: 'OFF-CPH', value: totals.offCph.toFixed(2) },
-      { field: 'ZERO-CMS', value: totals.zcms.toFixed(2) },
-    ];
-
-    setChartData(newChartData);
-
-    const newTotalData = [
-      {
-        Total: (
-          totals.onCph +
-          totals.onVar +
-          totals.offCph +
-          totals.zcms
-        ).toFixed(2),
-        'ON-CPH': totals.onCph.toFixed(2),
-        'ON-VAR': totals.onVar.toFixed(2),
-        'OFF-CPH': totals.offCph.toFixed(2),
-        'ZERO-CMS': totals.zcms.toFixed(2),
-      },
-    ];
-
-    setTotalData(newTotalData);
+    return {
+      chartData: [
+        { field: 'ON-CPH', value: totals.onCph.toFixed(2) },
+        { field: 'ON-VAR', value: totals.onVar.toFixed(2) },
+        { field: 'OFF-CPH', value: totals.offCph.toFixed(2) },
+        { field: 'ZERO-CMS', value: totals.zcms.toFixed(2) },
+      ],
+      totalData: [
+        {
+          Total: (
+            totals.onCph +
+            totals.onVar +
+            totals.offCph +
+            totals.zcms
+          ).toFixed(2),
+          'ON-CPH': totals.onCph.toFixed(2),
+          'ON-VAR': totals.onVar.toFixed(2),
+          'OFF-CPH': totals.offCph.toFixed(2),
+          'ZERO-CMS': totals.zcms.toFixed(2),
+        },
+      ],
+    };
   }, [data]);
-
-  const refetchCheck = () => {
-    if (projectCount > projectReport.data.length && !isRefetching) {
-      setTimeout(() => {
-        setIsRefetching(true);
-        fetchData().finally(() => {
-          setIsRefetching(false);
-        });
-      }, 1000);
-    }
-    setProjectCount(projectReport.data.length);
-  };
 
   const handleLiveToggle = () => {
     setLiveToggle((prev) => !prev);
-  };
-
-  const fetchData = async () => {
-    const fetchParams = {
-      projectId: projectId,
-      live: liveToggle,
-      ts: timestamp,
-      useGpcph: useGpcph,
-    };
-    try {
-      const result = await projectReport.refetch(fetchParams);
-      if (result?.error?.status === 499) return;
-      if (result?.data) {
-        setData(result.data);
-      } else {
-        resetVariables();
-      }
-    } catch (err) {}
   };
 
   const handleViewChange = () => {
@@ -193,9 +133,9 @@ const useProjectReportLogic = () => {
     data,
     chartData,
     totalData,
-    projectReportIsLoading: projectReport.isLoading,
-    projectReportIsSuccess: projectReport.isSuccess,
-    projectReportData: projectReport.data,
+    projectReportIsLoading: isLoading,
+    projectReportIsSuccess: isSuccess,
+    projectReportData: queryData,
     isListView,
     handleViewChange,
   };

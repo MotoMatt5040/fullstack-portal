@@ -1,15 +1,14 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-// import { useGetSummaryReportQuery } from '../../features/summaryReportApiSlice';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useGetReportQuery } from '../../features/reportsApiSlice';
 import { parseDate, today } from '@internationalized/date';
 import { useSearchParams } from 'react-router-dom';
-import QueryHelper from '../../utils/QueryHelper';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setSummaryStartDate,
   setSummaryEndDate,
   setSummaryIsLive,
 } from '../../features/summarySlice';
+import useReportSSE from '../../hooks/useReportSSE';
 
 const getDateFromParams = (key, fallback) => {
   const params = new URLSearchParams(window.location.search);
@@ -27,18 +26,14 @@ const useProjectReportLogic = () => {
     searchParams.get('live') === 'false' ? false : true
   );
   const [data, setData] = useState([]);
-  const [timestamp, setTimestamp] = useState(Date.now());
   const [isListView, setIsListView] = useState(true);
 
   // Ref to track if we have received initial data (prevents flickering on refreshes)
   const hasInitialDataRef = useRef(false);
-  // Track last known good data count to detect potential incomplete responses
+  // Track last known good data count
   const lastCountRef = useRef(0);
-  // Track if we're doing a validation re-fetch
-  const isValidatingRef = useRef(false);
-  // Store pending validation data to compare against
-  const pendingValidationRef = useRef(null);
-  // chartData and totalData computed via useMemo below (after data is populated)
+  // Stable timestamp for RTK Query cache-busting (only changes on explicit refetch)
+  const [timestamp, setTimestamp] = useState(Date.now());
   const [date, setDate] = useState({
     start: getDateFromParams(
       'startDate',
@@ -49,19 +44,18 @@ const useProjectReportLogic = () => {
       today('America/Chicago').subtract({ days: 1 })
     ),
   });
-  const summaryReport = QueryHelper(useGetReportQuery, {
-    live: liveToggle,
-    startDate: date.start,
-    endDate: date.end,
-    ts: timestamp,
-    useGpcph: useGpcph,
-  });
 
-  const resetVariables = () => {
-    setData([]);
-    // chartData and totalData are now computed via useMemo from data
-    // clearing data will cause useMemo to return default values
-  };
+  // RTK Query for historic mode only — skip entirely in live mode (SSE handles live data)
+  const { data: queryData, isLoading, isFetching } = useGetReportQuery(
+    {
+      live: false,
+      startDate: date.start,
+      endDate: date.end,
+      ts: timestamp,
+      useGpcph,
+    },
+    { skip: liveToggle }
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -88,98 +82,12 @@ const useProjectReportLogic = () => {
     }
   }, [dispatch]);
 
-  useEffect(() => {
-    let intervalId;
+  // Process incoming SSE data for live mode
+  const processIncomingData = useCallback((rawData) => {
+    if (!rawData || !Array.isArray(rawData) || rawData.length === 0) return;
 
-    const fetchParams = {
-      live: liveToggle,
-      startDate: date.start,
-      endDate: date.end,
-      ts: timestamp,
-    };
+    let processedData = rawData;
 
-    if (liveToggle) {
-      fetchData(summaryReport.refetch, fetchParams);
-      intervalId = setInterval(() => {
-        setTimestamp(Date.now());
-      }, 15000);
-    } else fetchData(summaryReport.refetch, fetchParams);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveToggle, date]);
-
-  // Process incoming data - backend handles stale request filtering via 204 responses
-  useEffect(() => {
-    // Ignore empty/null data - keep showing existing data
-    if (!summaryReport.data || !Array.isArray(summaryReport.data)) return;
-
-    // In live mode with existing data, ignore empty arrays (stale 204 response was converted to empty)
-    if (liveToggle && summaryReport.data.length === 0 && hasInitialDataRef.current) {
-      return;
-    }
-
-    const newCount = summaryReport.data.length;
-    const lastCount = lastCountRef.current;
-
-    // If we're in a validation cycle, compare results
-    if (isValidatingRef.current && pendingValidationRef.current !== null) {
-      isValidatingRef.current = false;
-      const pendingCount = pendingValidationRef.current.length;
-
-      // Use whichever response has more data (assume incomplete is the issue)
-      if (newCount >= pendingCount) {
-        // Validation returned same or more - use validation data
-        lastCountRef.current = newCount;
-        pendingValidationRef.current = null;
-        // Process and set the validated data
-        let processedData = summaryReport.data;
-        if (window.innerWidth < 768) {
-          processedData = processedData.map((item) => ({
-            ...item,
-            projName:
-              item.projName.length > 7
-                ? item.projName.slice(0, 7) + '…'
-                : item.projName,
-          }));
-        }
-        setData(processedData);
-      } else {
-        // Original had more data - keep the pending data, update count
-        lastCountRef.current = pendingCount;
-        let processedData = pendingValidationRef.current;
-        if (window.innerWidth < 768) {
-          processedData = processedData.map((item) => ({
-            ...item,
-            projName:
-              item.projName.length > 7
-                ? item.projName.slice(0, 7) + '…'
-                : item.projName,
-          }));
-        }
-        pendingValidationRef.current = null;
-        setData(processedData);
-      }
-      return;
-    }
-
-    // In live mode: detect when count drops from previous
-    // Trigger a silent validation re-fetch to confirm
-    if (liveToggle && lastCount > 0 && newCount > 0 && newCount < lastCount) {
-      // Store the new (potentially incomplete) data for comparison
-      pendingValidationRef.current = summaryReport.data;
-      isValidatingRef.current = true;
-      // Trigger a re-fetch by updating timestamp - data will be compared on next response
-      setTimestamp(Date.now());
-      // Don't update displayed data yet - wait for validation
-      return;
-    }
-
-    let processedData = summaryReport.data;
-
-    // Trim project names on mobile
     if (window.innerWidth < 768) {
       processedData = processedData.map((item) => ({
         ...item,
@@ -190,14 +98,51 @@ const useProjectReportLogic = () => {
       }));
     }
 
-    // Update last known count
+    hasInitialDataRef.current = true;
+    lastCountRef.current = processedData.length;
+    setData(processedData);
+  }, []);
+
+  // SSE connection for live mode
+  const { isConnected: sseConnected } = useReportSSE({
+    useGpcph,
+    enabled: liveToggle,
+    onData: processIncomingData,
+  });
+
+  // Historic mode: refetch when date changes
+  useEffect(() => {
+    if (liveToggle) return;
+    // Bump timestamp to trigger a new RTK Query fetch
+    setTimestamp(Date.now());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveToggle, date]);
+
+  // Process incoming data for historic mode (RTK Query)
+  // Live mode data is handled by SSE via processIncomingData callback
+  useEffect(() => {
+    if (liveToggle) return;
+    if (!queryData || !Array.isArray(queryData)) return;
+
+    let processedData = queryData;
+
+    if (window.innerWidth < 768) {
+      processedData = processedData.map((item) => ({
+        ...item,
+        projName:
+          item.projName.length > 7
+            ? item.projName.slice(0, 7) + '…'
+            : item.projName,
+      }));
+    }
+
     if (processedData.length > 0) {
       hasInitialDataRef.current = true;
       lastCountRef.current = processedData.length;
     }
 
     setData(processedData);
-  }, [summaryReport.data, liveToggle]);
+  }, [queryData, liveToggle]);
 
   // Memoize totals calculation to avoid re-computing on every render
   const { chartData, totalData } = useMemo(() => {
@@ -276,26 +221,6 @@ const useProjectReportLogic = () => {
     }
   };
 
-  const fetchData = async (refetch, props) => {
-    props.useGpcph = useGpcph;
-    try {
-      const result = await refetch(props);
-
-      // Ignore stale/cancelled requests (204 from backend, 499 legacy)
-      if (result?.error?.status === 499 || result?.error?.status === 204) {
-        return;
-      }
-
-      // Data processing is handled by the useEffect watching summaryReport.data
-      // Only reset in historic mode when genuinely no data
-      if (!liveToggle && result?.data?.length === 0) {
-        resetVariables();
-      }
-    } catch (err) {
-      // Silently ignore fetch errors
-    }
-  };
-
   const handleDateChange = (newDate) => {
     const start = newDate.start;
     const end = newDate.end;
@@ -316,18 +241,17 @@ const useProjectReportLogic = () => {
     setIsListView((prev) => !prev);
   };
 
-  // Initial loading = no data yet and fetching
-  // Once we have data, never show loading again (seamless updates)
-  const isInitialLoading = !hasInitialDataRef.current && (summaryReport.isLoading || summaryReport.isFetching);
+  // Initial loading = no data yet
+  // Live mode: waiting for first SSE push. Historic mode: waiting for RTK Query.
+  const isInitialLoading = !hasInitialDataRef.current &&
+    (liveToggle ? !sseConnected : (isLoading || isFetching));
 
   return {
     liveToggle,
     handleLiveToggle,
     data,
-    // For live mode: only show loading on initial load, not on refreshes
     isInitialLoading,
-    // Background refresh indicator (optional subtle indicator)
-    isRefreshing: hasInitialDataRef.current && summaryReport.isFetching,
+    isRefreshing: hasInitialDataRef.current && (liveToggle ? false : isFetching),
     chartData,
     totalData,
     date,

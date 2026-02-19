@@ -32,7 +32,7 @@ table tbody td:last-child {
 }
 
 table tbody tr:hover {
-  background-color: var(--table-row-hover-background, #999);
+  filter: brightness(0.92);
 }
 
 tr.active {
@@ -72,17 +72,17 @@ tr.active {
 }
 
 .highlight-red {
-  background-color: rgba(204, 0, 0, 0.9);
-  color: white;
+  background-color: rgba(204, 0, 0, 0.9) !important;
+  color: white !important;
 }
 
 .highlight-yellow {
-  background-color: rgba(204, 204, 0, 0.9);
-  color: black;
+  background-color: rgba(204, 204, 0, 0.9) !important;
+  color: black !important;
 }
 
 .highlight-green {
-  background-color: rgba(0, 204, 0, 0.9);
+  background-color: rgba(0, 204, 0, 0.9) !important;
 }
 
 .highlight-red.blinking {

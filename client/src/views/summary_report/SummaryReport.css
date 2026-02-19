@@ -325,11 +325,11 @@
 
 .summary-data-table tbody tr:hover td,
 .summary-data-table tbody tr:nth-child(even):hover td {
-  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.06);
+  filter: brightness(0.92);
 }
 
 .summary-data-table tbody td:hover {
-  background-color: rgba(var(--accent-color-rgb, 59, 130, 246), 0.08) !important;
+  filter: brightness(0.85);
 }
 
 .summary-data-table tbody tr {

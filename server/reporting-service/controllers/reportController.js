@@ -126,6 +126,101 @@ const calculateInterviewerProductionStats = (productionData) => {
   return ranked;
 };
 
+/**
+ * Shared logic for transforming raw report data into the final result.
+ * Used by both the REST handler and the SSE manager.
+ */
+const transformReportData = (data, interviewerData, { isLive, useGpcph }) => {
+  return data.map((project) => {
+    let cph;
+    if (isLive || useGpcph) cph = project.gpcph ?? 0;
+    else cph = project.cph ?? 0;
+    const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(
+      interviewerData,
+      project,
+      cph
+    );
+    let abbreviatedProjName = project.projName ?? '';
+
+    Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
+      const regex = new RegExp(`\\b${state}\\b`, 'gi');
+      if (regex.test(abbreviatedProjName)) {
+        abbreviatedProjName = abbreviatedProjName.replace(
+          regex,
+          STATE_ABBREVIATIONS[state]
+        );
+      }
+    });
+
+    Object.keys(OTHER_ABBREVIATIONS).forEach((other) => {
+      const regex = new RegExp(`\\b${other}\\b`, 'gi');
+      if (regex.test(abbreviatedProjName)) {
+        abbreviatedProjName = abbreviatedProjName.replace(
+          regex,
+          OTHER_ABBREVIATIONS[other]
+        );
+      }
+    });
+
+    const stateNameMatches = abbreviatedProjName.match(/[A-Za-z\s]+/);
+    if (stateNameMatches && stateNameMatches.length > 0) {
+      const stateName = stateNameMatches[0].trim();
+      if (STATE_ABBREVIATIONS[stateName]) {
+        abbreviatedProjName = STATE_ABBREVIATIONS[stateName];
+      }
+    }
+
+    if (abbreviatedProjName.length > 15) {
+      abbreviatedProjName = abbreviatedProjName.slice(0, 15);
+    }
+
+    const mphThreshold = project.projectId.endsWith('C') ? 18 : 22;
+    const offCphThreshold = project.hrs * 0.2;
+    const zcmsThreshold = project.hrs * 0.05;
+
+    const rd = new Date(project.recDate);
+    const CST_OFFSET_MS = 6 * 60 * 60 * 1000;
+    const recDate = new Date(rd.getTime() + CST_OFFSET_MS);
+    const month = String(recDate.getMonth() + 1).padStart(2, '0');
+    const day = String(recDate.getDate()).padStart(2, '0');
+
+    return {
+      ...project,
+      recDate: recDate,
+      abbreviatedDate: `${month}/${day}`,
+      projName: abbreviatedProjName,
+      totalHrs: totalHrs.toFixed(2),
+      offCph: offCph.toFixed(2),
+      onCph: onCph.toFixed(2),
+      onVar: onVar.toFixed(2),
+      zcms: zcms.toFixed(2),
+      mphThreshold: mphThreshold.toFixed(2),
+      offCphThreshold: offCphThreshold.toFixed(2),
+      zcmsThreshold: zcmsThreshold.toFixed(2),
+    };
+  });
+};
+
+/**
+ * Fetch live report data for SSE broadcasting.
+ * Standalone function that can be called without req/res.
+ */
+const fetchLiveReportData = async (projectId, useGpcph) => {
+  // SSE-initiated: disable abort/retry since these run on a server timer, not user requests.
+  // Running in parallel cuts initial load time roughly in half.
+  const opts = { allowAbort: false, allowRetry: false };
+  const [data, interviewerData] = await Promise.all([
+    Reports.getLiveReportData(projectId, opts),
+    Reports.getLiveInterviewerData(projectId, opts),
+  ]);
+
+  if (!data || !interviewerData || data.length === 0 || interviewerData.length === 0) {
+    return [];
+  }
+
+  return transformReportData(data, interviewerData, { isLive: true, useGpcph });
+};
+
 const handleGetReportData = handleAsync(async (req, res) => {
   const projectId = cleanQueryParam(req.query?.projectId);
   const startDate = cleanQueryParam(req.query?.startdate);
@@ -145,93 +240,14 @@ const handleGetReportData = handleAsync(async (req, res) => {
     ? await Reports.getLiveInterviewerData(projectId)
     : await Reports.getHistoricInterviewerData(projectId, startDate, endDate);
 
-  // Check if the data is 499, which means the server canceled the request
   if (data === 499 || interviewerData === 499 || !data || !interviewerData)
     return res.status(204).json({ msg: 'Server canceled request' });
 
-  // Check if the data is empty, if so return a 204 No Content response
   if (data.length === 0 || interviewerData.length === 0) {
     return res.status(204).json({ msg: 'No data found' });
   }
 
-  // This called the function above that creates an accumulator to iterate through the data
-  const result = data.map((project) => {
-    let cph;
-    if (isLive || useGpcph) cph = project.gpcph ?? 0;
-    else cph = project.cph ?? 0;
-    const { totalHrs, offCph, onCph, onVar, zcms } = calculateInterviewerStats(
-      interviewerData,
-      project,
-      cph
-    );
-    let abbreviatedProjName = project.projName ?? '';
-
-    // First replace the state names with their abbreviations
-    Object.keys(STATE_ABBREVIATIONS).forEach((state) => {
-      const regex = new RegExp(`\\b${state}\\b`, 'gi');
-      if (regex.test(abbreviatedProjName)) {
-        abbreviatedProjName = abbreviatedProjName.replace(
-          regex,
-          STATE_ABBREVIATIONS[state]
-        );
-      }
-    });
-
-    // Then replace the other abbreviations with their abbreviations
-    Object.keys(OTHER_ABBREVIATIONS).forEach((other) => {
-      const regex = new RegExp(`\\b${other}\\b`, 'gi');
-      if (regex.test(abbreviatedProjName)) {
-        abbreviatedProjName = abbreviatedProjName.replace(
-          regex,
-          OTHER_ABBREVIATIONS[other]
-        );
-      }
-    });
-
-    // Finally, if the project name is still too long, extract the state name from it
-    const stateNameMatches = abbreviatedProjName.match(/[A-Za-z\s]+/);
-    if (stateNameMatches && stateNameMatches.length > 0) {
-      const stateName = stateNameMatches[0].trim();
-      if (STATE_ABBREVIATIONS[stateName]) {
-        abbreviatedProjName = STATE_ABBREVIATIONS[stateName];
-      }
-    }
-
-    // If the project name is still too long, truncate it to 15 characters
-    if (abbreviatedProjName.length > 15) {
-      abbreviatedProjName = abbreviatedProjName.slice(0, 15);
-    }
-
-    const mphThreshold = project.projectId.endsWith('C') ? 18 : 22;
-    const offCphThreshold = project.hrs * 0.2;
-    const zcmsThreshold = project.hrs * 0.05; // 10% or less may be acceptable
-
-    // This is to make sure the date is in the correct format for the frontend
-    const rd = new Date(project.recDate);
-    const CST_OFFSET_MS = 6 * 60 * 60 * 1000;
-    const recDate = new Date(rd.getTime() + CST_OFFSET_MS);
-    const month = String(recDate.getMonth() + 1).padStart(2, '0');
-    const day = String(recDate.getDate()).padStart(2, '0');
-
-    // This is the final updated object that gets returned to result
-    const update = {
-      ...project,
-      recDate: recDate,
-      abbreviatedDate: `${month}/${day}`,
-      projName: abbreviatedProjName,
-      totalHrs: totalHrs.toFixed(2),
-      offCph: offCph.toFixed(2),
-      onCph: onCph.toFixed(2),
-      onVar: onVar.toFixed(2),
-      zcms: zcms.toFixed(2),
-      mphThreshold: mphThreshold.toFixed(2),
-      offCphThreshold: offCphThreshold.toFixed(2),
-      zcmsThreshold: zcmsThreshold.toFixed(2),
-    };
-
-    return update;
-  });
-
+  const result = transformReportData(data, interviewerData, { isLive, useGpcph });
   res.status(200).json(result);
 });
 
@@ -316,4 +332,5 @@ module.exports = {
   handleGetInterviewerProductionReportData,
   handleUpdateTargetMphAndCph,
   handleGetToplineReport,
+  fetchLiveReportData,
 };
