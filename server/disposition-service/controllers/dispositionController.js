@@ -36,4 +36,17 @@ const handleGetWebDispositionCounts = handleAsync(async (req, res) => {
   res.json(dropoutCounts);
 });
 
-module.exports = { handleGetWebDisposition, handleGetWebDispositionCounts };
+/**
+ * Fetch all disposition data for SSE broadcasting.
+ * Bundles web disposition + web dropout counts into a single result.
+ */
+const fetchAllDispositionData = async (projectId) => {
+  const [web, webCounts] = await Promise.all([
+    DispositionServices.getWebDisposition(projectId),
+    DispositionServices.getWebDropoutCounts(projectId),
+  ]);
+
+  return { web, webCounts };
+};
+
+module.exports = { handleGetWebDisposition, handleGetWebDispositionCounts, fetchAllDispositionData };

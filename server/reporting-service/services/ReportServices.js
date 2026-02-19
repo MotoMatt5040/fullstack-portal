@@ -1,7 +1,7 @@
 const { withDbConnection, sql, DATABASE_TYPES } = require('@internal/db-connection');
 const { CALIGULAD: caligulad } = DATABASE_TYPES;
 
-const getLiveReportData = async (projectId) => {
+const getLiveReportData = async (projectId, { allowAbort = true, allowRetry = true } = {}) => {
   const projectIdCondition = projectId ? `AND hp.projectId = @projectId` : '';
   const qry = `
   SELECT
@@ -34,13 +34,13 @@ const getLiveReportData = async (projectId) => {
     },
     attempts: 5,
     fnName: 'getLiveSummaryData',
-    allowAbort: true,
-    allowRetry: true,
+    allowAbort,
+    allowRetry,
   });
   return res;
 };
 
-const getLiveInterviewerData = async (projectId) => {
+const getLiveInterviewerData = async (projectId, { allowAbort = true, allowRetry = true } = {}) => {
   const projectIdCondition = projectId
     ? `WHERE hpd.projectId = @projectId`
     : '';
@@ -104,8 +104,8 @@ ORDER BY
     },
     attempts: 5,
     fnName: 'getLiveInterviewerData',
-    allowAbort: true,
-    allowRetry: true,
+    allowAbort,
+    allowRetry,
   });
   return res;
 };

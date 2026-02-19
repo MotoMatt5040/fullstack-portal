@@ -1,5 +1,5 @@
 // client/src/views/disposition_report/useDispositionReportLogic.tsx
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../features/auth/authSlice';
 import { useLazyGetProjectListQuery } from '../../features/projectInfoApiSlice';
@@ -9,6 +9,7 @@ import {
   useLazyGetPhoneDispositionQuery,
 } from '../../features/dispositionApiSlice';
 import { useSearchParams } from 'react-router-dom';
+import useDispositionSSE from '../../hooks/useDispositionSSE';
 
 // Types
 interface ProjectOption {
@@ -37,7 +38,6 @@ type DataAvailability = 'none' | 'web-only' | 'phone-only' | 'both';
 
 const EXTERNAL_ROLE_ID = 4;
 const PROJECT_ID_QUERY_PARAM = 'projectId';
-const POLLING_INTERVAL = 15000; // 15 seconds
 
 const useDispositionReportLogic = () => {
   const [selectedProject, setSelectedProject] = useState<string>('');
@@ -54,9 +54,6 @@ const useDispositionReportLogic = () => {
   const [webDropoutChartData, setWebDropoutChartData] = useState<
     ChartDataItem[]
   >([]);
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchParamsRef = useRef<any>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -307,14 +304,27 @@ const transformWebDropoutData = useCallback(
     }
   }, [selectedProject, searchParams, setSearchParams]);
 
-  // Data fetching with polling
-  useEffect(() => {
-    // Clear any existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  // SSE data handler - processes bundled web + webCounts data from server
+  const handleSSEData = useCallback((sseData: { web: any; webCounts: any[] }) => {
+    if (sseData.web) {
+      setWebDispositionData(sseData.web);
+      const transformed = transformDispositionData(sseData.web);
+      setWebChartData(transformed);
     }
+    if (sseData.webCounts) {
+      const transformed = transformWebDropoutData(sseData.webCounts);
+      setWebDropoutChartData(transformed);
+    }
+  }, [transformDispositionData, transformWebDropoutData]);
 
+  // SSE connection for live disposition data
+  useDispositionSSE({
+    projectId: selectedProject,
+    onData: handleSSEData,
+  });
+
+  // Clear data when project is deselected
+  useEffect(() => {
     if (!selectedProject) {
       setWebDispositionData(null);
       setPhoneDispositionData(null);
@@ -322,62 +332,8 @@ const transformWebDropoutData = useCallback(
       setPhoneChartData([]);
       setCombinedChartData([]);
       setWebDropoutChartData([]);
-      lastFetchParamsRef.current = null;
-      return;
     }
-
-    const fetchParams = {
-      projectId: selectedProject,
-      isInternalUser: userInfo.isInternalUser,
-    };
-
-    // Store current fetch params
-    lastFetchParamsRef.current = fetchParams;
-
-    // Fetch function - always try to fetch both types of data
-    const fetchDispositionData = () => {
-      // Only fetch if params haven't changed
-      if (
-        lastFetchParamsRef.current &&
-        lastFetchParamsRef.current.projectId === fetchParams.projectId &&
-        lastFetchParamsRef.current.isInternalUser === fetchParams.isInternalUser
-      ) {
-        // Always attempt to fetch both web and phone data
-        getWebDisposition(fetchParams).catch(console.error);
-        getWebDropoutCounts(fetchParams).catch(console.error);
-        getPhoneDisposition(fetchParams).catch(console.error);
-      }
-    };
-
-    // Initial fetch
-    fetchDispositionData();
-
-    // Set up polling
-    intervalRef.current = setInterval(fetchDispositionData, POLLING_INTERVAL);
-
-    // Cleanup
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [
-    selectedProject,
-    userInfo.isInternalUser,
-    getWebDisposition,
-    getWebDropoutCounts,
-    getPhoneDisposition,
-  ]);
-
-  useEffect(() => {
-    if (webCountsData) {
-      const transformed = transformWebDropoutData(webCountsData);
-      setWebDropoutChartData(transformed);
-    } else {
-      setWebDropoutChartData([]);
-    }
-  }, [webCountsData, transformWebDropoutData]);
+  }, [selectedProject]);
 
   // Callback for handling project selection changes
   const handleProjectChange = useCallback(
@@ -499,15 +455,6 @@ const transformWebDropoutData = useCallback(
       phoneCompletionRate: phoneDispositionData?.CompletionRate || 'N/A',
     };
   }, [webChartData, phoneChartData, webDispositionData, phoneDispositionData]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
 
   return {
     // Data
