@@ -15,14 +15,6 @@ const ResetPassword = () => {
   const token = pathToken || searchParams.get('token');
   const emailParam = searchParams.get('email');
 
-  console.log('=== ResetPassword Component ===');
-  console.log('pathToken from useParams:', pathToken);
-  console.log('token from searchParams:', searchParams.get('token'));
-  console.log('Final token:', token);
-  console.log('emailParam:', emailParam);
-  console.log('Current URL:', window.location.href);
-  console.log('pathname:', window.location.pathname);
-
   const {
     data: verifyData,
     isLoading: isVerifying,
@@ -31,8 +23,6 @@ const ResetPassword = () => {
     { token, email: emailParam },
     { skip: !token || !emailParam }
   );
-
-  console.log('Query state:', { verifyData, isVerifying, verifyError, skip: !token || !emailParam });
 
   const [resetPassword, { isLoading: isResetting }] = useResetPasswordMutation();
 
@@ -301,10 +291,21 @@ const ResetPassword = () => {
           <div className="password-requirements">
             <p className="requirements-title">Password requirements:</p>
             <ul className="requirements-list">
-              <li>At least 8 characters long</li>
-              <li>Contains uppercase and lowercase letters</li>
-              <li>Contains at least one number</li>
-              <li>Contains at least one special character</li>
+              <li className={passwordForm.newPassword.length >= 8 ? 'requirement-met' : ''}>
+                At least 8 characters long
+              </li>
+              <li className={/[A-Z]/.test(passwordForm.newPassword) && /[a-z]/.test(passwordForm.newPassword) ? 'requirement-met' : ''}>
+                Contains uppercase and lowercase letters
+              </li>
+              <li className={/\d/.test(passwordForm.newPassword) ? 'requirement-met' : ''}>
+                Contains at least one number
+              </li>
+              <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordForm.newPassword) ? 'requirement-met' : ''}>
+                Contains at least one special character
+              </li>
+              <li className={passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword ? 'requirement-met' : ''}>
+                Passwords match
+              </li>
             </ul>
           </div>
 
