@@ -3,6 +3,7 @@ const { getUserByEmail, updateUserPassword, saveResetToken, getUserByResetToken 
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { resetPasswordEmail } = require('@internal/email-templates');
 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -28,20 +29,19 @@ const handlePasswordResetRequest = async (req, res) => {
         }
 
         const token = crypto.randomBytes(20).toString('hex');
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}?email=${encodeURIComponent(email)}`;
         const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
         // Save the token and expiration time in the database
         await saveResetToken(email, token, expires);
 
+        const { subject, html, text } = resetPasswordEmail(email, token);
+
         const mailOptions = {
             to: existingUser.Email,
             from: process.env.FROM_EMAIL || 'no-reply@promarkresearch.com',
-            subject: 'Password Reset',
-            text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
-                  `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
-                  `${resetLink}\n\n` +
-                  `If you did not request this, please ignore this email and your password will remain unchanged.\n`
+            subject,
+            html,
+            text,
         };
 
         transporter.sendMail(mailOptions, (error, info) => {

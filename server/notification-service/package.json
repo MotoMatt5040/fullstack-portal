@@ -10,6 +10,7 @@
   "dependencies": {
     "@internal/auth-middleware": "file:./shared-libs/auth-middleware",
     "@internal/cors-config": "file:./shared-libs/cors-config",
+    "@internal/email-templates": "file:./shared-libs/email-templates",
     "@internal/error-handler": "file:./shared-libs/error-handler",
     "@internal/roles-config": "file:./shared-libs/roles-config",
     "cookie-parser": "^1.4.6",

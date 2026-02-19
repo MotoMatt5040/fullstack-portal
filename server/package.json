@@ -31,6 +31,7 @@
   "license": "ISC",
   "description": "Fullstack Portal Server API with MongoDB and MSSQL support",
   "dependencies": {
+    "@internal/email-templates": "file:./shared-libs/email-templates",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
