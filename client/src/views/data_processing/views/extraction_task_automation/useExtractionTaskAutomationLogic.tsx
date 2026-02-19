@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
 import { useToast } from '../../../../context/ToastContext';
-import { useUploadExtractionFileMutation } from '../../../../features/extractionTaskApiSlice';
+import { useUploadExtractionFileMutation } from './extractionTaskApiSlice';
 
 export const useExtractionTaskAutomationLogic = () => {
   const toast = useToast();
-  const [uploadExtractionFile, { isLoading }] = useUploadExtractionFileMutation();
+  const [uploadExtractionFile, { isLoading }] =
+    useUploadExtractionFileMutation();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -21,7 +22,7 @@ export const useExtractionTaskAutomationLogic = () => {
       }
       setSelectedFile(file);
     },
-    [toast]
+    [toast],
   );
 
   const handleFileInputChange = useCallback(
@@ -29,7 +30,7 @@ export const useExtractionTaskAutomationLogic = () => {
       handleFileSelect(event.target.files);
       if (event.target) event.target.value = '';
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
   const handleDrop = useCallback(
@@ -39,20 +40,26 @@ export const useExtractionTaskAutomationLogic = () => {
       setDragActive(false);
       handleFileSelect(event.dataTransfer.files);
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
-  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setDragActive(true);
-  }, []);
+  const handleDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setDragActive(true);
+    },
+    [],
+  );
 
-  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setDragActive(false);
-  }, []);
+  const handleDragLeave = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setDragActive(false);
+    },
+    [],
+  );
 
   const clearSelectedFile = useCallback(() => {
     setSelectedFile(null);
@@ -73,10 +80,14 @@ export const useExtractionTaskAutomationLogic = () => {
     formData.append('suffix', suffix);
     try {
       const result = await uploadExtractionFile(formData).unwrap();
-      toast.success(result.message || 'File processed successfully.', 'Upload Complete');
+      toast.success(
+        result.message || 'File processed successfully.',
+        'Upload Complete',
+      );
       clearSelectedFile();
     } catch (err: any) {
-      const message = err?.data?.message || 'An error occurred while uploading the file.';
+      const message =
+        err?.data?.message || 'An error occurred while uploading the file.';
       toast.error(message, 'Upload Failed');
     }
   }, [selectedFile, suffix, uploadExtractionFile, toast, clearSelectedFile]);

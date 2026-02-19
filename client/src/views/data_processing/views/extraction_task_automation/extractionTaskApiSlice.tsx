@@ -1,4 +1,4 @@
-import { apiSlice } from '../app/api/apiSlice';
+import { apiSlice } from '../../../../app/api/apiSlice';
 
 interface UploadExtractionFileResponse {
   success: boolean;
@@ -20,6 +20,4 @@ export const extractionTaskApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const {
-  useUploadExtractionFileMutation,
-} = extractionTaskApiSlice;
+export const { useUploadExtractionFileMutation } = extractionTaskApiSlice;
