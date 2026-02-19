@@ -23,3 +23,5 @@ router
     upload.single('file'),
     extractionTaskController.handleCreateExtractionTask,
   );
+
+module.exports = router;
